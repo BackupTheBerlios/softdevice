@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.2 2004/08/01 16:05:26 lucke Exp $
+ * $Id: audio.c,v 1.3 2004/10/22 15:07:15 wachm Exp $
  */
 
 #include <unistd.h>
@@ -172,6 +172,21 @@ int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
     assert(err >= 0);
     if (rate != samplerate ) {
       dsyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) FATAL exiting",samplerate,rate);
+      exit(1);
+    }
+
+    // set period size
+    periodSize = 4608 / 4;
+    err = snd_pcm_hw_params_set_period_size_near(handle, params, &periodSize, 0);
+    if ( err < 0)  {
+      dsyslog("[softdevice-audio] Failed to set period size!");
+      exit(1);
+    }
+    
+    snd_pcm_uframes_t buffersize = 2 * 4608; 
+    err = snd_pcm_hw_params_set_buffer_size_near(handle, params, &buffersize);
+    if ( err < 0 ) {
+      dsyslog("[softdevice-audio] Failed to set buffer size!");
       exit(1);
     }
 
