@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.5 2004/12/30 18:47:50 lucke Exp $
+ * $Id: video.c,v 1.6 2005/01/12 20:24:34 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -128,8 +128,8 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
 void cVideoOut::CheckAspectDimensions(AVFrame *picture,
                                         AVCodecContext *context)
 {
-    static float  new_asp, aspect_F = -100.0;
-    static int    aspect_I = -100;
+    static volatile float new_asp, aspect_F = -100.0;
+    static int            aspect_I = -100;
 
   /* --------------------------------------------------------------------------
    * check and handle changes of dimensions first
@@ -143,22 +143,23 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
   }
 
 #if LIBAVCODEC_BUILD > 4686
-  if (picture->pan_scan->width) {
-    new_asp = (float) (picture->pan_scan->width *
-                       context->sample_aspect_ratio.num) /
-               (float) (picture->pan_scan->height *
-                        context->sample_aspect_ratio.den);
-  } else {
-    new_asp = (float) (context->width *
-                       context->sample_aspect_ratio.num) /
-               (float) (context->height *
-                        context->sample_aspect_ratio.den);
-  }
+  /* --------------------------------------------------------------------------
+   * removed aspect ratio calculation based on picture->pan_scan->width
+   * as this value seems to be wrong on some dvds.
+   */
+  new_asp = (float) (context->width * context->sample_aspect_ratio.num) /
+              (float) (context->height * context->sample_aspect_ratio.den);
 #else
   new_asp = context->aspect_ratio;
 #endif
 
-
+  /* --------------------------------------------------------------------------
+   * aspect_F and new_asp are now static volatile float. Due to above
+   * code removal, gcc-3.3.1 from suse compiles comparison wrong.
+   * it compares the 32bit float value with it's temprary new_asp value
+   * from above calculation which has even a higher precision than double :-( ,
+   * and would result not_equal every time.
+   */
   if (aspect_I != context->dtg_active_format ||
       aspect_F != new_asp)
   {
