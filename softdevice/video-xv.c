@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: video-xv.c,v 1.2 2004/08/08 20:55:59 lucke Exp $
  */
 
 #include <unistd.h>
@@ -26,7 +26,7 @@
 #include "video-xv.h"
 #include "utils.h"
 
-#define PATCH_VERSION "007_pre_1"
+#define PATCH_VERSION "007_pre_2+"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
@@ -278,6 +278,24 @@ void cXvRemote::XvRemoteStart(void)
 
 /* ---------------------------------------------------------------------------
  */
+void cXvVideoOut::toggleFullScreen(void)
+{
+  fullScreen = !fullScreen;
+  XEvent e;
+
+  memset(&e,0,sizeof(e));
+  e.xclient.type = ClientMessage;
+  e.xclient.message_type = _NET_WM_STATE;
+  e.xclient.display = dpy;
+  e.xclient.window = win;
+  e.xclient.format = 32;
+  e.xclient.data.l[0] = fullScreen ? 1 : 0;
+  e.xclient.data.l[1] = _NET_WM_STATE_FULLSCREEN;
+  XSendEvent(dpy, DefaultRootWindow(dpy), False, SubstructureRedirectMask, &e);
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cXvVideoOut::ProcessEvents ()
 {
 
@@ -286,6 +304,7 @@ void cXvVideoOut::ProcessEvents ()
     int             len;
     XComposeStatus  compose;
     KeySym          keysym;
+    struct timeval  current_time;
 
   while (XCheckMaskEvent (dpy, /* win, */
                                  PointerMotionMask |
@@ -300,12 +319,18 @@ void cXvVideoOut::ProcessEvents ()
     {
       case MotionNotify:
       case ButtonPress:
+        gettimeofday(&current_time, NULL);
+        motion_time = current_time.tv_sec;
+        if(event.xbutton.button==Button1) {
+          if(button_time - current_time.tv_sec == 0) {
+            toggleFullScreen();
+          }
+          button_time = current_time.tv_sec;
+        }
         if(cursor_visible == False) {
           XUndefineCursor(dpy, win);
           cursor_visible = True;
         }
-        gettimeofday(&prev_time, NULL);
-        cur_time.tv_sec = prev_time.tv_sec;
         break;
       case ConfigureNotify:
         dwidth = event.xconfigure.width;
@@ -324,8 +349,8 @@ void cXvVideoOut::ProcessEvents ()
           XUndefineCursor(dpy, win);
           cursor_visible = True;
         }
-        gettimeofday(&prev_time, NULL);
-        cur_time.tv_sec = prev_time.tv_sec;
+        gettimeofday(&current_time, NULL);
+        button_time = current_time.tv_sec;
 
         len = XLookupString (&event. xkey, buffer, 80, &keysym, &compose);
         switch (keysym)
@@ -333,6 +358,9 @@ void cXvVideoOut::ProcessEvents ()
           case XK_Shift_L: case XK_Shift_R: case XK_Control_L: case XK_Control_R:
           case XK_Caps_Lock: case XK_Shift_Lock: case XK_Meta_L:
           case XK_Meta_R: case XK_Alt_L: case XK_Alt_R:
+            break;
+          case 'f':
+            toggleFullScreen();
             break;
           case 'b':
             attributeStore.Decrement("XV_BRIGHTNESS");
@@ -409,8 +437,8 @@ void cXvVideoOut::ProcessEvents ()
     }
   }
   if(cursor_visible == True) {
-    gettimeofday(&prev_time, NULL);
-    if(prev_time.tv_sec - cur_time.tv_sec >= 2) {
+    gettimeofday(&current_time, NULL);
+    if(current_time.tv_sec - motion_time >= 2) {
       XDefineCursor(dpy, win, hidden_cursor);
       cursor_visible = False;
     }
@@ -466,6 +494,7 @@ bool cXvVideoOut::Initialize (void)
     XSizeHints          hints;
     XGCValues           values;
     XTextProperty       x_wname, x_iname;
+    struct timeval      current_time;
 
   dsyslog("[XvVideoOut]: patch version (%s)", PATCH_VERSION);
 
@@ -544,11 +573,15 @@ bool cXvVideoOut::Initialize (void)
   
   cursor_mask = XCreateBitmapFromData(dpy, win, cursor_data, 1, 1);
   hidden_cursor = XCreatePixmapCursor(dpy, cursor_mask, cursor_mask,
-				      &dummy_col, &dummy_col, 0, 0);
+                                      &dummy_col, &dummy_col, 0, 0);
   XFreePixmap(dpy, cursor_mask);
   cursor_visible = True;
-  gettimeofday(&prev_time, NULL);
-  cur_time.tv_sec = prev_time.tv_sec;
+  gettimeofday(&current_time, NULL);
+  button_time = motion_time = current_time.tv_sec;
+
+  _NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+  _NET_WM_STATE = XInternAtom(dpy, "_NET_WM_STATE", False);
+  fullScreen = false;
 
   /* -----------------------------------------------------------------------
    * now let's do some OSD initialisations

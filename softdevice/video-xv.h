@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: video-xv.h,v 1.2 2004/08/08 20:55:59 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -93,7 +93,8 @@ private:
   Window            rwin, win;
   Cursor            hidden_cursor;
   Bool              cursor_visible;
-  struct timeval    prev_time, cur_time;
+  long              motion_time, button_time;
+  Atom              _NET_WM_STATE_FULLSCREEN, _NET_WM_STATE;
   int               initialized,
                     osd_refresh_counter,
                     osd_skip_counter,
@@ -126,6 +127,10 @@ private:
   size_t size;
   int xres, yres;
   uint64_t lastUpdate;
+
+  bool              fullScreen;
+  void toggleFullScreen(void);
+
 
 public:
   cXvVideoOut();

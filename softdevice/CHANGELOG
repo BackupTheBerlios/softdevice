@@ -1,4 +1,9 @@
 Changelog
+  2004-08-08:
+    - DFB: fix calling sequence to avoid sig 6
+    - xv-out: added fullscreen patch (Torgeir Veimo)
+              toggle is done via pressing 'f'
+              (works at the moment _only_ with gnome window manager)
   2004-08-01:
     - fix: syncOnFrames not stored (Torgeir Veimo)
     - fix: audio - some cards don't have any master volume (Torgeir Veimo)
