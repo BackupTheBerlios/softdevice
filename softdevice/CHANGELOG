@@ -1,4 +1,6 @@
 Changelog
+2005-03-19:
+    - fix compile problems for vdr-1.2.x (OSD ok, but _no_ A/V :-( ).
 2005-03-17:
     - add left/right channel only support
     - be more precise in GetSTC

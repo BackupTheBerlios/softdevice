@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.20 2005/03/17 20:15:35 wachm Exp $
+ * $Id: softdevice.c,v 1.21 2005/03/19 22:01:21 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -423,19 +423,6 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
     return true;
 }
 
-void cSoftDevice::SetAudioChannelDevice(int AudioChannel)
-{
-  if (decoder)
-     decoder->SetAudioMode(AudioChannel);
-};
-
-int  cSoftDevice::GetAudioChannelDevice(void)
-{
-  if (decoder)
-    return decoder->GetAudioMode();
-  else return 0;
-};
-
 void cSoftDevice::TrickSpeed(int Speed)
 {
     //fprintf(stderr,"[softdevice] Trickspeed(%d) ...\n",Speed);
@@ -554,6 +541,24 @@ void cSoftDevice::SetDigitalAudioDevice(bool On)
 {
   //fprintf (stderr, "[SetDigitalAudioDevice] (%s)\n",(On)? "TRUE":"FALSE");
 }
+
+/* ----------------------------------------------------------------------------
+ */
+void cSoftDevice::SetAudioChannelDevice(int AudioChannel)
+{
+  if (decoder)
+     decoder->SetAudioMode(AudioChannel);
+}
+
+/* ----------------------------------------------------------------------------
+ */
+int  cSoftDevice::GetAudioChannelDevice(void)
+{
+  if (decoder)
+    return decoder->GetAudioMode();
+  else return 0;
+}
+
 #endif
 
 /* ----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.10 2005/03/17 20:15:35 wachm Exp $
+# $Id: Makefile,v 1.11 2005/03/19 22:01:21 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -187,7 +187,7 @@ endif
 ifdef XV_SUPPORT
   ifdef USE_SUBPLUGINS
     XV_LIBS   = -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv
-    XV_OBJS   = video.o video-xv.o xscreensaver.o
+    XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o
     ALL_OBJS  += $(XV_OBJS)
     TARGETS   += libvdr-$(PLUGIN)-xv.so
   else
@@ -202,7 +202,7 @@ endif
 
 ifdef VIDIX_SUPPORT
   ifdef USE_SUBPLUGINS
-    VIDIX_OBJS  = video.o video-vidix.o
+    VIDIX_OBJS  = utils.o video.o video-vidix.o
     VIDIX_LIBS  = -lvidix
     ALL_OBJS    += $(VIDIX_OBJS)
     TARGETS     += libvdr-$(PLUGIN)-vidix.so
@@ -276,4 +276,4 @@ dist: clean
 	@echo Distribution package created as $(PACKAGE).tgz
 
 clean:
-	@-rm -f $(OBJS) $(DEPFILE) *.so *.tgz core* *~
+	@-rm -f $(OBJS) $(DEPFILE) *.so *.o *.tgz core* *~

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.10 2005/03/18 18:33:43 wachm Exp $
+ * $Id: audio.c,v 1.11 2005/03/19 22:01:21 lucke Exp $
  */
 
 #include <unistd.h>
@@ -306,12 +306,13 @@ void cAlsaAudioOut::SetVolume (int vol)
   snd_mixer_close(mHandle);
 }
 
+/* ---------------------------------------------------------------------------
+ */
 cDummyAudioOut::cDummyAudioOut(cSetupStore *setupStore)
 {
   paused=false;
   dsyslog("[softdevice-audio-dummy] Device opened! Ready to play");
 }
-
 
 /* ---------------------------------------------------------------------------
  */
@@ -345,14 +346,12 @@ int cDummyAudioOut::GetDelay(void)
  */
 int cDummyAudioOut::SetParams(SampleContext &context)
 {
-  int err;
-
   // not needed to set again
   if (currContext.samplerate == context.samplerate &&
       currContext.channels == context.channels ) {
     context=currContext;
     return 0;
-  };
+  }
   currContext=context;
 
   return 0;
