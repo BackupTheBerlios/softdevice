@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.12 2005/01/01 15:18:00 lucke Exp $
+ * $Id: video-dfb.c,v 1.13 2005/01/02 09:48:31 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -272,8 +272,10 @@ cDFBVideoOut::cDFBVideoOut()
 
   videoLayer = NULL;
   layerInfo = &layerList [ANY_LAYER];
-  if (setupStore.useMGAtv)
+  if (setupStore.useMGAtv) {
     layerInfo = &layerList [CRTC2_LAYER_NEW];
+    currentPixelFormat = setupStore.pixelFormat = 2;
+  }
 
   dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
   videoLayer = layerInfo->layer;

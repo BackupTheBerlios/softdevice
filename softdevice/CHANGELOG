@@ -1,4 +1,6 @@
 Changelog
+  2005-01-02:
+    -dfb-out: override pixelformat when mgatv is specified.
   2005-01-01:
    - dfb-out: fix for dfb-0.9.20 and 0.9.21 matrox crtc2 layer names
               fix for OSD not shown with vdr-1.2.x
