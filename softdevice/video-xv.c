@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.9 2004/12/21 05:55:42 lucke Exp $
+ * $Id: video-xv.c,v 1.10 2004/12/30 18:38:57 lucke Exp $
  */
 
 #include <unistd.h>
@@ -27,7 +27,7 @@
 #include "xscreensaver.h"
 #include "utils.h"
 
-#define PATCH_VERSION "008_pre_1"
+#define PATCH_VERSION "008_pre_2"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
@@ -722,10 +722,12 @@ bool cXvVideoOut::Initialize (void)
             osd_image->bytes_per_line*height);
   }
 
-  osd_image->data =
-    (char *) osd_buffer =
-    (unsigned char *) osd_shminfo.shmaddr =
-      (char *) shmat(osd_shminfo.shmid, NULL, 0);
+  /* compile fix for gcc 3.4.3
+   */
+  osd_shminfo.shmaddr = (char *) shmat(osd_shminfo.shmid, NULL, 0);
+  osd_buffer = (unsigned char *) osd_shminfo.shmaddr;
+  osd_image->data = (char *) osd_buffer;
+
   if ((int) osd_image->data == -1) {
     dsyslog("[XvVideoOut]: Initialize ERROR: shmat FAILED !");
   } else {
@@ -885,10 +887,12 @@ bool cXvVideoOut::Reconfigure(int format)
     dsyslog("[XvVideoOut]: shmget Successful (%d bytes)",len);
   }
 
-  xv_image->data =
-    (char *) outbuffer =
-    (unsigned char *) shminfo.shmaddr =
-    (char *) shmat(shminfo.shmid, NULL, 0);
+  /* compile fix for gcc 3.4.3
+   */
+  shminfo.shmaddr = (char *) shmat(shminfo.shmid, NULL, 0);
+  outbuffer = (unsigned char *) shminfo.shmaddr;
+  xv_image->data = (char *) outbuffer;
+
   if ((int) xv_image->data == -1) {
     dsyslog("[XvVideoOut]: ERROR: shmat FAILED !");
   } else {
