@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.19 2005/02/27 08:52:33 lucke Exp $
+ * $Id: video-dfb.c,v 1.20 2005/03/28 08:02:22 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -204,18 +204,20 @@ static void reportSurfaceCapabilities (char *name, IDirectFBSurface *surf)
     DFBSurfaceCapabilities        scaps;
 
   scaps = surf->GetCapabilities();
-  fprintf(stderr,"%s:\n", name);
+  fprintf(stderr,"[surface capabilities] %s: ", name);
 
-  if (scaps & DSCAPS_NONE) fprintf(stderr," - none\n");
-  if (scaps & DSCAPS_PRIMARY) fprintf(stderr," - primary\n");
-  if (scaps & DSCAPS_SYSTEMONLY) fprintf(stderr," - systemonly\n");
-  if (scaps & DSCAPS_VIDEOONLY) fprintf(stderr," - videoonly\n");
-  if (scaps & DSCAPS_FLIPPING) fprintf(stderr," - flipping\n");
-  if (scaps & DSCAPS_SUBSURFACE) fprintf(stderr," - subsurface\n");
-  if (scaps & DSCAPS_INTERLACED) fprintf(stderr," - interlaced\n");
-  if (scaps & DSCAPS_SEPARATED) fprintf(stderr," - separated\n");
-  if (scaps & DSCAPS_STATIC_ALLOC) fprintf(stderr," - static alloc\n");
-  if (scaps & DSCAPS_TRIPLE) fprintf(stderr," - triple buffered\n");
+  if (scaps == DSCAPS_NONE) fprintf(stderr,"none ");
+  if (scaps & DSCAPS_PRIMARY) fprintf(stderr,"primary ");
+  if (scaps & DSCAPS_SYSTEMONLY) fprintf(stderr,"systemonly ");
+  if (scaps & DSCAPS_VIDEOONLY) fprintf(stderr,"videoonly ");
+  if (scaps & DSCAPS_DOUBLE) fprintf(stderr,"double-buffered ");
+  if (scaps & DSCAPS_FLIPPING) fprintf(stderr,"flipping ");
+  if (scaps & DSCAPS_SUBSURFACE) fprintf(stderr,"subsurface ");
+  if (scaps & DSCAPS_INTERLACED) fprintf(stderr,"interlaced ");
+  if (scaps & DSCAPS_SEPARATED) fprintf(stderr,"separated ");
+  if (scaps & DSCAPS_STATIC_ALLOC) fprintf(stderr,"static-alloc ");
+  if (scaps & DSCAPS_TRIPLE) fprintf(stderr,"triple-buffered ");
+  fprintf(stderr,"\n");
 }
 
 /* ---------------------------------------------------------------------------
@@ -350,6 +352,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
     scrSurface   = dfb->CreateSurface (scrDsc);
   }
 
+  reportSurfaceCapabilities ("scrSurface", scrSurface);
+
   if (!videoLayer)
   {
     fprintf(stderr,"[dfb]: could not find suitable videolayer\n");
@@ -383,10 +387,10 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
              fmt, DFB_BITS_PER_PIXEL(fmt));
     Bpp = DFB_BITS_PER_PIXEL(fmt);
 
-    if (Xres > 768)
-      Xres = 768;
-    if (Yres > 576)
-      Yres = 576;
+    if (Xres > OSD_FULL_WIDTH)
+      Xres = OSD_FULL_WIDTH;
+    if (Yres > OSD_FULL_HEIGHT)
+      Yres = OSD_FULL_HEIGHT;
 
     /* ------------------------------------------------------------------------
      * clear screen surface at startup
@@ -429,7 +433,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
             "[dfb] Using this layer for OSD: (%s - [%dx%d])\n",
             desc.name, osdSurface->GetWidth(), osdSurface->GetHeight());
 
-    reportSurfaceCapabilities ("osdSurface:", osdSurface);
+    reportSurfaceCapabilities ("osdSurface", osdSurface);
 
     vidDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
                                                  DSDESC_WIDTH |
@@ -443,18 +447,18 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
     if (useStretchBlit)
     {
       videoSurface = dfb->CreateSurface (vidDsc);
-      videoSurface->Clear(0,0,0,0); //clear and
+      videoSurface->Clear(0,0,0,clearAlpha); //clear and
     }
     else
     {
       videoSurface=videoLayer->GetSurface();
-      videoSurface->Clear(COLORKEY,0); //clear and
+      videoSurface->Clear(COLORKEY,clearAlpha); //clear and
       videoSurface->Flip(); // Flip the field
-      videoSurface->Clear(COLORKEY,0); //clear and
+      videoSurface->Clear(COLORKEY,clearAlpha); //clear and
       videoSurface->Flip(); // Flip the field
     }
 
-    reportSurfaceCapabilities ("videoSurface:", videoSurface);
+    reportSurfaceCapabilities ("videoSurface", videoSurface);
 
     if (!setupStore->useMGAtv)
     {
@@ -535,6 +539,7 @@ void cDFBVideoOut::SetParams()
 {
     DFBDisplayLayerConfig       dlc;
     DFBDisplayLayerDescription  desc;
+    DFBDisplayLayerConfigFlags  failed;
 
   if (videoLayer || useStretchBlit)
   {
@@ -584,9 +589,15 @@ void cDFBVideoOut::SetParams()
         dlc.height  = sheight;
       }
 #endif
-      dlc.flags = (DFBDisplayLayerConfigFlags)((int) dlc.flags | DLCONF_OPTIONS);
+      dlc.flags = (DFBDisplayLayerConfigFlags)((int) dlc.flags |
+                                                      DLCONF_OPTIONS);
+      dlc.options       = DLOP_FIELD_PARITY;
 
-      dlc.options = DLOP_FIELD_PARITY;
+#if 1
+      dlc.flags = (DFBDisplayLayerConfigFlags)
+                      ((int) dlc.flags | DLCONF_SURFACE_CAPS);
+      dlc.surface_caps  = DSCAPS_DOUBLE;
+#endif
 
       vidDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
                                                    DSDESC_WIDTH |
@@ -652,9 +663,33 @@ void cDFBVideoOut::SetParams()
         }
         catch (DFBException *ex)
         {
-          fprintf (stderr,"Caught: action=%s, result=%s\n",
+          fprintf (stderr,"Caught: action=%s, result=%s Failed: SetLevel()\n",
                    ex->GetAction(), ex->GetResult());
         }
+
+        /*
+         * --------------------------------------------------------------------
+         * Try with tripple or double buffering
+         */
+        dlc.flags = (DFBDisplayLayerConfigFlags)
+                      ((int) dlc.flags | DLCONF_BUFFERMODE);
+
+        //dlc.buffermode = DLBM_TRIPLE;
+
+        //videoLayer->TestConfiguration(dlc, &failed);
+        //if (failed & DLCONF_BUFFERMODE)
+        //{
+        //  fprintf(stderr, "[dfb]: SetParms (): failed to set buffermode "
+        //          "to tripple mode, trying back video\n");
+          dlc.buffermode = DLBM_BACKVIDEO;
+          videoLayer->TestConfiguration(dlc, &failed);
+          if (failed & DLCONF_BUFFERMODE)
+          {
+            fprintf(stderr, "[dfb]: SetParms (): failed to set buffermode "
+                    "to back video, reverting to normal\n");
+            dlc.buffermode = DLBM_FRONTONLY;
+          }
+        //}
 
         /* --------------------------------------------------------------------
          * OK, try to set the video layer configuration
@@ -724,6 +759,7 @@ void cDFBVideoOut::SetParams()
         videoSurface=NULL;
         videoSurface=dfb->CreateSurface(vidDsc);
       }
+      reportSurfaceCapabilities ("videoSurface", videoSurface);
 
       fprintf(stderr,"[dfb] (re)configured 0x%08x\n",pixelformat);
     }
@@ -743,6 +779,19 @@ void cDFBVideoOut::Pause(void)
 
 #if VDRVERSNUM >= 10307
 
+/* ----------------------------------------------------------------------------
+ */
+void cDFBVideoOut::OpenOSD (int x, int y)
+{
+    IDirectFBSurface  *tmpSurface;
+
+  cVideoOut::OpenOSD(x, y);
+  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+  tmpSurface->Clear(0,0,0,clearAlpha);
+  tmpSurface->Flip();
+  tmpSurface->Clear(0,0,0,clearAlpha);
+}
+
 /* ---------------------------------------------------------------------------
  */
 void cDFBVideoOut::OSDStart()
@@ -750,64 +799,53 @@ void cDFBVideoOut::OSDStart()
     IDirectFBSurface  *tmpSurface;
 
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-
-  /* --------------------------------------------------------------------------
-   * ?? if that clear is removed, radeon OSD does not flicker
-   * any more. but it has some other negative effects on mga.
-   * ??
-   */
-  tmpSurface->Clear(0,0,0,clearAlpha);
+  tmpSurface->SetBlittingFlags(DSBLIT_NOFX);
 }
 
 /* ---------------------------------------------------------------------------
  */
 void cDFBVideoOut::OSDCommit()
 {
-    IDirectFBSurface  *tmpSurface;
-
-  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-  tmpSurface->Flip();
+  OSDdirty=false;
+  OSDpresent = true;
 }
 
 /* ---------------------------------------------------------------------------
  */
 void cDFBVideoOut::Refresh(cBitmap *Bitmap)
 {
-    int pitch;
-    uint8_t *dst;
+    int               pitch;
+    uint8_t           *dst;
     IDirectFBSurface  *tmpSurface;
+    DFBRegion         modArea;
+    DFBRectangle      osdsrc;
 
-  // don't update only dirty areas
-  OSDdirty=true;
-
-  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-
-  tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-#if 0
+  if (Bitmap->Dirty(modArea.x1,modArea.y1,modArea.x2,modArea.y2))
   {
+    tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+    tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+    Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
+    tmpSurface->Unlock();
+
     /* ------------------------------------------------------------------------
-     * handling of dirty/modified regions only, does not work for now
-     * due to double buffering :-( .
+     * TODO: Have to get area coordinates in screen dimensions from Draw().
+     *       In case Draw() scales down, bitmap dirty area coordinates
+     *       could not be transformed the following way.
      */
-      int dx1 = 0, dx2 = 0, dy1 = 0, dy2 = 0;
+    modArea.x1 += OSDxOfs;
+    modArea.y1 += OSDyOfs;
+    modArea.x2 += OSDxOfs;
+    modArea.y2 += OSDyOfs;
 
-    if (Bitmap->Dirty(dx1,dy1,dx2,dy2))
-    {
-      Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
-      Bitmap->Clean();
-    }
-  }
-#else
-  Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
-#endif
-  tmpSurface->Unlock();
+    tmpSurface->Flip(&modArea,DSFLIP_WAIT);
+    osdsrc.x = modArea.x1;
+    osdsrc.y = modArea.y1;
+    osdsrc.w = modArea.x2 - modArea.x1 + 1;
+    osdsrc.h = modArea.y2 - modArea.y1 + 1;
+    tmpSurface->Blit(tmpSurface, &osdsrc, modArea.x1, modArea.y1);
 
-  if (useStretchBlit)
-  {
-    OSDpresent = true;
-    //tmpSurface->Flip();
+    Bitmap->Clean();
   }
-    OSDpresent = true;
 }
 
 #else
@@ -851,8 +889,8 @@ void cDFBVideoOut::CloseOSD()
     osdMutex.Lock();
     OSDpresent  = false;
     osdClrBack = true;
-    tmpSurface->Clear(COLORKEY,0); //clear and
     osdMutex.Unlock();
+    tmpSurface->Clear(COLORKEY,0); //clear and
   }
   else
   {
@@ -1033,6 +1071,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     if (useStretchBlit)
     {
         DFBRectangle  src, dst;
+        int     clearBackground;
 
       src.x = sxoff;
       src.y = syoff;
@@ -1046,7 +1085,11 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       //fprintf (stderr, "dst (%d,%d %dx%d)\n", lxoff,lyoff,lwidth,lheight);
 
       osdMutex.Lock();
-      if (aspect_changed || osdClrBack)
+      clearBackground = (aspect_changed || osdClrBack) ? 1: 0;
+      osdClrBack = false;
+      osdMutex.Unlock();
+
+      if (clearBackground)
         scrSurface->Clear(0,0,0,0);
 
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
@@ -1071,17 +1114,16 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 #endif
 
       }
-      scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
+      //scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
+      scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
 
-      if (aspect_changed || osdClrBack)
+      if (clearBackground)
         scrSurface->Clear(0,0,0,0);
-
-      osdClrBack = false;
-      osdMutex.Unlock();
     }
     else
     {
-      videoSurface->Flip();
+      //videoSurface->Flip();
+      videoSurface->Flip(NULL, DSFLIP_ONSYNC);
     }
   } catch (DFBException *ex){
     fprintf(stderr,"Flip failed\n");

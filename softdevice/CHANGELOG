@@ -1,4 +1,8 @@
 Changelog
+2005-03-28:
+    - dfb-out: chg. OSD drawing to update only modified areas.
+               chg. videolayer to double buffered.
+               report surface capabilities in a single line
 2005-03-25:
     - respect replay mode
     - disable WaitForSync in video only mode (trickspeed mode)

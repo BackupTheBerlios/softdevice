@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.5 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-dfb.h,v 1.6 2005/03/28 08:02:22 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -47,6 +47,7 @@ class cDFBVideoOut : public cVideoOut {
     virtual ~cDFBVideoOut();
     void ProcessEvents ();
     void ShowOSD ();
+    virtual void OpenOSD(int x, int y);
 
 #if VDRVERSNUM >= 10307
     virtual void Refresh(cBitmap *Bitmap);
