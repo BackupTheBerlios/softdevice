@@ -1,4 +1,13 @@
 Changelog
+  2005-01-01:
+   - dfb-out: fix for dfb-0.9.20 and 0.9.21 matrox crtc2 layer names
+              fix for OSD not shown with vdr-1.2.x
+  2004-12-31:
+   - xv-out: Fix for our bug #2972. Black color key is
+             now back to value 0x00000000. Savage card users have to
+             file bug reports at X11 developers if their OSD is not shown
+             or change colorkey setting to value 0x01000000 in file
+             video-xv.c in call of "attributeStore.SetColorkey(0x00000000);" .
   2004-12-30:
    - xv-out: compile fix for gcc 3.4.3
              fix for vdr-1.2.x "_ZN9cVideoOut8OSDStartEv"
