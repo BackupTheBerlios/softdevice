@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.8 2005/02/18 13:31:27 wachm Exp $
+ * $Id: video.c,v 1.9 2005/02/18 17:38:06 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -471,8 +471,8 @@ void cVideoOut::Draw(cBitmap *Bitmap,
   if (OSDdirty)
   {
     y1=x1=0;
-    x2=Bitmap->Width();
-    y2=Bitmap->Height();
+    x2=Bitmap->Width()-1;
+    y2=Bitmap->Height()-1;
   };
 
 #define SCALEX(x) ((x) * OsdWidth/OSD_FULL_WIDTH)
