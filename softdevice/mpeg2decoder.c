@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.19 2005/03/05 19:20:09 iampivot Exp $
+ * $Id: mpeg2decoder.c,v 1.20 2005/03/15 17:20:22 lucke Exp $
  */
 
 #include <math.h>
@@ -70,6 +70,7 @@ cStreamDecoder::cStreamDecoder(unsigned int StreamID)
   freezeMode=false;
   state=UNSYNCED;
   prevPTS = newPTS = pts=0;
+  packetLength = 0;
   for (int i = 0; i < PTS_COUNT; i++)
     historyPTS [i] = 0;
   historyPTSIndex = 0;
@@ -149,7 +150,7 @@ int cStreamDecoder::ParseStreamIntern(uchar *Data, int Length,
           state=OPTHEADER;
           hdr_ptr=header;
           HDRDEB("ID 0x%x PtsDts 0x%x ESCR 0x%x ESRATE 0x%x optHLength 0x%x\n",
-             streamID,Header2.ptsdts_flags,Header2.has_escr,Header2.has_es_rate,headerLength); 
+             streamID,Header2.ptsdts_flags,Header2.has_escr,Header2.has_es_rate,headerLength);
         }
         payload--;
         break;
@@ -167,12 +168,13 @@ int cStreamDecoder::ParseStreamIntern(uchar *Data, int Length,
               state=STREAM;
               HDRDEB("ID: 0x%x PTS: %lld DTS: %lld ESCR: %lld\n",streamID,
                 GET_MPEG2_PTS(header),GET_MPEG2_PTS((header+5)),
-                GET_MPEG2_PTS((header+10)) );    
+                GET_MPEG2_PTS((header+10)) );
             }
             break;
 
       case STREAM:
         streamlen=min(payload,size); // Max data that is avaiable
+        packetLength = payload;
         len=DecodeData(inbuf_ptr,streamlen);
         payload-=len;
         if (payload<=0)
@@ -288,6 +290,8 @@ cAudioStreamDecoder::cAudioStreamDecoder(unsigned int StreamID,
                                          : cStreamDecoder(StreamID)
 {
   audioOut=AudioOut;
+  PCMState = SNone;
+  PCMpos = 0;
   codec = avcodec_find_decoder(CODEC_ID_MP2);
   if (!codec)
   {
@@ -312,15 +316,81 @@ uint64_t cAudioStreamDecoder::GetPTS()
 
 /* ---------------------------------------------------------------------------
  */
-void cAudioStreamDecoder::setStreamId(int id)
+void cAudioStreamDecoder::setStreamId(int id, const uchar *d)
 {
   /* -------------------------------------------------------------------------
-   * don't hook on DD stream
+   * don't hook on DD stream, except for LDPCM
    */
   if (id != 0x01bd)
   {
     streamID = id;
   }
+  else if ((d[d[8]+9]&0xe0) == 0xa0)
+  {
+    streamID = id;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cAudioStreamDecoder::PCMDecode(AVCodecContext *context,
+                                   short *audiosamples, int *audio_size,
+                                   uchar *Data, int Length/*, int PacketLength*/)
+{
+    int         PCMDataPos=0;
+    static int  PCMHeaderPos=0;
+
+  *audio_size=0;
+  while (PCMDataPos < Length  && PCMDataPos <  packetLength) {
+
+    switch (PCMState) {
+      case SNone:
+      case SHeader:
+        if ((Data[PCMDataPos] &0xe0)==0xa0)  {
+          PCMState=SHeader+1;
+          PCMHeader[0]=Data[PCMDataPos];
+          PCMpos=0;
+          PCMHeaderPos=1;
+        }
+        PCMDataPos++;
+        break;
+      case SHeader+1:
+      case SHeader+2:
+      case SHeader+3:
+      case SHeader+4:
+      case SHeader+5:
+        PCMHeader[PCMHeaderPos++]=Data[PCMDataPos];
+        PCMDataPos++;
+        PCMState++;
+        break;
+
+      case SHeader+6:
+        PCMState=SData;
+        PCMDataPos++;
+        break;
+
+      case SData:
+        while (PCMDataPos < packetLength && PCMDataPos <Length )
+        {
+          ((uchar*) audiosamples)[2*(PCMpos/2)+1-PCMpos%2]=Data[PCMDataPos];
+          PCMDataPos++;
+          PCMpos++;
+        }
+        break;
+    }
+  }
+
+  if (PCMDataPos >= packetLength ) {
+    // taken from libavcodec
+    static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
+    int freq = (PCMHeader[5] >> 4) & 3;
+    context->sample_rate=lpcm_freq_tab[freq];
+    context->channels = 1 + (PCMHeader[5] & 7);
+    *audio_size=PCMpos;
+    PCMState=SNone;
+    PCMpos=0;
+  }
+  return PCMDataPos;
 }
 
 /* ---------------------------------------------------------------------------
@@ -330,7 +400,12 @@ int cAudioStreamDecoder::DecodeData(uchar *Data, int Length)
     int len;
     int audio_size;
 
-  len=avcodec_decode_audio(context, (short *)audiosamples, &audio_size, Data, Length);
+  if (streamID == 0x01bd)
+    len=PCMDecode(context, (short *) audiosamples,
+                  &audio_size, Data, Length);
+  else
+    len=avcodec_decode_audio(context, (short *)audiosamples,
+                             &audio_size, Data, Length);
   frame++;
   MPGDEB("count: %d  Length: %d len: %d a_size: %d a_delay: %d\n",
       frame,Length,len, audio_size, audioOut->GetDelay());
@@ -1189,11 +1264,12 @@ bool cMpeg2Decoder::BufferFilled()
 int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
 {
     const uchar *p;
-    int         ac3ModeNew, ac3ParmNew, lpcmModeNew;
+    int         ac3ModeNew, ac3ParmNew, lpcmModeNew, lpcmSubstreamIdNew;
 
   ac3ModeNew = ac3Mode;
   ac3ParmNew = ac3Parm;
   lpcmModeNew = lpcmMode;
+  lpcmSubstreamIdNew = lpcmSubstreamId;
 
   p = Data;
   /* -------------------------------------------------------------------------
@@ -1201,13 +1277,17 @@ int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
    */
   if (p[0] == 0x00 && p[1] == 0x00 && p[2] == 0x01 && p[3] == 0xbd)
   {
-    p += 4 + 2 + 2;   // skip: stream id, length, ??
-    p += *p;
+    p += 3 /*start_code*/ + 1 /*stream_id*/;
+    p += 2 /*packet_length*/ + 2 /* ?? */;
+    p += *p /*header_data_length*/;
     p++;
 
     /* ------------------------------------------------------------------------
      * check for ac3 sync word
      */
+    if (p[4] == 0x0b && p[5] == 0x77)
+      p += 4;
+
     if (p[0] == 0x0b && p[1] == 0x77)
     {
       p += 2 + 2 + 1;   // skip: sync word, crc, bitrate & frequency
@@ -1218,10 +1298,11 @@ int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
     /* ------------------------------------------------------------------------
      * check for LPCM sync word
      */
-    else if (p[0] == 0xa0 && p[1] == 0xff)
+    else if ((p[0] & 0xe0) == 0xa0)
     {
       ac3ModeNew = ac3ParmNew = 0;
       lpcmModeNew = 1;
+      lpcmSubstreamIdNew = p[0] & 0x1f;
       p += 2 + 2 + 1;
     }
   }
@@ -1248,18 +1329,20 @@ int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
     dsyslog ("[Mpeg2Decoder]: AC3 info: %s", info);
   }
 
-  if (lpcmModeNew != lpcmMode)
+  if (lpcmModeNew != lpcmMode || lpcmSubstreamIdNew != lpcmSubstreamId)
   {
       char  *sampleRates [4] = {"48000", "96000", "44100", "32000"};
 
-    dsyslog ("[Mpeg2Decoder]: LPCM info: %dch@%sHz",
-             ((*p)&1)+1, sampleRates[((*p)&3)>>4]);
+    lpcmMode = lpcmModeNew;
+    lpcmSubstreamId = lpcmSubstreamIdNew;
+    dsyslog ("[Mpeg2Decoder]: LPCM info: %dch@%sHz (%d)",
+             ((*p)&1)+1, sampleRates[((*p)&3)>>4],lpcmSubstreamId);
   }
 #if VDRVERSNUM >= 10318
   if (running)
   {
+    aout->setStreamId(Data[2]<<8|Data[3], Data);
     aout->Write((uchar *)Data,Length);
-    aout->setStreamId(Data[2]<<8|Data[3]);
   }
 #endif
   return Length;

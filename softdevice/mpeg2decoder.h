@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.13 2005/03/05 13:50:49 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.14 2005/03/15 17:20:22 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -76,6 +76,7 @@ protected:
                           historyPTS[PTS_COUNT],
                           pts;
     int                   frame,
+                          packetLength,
                           historyPTSIndex;
     bool                  validPTS;
     unsigned char         header[MAX_HDR_LEN];
@@ -103,24 +104,36 @@ public:
     virtual uint64_t GetPTS()  {return pts;};
 
     virtual void Stop();
-    virtual void setStreamId (int id) {return;};
+    virtual void setStreamId (int id, const uchar *d) {return;};
 
     cStreamDecoder(unsigned int StreamID);
     virtual ~cStreamDecoder();
 };
 
 
+  enum PCMState {
+      SNone,
+      SHeader=10,
+      SData=50,
+  } ;
+
 class cAudioStreamDecoder : public cStreamDecoder {
 private:
-    uint8_t * audiosamples;
+    uint8_t   *audiosamples;
     cAudioOut *audioOut;
+    int       PCMpos,
+              PCMState;
+    uchar     PCMHeader[10];
+
 protected:
 public:
     virtual int DecodeData(uchar *Data, int Length);
     cAudioStreamDecoder(unsigned int StreamID, cAudioOut *AudioOut);
     ~cAudioStreamDecoder();
-    virtual uint64_t GetPTS();
-    virtual void setStreamId (int id);
+    virtual uint64_t  GetPTS();
+    virtual void      setStreamId (int id, const uchar *d);
+    virtual int       PCMDecode(AVCodecContext *context, short *audiosamples,
+                                int *audio_size, uchar *Data, int Length);
 };
 
 class cVideoStreamDecoder : public cStreamDecoder {
@@ -179,7 +192,7 @@ private:
     cStreamDecoder  *vout, *aout;
     cAudioOut       *audioOut;
     cVideoOut       *videoOut;
-    int             ac3Mode, ac3Parm, lpcmMode;
+    int             ac3Mode, ac3Parm, lpcmMode, lpcmSubstreamId;
     bool running;
     bool IsSuspended;
     bool decoding;
