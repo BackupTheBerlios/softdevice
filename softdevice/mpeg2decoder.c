@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.3 2004/08/09 19:42:50 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.4 2004/10/18 03:33:37 iampivot Exp $
  */
 
 #include <vdr/plugin.h>
@@ -144,6 +144,7 @@ cAudioStreamDecoder::cAudioStreamDecoder(unsigned int StreamID,
 {
   audioOut=AudioOut;
   cPTS=commonPTS;
+  avOffset = setupStore.avOffset;
   codec = avcodec_find_decoder(CODEC_ID_MP2);
   if (!codec)
   {
@@ -185,13 +186,13 @@ int cAudioStreamDecoder::DecodeData(uchar *Data, int Length)
     audioOut->SetParams(context->channels,context->sample_rate);
     audioOut->Write(audiosamples,audio_size);
     int delay = audioOut->GetDelay();
-    if (delay < 20)// if we have less than 20 ms in buffer we double frames
+    if (delay + avOffset < 20)// if we have less than 20 ms in buffer we double frames
       audioOut->Write(audiosamples,audio_size);
 
     pts += (audio_size/(48*4)); // PTS weiterzählen, egal ob Samples gespielt oder nicht
 
     //  printf("Audiodelay: %d \n",delay);
-    *cPTS = pts - delay; // Das ist die Master-PTS die wird an den video Teil übergeben,
+    *cPTS = pts - delay + avOffset; // Das ist die Master-PTS die wird an den video Teil übergeben,
     // damit Video syncronisieren kann
     if (validPTS)
       SyncPTS(GET_MPEG2_PTS(header)/90); // milisekunden
@@ -778,7 +779,8 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
         if ( (syncword >= 0x000001E0) && (syncword <= 0x000001EF) )
         {
           state=PAYLOAD;
-          streamtype=syncword & 0x000000FF;
+          //streamtype=syncword & 0x000000FF;
+          streamtype=0xE0;
         }
         else if ( (syncword >= 0x000001C0) && (syncword <= 0x000001CF) )
         {

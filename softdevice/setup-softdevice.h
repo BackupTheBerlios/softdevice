@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.1 2004/08/01 05:07:04 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.2 2004/10/18 03:33:37 iampivot Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -28,6 +28,7 @@ class cSetupStore {
     int   deintMethod;
     int   mirror;
     int   syncOnFrames;
+    int   avOffset;
 };
 
 

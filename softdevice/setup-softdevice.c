@@ -3,12 +3,15 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.2 2004/08/01 16:23:30 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.3 2004/10/18 03:33:37 iampivot Exp $
  */
 
 #include "video.h"
 #include "setup-softdevice.h"
 #include "mpeg2decoder.h"
+
+#define MINAVOFFSET (-250)
+#define MAXAVOFFSET (250)
 
 /* ----------------------------------------------------------------------------
  * index to this array correspond to AFD values
@@ -83,6 +86,7 @@ cSetupStore::cSetupStore ()
   cropMode      = 0;
   deintMethod   = 0;
   syncOnFrames  = 0;
+  avOffset      = 0;
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
@@ -137,6 +141,11 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   } else if (!strcasecmp(Name, "SyncAllFrames")) {
     syncOnFrames = atoi(Value);
     syncOnFrames = clamp (0, syncOnFrames, 1);
+  } else if (!strcasecmp(Name, "avOffset")) {
+    avOffset = atoi(Value);
+    avOffset = clamp (MINAVOFFSET, avOffset, MAXAVOFFSET);
+    fprintf(stderr,"[setup-softdevice] A/V Offset set to (%d)\n",
+            avOffset);
   } else return false;
 
   return true;
@@ -212,6 +221,9 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(void)
                             &data->syncOnFrames,
                             2,
                             syncOnFramesStr));
+  Add(new cMenuEditIntItem(tr("A/V Offset"),
+                           &data->avOffset,
+                           MINAVOFFSET, MAXAVOFFSET));
 }
 
 /* ---------------------------------------------------------------------------
@@ -261,4 +273,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("PixelFormat",        setupStore.pixelFormat);
   SetupStore ("Picture mirroring",  setupStore.mirror);
   SetupStore ("SyncAllFrames",      setupStore.syncOnFrames);
+  SetupStore ("avOffset",           setupStore.avOffset);
 }
