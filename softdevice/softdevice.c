@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.23 2005/03/25 13:42:30 wachm Exp $
+ * $Id: softdevice.c,v 1.24 2005/03/27 10:18:01 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -476,7 +476,7 @@ void cSoftDevice::Mute(void)
 void cSoftDevice::SetVolumeDevice(int Volume)
 {
   //fprintf (stderr, "[softdevice] should set volume to %d\n", Volume);
-  //audioOut->SetVolume(Volume);
+  audioOut->SetVolume(Volume);
 }
 
 void cSoftDevice::StillPicture(const uchar *Data, int Length)
