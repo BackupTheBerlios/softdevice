@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.12 2005/01/13 20:31:08 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.13 2005/01/15 09:29:29 wachm Exp $
  */
 
 #include <math.h>
@@ -320,25 +320,14 @@ int cAudioStreamDecoder::DecodeData(uchar *Data, int Length)
     validPTS=false;
     MPGDEB("valid PTS : %lld pts - valid PTS: %lld \n",
       GET_MPEG2_PTS(header)/90,(int) pts - GET_MPEG2_PTS(header)/90);
-    //pts = GET_MPEG2_PTS(header)/90;
     pts = newPTS;
   }
 
-  int delay = audioOut->GetDelay();
-//  if (delay ==0)
-//    printf("Buffer underrun \n");
 
   audioOut->SetParams(context->channels,context->sample_rate);
   audioOut->Write(audiosamples,audio_size);
-  /*    if (delay < 80)
-   {
-  // if we have less than 80 ms in buffer we double frames
-  audioOut->Write(audiosamples,audio_size);
-  printf("doubleing audio frame!!!!\n");
-  }
-  //}
-   */
-  pts += (audio_size/(48*4)); // PTS weiterzählen, egal ob Samples gespielt oder nicht
+  // adjust PTS according to audio_size, sampel_rate and no. of channels  
+  pts += (audio_size/(context->sample_rate/1000*2*context->channels)); 
   return len;
 }
 
@@ -615,7 +604,8 @@ int cVideoStreamDecoder::DecodeData(uchar *Data, int Length)
     delay = 2*frametime*1000;
   else if (delay < -2*frametime*1000)
     delay = -2*frametime*1000;    
-
+  delay-=GetRelTime();
+   
   // prepare picture for display
   videoOut->CheckAspectDimensions(picture,context);
 

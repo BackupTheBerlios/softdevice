@@ -2,7 +2,11 @@ Changelog
   2005-01-15:
     - fix OSD drawing when multiple areas are used (with text2skin plugin)
     - dfb out: reverted top-field first setting as it may crash
-  2005-01-13:
+    - removed some unused code
+    - subtract already spend time from delay before entering delay loop
+      (found by Stefan Lucke)
+    - audio pts calculation changed to use sample rate and number of channels
+ 2005-01-13:
     - compatibility fix for vdr-1.3.18
     - aspect ratio handling for 16:9 TV output
     - dfb-out TVout: set top field first and acpect scaleing for TV mode if not set
