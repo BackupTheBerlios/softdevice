@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.11 2005/01/01 14:28:00 lucke Exp $
+ * $Id: video-dfb.c,v 1.12 2005/01/01 15:18:00 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -37,15 +37,17 @@ typedef struct
   DFBResult             result;
 } tLayerSelectItem;
 
-#define BES_LAYER   0
-#define CRTC2_LAYER 1
-#define SPIC_LAYER  2
-#define ANY_LAYER   3
+#define BES_LAYER       0
+#define CRTC2_LAYER_OLD 1
+#define CRTC2_LAYER_NEW 2
+#define SPIC_LAYER      3
+#define ANY_LAYER       4
 
-tLayerSelectItem  layerList [4] =
+tLayerSelectItem  layerList [5] =
   {
     {"bes",   "Matrox Backend Scaler",    NULL, DFB_UNSUPPORTED},
     {"crtc2", "Matrox CRTC2",             NULL, DFB_UNSUPPORTED},
+    {"crtc2", "Matrox CRTC2 Layer",       NULL, DFB_UNSUPPORTED},
     {"spic",  "Matrox CRTC2 Sub-Picture", NULL, DFB_UNSUPPORTED},
     {NULL,    NULL,                       NULL, DFB_UNSUPPORTED}
   };
@@ -271,11 +273,17 @@ cDFBVideoOut::cDFBVideoOut()
   videoLayer = NULL;
   layerInfo = &layerList [ANY_LAYER];
   if (setupStore.useMGAtv)
-    layerInfo = &layerList [CRTC2_LAYER];
+    layerInfo = &layerList [CRTC2_LAYER_NEW];
 
   dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
-
   videoLayer = layerInfo->layer;
+
+  if (setupStore.useMGAtv && !videoLayer) {
+    layerInfo = &layerList [CRTC2_LAYER_OLD];
+    fprintf(stderr, "[dfb] New layer name allocation failed. Trying old (dfb-0.9.20) layer name\n");
+    dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
+    videoLayer = layerInfo->layer;
+  }
 
   scrDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
                                                DSDESC_PIXELFORMAT);
