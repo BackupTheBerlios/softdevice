@@ -1,5 +1,7 @@
 Changelog
  2005-03-05:
+    - mpeg2decoder: fix to initialize ppmode if pp based deinterlace selected
+ 2005-03-05:
     - audio-out: fix audio stream selection
  2005-03-04: 0.1.0pre1
     - some i18n changes

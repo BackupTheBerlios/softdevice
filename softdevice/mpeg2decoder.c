@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.18 2005/03/05 14:35:51 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.19 2005/03/05 19:20:09 iampivot Exp $
  */
 
 #include <math.h>
@@ -926,24 +926,25 @@ void cVideoStreamDecoder::ppLibavcodec(void)
   }
 
   deintWork = setupStore.deintMethod;
-  if (currentDeintMethod != deintWork)
-  {
 #if FB_SUPPORT
-    if (currentDeintMethod > 2)
+  if (currentDeintMethod > 2)
 #else
-    if (currentDeintMethod > 1)
+  if (currentDeintMethod > 1)
 #endif
+  {
+    if (currentDeintMethod != deintWork || ppmode == NULL)
     {
+
       if (ppmode)
       {
         pp_free_mode (ppmode);
         ppmode = NULL;
       }
+    
+      ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
+      currentDeintMethod = deintWork;
     }
-    ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
-    currentDeintMethod = deintWork;
   }
-
 
   if (ppmode == NULL || ppcontext == NULL)
   {
