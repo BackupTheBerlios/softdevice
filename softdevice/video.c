@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.4 2004/12/21 05:55:43 lucke Exp $
+ * $Id: video.c,v 1.5 2004/12/30 18:47:50 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -193,20 +193,6 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
 #define TRANSPARENT_THRESHOLD 0x0F
 #define IS_BACKGROUND(a) (((a) < OPACITY_THRESHOLD) && (a > TRANSPARENT_THRESHOLD))
 
-#if VDRVERSNUM >= 10307
-
-void cVideoOut::OpenOSD(int X, int Y)
-{
-  OSDxOfs = X;
-  OSDyOfs = Y;
-  OSDpresent=true;
-}
-
-void cVideoOut::CloseOSD()
-{
-  OSDpresent=false;
-}
-
 /* ---------------------------------------------------------------------------
  */
 void cVideoOut::OSDStart()
@@ -219,6 +205,20 @@ void cVideoOut::OSDStart()
 void cVideoOut::OSDCommit()
 {
   //fprintf (stderr, "-");
+}
+
+#if VDRVERSNUM >= 10307
+
+void cVideoOut::OpenOSD(int X, int Y)
+{
+  OSDxOfs = X;
+  OSDyOfs = Y;
+  OSDpresent=true;
+}
+
+void cVideoOut::CloseOSD()
+{
+  OSDpresent=false;
 }
 
 /* ---------------------------------------------------------------------------
