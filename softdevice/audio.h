@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.2 2004/10/29 16:41:39 iampivot Exp $
+ * $Id: audio.h,v 1.3 2005/01/23 14:56:08 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -27,6 +27,10 @@ public:
   virtual void Pause(void)=0;
   virtual void Play(void)=0;
   virtual void SetVolume(int vol)=0;
+  virtual void Suspend(void) 
+  {return;};
+  virtual bool Resume(void) 
+  {return true;};
 };
 
 
@@ -50,5 +54,7 @@ public:
   virtual void Pause(void);
   virtual void Play(void);
   virtual void SetVolume(int vol);
+  virtual void Suspend(void);
+  virtual bool Resume(void);
 };
 #endif

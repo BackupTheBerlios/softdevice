@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.7 2005/01/13 20:48:20 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.8 2005/01/23 14:56:08 wachm Exp $
  */
 
 #include "video.h"
@@ -65,6 +65,14 @@ char *syncOnFramesStr [] = {
         "Any Frames",
         NULL
      };
+/* ----------------------------------------------------------------------------
+ */
+char *suspendVideo [] = {
+        "playing",
+        "suspended",
+        NULL
+     };
+
 
 /* ----------------------------------------------------------------------------
  */
@@ -111,6 +119,7 @@ cSetupStore::cSetupStore ()
   deintMethod   = 0;
   syncOnFrames  = 0;
   avOffset      = 0;
+  shouldSuspend = 0;
 
   useMGAtv      = 0;
   /* --------------------------------------------------------------------------
@@ -279,6 +288,10 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(void)
                             5,
                             videoAspectNames));
 
+  Add(new cMenuEditStraItem(tr("Playback"),
+                            &data->shouldSuspend,
+                            2,
+                            suspendVideo));
 }
 
 /* ---------------------------------------------------------------------------
@@ -331,4 +344,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("avOffset",           setupStore.avOffset);
   SetupStore ("AlsaDevice",         setupStore.alsaDevice);
   SetupStore ("PixelAspect",        setupStore.screenPixelAspect);
+  SetupStore ("Suspend",            setupStore.shouldSuspend);
 }

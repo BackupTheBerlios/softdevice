@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.4 2004/12/21 05:55:42 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.5 2005/01/23 14:56:08 wachm Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -35,6 +35,7 @@ class cSetupStore {
     int   avOffset;
     int   screenPixelAspect;
     int   useMGAtv;
+    int   shouldSuspend;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
 };
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.6 2004/11/21 13:45:37 lucke Exp $
+ * $Id: audio.c,v 1.7 2005/01/23 14:56:08 wachm Exp $
  */
 
 #include <unistd.h>
@@ -34,6 +34,7 @@ cAlsaAudioOut::cAlsaAudioOut(char *alsaDevice) {
               device, snd_strerror(err));
       exit(1);
     }
+    chn=0;
     dsyslog("[softdevice-audio] Device opened! Ready to play");
 }
 
@@ -41,6 +42,23 @@ cAlsaAudioOut::cAlsaAudioOut(char *alsaDevice) {
 cAlsaAudioOut::~cAlsaAudioOut() {
     snd_pcm_close(handle);
 }
+
+void cAlsaAudioOut::Suspend() {
+  snd_pcm_close(handle);
+}
+
+bool cAlsaAudioOut::Resume() {
+   int err;
+   printf("Device %s\n",device);
+   if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+     dsyslog("[softdevice-audio] Playback open error: %s, %s FATAL exiting",
+             device, snd_strerror(err));
+     return false;
+   }
+   //force setting of the parameters after resume 
+   chn=0;
+   return true;
+};
 
 void cAlsaAudioOut::Write(uchar *Data, int Length)
 {
