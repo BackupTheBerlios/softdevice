@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.6 2004/11/14 22:33:54 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.7 2004/12/12 07:09:13 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -20,6 +20,7 @@
 #define DEFAULT_FRAMETIME 40   // for PAL
 #define DVB_BUF_SIZE   (4* 256*1024)  // same value as in dvbplayer.c
 #define AVG_FRAME_SIZE 15000         // dito 
+#define PTS_COUNT       4             // history of four PTS values
 
 struct PES_Header1 {
   unsigned int is_original:1;
@@ -69,18 +70,21 @@ private:
 
     bool freezeMode;
 protected:
-    unsigned int streamID; // stream to filter
-    int64_t newPTS;
-    int64_t pts;
-    int frame;
-    bool validPTS;
-    unsigned char header[MAX_HDR_LEN];     
-    AVCodec *codec;
-    AVCodecContext *context;
+    unsigned int          streamID; // stream to filter
+    int64_t               newPTS,
+                          prevPTS,
+                          historyPTS[PTS_COUNT],
+                          pts;
+    int                   frame,
+                          historyPTSIndex;
+    bool                  validPTS;
+    unsigned char         header[MAX_HDR_LEN];
+    AVCodec               *codec;
+    AVCodecContext        *context;
     
-    cMutex              mutex;
-    cSoftRingBufferLinear   *ringBuffer;
-    bool                active, running;
+    cMutex                mutex;
+    cSoftRingBufferLinear *ringBuffer;
+    bool                  active, running;
     
     int ParseStream(uchar *Data, int Length);
     int ParseStreamIntern(uchar *Data, int Length, unsigned int lowID, unsigned int highID);

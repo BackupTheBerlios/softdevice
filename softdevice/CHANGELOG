@@ -1,4 +1,8 @@
 Changelog
+  2004-12-12:
+   - Changed A/V sync point by 4 frames. Sync is now ok for streams with PTS
+     value for each frame and for streams with PTS values for I-Frames only.
+     Thus OSD option "A/V Sync" is obsolete.
   2004-11-14:
    - new A-V sync with linux RTC support
    - changed audio buffering 

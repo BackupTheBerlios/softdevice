@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.8 2004/11/14 16:24:38 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.9 2004/12/12 07:09:13 lucke Exp $
  */
 
 #include <math.h>
@@ -61,7 +61,10 @@ cStreamDecoder::cStreamDecoder(unsigned int StreamID)
   frame=0;
   freezeMode=false;
   state=UNSYNCED;
-  pts=0;
+  prevPTS = newPTS = pts=0;
+  for (int i = 0; i < PTS_COUNT; i++)
+    historyPTS [i] = 0;
+  historyPTSIndex = 0;
   validPTS=false;
   ringBuffer=new cSoftRingBufferLinear(DVB_BUF_SIZE,1024,true);
   //ringBuffer->SetTimeouts(100,10);
@@ -147,10 +150,11 @@ int cStreamDecoder::ParseStreamIntern(uchar *Data, int Length,
             *hdr_ptr=*inbuf_ptr;
             hdr_ptr++;
             if (!--headerLength) {
+              prevPTS = newPTS;
               if (validPTS)
                 newPTS=GET_MPEG2_PTS(header)/90;
               else newPTS=0;
- 
+
               state=STREAM;
               HDRDEB("ID: 0x%x PTS: %lld DTS: %lld ESCR: %lld\n",streamID,
                 GET_MPEG2_PTS(header),GET_MPEG2_PTS((header+5)),
@@ -306,10 +310,10 @@ int cAudioStreamDecoder::DecodeData(uchar *Data, int Length)
       frame,Length,len, audio_size, audioOut->GetDelay());
 
   // no new frame decoded, return
-  if (audio_size == 0) 
+  if (audio_size == 0)
     return len;
 
-  if (validPTS) 
+  if (validPTS)
   {
     validPTS=false;
     MPGDEB("valid PTS : %lld pts - valid PTS: %lld \n",
@@ -415,7 +419,7 @@ int32_t cVideoStreamDecoder::GetRelTime()
 
   gettimeofday(&tv,&tz);
   now=tv.tv_sec*1000000+tv.tv_usec;
-  if ( now < lastTime ) { 
+  if ( now < lastTime ) {
     ret = (uint32_t) (now - lastTime + 60 *1000000); // untested
     MPGDEB("now %lld kleiner als lastTime %lld\n",now,lastTime);
   }
@@ -500,15 +504,97 @@ int cVideoStreamDecoder::DecodeData(uchar *Data, int Length)
   MPGDEB("pts = AudioPTS\n");
   };
    */
+
+/*
+ * A. recording sequence where only I-frames have pts values defined
+ * B. recording sequence where each frame has a pts value defined
+ * Lines marked with '*' show when we got a I-frame pts values
+ * before it it passed to the decoder.
+ * Lines marked with '+' are the ones when this I-frames is passed
+ * to us for displaying.
+ */
+
+/* sequence A.
+ V(0) NPTS(65785272) PPTS(0)        P(2) P2(1) CF(1)  CF2(0)
+ V(0) NPTS(65785272) PPTS(0)        P(3) P2(3) CF(2)  CF2(2)
+ V(0) NPTS(65785272) PPTS(0)        P(3) P2(3) CF(3)  CF2(3)
+ V(0) NPTS(65785272) PPTS(0)        P(2) P2(2) CF(4)  CF2(1)
+ V(0) NPTS(65785272) PPTS(0)        P(3) P2(3) CF(5)  CF2(5)
+ V(0) NPTS(65785272) PPTS(0)        P(3) P2(3) CF(6)  CF2(6)
+ V(0) NPTS(65785272) PPTS(0)        P(2) P2(2) CF(7)  CF2(4)
+ V(0) NPTS(65785272) PPTS(0)        P(3) P2(3) CF(8)  CF2(8)
+*V(1) NPTS(65785752) PPTS(65785272) P(3) P2(3) CF(9)  CF2(9)
+ V(0) NPTS(65785752) PPTS(65785272) P(1) P2(2) CF(10) CF2(7)
+ V(0) NPTS(65785752) PPTS(65785272) P(3) P2(3) CF(11) CF2(11)
+ V(0) NPTS(65785752) PPTS(65785272) P(3) P2(3) CF(12) CF2(12)
++V(0) NPTS(65785752) PPTS(65785272) P(2) P2(1) CF(13) CF2(10)
+*/
+
+/* sequence B.
+ V(1) NPTS(69692924) PPTS(69693004) P(2) P2(1) CF(1)  CF2(0)
+ V(1) NPTS(69692964) PPTS(69692924) P(3) P2(3) CF(2)  CF2(2)
+ V(1) NPTS(69693124) PPTS(69692964) P(3) P2(3) CF(3)  CF2(3)
+ V(1) NPTS(69693044) PPTS(69693124) P(2) P2(2) CF(4)  CF2(1)
+ V(1) NPTS(69693084) PPTS(69693044) P(3) P2(3) CF(5)  CF2(5)
+ V(1) NPTS(69693244) PPTS(69693084) P(3) P2(3) CF(6)  CF2(6)
+ V(1) NPTS(69693164) PPTS(69693244) P(2) P2(2) CF(7)  CF2(4)
+ V(1) NPTS(69693204) PPTS(69693164) P(3) P2(3) CF(8)  CF2(8)
+*V(1) NPTS(69693364) PPTS(69693204) P(3) P2(3) CF(9)  CF2(9)
+ V(1) NPTS(69693284) PPTS(69693364) P(1) P2(2) CF(10) CF2(7)
+ V(1) NPTS(69693324) PPTS(69693284) P(3) P2(3) CF(11) CF2(11)
+ V(1) NPTS(69693484) PPTS(69693324) P(3) P2(3) CF(12) CF2(12)
++V(1) NPTS(69693404) PPTS(69693484) P(2) P2(1) CF(13) CF2(10)
+*/
+
+#if 0
+  fprintf(stderr,
+          " V(%d) NPTS(%lld) PPTS(%lld) P(%d) P2(%d) CF(%d) CF2(%d)\n",
+          validPTS,
+          newPTS,
+          prevPTS,
+          context->coded_frame->pict_type,
+          picture->pict_type,
+          context->coded_frame->coded_picture_number,
+          picture->coded_picture_number);
+#endif
+
+#if 1 // new method for setting the video PTS
+  if (picture->coded_picture_number)
+  {
+    if (picture->pict_type == FF_I_TYPE)
+    {
+#if 0
+      fprintf (stderr, " changing PTS from %lld to %lld. delta %lld\n",
+               pts, historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT],
+               historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT]-pts);
+#endif               
+      pts = historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT];
+      //fprintf (stderr, "* using PTS value (%lld)\n", pts);
+    }
+  }
+  else
+  {
+    /**
+     * without subtracting 4 frame times I'll get deltas (see above)
+     * upon 2nd PTS setting in the range 0 to -160 ms. So this should
+     * change that 2nd deltas to -80 to +80 .
+     */
+    pts = newPTS - 2 * frametime;
+    //fprintf (stderr, "+ using PTS value (%lld)\n", pts);
+  }
+#else
   if (validPTS &&
       (setupStore.syncOnFrames ||
        context->coded_frame->pict_type == FF_I_TYPE))
   {
     //pts=(GET_MPEG2_PTS(header)/90);
     pts=newPTS;
-    MPGDEB("Got Video PTS: %lld \n",pts); 
+    MPGDEB("Got Video PTS: %lld \n",pts);
     validPTS=false;
   }
+#endif
+
+  historyPTS[historyPTSIndex++%PTS_COUNT] = newPTS;
 
   // this few lines does the whole syncing
   int pts_corr;
@@ -601,7 +687,7 @@ int cVideoStreamDecoder::DecodeData(uchar *Data, int Length)
   };
 #endif
 
-#if 1 
+#if 1
   if (!(frame % 1) || context->hurry_up) {
     int dispTime=GetRelTime();
     MPGDEB("Frame# %-5d A-V(ms) %-5d delay %d FrameT: %s, dispTime(ms): %1.2f\n",
