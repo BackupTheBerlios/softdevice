@@ -18,7 +18,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  * 
- * $Id: xscreensaver.c,v 1.2 2004/10/24 17:28:29 iampivot Exp $
+ * $Id: xscreensaver.c,v 1.3 2004/10/25 02:36:18 lucke Exp $
  */
 
 #include <vdr/plugin.h>
@@ -27,6 +27,7 @@
 
 static XErrorHandler old_handler = 0;
 static Bool got_badwindow = False;
+static BOOL dpms_on;
 
 static int BadWindow_ehandler(Display *dpy, XErrorEvent *error) {
   if (error->error_code == BadWindow) {
@@ -41,7 +42,10 @@ static int BadWindow_ehandler(Display *dpy, XErrorEvent *error) {
 
 cScreensaver::~cScreensaver() {
 #ifdef LIBXDPMS_SUPPORT
-  if (disabled && (DPMSQueryExtension(dpy, &dpms_dummy, &dpms_dummy)) && DPMSCapable(dpy)) && (dpms_on)) {
+  if (disabled &&
+      DPMSQueryExtension(dpy, &dpms_dummy, &dpms_dummy) &&
+      DPMSCapable(dpy) &&
+      dpms_on) {
     DPMSEnable(dpy);
   }
 #endif
@@ -86,7 +90,7 @@ void cScreensaver::DisableScreensaver(bool disable) {
         // According to mplayer sources: DPMS does not seem to be enabled unless we call DPMSInfo
         DPMSForceLevel(dpy, DPMSModeOn);
         DPMSInfo(dpy, &dpms_state, &dpms_on);
-        if (onoff) {
+        if (dpms_on) {
           dsyslog("[softdevice-xscreensaver]: Successfully enabled DPMS\n");
         } else {
           dsyslog("[softdevice-xscreensaver]: Could not enable DPMS\n");

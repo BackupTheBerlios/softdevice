@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.2 2004/10/18 03:32:37 iampivot Exp $
+# $Id: Makefile,v 1.3 2004/10/25 02:36:18 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -160,6 +160,9 @@ endif
 ifdef XV_SUPPORT
 OBJS 	+= video-xv.o xscreensaver.o
 DEFINES += -DXV_SUPPORT
+ifdef LIBXDPMS_SUPPORT
+DEFINES += -DLIBXDPMS_SUPPORT
+endif
 LIBS 	+= -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv
 endif
 
