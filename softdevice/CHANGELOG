@@ -1,4 +1,8 @@
 Changelog
+2005-03-25:
+    - respect replay mode
+    - disable WaitForSync in video only mode (trickspeed mode)
+    - removed unused code
 2005-03-20:
     - video.c, Draw(): set rgb to zero (colorkey) if alpha is zero.
     - preperations for sync on video option

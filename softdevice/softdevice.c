@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.22 2005/03/20 12:21:27 wachm Exp $
+ * $Id: softdevice.c,v 1.23 2005/03/25 13:42:30 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -190,8 +190,8 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
 }
 cSoftOsd::~cSoftOsd() {
     if (videoOut) {
-	videoOut->CloseOSD();
-	videoOut=0;
+      videoOut->CloseOSD();
+      videoOut=0;
     }
     fprintf(stderr,"[softdevice] OSD is off now\n");
 }
@@ -223,7 +223,6 @@ void cSoftOsd::CloseWindow(cWindow *Window) {
 
 cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 {
-    freezeModeEnabled = false;
 #if VDRVERSNUM >= 10307
     spuDecoder = NULL;
 #endif
@@ -419,18 +418,26 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
     switch(PlayMode) {
       // FIXME - Implement audio or video only Playmode (is this really needed?)
       case pmAudioVideo:
+          decoder->SetPlayMode(cMpeg2Decoder::PmAudioVideo);
           decoder->Start();
-          playMutex.Lock();
-          freezeModeEnabled = false;
-          playMutex.Unlock();
-	    break;
-	default:
-	    printf("playmode not implemented... %d\n",PlayMode);
-	    decoder->Stop();
-	    break;
-
+          break;
+      case pmAudioOnly:
+      case pmAudioOnlyBlack:
+          decoder->SetPlayMode(cMpeg2Decoder::PmAudioOnly);
+          decoder->Start();
+          break;
+      case pmVideoOnly:
+          decoder->SetPlayMode(cMpeg2Decoder::PmVideoOnly);
+          decoder->Start();
+          break;
+      case pmNone:
+          decoder->Stop();
+          break;
+      default:
+          printf("playmode not implemented... %d\n",PlayMode);
+          decoder->Stop();
+          break;
     }
-//    printf("setting Playmode not implemented yet... %d\n",PlayMode);
     return true;
 }
 
@@ -451,10 +458,6 @@ void cSoftDevice::Play(void)
     cDevice::Play();
     decoder->TrickSpeed(1);
     decoder->Play();
-    playMutex.Lock();
-    freezeModeEnabled = false;
-    playMutex.Unlock();
-    readyForPlayCondVar.Broadcast();
 }
 
 void cSoftDevice::Freeze(void)
@@ -462,9 +465,6 @@ void cSoftDevice::Freeze(void)
     //fprintf(stderr,"[softdevice] Freeze...\n");
     cDevice::Freeze();
     decoder->Freeze();
-    playMutex.Lock();
-    freezeModeEnabled = true;
-    playMutex.Unlock();
 }
 
 void cSoftDevice::Mute(void)
@@ -476,7 +476,7 @@ void cSoftDevice::Mute(void)
 void cSoftDevice::SetVolumeDevice(int Volume)
 {
   //fprintf (stderr, "[softdevice] should set volume to %d\n", Volume);
-  audioOut->SetVolume(Volume);
+  //audioOut->SetVolume(Volume);
 }
 
 void cSoftDevice::StillPicture(const uchar *Data, int Length)
@@ -488,10 +488,6 @@ void cSoftDevice::StillPicture(const uchar *Data, int Length)
 bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
 {
   // fprintf(stderr,"[softdevice] Poll TimeoutMs: %d ....\n",TimeoutMs);
-  playMutex.Lock();
-  if (freezeModeEnabled)
-    readyForPlayCondVar.TimedWait(playMutex,TimeoutMs);
-  playMutex.Unlock();
 
   if ( decoder->BufferFill() > 90 ) {
      //fprintf(stderr,"[softdevice] Buffer filled, TimeoutMs %d, fill %d\n",
@@ -576,15 +572,6 @@ int  cSoftDevice::GetAudioChannelDevice(void)
  */
 int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 {
-    bool freezeMode;
-
-    playMutex.Lock();
-    freezeMode = freezeModeEnabled;
-    playMutex.Unlock();
-
-    if (freezeMode)
-      return 0;
-
     int result=decoder->Decode(Data, Length);
     // restart the decoder
     if (result == -1) {

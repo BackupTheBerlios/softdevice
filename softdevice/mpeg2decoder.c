@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.24 2005/03/21 19:07:15 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.25 2005/03/25 13:42:30 wachm Exp $
  */
 
 #include <math.h>
@@ -85,6 +85,7 @@ void cPacketQueue::Clear() {
 
 cAudioStreamDecoder *cClock::audioClock=NULL;
 cVideoStreamDecoder *cClock::videoClock=NULL;
+bool                 cClock::waitForSync=false;
 
 uint64_t  cClock::GetPTS() {
   if (audioClock)
@@ -429,18 +430,6 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
  };
 
   picture=avcodec_alloc_frame();
-}
-
-int cVideoStreamDecoder::StillPicture(uchar *Data, int Length)
-{
-  mutex.Lock();
-  //ringBuffer->Clear();
-  avcodec_flush_buffers(context);
-  mutex.Unlock();
-  //for (int i = 0;i < 4;++i)
-   //(Data,Length,0x000001E0,0x000001EF);
-
-  return Length;
 }
 
 uint64_t cVideoStreamDecoder::GetPTS() {
@@ -1075,8 +1064,6 @@ void cMpeg2Decoder::Action()
   int PacketCount=0;
 
   int nStreams=0;
-  AudioIdx=NO_STREAM;
-  VideoIdx=NO_STREAM;
   
   while(ThreadActive) {
         while (freezeMode && ThreadActive)
@@ -1135,7 +1122,8 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
       ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO && 
       AudioIdx != pkt.stream_index) {
    
-    BUFDEB("new Audio stream index..\n");
+    CMDDEB("new Audio stream index.. old %d new %d\n",
+      AudioIdx,pkt.stream_index);
     AudioIdx = pkt.stream_index;
     if (aout) {
       aout->Stop();
@@ -1149,7 +1137,8 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
       ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO && 
       VideoIdx!=pkt.stream_index) {
   
-    BUFDEB("new Video stream index..\n");
+    CMDDEB("new Video stream index.. old %d new %d\n",
+      VideoIdx,pkt.stream_index);
     VideoIdx=pkt.stream_index;
     if (vout) {
       vout->Stop();
@@ -1192,8 +1181,11 @@ void cMpeg2Decoder::Start(bool GetMutex)
     
   StreamBuffer->Clear();
   initStream();
+  clock.SetWaitForSync(curPlayMode==PmAudioVideo);
   ThreadActive=true;
   freezeMode=false;
+  AudioIdx=NO_STREAM;
+  VideoIdx=NO_STREAM;
   cThread::Start();
   running=true;
   if (GetMutex)
@@ -1246,6 +1238,28 @@ void cMpeg2Decoder::Play(void)
   };
 };
 
+void cMpeg2Decoder::SetPlayMode(softPlayMode playMode)
+{
+  curPlayMode=playMode;
+  clock.SetWaitForSync(curPlayMode==PmAudioVideo);
+  switch (curPlayMode) {
+    case PmAudioVideo: 
+      CMDDEB("SetPlayMode PmAudioVideo\n");
+      PlayAudioVideo(true,true);
+      break;
+    case PmVideoOnly:
+      CMDDEB("SetPlayMode PmVideoOnly\n");
+      PlayAudioVideo(false,true);
+      break;
+    case PmAudioOnly:
+      CMDDEB("SetPlayMode PmAudioOnly\n");
+      PlayAudioVideo(true,false);
+      break;
+    default:
+      break;
+  };
+};
+      
 void cMpeg2Decoder::Freeze(void)
 {
   CMDDEB("Freeze\n");
@@ -1268,8 +1282,9 @@ void cMpeg2Decoder::Stop(bool GetMutex)
      mutex.Lock();
   CMDDEB("Stop\n");
   // can't stop properly in freeze mode
-//  Freeze();
+  //  Freeze();
   freezeMode=false;
+  clock.SetWaitForSync(false);
   if (running)
   {
     running=false;
@@ -1303,7 +1318,10 @@ int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
   //Clear();
   mutex.Lock();
   CMDDEB("StillPicture \n");
- 
+  // we have only video, so no syncing should be done
+  clock.SetWaitForSync(false); 
+  // XXX hack to ingore audio junk sent by vdr in the still picture
+  AudioIdx=DONT_PLAY;
   for (int i=0; 4>i;i++) {
     int P;
     uchar *data=Data;
@@ -1336,6 +1354,10 @@ void cMpeg2Decoder::Clear(void)
 void cMpeg2Decoder::TrickSpeed(int Speed)
 {
   CMDDEB("TrickSpeed %d\n",Speed);
+  if ( Speed!=1 )
+    clock.SetWaitForSync(false);
+  else clock.SetWaitForSync(curPlayMode==PmAudioVideo);
+
   if (running)
   {
     if (aout)
@@ -1348,10 +1370,13 @@ void cMpeg2Decoder::TrickSpeed(int Speed)
 /* ----------------------------------------------------------------------------
  */
 int64_t cMpeg2Decoder::GetSTC(void) {
-  //return -1;
-  if (running && vout)
-    return vout->GetPTS()*9;
-  else return -1;
+  if (running) {
+    if (vout)
+      return vout->GetPTS()*9;
+    if (aout)
+      return aout->GetPTS()*9;
+  }
+  return -1;
 };
 
 int cMpeg2Decoder::BufferFill() 

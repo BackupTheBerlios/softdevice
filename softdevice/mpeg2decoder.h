@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.16 2005/03/20 12:21:27 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.17 2005/03/25 13:42:30 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -32,16 +32,24 @@ class cClock {
     static cAudioStreamDecoder *audioClock;
     static cVideoStreamDecoder *videoClock;
 
+    static bool waitForSync;
 public:
     cClock() {audioClock=NULL;videoClock=NULL;};
     virtual ~cClock() {};
+    
     static void SetAudioClock(cAudioStreamDecoder *AudioClock)
     {audioClock=AudioClock;};
+    
     static void SetVideoClock(cVideoStreamDecoder *VideoClock)
     {videoClock=VideoClock;};
+    
     uint64_t GetPTS();
+    
     static bool ReadyForPlay()
-    { return audioClock && videoClock; };
+    { return (waitForSync ? (audioClock && videoClock) : 1 ); };
+
+    void SetWaitForSync(bool WaitForSync)
+    { waitForSync=WaitForSync; };
 };	
 
 // -----------------cPacketQueue -----------------------------------------
@@ -132,7 +140,6 @@ public:
     virtual void Play(void);
     virtual void Stop();
     virtual void TrickSpeed(int Speed) {return;};
-    virtual int StillPicture(uchar *Data, int Length) {return 0;};
     virtual int BufferFill(void);
     bool    initCodec(void);
     void    resetCodec(void);
@@ -196,10 +203,8 @@ class cVideoStreamDecoder : public cStreamDecoder {
     cRelTimer          Timer;
     int                offset;
     int                delay;
-    int                timePassed;
     int                rtc_fd; 
     int                frametime;
-    int32_t GetRelTime();
    
     uchar   *allocatePicBuf(uchar *pic_buf);
     void    deintLibavcodec(void);
@@ -215,7 +220,6 @@ class cVideoStreamDecoder : public cStreamDecoder {
     ~cVideoStreamDecoder();
 
     virtual int DecodePacket(AVPacket *pkt);
-    virtual int StillPicture(uchar *Data, int Length);
     virtual void TrickSpeed(int Speed);
     virtual uint64_t GetPTS();
 };
@@ -246,6 +250,16 @@ private:
     int VideoIdx;
 
     int audioMode;
+
+public:
+    enum softPlayMode {
+      PmNoChange=-1,
+      PmAudioVideo,
+      PmVideoOnly,
+      PmAudioOnly,
+    };
+private:
+    softPlayMode curPlayMode;
 public:
     int read_packet(uint8_t *buf, int buf_size);
     int seek(offset_t offset, int whence);
@@ -266,8 +280,9 @@ public:
     void Suspend(void);
     void Resume(void);
     void TrickSpeed(int Speed);
-    
-    void PlayAudioVideo(bool playVideo,bool playAudio)
+   
+    void SetPlayMode(softPlayMode playMode);
+    void PlayAudioVideo(bool playAudio,bool playVideo)
     { AudioIdx=playAudio?NO_STREAM:DONT_PLAY;
       VideoIdx=playVideo?NO_STREAM:DONT_PLAY;}
 

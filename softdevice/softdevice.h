@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.2 2005/03/20 12:21:27 wachm Exp $
+ * $Id: softdevice.h,v 1.3 2005/03/25 13:42:30 wachm Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -53,10 +53,6 @@ private:
   cVideoOut *videoOut;
   cAudioOut *audioOut;
   int       outMethod;
-
-  bool      freezeModeEnabled;
-  cMutex    playMutex;
-  cCondVar  readyForPlayCondVar;
 
 public:
   cSoftDevice(int method, int audioMethod, char *pluginPath);
