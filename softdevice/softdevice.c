@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.21 2005/03/19 22:01:21 lucke Exp $
+ * $Id: softdevice.c,v 1.22 2005/03/20 12:21:27 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -17,6 +17,7 @@
 
 #if VDRVERSNUM >= 10307
 #include <vdr/osd.h>
+#include <vdr/dvbspu.h>
 #else
 #include <vdr/osdbase.h>
 #endif
@@ -223,7 +224,9 @@ void cSoftOsd::CloseWindow(cWindow *Window) {
 cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 {
     freezeModeEnabled = false;
-
+#if VDRVERSNUM >= 10307
+    spuDecoder = NULL;
+#endif
     fprintf(stderr,"[softdevice] Initializing Video Out\n");
     fprintf(stderr,
             "[softdevice] ffmpeg version(%s) build(%d)\n",
@@ -378,6 +381,14 @@ int cSoftDevice::ProvidesCa(const cChannel *Channel) const
 {
     return 0;
 }
+
+cSpuDecoder *cSoftDevice::GetSpuDecoder(void) 
+{
+  printf("GetSpuDecoder %x\n",spuDecoder);
+  if (IsPrimaryDevice() && !spuDecoder)
+    spuDecoder = new cDvbSpuDecoder();
+  return spuDecoder;
+};
 
 #else
 

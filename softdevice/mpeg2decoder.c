@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.22 2005/03/18 17:36:45 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.23 2005/03/20 12:21:27 wachm Exp $
  */
 
 #include <math.h>
@@ -31,6 +31,13 @@
 #ifndef CMDDEB
 #define CMDDEB(out...)
 #endif
+
+//#define BUFDEB(out...) {printf("BUF[%04d]:",getTimeMilis() % 10000);printf(out);}
+
+#ifndef BUFDEB
+#define BUFDEB(out...)
+#endif
+
 
 //#define AV_STATS
 //------------------------------------cPacketBuffer------------------------
@@ -77,6 +84,7 @@ void cPacketQueue::Clear() {
 //-------------------cClock ------------------------------------------
 
 cAudioStreamDecoder *cClock::audioClock=NULL;
+cVideoStreamDecoder *cClock::videoClock=NULL;
 
 uint64_t  cClock::GetPTS() {
   if (audioClock)
@@ -120,7 +128,7 @@ cStreamDecoder::cStreamDecoder(AVCodecContext *Context)
 {
   context=Context;
   context->error_resilience=1;
-  CMDDEB("Neuer StreamDecoder type %d\n",getpid(),context->codec_type );
+  CMDDEB("Neuer StreamDecoder Pid: %d type %d\n",getpid(),context->codec_type );
   pts=0;
   frame=0;
   initCodec();
@@ -145,11 +153,15 @@ void cStreamDecoder::Action()
   freezeMode=false;
   AVPacket *pkt;
 
-  while ( PacketQueue.Available() < 5 && active) 
+  while ( PacketQueue.Available() < 10 && active) { 
+    BUFDEB("wait while loop packets %d StreamDecoder  pid:%d type %d\n",
+      PacketQueue.Available(),getpid(),context->codec_type );
     usleep(5000);
+  };
  
   while(active)
   {
+    BUFDEB("while loop start StreamDecoder  pid:%d type %d\n",getpid(),context->codec_type );
 
     while (freezeMode && active)
         usleep(10000);
@@ -161,6 +173,7 @@ void cStreamDecoder::Action()
          DecodePacket(pkt);
        av_free_packet(pkt);
        PacketQueue.FreeReadPacket(pkt);
+       mutex.Unlock();
     } else {
       mutex.Unlock();
       usleep(10000);
@@ -171,9 +184,9 @@ void cStreamDecoder::Action()
       count++;
       if (!(count % 10)) {
         printf("Type: %d Buffer fill: %d\n",
-	  context->codec_type,PacketQueue.Available());
-	count=0;
-	usleep(1000);
+          context->codec_type,PacketQueue.Available());
+        count=0;
+        usleep(1000);
       };
     };
 #endif
@@ -202,12 +215,12 @@ void cStreamDecoder::Stop(void)
 
 void cStreamDecoder::Clear(void)
 {
-  //printf("[mpegdecoder] Stream 0x%0x Clear %d \n",streamID,(ringBuffer->Free()*100)/ ringBuffer->Size() );
+  CMDDEB("cStreamDecoder clear\n");
   mutex.Lock();
   avcodec_flush_buffers(context);
   PacketQueue.Clear();
   mutex.Unlock();
-  //printf("[mpegdecoder] Stream 0x%0x Clear %d \n",streamID,(ringBuffer->Free()*100)/ ringBuffer->Size() );
+  CMDDEB("cStreamDecoder clear finished\n");
 }
 
 bool cStreamDecoder::initCodec(void)
@@ -259,8 +272,6 @@ cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
   audioOutContext.period_size=2*1024;
   audioOutContext.samplerate=44100;
   audioOutContext.channels=2;
-  
-  cClock::SetAudioClock(this);
 }
 
 /* ---------------------------------------------------------------------------
@@ -269,20 +280,19 @@ uint64_t cAudioStreamDecoder::GetPTS()
 {
   uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset;
   if (audioBuffer && audioOutContext.channels)
-     PTS-=(audioBuffer->Available() /
-       (audioOutContext.samplerate/1000*2*audioOutContext.channels));
- 
+     PTS-=(audioBuffer->Available()*10000 /
+       (audioOutContext.samplerate*2*audioOutContext.channels));
  return PTS;
 };
 
 void cAudioStreamDecoder::OnlyLeft(uint8_t *samples,int Length) {
   for (int i=0; i < Length/2; i+=2)
-  	((uint16_t*)samples)[i+1]=((uint16_t*)samples)[i];
+     ((uint16_t*)samples)[i+1]=((uint16_t*)samples)[i];
 };
 
 void cAudioStreamDecoder::OnlyRight(uint8_t *samples,int Length) {
   for (int i=0; i < Length/2; i+=2)
-  	((uint16_t*)samples)[i]=((uint16_t*)samples)[i+1];
+    ((uint16_t*)samples)[i]=((uint16_t*)samples)[i+1];
 };
 
 /* ---------------------------------------------------------------------------
@@ -306,7 +316,6 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     size-=len;
     data+=len;
 
-    frame++;
     MPGDEB("audio: count: %d  Length: %d len: %d a_size: %d a_delay: %d\n",
        frame,pkt->size,len, audio_size, audioOut->GetDelay());
 
@@ -314,6 +323,15 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     if (audio_size == 0)
       continue;
 
+    if (!frame)
+    {
+      //first frame - wait for ready for play
+      cClock::SetAudioClock(this);
+      while ( !cClock::ReadyForPlay() ) {
+         usleep(1000);
+         MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
+      };
+    };
     audioOutContext.channels=context->channels;
     audioOutContext.samplerate=context->sample_rate;
     audioOut->SetParams(audioOutContext);
@@ -321,13 +339,15 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     //audioOut->Write(audiosamples,audio_size);
     audioBuffer->Put(audiosamples,audio_size);
     // adjust PTS according to audio_size, sampel_rate and no. of channels  
-    pts += (audio_size/(context->sample_rate/1000*2*context->channels)); 
+    pts += (audio_size*10000/(context->sample_rate*2*context->channels)); 
 
     if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
       MPGDEB("audio pts %lld pkt->PTS : %lld pts - valid PTS: %lld \n",
          pts,pkt->pts,(int) pts - pkt->pts );
       pts = pkt->pts;
+      pkt->pts=AV_NOPTS_VALUE;
     }
+    frame++;
   }
 
   while ( (unsigned) audioBuffer->Available() >= audioOutContext.period_size )
@@ -424,7 +444,7 @@ int cVideoStreamDecoder::StillPicture(uchar *Data, int Length)
 }
 
 uint64_t cVideoStreamDecoder::GetPTS() {
-  return pts - (delay + Timer.TimePassed())/1000;
+  return pts - (delay + Timer.TimePassed())/100;
 };
 
 int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
@@ -444,11 +464,11 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     }
     size-=len;
     data+=len;
-	 
+ 
     // save coded picture number together with corresponding pts
     if (context->coded_frame  &&
         context->coded_frame->coded_picture_number!=lastCodedPictNo
-	&& lastPTS != (int64_t) AV_NOPTS_VALUE ) {
+        && lastPTS != (int64_t) AV_NOPTS_VALUE ) {
       pts_values[lastPTSidx].pts = lastPTS;
       pts_values[lastPTSidx].coded_frame_no = 
         context->coded_frame->coded_picture_number;
@@ -457,7 +477,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       MPGDEB("Got pts: pictno %d  pts: %lld lastIdx %d \n",
         context->coded_frame->coded_picture_number,
         lastPTS,
-	lastPTSidx);
+        lastPTSidx);
       lastPTS = AV_NOPTS_VALUE;
     };
     
@@ -467,6 +487,16 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     if (!got_picture)
       continue;
 
+    if (!frame)
+    {
+      //first frame - wait for ready for play 
+      cClock::SetVideoClock(this);
+      while ( !cClock::ReadyForPlay() ) {
+        MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
+        usleep(1000);
+      };
+    };
+      
     // postproc stuff....
     if (setupStore.mirror == 1)
       Mirror();
@@ -504,26 +534,29 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   MPGDEB("pts = AudioPTS\n");
   };
    */
+/*   if (picture->pts)
+   {
+     MPGDEB("got pts from picture: old pts: %lld pict pts: %lld\n",pts,picture->pts/100);
+     pts = picture->pts/100;
+   } else {*/
+     // find decoded pictures pts value
+     int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
+     while ( picture->coded_picture_number !=
+                pts_values[findPTS].coded_frame_no && 
+                findPTS != lastPTSidx) 
+         findPTS=(findPTS+1)%NO_PTS_VALUES;
    
-   // find decoded pictures pts value
-   int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
-   while ( picture->coded_picture_number !=
-              pts_values[findPTS].coded_frame_no && 
-	   findPTS != lastPTSidx) 
-	findPTS=(findPTS+1)%NO_PTS_VALUES;
-   
-   // found corresponding pts value
-   if (picture->coded_picture_number==pts_values[findPTS].coded_frame_no) {
-        MPGDEB("video pts: %lld, values.pkt : %lld pts - valid PTS: %lld pictno: %d idx: %d\n",
-        pts,pts_values[findPTS].pts,(int) pts - pts_values[findPTS].pts,
-	picture->coded_picture_number,findPTS);
-      pts = pts_values[findPTS].pts;
-    };
-
+     // found corresponding pts value
+     if (picture->coded_picture_number==pts_values[findPTS].coded_frame_no) {
+          MPGDEB("video pts: %lld, values.pkt : %lld pts - valid PTS: %lld pictno: %d idx: %d\n",
+          pts,pts_values[findPTS].pts,(int) pts - pts_values[findPTS].pts,
+          picture->coded_picture_number,findPTS);
+          pts = pts_values[findPTS].pts;
+      };
+   //}
   
   // prepare picture for display
   videoOut->CheckAspectDimensions(picture,context);
-
   
   // sleep ....
   delay-=Timer.GetRelTime();
@@ -580,16 +613,16 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   int pts_corr;
 
   // calculate pts correction. Max. correction is 1/10 frametime.
-  pts_corr = offset * 100;
-  if (pts_corr > frametime*100 )
-    pts_corr = frametime*100;
-  else if (pts_corr < -frametime*100)
-    pts_corr =-frametime*100;
+  pts_corr = offset * 10;
+  if (pts_corr > frametime*100*2 )
+    pts_corr = frametime*100*2;
+  else if (pts_corr < -frametime*100*2)
+    pts_corr =-frametime*100*2;
 
   // calculate delay
   delay += ( frametime *1000 - pts_corr ) ;
   // update video pts 
-  pts += frametime;
+  pts += frametime*10;
   // so that pts - delay/1000 is always the current PTS
  
   if (delay > 2*frametime*1000)
@@ -913,6 +946,7 @@ void cVideoStreamDecoder::ppLibavcodec(void)
 
 cVideoStreamDecoder::~cVideoStreamDecoder()
 {
+  cClock::SetVideoClock(NULL);
   //RTC
   if (rtc_fd)
     close(rtc_fd);
@@ -966,8 +1000,8 @@ cMpeg2Decoder::~cMpeg2Decoder()
 int cMpeg2Decoder::read_packet(uint8_t *buf, int buf_size) {
 //    printf("Del %d\n",LastSize);
     StreamBuffer->Del(LastSize);
-
-//    MPGDEB("read_packet: StreamBuffer: %d\n",StreamBuffer->Available());
+start:
+    BUFDEB("read_packet: StreamBuffer: %d\n",StreamBuffer->Available());
     int size=StreamBuffer->Available(); 
     int count=0;
     while ( size < buf_size && ThreadActive 
@@ -976,7 +1010,7 @@ int cMpeg2Decoder::read_packet(uint8_t *buf, int buf_size) {
       usleep(5000);
       if (size>188) {
         count++;
-	//CMDDEB("sleeping while data (%d) in buffer\n",size);
+        BUFDEB("read_packet: sleeping while data (%d) in buffer\n",size);
       };
     };
     
@@ -989,13 +1023,21 @@ int cMpeg2Decoder::read_packet(uint8_t *buf, int buf_size) {
     if (u) {
        size-=8;
        // libavformat wants to be able to read beyond the boundaries
-       if (size>buf_size/2)
-         size=buf_size/2;
-	 
+       if (size>buf_size)
+         size=buf_size;
+ 
        ic->pb.buffer=u;
        LastSize=size;
+       BUFDEB("read_packet: got %d bytes\n",size);
        return size;
-    } else printf("read_packet u is NULL!!!\n");
+    } else  {
+       BUFDEB("read_packet u is NULL!!!\n");
+       if (ThreadActive) {
+         //try again...
+         usleep(10000);
+         goto start;
+       };
+    };
     return 0;
 };
 
@@ -1033,55 +1075,67 @@ void cMpeg2Decoder::Action()
   int PacketCount=0;
 
   int nStreams=0;
-  AudioIdx=-1;
-  VideoIdx=-1;
+  AudioIdx=NO_STREAM;
+  VideoIdx=NO_STREAM;
   
   while(ThreadActive) {
-
         while (freezeMode && ThreadActive)
-	   usleep(10000);
+          usleep(10000);
       
         //ret = av_read_frame(ic, &pkt);
+        BUFDEB("av_read_frame start\n");
         ret = av_read_packet(ic, &pkt);
         if (ret < 0) {
-	    usleep(10000);
+            BUFDEB("cMpeg2Decoder Stream Error!!!!!!!!!!!!!!!!!!\n");
+            usleep(10000);
             continue;
         }
-	PacketCount++;
-	
-	if ( pkt.pts != (int64_t) AV_NOPTS_VALUE )
-	  pkt.pts/=90;
-	  //pkt.pts*=1000/AV_TIME_BASE;
-	
-	DecodePacket(ic,pkt);
+        PacketCount++;
+        BUFDEB("got packet from av_read_frame!\n");
 
- 	if (nStreams!=ic->nb_streams ){
-	  PacketCount=0;
-	  nStreams=ic->nb_streams;
-/*	  fprintf(stderr,"Streams: %d\n",nStreams);
-	  for (int i=0; i <nStreams; i++ ) {
-	    printf("Codec %d ID: %d\n",i,ic->streams[i]->codec.codec_id);
-	    };*/
+        if ( pkt.pts != (int64_t) AV_NOPTS_VALUE )
+          pkt.pts/=9;
+
+        QueuePacket(ic,pkt);
+
+        if (nStreams!=ic->nb_streams ){
+          PacketCount=0;
+          nStreams=ic->nb_streams;
+/*        fprintf(stderr,"Streams: %d\n",nStreams);
+          for (int i=0; i <nStreams; i++ ) {
+            printf("Codec %d ID: %d\n",i,ic->streams[i]->codec.codec_id);
+          };*/
         };
 
-	if (!(PacketCount % 100)) {
-	  usleep(1000);
-	};
+        if (!(PacketCount % 100)) {
+          usleep(1000);
+        };
 
-	if (PacketCount == 200)
-	  dump_format(ic, 0, "test", 0);
+        if (PacketCount == 200)
+          dump_format(ic, 0, "test", 0);
   }
   running=false;
   CMDDEB("Thread beendet : mpegDecoder pid %d\n",getpid());
 }
 
-void cMpeg2Decoder::DecodePacket(const AVFormatContext *ic, AVPacket &pkt)
+void cMpeg2Decoder::ClearPacketQueue()
 {
+  if (aout)
+    aout->Clear();
+  if (vout);
+    vout->Clear();
+};
+
+void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
+{
+  BUFDEB("QueuePacket AudioIdx: %d VideoIdx %d pkt.stream_index: %d\n",
+    AudioIdx,VideoIdx,pkt.stream_index);
   // check if there are new streams
   if (AudioIdx != DONT_PLAY &&
       ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO && 
       AudioIdx != pkt.stream_index) {
-    
+   
+    BUFDEB("new Audio stream index..\n");
     AudioIdx = pkt.stream_index;
     if (aout) {
       aout->Stop();
@@ -1095,6 +1149,7 @@ void cMpeg2Decoder::DecodePacket(const AVFormatContext *ic, AVPacket &pkt)
       ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO && 
       VideoIdx!=pkt.stream_index) {
   
+    BUFDEB("new Video stream index..\n");
     VideoIdx=pkt.stream_index;
     if (vout) {
       vout->Stop();
@@ -1107,11 +1162,13 @@ void cMpeg2Decoder::DecodePacket(const AVFormatContext *ic, AVPacket &pkt)
   
   // write streams 
   if ( pkt.stream_index == VideoIdx && vout ) {
+    BUFDEB("QueuePacket video stream\n");
     while ( vout->PutPacket(pkt) == -1 ) {
       //printf("Video Buffer full\n");
       usleep(10000);
     };
   } else if ( pkt.stream_index == AudioIdx && aout ) {
+    BUFDEB("QueuePacket audio stream\n");
     while ( aout->PutPacket(pkt) == -1 ) {
       //printf("Audio Buffer full\n");
       usleep(10000);
@@ -1159,17 +1216,17 @@ void cMpeg2Decoder::Resume()
   if (!videoOut->Resume()) {
         fprintf(stderr,"Could not open video out! Sleeping again...\n");
         videoOut->Suspend();
-	setupStore.shouldSuspend=true;
-	IsSuspended=true;
+        setupStore.shouldSuspend=true;
+        IsSuspended=true;
         return;
   };
 
   if (!audioOut->Resume()) {
-   	fprintf(stderr,"Could not open audio out! Sleeping again...\n");
-	setupStore.shouldSuspend=true;
-	IsSuspended=true;
-	videoOut->Suspend();
-	return;
+        fprintf(stderr,"Could not open audio out! Sleeping again...\n");
+        setupStore.shouldSuspend=true;
+        IsSuspended=true;
+        videoOut->Suspend();
+        return;
   };
 
   Start();
@@ -1293,7 +1350,7 @@ void cMpeg2Decoder::TrickSpeed(int Speed)
 int64_t cMpeg2Decoder::GetSTC(void) {
   //return -1;
   if (running && vout)
-    return vout->GetPTS();
+    return vout->GetPTS()*9;
   else return -1;
 };
 
@@ -1313,6 +1370,7 @@ int cMpeg2Decoder::BufferFill()
  */
 int cMpeg2Decoder::Decode(const uchar *Data, int Length)
 {
+  BUFDEB("Decode %x, Length %d\n",Data,Length);
   if (running && !IsSuspended && setupStore.shouldSuspend)
      // still running and should suspend
      Suspend();
@@ -1321,8 +1379,10 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
      // not running and should resume
      Resume();
      
-  if (!running)
+  if (!running) {
+    BUFDEB("not running..\n");
     return Length;
+  };
 
   //MPGDEB("Decode: StreamBuffer: %d plus %d\n",StreamBuffer->Available(),Length);
 
@@ -1335,6 +1395,7 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
     usleep( 10000 );
   }
   mutex.Unlock();
-   
+  BUFDEB("Deocde finished\n");
+  
   return Length;
 }

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.5 2005/03/17 20:15:35 wachm Exp $
+ * $Id: audio.h,v 1.6 2005/03/20 12:21:27 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -34,7 +34,7 @@ public:
   virtual void Write(uchar *Data, int Length)=0;
   // length should always be a multiple of 4
   virtual int SetParams(SampleContext &context)=0;
-  virtual int GetDelay(void)=0; // returns delay in ms
+  virtual int GetDelay(void)=0; // returns delay in 0.1 ms
   virtual void Pause(void)=0;
   virtual void Play(void)=0;
   virtual void SetVolume(int vol)=0;

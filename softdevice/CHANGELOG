@@ -1,4 +1,8 @@
 Changelog
+    - preperations for sync on video option
+    - syncronize audio and video start
+    - all pts values now in units of 0.1ms (needed for 44.1kHz audio streams)
+    - add SpuDecoder
 2005-03-19:
     - fix compile problems for vdr-1.2.x (OSD ok, but _no_ A/V :-( ).
 2005-03-17:

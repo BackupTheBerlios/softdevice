@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.15 2005/03/17 20:15:35 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.16 2005/03/20 12:21:27 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -25,17 +25,23 @@
 #define DONT_PLAY  -100
 
 class cAudioStreamDecoder; 
+class cVideoStreamDecoder; 
 
 // -----------------cClock --------------------------------------------
 class cClock {
     static cAudioStreamDecoder *audioClock;
+    static cVideoStreamDecoder *videoClock;
 
 public:
-    cClock() {audioClock=NULL;};
+    cClock() {audioClock=NULL;videoClock=NULL;};
     virtual ~cClock() {};
     static void SetAudioClock(cAudioStreamDecoder *AudioClock)
     {audioClock=AudioClock;};
-    virtual uint64_t GetPTS();
+    static void SetVideoClock(cVideoStreamDecoder *VideoClock)
+    {videoClock=VideoClock;};
+    uint64_t GetPTS();
+    static bool ReadyForPlay()
+    { return audioClock && videoClock; };
 };	
 
 // -----------------cPacketQueue -----------------------------------------
@@ -248,7 +254,8 @@ public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);
     ~cMpeg2Decoder();
 
-    void DecodePacket(const AVFormatContext *ic,AVPacket &pkt);
+    void QueuePacket(const AVFormatContext *ic,AVPacket &pkt);
+    void ClearPacketQueue();
     int Decode(const uchar *Data, int Length);
     int StillPicture(uchar *Data, int Length);
     void Start(bool GetMutex=true);

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.11 2005/03/19 22:01:21 lucke Exp $
+ * $Id: audio.c,v 1.12 2005/03/20 12:21:27 wachm Exp $
  */
 
 #include <unistd.h>
@@ -109,7 +109,7 @@ int cAlsaAudioOut::GetDelay(void) {
             snd_strerror(res));
 		exit(EXIT_FAILURE);
 	}
-    return snd_pcm_status_get_delay(status) *1000 / currContext.samplerate;
+    return snd_pcm_status_get_delay(status) *10000 / currContext.samplerate;
 }
 
 /* I/O error handler */
@@ -204,12 +204,11 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
 
     err = snd_pcm_hw_params_set_rate_near(handle, params, &currContext.samplerate, 0);
     assert(err >= 0);
-    /*
-    if (rate != samplerate ) {
-      dsyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) FATAL exiting",samplerate,rate);
+    if (currContext.samplerate != context.samplerate ) {
+      dsyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) FATAL exiting",context.samplerate,currContext.samplerate);
       exit(1);
     }
-*/
+
     // set period size
     snd_pcm_uframes_t bufferSize;
     snd_pcm_uframes_t periodSize;
