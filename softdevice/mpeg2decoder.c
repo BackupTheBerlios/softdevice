@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.23 2005/03/20 12:21:27 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.24 2005/03/21 19:07:15 wachm Exp $
  */
 
 #include <math.h>
@@ -153,7 +153,7 @@ void cStreamDecoder::Action()
   freezeMode=false;
   AVPacket *pkt;
 
-  while ( PacketQueue.Available() < 10 && active) { 
+  while ( PacketQueue.Available() < 7 && active) { 
     BUFDEB("wait while loop packets %d StreamDecoder  pid:%d type %d\n",
       PacketQueue.Available(),getpid(),context->codec_type );
     usleep(5000);
@@ -278,7 +278,7 @@ cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
  */
 uint64_t cAudioStreamDecoder::GetPTS()
 {
-  uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset;
+  uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset*10;
   if (audioBuffer && audioOutContext.channels)
      PTS-=(audioBuffer->Available()*10000 /
        (audioOutContext.samplerate*2*audioOutContext.channels));
@@ -1122,7 +1122,7 @@ void cMpeg2Decoder::ClearPacketQueue()
 {
   if (aout)
     aout->Clear();
-  if (vout);
+  if (vout)
     vout->Clear();
 };
 
