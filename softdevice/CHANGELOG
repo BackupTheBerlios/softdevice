@@ -1,4 +1,7 @@
 Changelog
+ 2005-02-08:
+    - dfb-out: fix for field parity in tv-out mode
+    - xv-out: fix compile warnings on amd64 (reported by Konrad Naumann)
  2005-01-23:
     - added suspend video playback patch. 
  2005-01-15:

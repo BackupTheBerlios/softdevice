@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.13 2005/01/23 14:54:22 wachm Exp $
+ * $Id: video-xv.c,v 1.14 2005/02/08 21:31:17 lucke Exp $
  */
 
 #include <unistd.h>
@@ -725,8 +725,7 @@ bool cXvVideoOut::Initialize (void)
                                &osd_shminfo,
                                width, height);
   if (osd_image) {
-    dsyslog("[XvVideoOut]: Initialize XShmCreateImage Successful (0x%08x)",
-            (unsigned int) osd_image);
+    dsyslog("[XvVideoOut]: Initialize XShmCreateImage Successful (%p)", osd_image);
   } else {
     dsyslog("[XvVideoOut]: Initialize ERROR: XShmCreateImage FAILED !");
   }
@@ -749,7 +748,7 @@ bool cXvVideoOut::Initialize (void)
   osd_buffer = (unsigned char *) osd_shminfo.shmaddr;
   osd_image->data = (char *) osd_buffer;
 
-  if ((int) osd_image->data == -1) {
+  if (osd_image->data == (char *) -1L) {
     dsyslog("[XvVideoOut]: Initialize ERROR: shmat FAILED !");
   } else {
     dsyslog("[XvVideoOut]: Initialize shmat Successful");
@@ -894,8 +893,7 @@ bool cXvVideoOut::Reconfigure(int format)
                               &shminfo);
 
   if (xv_image) {
-    dsyslog("[XvVideoOut]: XvShmCreateImage Successful (0x%08x)",
-            (unsigned int) xv_image);
+    dsyslog("[XvVideoOut]: XvShmCreateImage Successful (%p)", xv_image);
   } else {
     dsyslog("[XvVideoOut]: ERROR: XvShmCreateImage FAILED !");
   }
@@ -916,7 +914,7 @@ bool cXvVideoOut::Reconfigure(int format)
   outbuffer = (unsigned char *) shminfo.shmaddr;
   xv_image->data = (char *) outbuffer;
 
-  if ((int) xv_image->data == -1) {
+  if (xv_image->data == (char *) -1L) {
     dsyslog("[XvVideoOut]: ERROR: shmat FAILED !");
   } else {
     dsyslog("[XvVideoOut]: shmat Successful");
