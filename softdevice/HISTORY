@@ -1,0 +1,37 @@
+VDR Plugin 'softdevice' Revision History
+-----------------------------------
+
+23-Nov-2003: Version 0.0.1	First version
+
+28-Nov-2003: Version 0.0.2
+    implemented A/V-Sync
+    ALSA support for sound
+    classes rewritten (for easier support of different output devices
+    in later versions)
+
+17-Dec-2003: Version 0.0.3
+    there are now three different output-devices (enable these in the
+    Makefile or softdevice.c). 
+
+    Fbdev: I tried to implement scaling in the yuv->rgb routine. 
+    But this messed up the code a little bit. In other words:
+    It doesn't work!
+    
+    Vidix: Video output should work with Matrox.
+    No OSD Implementation
+    
+    DirectFB: The methods how to access the video device are 
+    only tested with the matrox card. Scaled video playback
+    and OSD (without transparency) should work.
+    
+29-Dec-2003: Version 0.0.4
+    More or less only a test release.
+    
+26-Jan-2004: Version 0.0.5
+    Some changes in the code (OSD functions moved to video.c)
+    FB-output scales now ( more or less perfect) to fullscreen
+    DFB works 
+    Vidix works
+    maybe XV works (I didn't test it)
+    
+    

@@ -1,0 +1,114 @@
+Changelog
+  2004-07-25: softdevice-0.0.7pre2
+    - Use of additional deinterlace methods of ffmpeg. This may require
+      recompilation of ffmpeg (see hints in Makefile) (Thanks to Herbert Attenberger)
+    - New OSD option for A/V sync selection. This is related to sync change
+      from 2004-06-02. Normal sync is to get the sync pts from I-Frames only.
+      To sync on any PTS you have to change this (DVB-T fix).
+    - DFB: changed remote react on keypress instead of release
+    - DFB: when selecting YUY2 mode you'll get an alpha blende OSD (at least
+           with Matrox cards).
+  2004-07-23:
+    - xv-out: while mouse in window, auto hide cursor (thanks to Torgeir Veimo)
+  2004-07-18:
+    - moved ffmpeg version and build level report
+    - setup-OSD does not depend on XV_SUPPORT
+  2004-07-12:
+    - fix: DFB cropping for 16:9 mode
+    - OSD: softdevice menu now reachable via main menu entry
+           menu behaves different to others: changes are active immediate,
+           ok-key makes them permanent, back-key restores previous state.
+  2004-07-11 :
+    - fix: compile problem when only one output method (DFB) is selected
+    - DFB + vidix: selectable pixel format I420, YV12 via OSD
+    - OSD: offer only those menu items which are useful for current output method
+    - OSD: changed text from "Xv-Aspect" to "Xv startup aspect" and use "16:9 wide"
+           and "4:3 normal" strings for selection instead of 0, 1 values
+  2004-07-10 : softdevice-0.0.7pre1
+    - use of ffmpegs deinterlacer, selectable via OSD. Thanks to Herbert Attenberger
+    - DFB out added aspect ratio and AFD handling
+    - activate cropping support, selectable via OSD (xv-out + vidix-out + dfb-out)
+  2004-07-09 : softdevice-0.0.6post3
+    - DFB out set display layer configuration according to reported capabilities
+    - DFB out use only first available video layer
+  2004-06-28 :
+    - DFB out changed COLORKEY to 0,0,0 to get transparent OSD with matrox
+    - DFB out has it's own remote
+    - DFB out only set videolayer if it is NOT set previously
+  2004-06-02 : softdevice-0.0.6post2
+             - added some addtional libs for ffmpeg which may be required
+             - changed VIDIX out to probe for driver
+             - fix for syncing on some DVB-T streams
+  2004-05-30 - fix xv video refresh for MapNotify event
+  2004-05-24 - added aspect ratio handling for VIDIX out
+  2004-05-23 - added help text for commandline help
+
+  2004-05-22 : softdevice-0.0.6
+    - fix compilation for LIBAVCODEC_BUILD <= 4686 (thanks to Luca Olivetti)
+    - again fix savage colour key
+    - revert OSD centering for FB + VIDIX out
+      (it's a feature of vdr-1.3.7, OSD position is adjustable via OSD)
+
+  2004-05-20 : softdevice-0.0.6pre3
+    - fb output is now running with vdr-1.3.7 too
+    - merged softdevice-0.0.5-fb-patch01
+      (its intentionaly in the vdr-1.2.x section only)
+    - fix OSD positioning fb-out + vidix-out for vdr-1.3.7
+
+  2004-05-20 : softdevice-0.0.6pre2
+    - xv output now works with vdr-1.3.7 too
+    
+  2004-05-19 : softdevice-0.0.6pre1
+    - audio.c: dropped round() call
+    - (f)printf() replaced by dsyslog()
+        audio.c video-xv.c video.c
+    - merged Vadim's
+        vdr-softdevice-0.0.5-xv08.patch and
+        vdr-softdevice-0.0.5-xv08-2.patch
+
+  2004-04-xx : patch08
+    - checked vidix method too. I had to select I420 instead of YV12 ;;-).
+      (With YV12 I got swaped color components. Vidix driver reports only
+      16 of my 32M G550 ;-) ).
+
+  2004-04-28 : patch07-02
+    - fix: xv-color key for savage (workaround of X driver bug)
+    - fix: compile problems with non CVS version of ffmpeg
+    - new: xv: hack to control some atom values via keyboard.
+               This bypasses VDR remote key control :-( .
+               c/C  - contrast -/+
+               h/H  - hue -/+
+               b/B  - brightness -/+
+               s/S  - saturation -/+
+    - new: all output methods can be compiled in.
+           method selectable at runtime via:
+              '-vo xv:' or
+              '-vo fb:' or
+              '-vo dfb:' or
+              '-vo vidix:'
+           if there is only one method specified at compile time via Makefile
+           this parameter is not required (tested only with xv and fb).
+
+  2004-04-16 : xv output patch07
+    - fix: force CheckAspect upon dimension change (since patch06)
+    - report PAN/SCAN info if present
+
+  2004-04-16 : xv output patch06
+    - implemented StillPicture method
+    - clean up some messages
+    - AFD tag support
+
+  2004-03-07 : xv output patch05
+    - fixed rounding error for 16:9 output area (height 575 instead of 576).
+    - OSD opaque black color translated to a different dark value so that it
+      is different from the COLORKEY and no longer transparent.
+    - xv output has now a commandline argument:
+        -vo xv:aspect=[wide|normal]
+        examples:
+        ./vdr -P streamdev -P 'softdevice -vo xv:aspect=wide'
+        ./vdr -P streamdev -P 'softdevice -vo xv:aspect=normal'
+    - OSD not shown (for new users) during remote teaching phase
+      (introduced by patch03).
+    - changed last paramter of X..ShmPut..() to False and replaced XFlush()
+      by XSync() (according to vlc this should save CPU time).
+    - added volume control.

@@ -1,0 +1,111 @@
+This is a "plugin" for the Video Disk Recorder (VDR).
+
+Written by:                  Roland Praml <praml.roland@t-online.de>
+
+Project's homepage:	     none, http://www.k13zoo.de/vdr
+
+
+Description:
+------------
+
+This plugin is a MPEG2 decoder.
+
+With the help of this plugin you could use the framebuffer as output
+device.
+
+Requirements:
+-------------
+
+- libavcodec (i took the one shipped with ffmpeg 0.4.8)
+- ALSA (plughw:0:0 is hard-coded in audio.c but this should work in most cases)
+
+- DirectFB compatible VGA-Card
+- DirectFB (I use cvs, 0.9.20 should work also)
+- DFB++ (I use cvs, 0.9.20 should work also)
+ OR
+- Vidix compatible VGA-Card
+- Vidix-library
+ OR
+- XV compatible VGA-Card
+ OR
+- A strong CPU and a Framebuffer with 16 bit
+
+(Select output method in the Makefile!)
+
+Installation:
+-------------
+
+This plugin is written for VDR 1.2.x
+
+As usual, unpack the plugin and make a link in the
+./VDR/PLUGINS/src directory
+
+modify the path to libavcodec in the Makefile.
+Adjust other options (MMX/ MMX2)
+
+set up a framebuffer on /dev/fb0
+
+recommened resolution: 768x576
+16bit with Framebuffer output
+32bit with XV/DFB/Vidix output
+
+start vdr with -P softdevice
+
+Set the PrimaryDVB value to the last device.
+
+Hope that the plugin won't crash ;-)
+(If you get a segmention fault disable MMX2 in the Makefile. Don't forget to do
+a "make clean" in the plugin-dir)
+
+If you use FB-output and your CPU is too slow you can also disable DEINTERLACE
+and VERT_SCALING in utils.c.
+If you have some faster/better algos to scale or deinterlace, let me know.
+
+Maybe you give some other output-drivers a chance. These use accellerated
+functions of the VGA-card.
+
+FB, Vidix, DFB works with my Matrox G200 (OSD & fullscreen video)
+XV is currenntly not tested in this version!
+
+Problems/todo:
+--------------
+What does NOT work:
+- Only 16 bit framebuffer is supported. (in FB-mode)
+- plugin often crashes when mpeg stream changes format
+- The transfermode doesn't work on some channels
+- Replay functions like Pause/Trickspeed don't work
+
+What DOES work:
+- you get a picture and can hear audio ;-)
+- scaling
+- you can zap through the program and use OSD
+- you can watch recorded videos
+
+Please note that this is a very alpha version. (proof of concept)
+My goal is to use a PC without any special MPEG2 Hardware as VDR client
+(Maybe streamDev as input device)
+
+The code in the plugin is based on parts of:
+- mplayer
+- mpeg2dec
+- alsa
+
+Many thanks to
+- Holger Wachechtler <holger @ convergence.de> for some DFB-examples and useful tips
+- Stefan Lucke <stefan @ lucke.in-berlin.de> for the Xv-output
+- Vadim Catana <vcatana @ registru.md> for the Vidix-output
+
+Internals:
+
+A/V-Sync: The PTS are parsed in the decoder classes.
+The audio device provides the master PTS. The frame-rate of the
+video-device is adjusted to follow the master PTS
+
+OSD: If no OSD is shown, the picture is directy written to the FB
+else the picture and the rendered OSD image are "mixed" together.
+This needs much CPU-power. To keep it simple, the Refresh-function
+refreshes only everey 40 ms.
+In later versions I plan to use accellerated functions for OSD layer,
+YUV->RGB and scaling provided by the graphic card so that this should
+not be the prolem.
+
