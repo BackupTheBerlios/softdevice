@@ -1,4 +1,6 @@
 Changelog
+  2004-08-01:
+    - fix: audio - some cards don't have any master volume (Torgeir Veimo)
   2004-07-25: softdevice-0.0.7pre2
     - Use of additional deinterlace methods of ffmpeg. This may require
       recompilation of ffmpeg (see hints in Makefile) (Thanks to Herbert Attenberger)

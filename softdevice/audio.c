@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: audio.c,v 1.2 2004/08/01 16:05:26 lucke Exp $
  */
 
 #include <unistd.h>
@@ -234,12 +234,18 @@ void cAlsaAudioOut::SetVolume (int vol)
   snd_mixer_selem_register(mHandle, NULL, NULL);
   snd_mixer_load(mHandle);
   mElem = snd_mixer_find_selem(mHandle,sId);
-  snd_mixer_selem_get_playback_volume_range(mElem,&mixerMin,&mixerMax);
-  mixerRange = mixerMax - mixerMin;
-  volPercent = (double) vol / 255.0;
-  setVol = (int) (((double)mixerMin+(mixerRange*volPercent))+0.5);
-  snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_LEFT,setVol);
-  snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_RIGHT,setVol);
+  /* --------------------------------------------------------------------------
+   * some cards don't have any master volume. so check return value
+   */
+  if (mElem)
+  {
+    snd_mixer_selem_get_playback_volume_range(mElem,&mixerMin,&mixerMax);
+    mixerRange = mixerMax - mixerMin;
+    volPercent = (double) vol / 255.0;
+    setVol = (int) (((double)mixerMin+(mixerRange*volPercent))+0.5);
+    snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_LEFT,setVol);
+    snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_RIGHT,setVol);
+  }
 
   snd_mixer_close(mHandle);
 }
