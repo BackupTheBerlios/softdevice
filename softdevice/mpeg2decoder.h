@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.5 2004/11/14 20:19:58 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.6 2004/11/14 22:33:54 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -48,6 +48,7 @@ public:
   ~cSoftRingBufferLinear() {};
 
   virtual int Available(void) {return cRingBufferLinear::Available();} ;
+  virtual int Free(void) {return cRingBufferLinear::Free();} ;
   int Size(void) { return cRingBufferLinear::Size(); }
 };
 
