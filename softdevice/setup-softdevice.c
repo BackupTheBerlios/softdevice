@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.1 2004/08/01 05:07:04 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.2 2004/08/01 16:23:30 lucke Exp $
  */
 
 #include "video.h"
@@ -260,4 +260,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Deinterlace Method", setupStore.deintMethod);
   SetupStore ("PixelFormat",        setupStore.pixelFormat);
   SetupStore ("Picture mirroring",  setupStore.mirror);
+  SetupStore ("SyncAllFrames",      setupStore.syncOnFrames);
 }
