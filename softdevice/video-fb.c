@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.5 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-fb.c,v 1.6 2005/03/03 18:16:26 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -20,7 +20,7 @@
 
 static  pthread_mutex_t fb_mutex = PTHREAD_MUTEX_INITIALIZER;
 // --- cFrameBuffer --------------------------------------------------------
-cFBVideoOut::cFBVideoOut(cSetupStore *etupStore)
+cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
               : cVideoOut(setupStore)
 {
     printf("[video-fb] Initializing Driver\n");
@@ -166,8 +166,8 @@ void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
                 OsdWidth=Xres;
                 OsdHeight=Yres;
              break;
-    };
-};
+    }
+}
 
 void cFBVideoOut::Refresh(cBitmap *Bitmap)
 {
@@ -203,9 +203,17 @@ void cFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Heig
 {
   pthread_mutex_lock(&fb_mutex);
   if (OSDpresent) {
-    yuv_to_rgb (fb, Py, Pu, Pv, Width, Height, line_len,Ystride,UVstride,Xres,Yres,Bpp, PixelMask);
+    yuv_to_rgb (fb, Py, Pu, Pv,
+                Width, Height, line_len,
+                Ystride,UVstride,
+                Xres,Yres,
+                Bpp, PixelMask, setupStore->deintMethod);
   } else {
-    yuv_to_rgb (fb, Py, Pu, Pv, Width, Height, line_len,Ystride,UVstride,Xres,Yres,Bpp, NULL);
+    yuv_to_rgb (fb, Py, Pu, Pv,
+                Width, Height, line_len,
+                Ystride,UVstride,
+                Xres,Yres,
+                Bpp, NULL, setupStore->deintMethod);
   }
   pthread_mutex_unlock(&fb_mutex);
 }

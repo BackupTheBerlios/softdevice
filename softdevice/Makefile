@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.7 2005/02/27 08:52:33 lucke Exp $
+# $Id: Makefile,v 1.8 2005/03/03 18:16:26 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -175,7 +175,7 @@ endif
 ifdef FB_SUPPORT
   ifdef USE_SUBPLUGINS
     FB_LIBS   =
-    FB_OBJS   = video.o video-fb.o
+    FB_OBJS   = utils.o video.o video-fb.o
     ALL_OBJS  += $(FB_OBJS)
     TARGETS   += libvdr-$(PLUGIN)-fb.so
   else

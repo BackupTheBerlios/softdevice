@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.2 2005/02/18 13:31:27 wachm Exp $
+ * $Id: utils.c,v 1.3 2005/03/03 18:16:26 lucke Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -206,7 +206,8 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
                  uint8_t * pu, uint8_t * pv,
                  int width, int height,
                  int rgb_stride, int y_stride, int uv_stride,
-                 int dstW, int dstH, int depth, unsigned char * mask)
+                 int dstW, int dstH,
+                 int depth, unsigned char * mask, int deintMethod)
 {
 /*
     Do the YUV->RGB transformation and scale the picture upt to dstW x dstH
@@ -257,7 +258,7 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
     for (int x = 0; x < dstW; x++) {
         int srcpix = x * width / dstW;
 
-      if (setupStore.deintMethod == 2) {
+      if (deintMethod == 2) {
         // deinterlace with FB-intern method
         scaleY[x] = (Y[srcpix] / 2) + (Y1[srcpix] /4) + (Y2[srcpix] / 4);
       } else scaleY[x] = Y[srcpix];

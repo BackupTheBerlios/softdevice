@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.2 2005/02/18 13:31:27 wachm Exp $
+ * $Id: utils.h,v 1.3 2005/03/03 18:16:26 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -24,10 +24,11 @@
 } while (0)
 */
 void yuv_to_rgb (uint8_t * image, uint8_t * py,
-				  uint8_t * pu, uint8_t * pv,
-				  int width, int height,
-				  int rgb_stride, int y_stride, int uv_stride,
-				  int dstW, int dstH, int depth, unsigned char * mask);
+                 uint8_t * pu, uint8_t * pv,
+                 int width, int height,
+                 int rgb_stride, int y_stride, int uv_stride,
+                 int dstW, int dstH,
+                 int depth, unsigned char * mask, int deintMethod);
 uint64_t getTimeMilis(void);
 
 void mmx_unpack_16rgb (uint8_t * image, int lines, int stride);
