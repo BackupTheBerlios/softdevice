@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.9 2004/12/12 07:09:13 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.10 2004/12/12 18:49:37 lucke Exp $
  */
 
 #include <math.h>
@@ -66,6 +66,7 @@ cStreamDecoder::cStreamDecoder(unsigned int StreamID)
     historyPTS [i] = 0;
   historyPTSIndex = 0;
   validPTS=false;
+
   ringBuffer=new cSoftRingBufferLinear(DVB_BUF_SIZE,1024,true);
   //ringBuffer->SetTimeouts(100,10);
   Start(); // starte thread
@@ -567,7 +568,7 @@ int cVideoStreamDecoder::DecodeData(uchar *Data, int Length)
       fprintf (stderr, " changing PTS from %lld to %lld. delta %lld\n",
                pts, historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT],
                historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT]-pts);
-#endif               
+#endif
       pts = historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT];
       //fprintf (stderr, "* using PTS value (%lld)\n", pts);
     }
@@ -989,6 +990,9 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
   audioOut=AudioOut;
   videoOut=VideoOut;
   aout=vout=0;
+
+  ac3Mode = ac3Parm = 0;
+
   running=false;
   decoding=false;
 }
@@ -1008,6 +1012,7 @@ void cMpeg2Decoder::Start(void)
   // ich weiß nicht, ob man's so kompliziert machen soll, aber jetzt hab ich's
   // schon so gemacht, das 2 Threads gestartet werden.
   // Audio is the master, Video syncs on Audio
+  ac3Mode = ac3Parm = 0;
   aout = new cAudioStreamDecoder( 0x000001C0, audioOut );
   vout = new cVideoStreamDecoder( 0x000001E0, videoOut,(cAudioStreamDecoder *) aout);
   running=true;
@@ -1074,6 +1079,62 @@ bool cMpeg2Decoder::BufferFilled()
   return vout->BufferFill()>95;
 }
 
+/* ----------------------------------------------------------------------------
+ */
+void cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
+{
+    const uchar *p;
+    int         ac3ModeNew, ac3ParmNew;
+
+  ac3ModeNew = ac3Mode;
+  ac3ParmNew = ac3Parm;
+
+  p = Data;
+  /* -------------------------------------------------------------------------
+   * 1st check enshure that this is private stream
+   */
+  if (p[0] == 0x00 && p[1] == 0x00 && p[2] == 0x01 && p[3] == 0xbd)
+  {
+    p += 4 + 2 + 2;   // skip: stream id, length, ??
+    p += *p;
+    p++;
+
+    /* ------------------------------------------------------------------------
+     * check for ac3 sync word
+     */
+    if (p[0] == 0x0b && p[1] == 0x77)
+    {
+      p += 2 + 2 + 1;   // skip: sync word, crc, bitrate & frequency
+      ac3ModeNew = (p[1] & 0xe0) >> 5;
+      ac3ParmNew = ((p[1] & 0x01) << 1) | ((p[2] & 0x80) >> 7);
+    }
+  }
+
+  if (ac3ModeNew != ac3Mode || ac3ParmNew != ac3Parm)
+  {
+      char *info = NULL;
+
+    fprintf (stderr,
+             "[Softdevice] AC3 changed Mode(%d -> %d) Parm(%d -> %d)\n",
+             ac3Mode, ac3ModeNew, ac3Parm, ac3ParmNew);
+    ac3Mode = ac3ModeNew;
+    ac3Parm = ac3ParmNew;
+
+    if (ac3Mode == 0x02)
+    {
+      info = "2.0 Stereo";
+      if (ac3Parm == 0x02)
+        info = "2.0 Stereo Dolby Surround";
+    } else if (ac3Mode == 0x07)
+      info = "5.1 Dolby Digital";
+
+    if (info)
+      dsyslog ("[Mpeg2Decoder]: AC3 info: %s", info);
+  }
+}
+
+/* ----------------------------------------------------------------------------
+ */
 int cMpeg2Decoder::Decode(const uchar *Data, int Length)
 {
     int len, streamlen;

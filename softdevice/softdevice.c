@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.7 2004/11/14 16:24:38 wachm Exp $
+ * $Id: softdevice.c,v 1.8 2004/12/12 18:49:37 lucke Exp $
  */
 
 #include <getopt.h>
@@ -80,6 +80,9 @@ static const char *MAINMENUENTRY  = "Softdevice";
 #if VDRVERSNUM >= 10307
 
 // --- cSoftOsd -----------------------------------------------
+
+/* ---------------------------------------------------------------------------
+ */
 class cSoftOsd : public cOsd {
 private:
     cVideoOut *videoOut;
@@ -91,20 +94,27 @@ public:
     virtual void Flush(void);
 };
 
+/* ---------------------------------------------------------------------------
+ */
 cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y) : cOsd(X, Y)
 {
-    videoOut = VideoOut;
-    videoOut->OpenOSD(X, Y);
+  videoOut = VideoOut;
+  videoOut->OpenOSD(X, Y);
 }
 
+/* ---------------------------------------------------------------------------
+ */
 cSoftOsd::~cSoftOsd()
 {
-    if (videoOut) {
-	videoOut->CloseOSD();
-	videoOut=0;
-    }
+  if (videoOut)
+  {
+    videoOut->CloseOSD();
+    videoOut=0;
+  }
 }
 
+/* ---------------------------------------------------------------------------
+ */
 eOsdError cSoftOsd::CanHandleAreas(const tArea *Areas, int NumAreas)
 {
     eOsdError Result = cOsd::CanHandleAreas(Areas, NumAreas);
@@ -112,14 +122,16 @@ eOsdError cSoftOsd::CanHandleAreas(const tArea *Areas, int NumAreas)
     return Result;
 }
 
+/* ---------------------------------------------------------------------------
+ */
 void cSoftOsd::Flush(void)
 {
     cBitmap *Bitmap;
 
-    for (int i = 0; (Bitmap = GetBitmap(i)) != NULL; i++)
-    {
-	videoOut->Refresh(Bitmap);
-    }
+  for (int i = 0; (Bitmap = GetBitmap(i)) != NULL; i++)
+  {
+    videoOut->Refresh(Bitmap);
+  }
 }
 
 // --- cSoftOsdProvider -----------------------------------------------
@@ -260,6 +272,7 @@ public:
   virtual bool Poll(cPoller &Poller, int TimeoutMs = 0);
   virtual int64_t GetSTC(void);
   virtual int PlayVideo(const uchar *Data, int Length);
+  virtual void PlayAudio(const uchar *Data, int Length);
 #if VDRVERSNUM >= 10307
   virtual int ProvidesCa(const cChannel *Channel) const;
   virtual void MakePrimaryDevice(bool On);
@@ -456,7 +469,15 @@ bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
   return true;
 }
 
+/* ----------------------------------------------------------------------------
+ */
+void cSoftDevice::PlayAudio(const uchar *Data, int Length)
+{
+  decoder->PlayAudio(Data, Length);
+}
 
+/* ----------------------------------------------------------------------------
+ */
 int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 {
     bool freezeMode;

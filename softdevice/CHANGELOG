@@ -1,5 +1,6 @@
 Changelog
   2004-12-12:
+   - Added reporting of AC3 stream info (with help from plugin femon).
    - Changed A/V sync point by 4 frames. Sync is now ok for streams with PTS
      value for each frame and for streams with PTS values for I-Frames only.
      Thus OSD option "A/V Sync" is obsolete.

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.7 2004/12/12 07:09:13 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.8 2004/12/12 18:49:37 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -171,14 +171,16 @@ private:
     int  state, payload, streamtype;
     unsigned char header[6];     
     unsigned int syncword;
-    cStreamDecoder *vout, *aout;
-    cAudioOut *audioOut;
-    cVideoOut *videoOut;
+    cStreamDecoder  *vout, *aout;
+    cAudioOut       *audioOut;
+    cVideoOut       *videoOut;
+    int             ac3Mode, ac3Parm;
     bool running;
     bool decoding;
 public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);
     ~cMpeg2Decoder();
+    void PlayAudio(const uchar *Data, int Length);
     int Decode(const uchar *Data, int Length);
     int StillPicture(uchar *Data, int Length);
     void Start(void);
