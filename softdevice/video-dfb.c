@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.3 2004/08/09 18:45:49 lucke Exp $
+ * $Id: video-dfb.c,v 1.4 2004/10/18 03:29:36 iampivot Exp $
  */
 
 #include <sys/mman.h>
@@ -141,7 +141,7 @@ static void reportCardInfo (IDirectFB *dfb)
   fprintf(stderr,"[dfb] RAM: %d bytes\n",caps.video_memory);
 
   fprintf(stderr,"[dfb] Accellerated Functions: ");
-  if (caps.acceleration_mask & DFXL_NONE) fprintf(stderr,"none ");
+  if (caps.acceleration_mask == DFXL_NONE) fprintf(stderr,"none ");
   if (caps.acceleration_mask & DFXL_FILLRECTANGLE) fprintf(stderr,"FillRectange ");
   if (caps.acceleration_mask & DFXL_DRAWRECTANGLE) fprintf(stderr,"DrawRectange ");
   if (caps.acceleration_mask & DFXL_DRAWLINE) fprintf(stderr,"DrawLine ");
@@ -248,10 +248,10 @@ cDFBVideoOut::cDFBVideoOut()
 
   videoLayer = NULL;
   dfb->EnumDisplayLayers(EnumCallBack, &videoLayer);
+  if (videoLayer) {
     videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
     videoLayer->SetDstColorKey(COLORKEY);
 
-  if (videoLayer) {
     videoSurface=videoLayer->GetSurface();
     videoSurface->Clear(COLORKEY,0); //clear and
     videoSurface->Flip(); // Flip the field
