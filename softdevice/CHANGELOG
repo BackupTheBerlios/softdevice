@@ -1,4 +1,6 @@
 Changelog
+2005-03-20:
+    - video.c, Draw(): set rgb to zero (colorkey) if alpha is zero.
     - preperations for sync on video option
     - syncronize audio and video start
     - all pts values now in units of 0.1ms (needed for 44.1kHz audio streams)

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.13 2005/03/11 15:56:22 lucke Exp $
+ * $Id: video.c,v 1.14 2005/03/20 15:46:49 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -318,7 +318,7 @@ void cVideoOut::OSDStart()
   };
 
   if (OSDdirty)
-    ClearOSD(); 
+    ClearOSD();
 #endif
 } 
 
@@ -505,7 +505,14 @@ void cVideoOut::Draw(cBitmap *Bitmap,
       if (PixelMask) {
         if (a>TRANSPARENT_THRESHOLD)
           PixelMaskPtr[x/8]|=(1<<x%8);
-      };
+      }
+
+      /* ---------------------------------------------------------------------
+       * pseudo spu drawing looks better if rgb values are set to colorkey
+       * so that they are full transparent in case of zero alpha value
+       */
+      if (!a)
+        r = g = b = 0;
 
       switch (depth) {
         case 4:
@@ -584,7 +591,7 @@ void cVideoOut::ToYUV(cBitmap *Bitmap)
    //     OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height()); 
    //printf("dirty area (%d,%d) (%d,%d) \n",x1,y1,x2,y2);
     
-    if ( OSDdirty ) 
+    if ( OSDdirty )
     {
       //printf("++++++++++++++++++++++new OsdHeight+++++++ OSDdirty %d+++++\n",
       //  OSDdirty);
