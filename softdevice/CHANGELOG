@@ -1,4 +1,7 @@
 Changelog
+  2004-12-30:
+   - xv-out: compile fix for gcc 3.4.3
+             fix for vdr-1.2.x "_ZN9cVideoOut8OSDStartEv"
   2004-12-21: softdevice-0.0.8pre1
    - directFB:
       - some basic support for mga tv-out with directFB- this is selectable
