@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.10 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video.c,v 1.11 2005/03/02 08:39:36 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -53,7 +53,7 @@ void cVideoOut::Action()
     newOsdMode=setupStore->osdMode;
     // if software osd has not been shown for some time fall back
     // to pseudo osd..
-    if ( OsdRefreshCounter > 40 && setupStore->osdMode == OSDMODE_SOFTWARE ) {
+    if ( OsdRefreshCounter > 80 && setupStore->osdMode == OSDMODE_SOFTWARE ) {
         changeMode= (current_osdMode != OSDMODE_PSEUDO);
         newOsdMode=OSDMODE_PSEUDO;
     }
@@ -481,11 +481,11 @@ void cVideoOut::Draw(cBitmap *Bitmap,
   for (int y =SCALEY(y1); y <= SCALEY(y2); y++)
   {
     buf = (tIndex *) osd_buf +
-            linelen * (syoff + OSDyOfs + y + SCALEY(Bitmap->Y0())) +
-            (sxoff+OSDxOfs + SCALEX(Bitmap->X0() + x1) ) * depth;
+            linelen * ( OSDyOfs + y + SCALEY(Bitmap->Y0())) +
+            (OSDxOfs + SCALEX(Bitmap->X0() + x1) ) * depth;
     PixelMaskPtr=PixelMask + 
-           linelen/16 * (syoff + OSDyOfs + y + SCALEY(Bitmap->Y0())) +
-            (sxoff+OSDxOfs + SCALEX(Bitmap->X0() + x1)/8 );
+           linelen/16 * ( OSDyOfs + y + SCALEY(Bitmap->Y0())) +
+            (OSDxOfs + SCALEX(Bitmap->X0() + x1)/8 );
     prev_pix = false;
 
     for (int x = SCALEX(x1); x <= SCALEX(x2); x++)

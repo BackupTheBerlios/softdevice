@@ -1,4 +1,7 @@
 Changelog
+ 2005-03-02:
+    - increased osd fallback timeout
+    - removed syoff and sxoff from Draw(...) 
  2005-02-27:
     - save "vo" and "ao" calling args in setup store.
     - new runtime arg "-L path_name". Default set in Makefile to: "./PLUGINS/lib"
