@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.6 2004/10/24 07:50:25 lucke Exp $
+ * $Id: video-dfb.c,v 1.7 2004/10/24 08:07:42 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -223,7 +223,7 @@ cDFBVideoOut::cDFBVideoOut()
 
   currentPixelFormat = setupStore.pixelFormat;
 
-  osdActive = false;
+  OSDpresent = false;
 
   DirectFB::Init();
   dfb = DirectFB::Create();
@@ -626,7 +626,7 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
 
   if (useStretchBlit)
   {
-    osdActive = true;
+    OSDpresent = true;
     //tmpSurface->Flip();
   }
   tmpSurface->Flip();
@@ -654,7 +654,7 @@ void cDFBVideoOut::Refresh()
   tmpSurface->Unlock();
 
   if (useStretchBlit)
-    osdActive = true;
+    OSDpresent = true;
 
   tmpSurface->Flip();
 }
@@ -671,7 +671,7 @@ void cDFBVideoOut::CloseOSD()
   if (useStretchBlit)
   {
     osdMutex.Lock();
-    osdActive  = false;
+    OSDpresent  = false;
     osdClrBack = true;
     osdMutex.Unlock();
   }
@@ -820,7 +820,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
 
-      if (osdActive)
+      if (OSDpresent)
       {
           DFBRectangle  osdsrc;
         osdsrc.x = osdsrc.y = 0;
