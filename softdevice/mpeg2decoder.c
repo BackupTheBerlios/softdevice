@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.17 2005/03/05 13:50:49 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.18 2005/03/05 14:35:51 lucke Exp $
  */
 
 #include <math.h>
@@ -1135,11 +1135,15 @@ void cMpeg2Decoder::Stop(void)
   }
 }
 
+/* ----------------------------------------------------------------------------
+ */
 int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
 {
-  return vout->StillPicture(Data,Length);
+  return (running) ? vout->StillPicture(Data,Length): Length;
 }
 
+/* ----------------------------------------------------------------------------
+ */
 void cMpeg2Decoder::Clear(void)
 {
   CMDDEB("Clear\n");
@@ -1147,9 +1151,11 @@ void cMpeg2Decoder::Clear(void)
   {
     aout->Clear();
     vout->Clear();
-  };
+  }
 }
 
+/* ----------------------------------------------------------------------------
+ */
 void cMpeg2Decoder::TrickSpeed(int Speed)
 {
   CMDDEB("TrickSpeed %d\n",Speed);
@@ -1160,13 +1166,17 @@ void cMpeg2Decoder::TrickSpeed(int Speed)
   };
 }
 
+/* ----------------------------------------------------------------------------
+ */
 int64_t cMpeg2Decoder::GetSTC(void) {
   if (running)
     return vout->GetPTS()*90;
   else return 0;
 };
 
-bool cMpeg2Decoder::BufferFilled() 
+/* ----------------------------------------------------------------------------
+ */
+bool cMpeg2Decoder::BufferFilled()
 {
   if (running)
     return vout->BufferFill()>95;
@@ -1246,8 +1256,10 @@ int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
   }
 #if VDRVERSNUM >= 10318
   if (running)
+  {
     aout->Write((uchar *)Data,Length);
     aout->setStreamId(Data[2]<<8|Data[3]);
+  }
 #endif
   return Length;
 }
