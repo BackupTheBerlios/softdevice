@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.5 2004/10/22 21:46:46 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.6 2004/10/29 16:41:39 iampivot Exp $
  */
 
 #include <vdr/plugin.h>
@@ -144,7 +144,6 @@ cAudioStreamDecoder::cAudioStreamDecoder(unsigned int StreamID,
 {
   audioOut=AudioOut;
   cPTS=commonPTS;
-  avOffset = setupStore.avOffset;
   codec = avcodec_find_decoder(CODEC_ID_MP2);
   if (!codec)
   {
@@ -186,13 +185,13 @@ int cAudioStreamDecoder::DecodeData(uchar *Data, int Length)
     audioOut->SetParams(context->channels,context->sample_rate);
     audioOut->Write(audiosamples,audio_size);
     int delay = audioOut->GetDelay();
-    if (delay + avOffset < 20)// if we have less than 20 ms in buffer we double frames
+    if (delay < 20)// if we have less than 20 ms in buffer we double frames
       audioOut->Write(audiosamples,audio_size);
 
     pts += (audio_size/(48*4)); // PTS weiterzählen, egal ob Samples gespielt oder nicht
 
     //  printf("Audiodelay: %d \n",delay);
-    *cPTS = pts - delay + avOffset; // Das ist die Master-PTS die wird an den video Teil übergeben,
+    *cPTS = pts - delay + setupStore.avOffset; // Das ist die Master-PTS die wird an den video Teil übergeben,
     // damit Video syncronisieren kann
     if (validPTS)
       SyncPTS(GET_MPEG2_PTS(header)/90); // milisekunden

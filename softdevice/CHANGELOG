@@ -1,4 +1,6 @@
 Changelog
+  2004-10-29:
+   - allow setting alsa device with command line parameter or in setup.conf
   2004-10-25:
    - compile fix for older vdr versions. tested with 1.2.1 .
    - bumped level to 0.0.7pre3 .

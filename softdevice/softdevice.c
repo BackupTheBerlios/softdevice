@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.2 2004/10/25 02:54:39 lucke Exp $
+ * $Id: softdevice.c,v 1.3 2004/10/29 16:41:39 iampivot Exp $
  */
 
 #include <getopt.h>
@@ -309,7 +309,7 @@ cSoftDevice::cSoftDevice(int method)
     }
     fprintf(stderr,"[softdevice] Video Out seems to be OK\n");
     fprintf(stderr,"[softdevice] Initializing Audio Out\n");
-    audioOut=new cAlsaAudioOut();
+    audioOut=new cAlsaAudioOut(setupStore.alsaDevice);
     fprintf(stderr,"[softdevice] Audio out seems to be OK\n");
     fprintf(stderr,"[softdevice] A/V devices initialized, now initializing MPEG2 Decoder\n");
     decoder= new cMpeg2Decoder(audioOut, videoOut);
@@ -475,6 +475,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 {
   // Return a string that describes all known command line options.
   return
+  "  -ao alsa:devicename      alsa output device\n"
 #ifdef XV_SUPPORT
   "  -vo xv:                  enable output via X11-Xv\n"
   "  -vo xv:aspect=wide       use a 16:9 display area (1024x576)\n"
@@ -556,6 +557,12 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
     } else if (!strcmp (argv[i], "-ao")) {
       ++i; --argc;
       if (argc > 0) {
+          char *ao_argv = argv[i];
+        if (!strncmp(ao_argv, "alsa:", 5)) {
+          ao_argv += 5;
+          fprintf(stderr, "[softdevice] using alsa device %s\n", ao_argv);
+          strncpy(setupStore.alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);
+        }
       }
     }
     ++i;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.2 2004/10/18 03:33:37 iampivot Exp $
+ * $Id: mpeg2decoder.h,v 1.3 2004/10/29 16:41:39 iampivot Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -51,7 +51,6 @@ class cAudioStreamDecoder : public cStreamDecoder {
 private:
     uint8_t * audiosamples;
     cAudioOut *audioOut;
-    int       avOffset;
 protected:
 public:
     virtual int DecodeData(uchar *Data, int Length);

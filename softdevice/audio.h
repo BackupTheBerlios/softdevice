@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: audio.h,v 1.2 2004/10/29 16:41:39 iampivot Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -38,10 +38,11 @@ private:
   snd_pcm_uframes_t bufferSize;
   snd_pcm_uframes_t periodSize;
   snd_pcm_t *handle;
+  char *device;
   volatile bool paused;
 protected:
 public:
-  cAlsaAudioOut();
+  cAlsaAudioOut(char *device);
   virtual ~cAlsaAudioOut();
   virtual void Write(uchar *Data, int Length);
   virtual int SetParams(int channels, unsigned int samplerate);

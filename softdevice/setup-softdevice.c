@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.4 2004/10/22 21:51:46 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.5 2004/10/29 16:41:39 iampivot Exp $
  */
 
 #include "video.h"
@@ -89,6 +89,7 @@ cSetupStore::cSetupStore ()
   deintMethod   = 0;
   syncOnFrames  = 0;
   avOffset      = 0;
+  strcpy (alsaDevice, "");
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
@@ -148,6 +149,10 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     avOffset = clamp (MINAVOFFSET, avOffset, MAXAVOFFSET);
     fprintf(stderr,"[setup-softdevice] A/V Offset set to (%d)\n",
             avOffset);
+  } else if (!strcasecmp(Name, "AlsaDevice") && strlen(alsaDevice) == 0) {
+    strncpy(alsaDevice, Value, ALSA_DEVICE_NAME_LENGTH);
+    alsaDevice [ALSA_DEVICE_NAME_LENGTH-1] = 0;
+    fprintf(stderr, "[setup-softdevice] alsa device set to: %s\n", alsaDevice);
   } else return false;
 
   return true;
@@ -276,4 +281,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Picture mirroring",  setupStore.mirror);
   SetupStore ("SyncAllFrames",      setupStore.syncOnFrames);
   SetupStore ("avOffset",           setupStore.avOffset);
+  SetupStore ("AlsaDevice",         setupStore.alsaDevice);
 }

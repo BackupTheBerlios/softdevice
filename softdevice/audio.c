@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.3 2004/10/22 15:07:15 wachm Exp $
+ * $Id: audio.c,v 1.4 2004/10/29 16:41:39 iampivot Exp $
  */
 
 #include <unistd.h>
@@ -17,14 +17,16 @@
 #include "audio.h"
 
 
-char *device = "plughw:0,0";
 #define PCM_FMT SND_PCM_FORMAT_S16_LE
 
 cAudioOut::~cAudioOut() {
 }
 
-cAlsaAudioOut::cAlsaAudioOut() {
-    dsyslog("[softdevice-audio] Opening alsa device %s",device);
+cAlsaAudioOut::cAlsaAudioOut(char *alsaDevice) {
+    if (strlen(alsaDevice) == 0)
+      strcpy (alsaDevice, "default");
+    dsyslog("[softdevice-audio] Opening alsa device %s",alsaDevice);
+    device = alsaDevice;
     int err;
     paused=false;
     if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
