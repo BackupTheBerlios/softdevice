@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.5 2004/10/23 21:33:26 lucke Exp $
+ * $Id: video-dfb.c,v 1.6 2004/10/24 07:50:25 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -578,8 +578,15 @@ void cDFBVideoOut::SetParams()
       else
       {
         fprintf (stderr, "[dfb] creating new surface\n");
-        if (videoSurface)
+        if (videoSurface) {
+          /* ------------------------------------------------------------------
+           * clear previous used surface. there where some troubles when we
+           * started in I420 mode, switched to YUY2 and video format changed
+           * from 4:3 to 16:9 .
+           */
+          videoSurface->Clear(COLORKEY,0); //clear and
           videoSurface->Release();
+        }
         videoSurface=NULL;
         videoSurface=dfb->CreateSurface(vidDsc);
       }
