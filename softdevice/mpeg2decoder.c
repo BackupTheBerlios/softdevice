@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.4 2004/10/18 03:33:37 iampivot Exp $
+ * $Id: mpeg2decoder.c,v 1.5 2004/10/22 21:46:46 lucke Exp $
  */
 
 #include <vdr/plugin.h>
@@ -635,7 +635,8 @@ void cVideoStreamDecoder::ppLibavcodec(void)
   {
     fprintf(stderr,
             "[softdevice] pp-filter %s couldn't be initialized,\n"
-            "[softdevice] switching postprocessing off !\n");
+            "[softdevice] switching postprocessing off !\n",
+            setupStore.getPPValue());
     setupStore.deintMethod = 0;
   }
   else
