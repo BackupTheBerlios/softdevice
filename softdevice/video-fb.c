@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.6 2005/03/03 18:16:26 lucke Exp $
+ * $Id: video-fb.c,v 1.7 2005/03/03 18:32:46 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -171,8 +171,10 @@ void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
 
 void cFBVideoOut::Refresh(cBitmap *Bitmap)
 {
+  pthread_mutex_lock(&fb_mutex);
   OSDpresent=true;
   Draw(Bitmap,fb,line_len);
+  pthread_mutex_unlock(&fb_mutex);
 }
 
 #else

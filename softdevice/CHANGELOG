@@ -1,4 +1,8 @@
 Changelog
+ 2005-03-03:
+    - fb-out: fix for build option USE_SUBPLUGINS
+              fix alpha mask misplacement
+              fix locking during video and OSD drawing
  2005-03-02:
     - increased osd fallback timeout
     - removed syoff and sxoff from Draw(...) 
