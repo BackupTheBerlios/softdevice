@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.8 2004/10/30 12:37:33 lucke Exp $
+ * $Id: video-xv.c,v 1.9 2004/12/21 05:55:42 lucke Exp $
  */
 
 #include <unistd.h>
@@ -27,7 +27,7 @@
 #include "xscreensaver.h"
 #include "utils.h"
 
-#define PATCH_VERSION "007_pre_4"
+#define PATCH_VERSION "008_pre_1"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
@@ -413,6 +413,7 @@ void cXvVideoOut::ProcessEvents ()
         }
         break;
       case ConfigureNotify:
+        map_count++;
         dx = event.xconfigure.x;
         dy = event.xconfigure.y;
         dwidth = event.xconfigure.width;
@@ -563,6 +564,7 @@ cXvVideoOut::cXvVideoOut(int aspect, int port, int crop, int xres, int yres)
    */
   display_aspect = current_aspect = aspect;
   scale_size = 0;
+  screenPixelAspect = -1;
   width = xres;
   height = yres;
 
@@ -976,6 +978,9 @@ void cXvVideoOut::CloseOSD()
 }
 
 #if VDRVERSNUM >= 10307
+
+/* ---------------------------------------------------------------------------
+ */
 void cXvVideoOut::Refresh(cBitmap *Bitmap)
 {
   // refreshes the screen

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.8 2004/12/12 18:49:37 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.9 2004/12/21 05:55:42 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -174,7 +174,7 @@ private:
     cStreamDecoder  *vout, *aout;
     cAudioOut       *audioOut;
     cVideoOut       *videoOut;
-    int             ac3Mode, ac3Parm;
+    int             ac3Mode, ac3Parm, lpcmMode;
     bool running;
     bool decoding;
 public:

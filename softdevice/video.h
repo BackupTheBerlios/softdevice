@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.4 2004/10/29 20:36:07 lucke Exp $
+ * $Id: video.h,v 1.5 2004/12/21 05:55:43 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -47,6 +47,7 @@ protected:
     int     Xres, Yres, Bpp; // the child class MUST set these params (for OSD Drawing)
     int     dx, dy, dwidth, dheight,
             old_x, old_y, old_dwidth, old_dheight,
+            screenPixelAspect,
             fwidth, fheight,
             swidth, sheight,
             sxoff, syoff,
@@ -61,6 +62,8 @@ protected:
 
 public:
     virtual ~cVideoOut();
+    virtual void OSDStart();
+    virtual void OSDCommit();
     virtual void OpenOSD(int X, int Y);
     virtual void CloseOSD();
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
@@ -74,8 +77,10 @@ public:
 #if VDRVERSNUM >= 10307
 
     virtual void Refresh(cBitmap *Bitmap) { return; };
-    void Draw(cBitmap *Bitmap, unsigned char * buf,
-                      int linelen);
+    void Draw(cBitmap *Bitmap,
+              unsigned char * buf,
+              int linelen,
+              bool inverseAlpha = false);
 
 #else
     cWindowLayer *layer[MAXNUMWINDOWS];

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.8 2004/12/12 18:49:37 lucke Exp $
+ * $Id: softdevice.c,v 1.9 2004/12/21 05:55:42 lucke Exp $
  */
 
 #include <getopt.h>
@@ -69,7 +69,7 @@
 #include "audio.h"
 #include "mpeg2decoder.h"
 #include "utils.h"
-static const char *VERSION        = "0.0.7";
+static const char *VERSION        = "0.0.8pre1";
 static const char *DESCRIPTION    = "A software emulated MPEG2 device";
 static const char *MAINMENUENTRY  = "Softdevice";
 
@@ -128,10 +128,12 @@ void cSoftOsd::Flush(void)
 {
     cBitmap *Bitmap;
 
+  videoOut->OSDStart();
   for (int i = 0; (Bitmap = GetBitmap(i)) != NULL; i++)
   {
     videoOut->Refresh(Bitmap);
   }
+  videoOut->OSDCommit();
 }
 
 // --- cSoftOsdProvider -----------------------------------------------
@@ -238,6 +240,7 @@ public:
 
 // Global variables that control the overall behaviour:
 
+#define AC3_TEST  1
 
 // --- cSoftDevice --------------------------------------------------
 class cSoftDevice : public cDevice {
@@ -533,6 +536,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 #endif
 #ifdef DFB_SUPPORT
   "  -vo dfb:                 enable output via directFB\n"
+  "  -vo dfb:mgatv                   output via MATROX TV-out\n"
 #endif
 #ifdef VIDIX_SUPPORT
   "  -vo vidix:               enable output via vidix driver\n"
@@ -588,6 +592,8 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           vo_argv += 4;
 #ifdef DFB_SUPPORT
           voutMethod = VOUT_DFB;
+          if (!strncmp (vo_argv, "mgatv", 5))
+            setupStore.useMGAtv = 1;
 #else
           fprintf(stderr,"[softdevice] dfb support not compiled in\n");
 #endif

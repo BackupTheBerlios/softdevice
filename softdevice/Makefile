@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.3 2004/10/25 02:36:18 lucke Exp $
+# $Id: Makefile,v 1.4 2004/12/21 05:55:42 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -75,6 +75,7 @@ VIDIX_DIR    = /usr/local
 #
 # If you installed ffmpeg's lib (make installlib)
 LIBAVCODEC=/usr/local/include/ffmpeg/
+#LIBAVCODEC= /home/extra/src/video/ffmpeg-0.4.8/libavcodec
 #
 #
 # DON'T touch this:

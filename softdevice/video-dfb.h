@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.3 2004/10/24 11:27:27 lucke Exp $
+ * $Id: video-dfb.h,v 1.4 2004/12/21 05:55:42 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -36,6 +36,9 @@ class cDFBVideoOut : public cVideoOut {
     bool alphablend;
     bool useStretchBlit;
     bool osdClrBack;
+    bool isVIAUnichrome;
+    int   clearAlpha;
+
     void SetParams();
 
   public:
@@ -47,6 +50,8 @@ class cDFBVideoOut : public cVideoOut {
 
 #if VDRVERSNUM >= 10307
     virtual void Refresh(cBitmap *Bitmap);
+    virtual void OSDStart();
+    virtual void OSDCommit();
 #else
     virtual void Refresh();
 #endif

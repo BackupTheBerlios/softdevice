@@ -1,4 +1,9 @@
 Changelog
+  2004-12-21: softdevice-0.0.8pre1
+   - directFB:
+      - some basic support for mga tv-out with directFB- this is selectable
+        via option -vo dfb:mgatv .
+      - VIA Unichrome handling added. works with recent cvs version of DFB
   2004-12-12:
    - Added reporting of AC3 stream info (with help from plugin femon).
    - Changed A/V sync point by 4 frames. Sync is now ok for streams with PTS

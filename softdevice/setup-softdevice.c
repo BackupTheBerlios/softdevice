@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.5 2004/10/29 16:41:39 iampivot Exp $
+ * $Id: setup-softdevice.c,v 1.6 2004/12/21 05:55:42 lucke Exp $
  */
 
 #include "video.h"
@@ -68,6 +68,28 @@ char *syncOnFramesStr [] = {
 
 /* ----------------------------------------------------------------------------
  */
+char *videoAspectNames [] = {
+        "default (PAL)",
+        "tv-out (PAL)",
+        "5:4 as 4:3",
+        "test 1",
+        "test 2",
+        NULL
+     };
+struct sVideoAspectsValues {
+  int   width,
+        height;
+} videoAspectValues [] = {
+  { 768, 576},
+  { 720, 576},
+  { 800, 576},
+  {10240, 6144},
+  {1280, 1024},
+  {768,576}
+};
+
+/* ----------------------------------------------------------------------------
+ */
 static inline int clamp (int min, int val, int max)
 {
   if (val < min)
@@ -89,6 +111,14 @@ cSetupStore::cSetupStore ()
   deintMethod   = 0;
   syncOnFrames  = 0;
   avOffset      = 0;
+
+  useMGAtv      = 0;
+  /* --------------------------------------------------------------------------
+   * these screen width/height values are operating in square pixel mode.
+   * for non square pixel mode should be set via osd to 720/576
+   */
+  screenPixelAspect   = 0;
+
   strcpy (alsaDevice, "");
 }
 
@@ -153,9 +183,20 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     strncpy(alsaDevice, Value, ALSA_DEVICE_NAME_LENGTH);
     alsaDevice [ALSA_DEVICE_NAME_LENGTH-1] = 0;
     fprintf(stderr, "[setup-softdevice] alsa device set to: %s\n", alsaDevice);
+  } else if (!strcasecmp(Name, "PixelAspect")) {
+    screenPixelAspect = atoi (Value);
+    screenPixelAspect = clamp (0, screenPixelAspect, 1);
   } else return false;
 
   return true;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cSetupStore::getScreenDimension(int &w, int &h)
+{
+  w = videoAspectValues [screenPixelAspect]. width;
+  h = videoAspectValues [screenPixelAspect]. height;
 }
 
 /* ---------------------------------------------------------------------------
@@ -231,6 +272,13 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(void)
   Add(new cMenuEditIntItem(tr("A/V Offset"),
                            &data->avOffset,
                            MINAVOFFSET, MAXAVOFFSET));
+
+  Add(new cMenuEditStraItem(tr("Pixel Aspect"),
+                            &data->screenPixelAspect,
+                            //2,
+                            5,
+                            videoAspectNames));
+
 }
 
 /* ---------------------------------------------------------------------------
@@ -282,4 +330,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("SyncAllFrames",      setupStore.syncOnFrames);
   SetupStore ("avOffset",           setupStore.avOffset);
   SetupStore ("AlsaDevice",         setupStore.alsaDevice);
+  SetupStore ("PixelAspect",        setupStore.screenPixelAspect);
 }

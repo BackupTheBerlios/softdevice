@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.1 2004/08/01 05:07:04 lucke Exp $
+ * $Id: video-fb.c,v 1.2 2004/12/21 05:55:42 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -71,6 +71,7 @@ cFBVideoOut::cFBVideoOut()
 	*fbinit=0;
 	fbinit++;
     }
+    screenPixelAspect = -1;
 }
 
 void cFBVideoOut::Pause(void) 

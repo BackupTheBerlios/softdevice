@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.3 2004/10/23 21:33:26 lucke Exp $
+ * $Id: video-vidix.c,v 1.4 2004/12/21 05:55:42 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -147,6 +147,7 @@ cVidixVideoOut::cVidixVideoOut()
       vidix_fourcc.fourcc = IMGFMT_YV12;
 
     currentPixelFormat = setupStore.pixelFormat;
+    screenPixelAspect = -1;
 
     vdlQueryFourcc(vidix_handler, &vidix_fourcc);
 

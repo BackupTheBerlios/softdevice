@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.3 2004/10/29 16:41:39 iampivot Exp $
+ * $Id: setup-softdevice.h,v 1.4 2004/12/21 05:55:42 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -23,6 +23,8 @@ class cSetupStore {
     cSetupStore ();
     bool  SetupParse(const char *Name, const char *Value);
     char  *getPPValue(void);
+    void  getScreenDimension(int &w, int &h);
+
     int   xvAspect;
     int   outputMethod;
     int   pixelFormat;
@@ -31,6 +33,8 @@ class cSetupStore {
     int   mirror;
     int   syncOnFrames;
     int   avOffset;
+    int   screenPixelAspect;
+    int   useMGAtv;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
 };
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.3 2004/10/25 17:58:59 lucke Exp $
+ * $Id: video.c,v 1.4 2004/12/21 05:55:43 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -24,7 +24,8 @@ cVideoOut::~cVideoOut()
  */
 void cVideoOut::CheckAspect(int new_afd, float new_asp)
 {
-    int           new_aspect;
+    int           new_aspect,
+                  screenWidth, screenHeight;
     double        d_asp, afd_asp;
 
   /* -------------------------------------------------------------------------
@@ -40,11 +41,26 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
    */
   new_afd = (setupStore.cropMode) ? setupStore.cropMode : new_afd;
 
+  /* -------------------------------------------------------------------------
+   * check for changes of screen width/height change
+   */
+
+  if (screenPixelAspect != setupStore.screenPixelAspect)
+  {
+    screenPixelAspect = setupStore.screenPixelAspect;
+    /* -----------------------------------------------------------------------
+     * force recalculation for aspect ration handling
+     */
+    current_aspect = -1;
+  }
+
   if (new_aspect == current_aspect && new_afd == current_afd)
   {
     aspect_changed = 0;
     return;
   }
+
+  setupStore.getScreenDimension (screenWidth, screenHeight);
   aspect_changed = 1;
 
   d_asp = (double) dwidth / (double) dheight;
@@ -74,6 +90,11 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
   sxoff = (fwidth - swidth) / 2;
   syoff = (fheight - sheight) / 2;
 
+  /* --------------------------------------------------------------------------
+   * handle screen aspect support now
+   */
+  afd_asp *= ((double) screenWidth / (double) screenHeight) * (3.0 / 4.0);
+
   if (d_asp > afd_asp) {
     /* ------------------------------------------------------------------------
      * display aspect is wider than frame aspect
@@ -93,6 +114,10 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
     lyoff = (dheight - lheight) / 2;
     lxoff = 0;
   }
+
+  dsyslog("[VideoOut]: %dx%d [%d,%d %dx%d] -> %dx%d [%d,%d %dx%d]",
+          fwidth, fheight, sxoff, syoff, swidth, sheight,
+          dwidth, dheight, lxoff, lyoff, lwidth, lheight);
 
   current_aspect = new_aspect;
   current_afd = new_afd;
@@ -182,7 +207,26 @@ void cVideoOut::CloseOSD()
   OSDpresent=false;
 }
 
-void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::OSDStart()
+{
+  //fprintf (stderr, "+");
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::OSDCommit()
+{
+  //fprintf (stderr, "-");
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::Draw(cBitmap *Bitmap,
+                     unsigned char *osd_buf,
+                     int linelen,
+                     bool inverseAlpha)
 {
     int           depth = (Bpp + 7) / 8;
     int           a, r, g, b;
@@ -215,6 +259,9 @@ void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
           {
             buf[0] = 1; buf[1] = 1; buf[2] = 1; buf[3] = 255;
           } else {
+            if (inverseAlpha)
+              a = 255 - a;
+
             buf[0] = b;
             buf[1] = g;
             buf[2] = r;
@@ -358,16 +405,17 @@ cWindowLayer::~cWindowLayer() {
 void cWindowLayer::Render(cWindow *Window) {
     unsigned char * buf;
     buf=imagedata;
-    for (int yp = 0; yp < height; yp++) {
-	for (int ix = 0; ix < width; ix++) {
-	    eDvbColor c = Window->GetColor(*Window->Data(ix,yp));
-	    buf[0]=c & 255; //Red
-	    buf[1]=(c >> 8) & 255; //Green
-	    buf[2]=(c >> 16) & 255; //Blue
-	    buf[3]=(c >> 24) & 255; //Alpha*/
-	    buf+=4;
-	}
+
+  for (int yp = 0; yp < height; yp++) {
+    for (int ix = 0; ix < width; ix++) {
+      eDvbColor c = Window->GetColor(*Window->Data(ix,yp));
+      buf[0]=c & 255; //Red
+      buf[1]=(c >> 8) & 255; //Green
+      buf[2]=(c >> 16) & 255; //Blue
+      buf[3]=(c >> 24) & 255; //Alpha*/
+      buf+=4;
     }
+  }
 }
 
 void cWindowLayer::Move(int x, int y) {
@@ -382,65 +430,65 @@ void cWindowLayer::Draw(unsigned char * buf, int linelen, unsigned char * keymap
     int dx = linelen - width * depth;
     bool          prev_pix = false, do_dither;
 
-    buf += top * linelen + left * depth; // upper left corner
-    for (int y = top; y < top+height; y++) {
-      prev_pix = false;
+  buf += top * linelen + left * depth; // upper left corner
+  for (int y = top; y < top+height; y++) {
+    prev_pix = false;
 
-	for (int x = left; x < left+width; x++) {
-	   if ( (im[3] != 0)
-		&& (x >= 0) && (x < xres)
-		&& (y >= 0) && (y < yres))  { // Alpha != 0 and in the screen
-      do_dither = ((x % 2 == 1 && y % 2 == 1) ||
-                    x % 2 == 0 && y % 2 == 0 || prev_pix);
+    for (int x = left; x < left+width; x++) {
+      if ( (im[3] != 0)
+          && (x >= 0) && (x < xres)
+          && (y >= 0) && (y < yres))  { // Alpha != 0 and in the screen
+        do_dither = ((x % 2 == 1 && y % 2 == 1) ||
+                      x % 2 == 0 && y % 2 == 0 || prev_pix);
 
-		//if (keymap) keymap[(x+y*linelen / depth) / 8] |= (1 << (x % 8));
-		switch (depth) {
-		    case 4:
-          if ((do_dither && IS_BACKGROUND(im[3]) && OSDpseudo_alpha) ||
-              (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
-            *buf++ = 1; *buf++ = 1; *buf++ = 1; *buf++ = 255;
-          } else {
-            *(buf++)=im[2];
-            *(buf++)=im[1];
-            *(buf++)=im[0];
-            *(buf++)=im[3];
-          }
-			//buf++;
-			break;
-		    case 3:
-          if ((do_dither && IS_BACKGROUND(im[3])) ||
-              (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
-            *buf++ = 1; *buf++ = 1; *buf++ = 1;
-          } else {
-            *(buf++)=im[2];
-            *(buf++)=im[1];
-            *(buf++)=im[0];
-          }
-			break;
-		    case 2: // 565 RGB
-          if ((do_dither && IS_BACKGROUND(im[3])) ||
-              (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
-            *buf++ = 0x21; *buf++ = 0x08;
-          } else {
-            *(buf++)= ((im[2] >> 3)& 0x1F) | ((im[1] & 0x1C) << 3);
-            *(buf++)= (im[0] & 0xF8) | (im[1] >> 5);
-          }
-			break;
-		    default:
-			dsyslog("[video] Unsupported depth %d exiting",depth);
-			exit(1);
-    		}
+        //if (keymap) keymap[(x+y*linelen / depth) / 8] |= (1 << (x % 8));
+        switch (depth) {
+          case 4:
+            if ((do_dither && IS_BACKGROUND(im[3]) && OSDpseudo_alpha) ||
+                (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
+              *buf++ = 1; *buf++ = 1; *buf++ = 1; *buf++ = 255;
+            } else {
+              *(buf++)=im[2];
+              *(buf++)=im[1];
+              *(buf++)=im[0];
+              *(buf++)=im[3];
+            }
+            //buf++;
+            break;
+          case 3:
+            if ((do_dither && IS_BACKGROUND(im[3])) ||
+                (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
+              *buf++ = 1; *buf++ = 1; *buf++ = 1;
+            } else {
+              *(buf++)=im[2];
+              *(buf++)=im[1];
+              *(buf++)=im[0];
+            }
+            break;
+          case 2: // 565 RGB
+            if ((do_dither && IS_BACKGROUND(im[3])) ||
+                (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
+              *buf++ = 0x21; *buf++ = 0x08;
+            } else {
+              *(buf++)= ((im[2] >> 3)& 0x1F) | ((im[1] & 0x1C) << 3);
+              *(buf++)= (im[0] & 0xF8) | (im[1] >> 5);
+            }
+            break;
+          default:
+            dsyslog("[video] Unsupported depth %d exiting",depth);
+            exit(1);
+        }
         prev_pix = !IS_BACKGROUND(im[3]);
 
 
-	    } else  {
-	        buf += depth; // skip this pixel
-	    }
-	    im +=4;
-        }
-        buf += dx;
+      } else  {
+        buf += depth; // skip this pixel
+      }
+      im +=4;
     }
-    return;
+    buf += dx;
+  }
+  return;
 }
 
 #endif
