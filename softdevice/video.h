@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.5 2004/12/21 05:55:43 lucke Exp $
+ * $Id: video.h,v 1.6 2005/01/15 08:33:04 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -41,7 +41,8 @@ class cVideoOut {
 private:
 protected:
     cMutex  osdMutex;
-    int     OSDxOfs, OSDyOfs;
+    int     OSDxOfs, OSDyOfs,
+            OSDw, OSDh;
     bool    OSDpresent,
             OSDpseudo_alpha;
     int     Xres, Yres, Bpp; // the child class MUST set these params (for OSD Drawing)
@@ -62,6 +63,7 @@ protected:
 
 public:
     virtual ~cVideoOut();
+    virtual void Size(int w, int h) {OSDw = w; OSDh = h;};
     virtual void OSDStart();
     virtual void OSDCommit();
     virtual void OpenOSD(int X, int Y);

@@ -1,4 +1,7 @@
 Changelog
+  2005-01-15:
+    - fix OSD drawing when multiple areas are used (with text2skin plugin)
+    - dfb out: reverted top-field first setting as it may crash
   2005-01-13:
     - compatibility fix for vdr-1.3.18
     - aspect ratio handling for 16:9 TV output

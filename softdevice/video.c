@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.6 2005/01/12 20:24:34 lucke Exp $
+ * $Id: video.c,v 1.7 2005/01/15 08:33:04 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -239,8 +239,8 @@ void cVideoOut::Draw(cBitmap *Bitmap,
   for (int y = 0; y < Bitmap->Height(); y++)
   {
     buf = (tIndex *) osd_buf +
-            linelen * ( OSDyOfs + y ) +
-            OSDxOfs * depth;
+            linelen * ( OSDyOfs + y + Bitmap->Y0()) +
+            (OSDxOfs + Bitmap->X0()) * depth;
     prev_pix = false;
 
     for (int x = 0; x < Bitmap->Width(); x++)

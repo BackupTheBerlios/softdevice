@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.11 2005/01/13 20:31:08 lucke Exp $
+ * $Id: softdevice.c,v 1.12 2005/01/15 08:33:04 lucke Exp $
  */
 
 #include <getopt.h>
@@ -128,6 +128,7 @@ void cSoftOsd::Flush(void)
 {
     cBitmap *Bitmap;
 
+  videoOut->Size(Width(),Height());
   videoOut->OSDStart();
   for (int i = 0; (Bitmap = GetBitmap(i)) != NULL; i++)
   {

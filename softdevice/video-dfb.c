@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.14 2005/01/13 20:48:20 lucke Exp $
+ * $Id: video-dfb.c,v 1.15 2005/01/15 08:33:04 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -134,6 +134,7 @@ static DFBEnumerationResult EnumCallBack(unsigned int id,
   if (desc.caps & DLCAPS_FLICKER_FILTERING) fprintf(stderr,"flicker_filtering " );
   if (desc.caps & DLCAPS_HUE) fprintf(stderr,"hue " );
   if (desc.caps & DLCAPS_LEVELS) fprintf(stderr,"levels " );
+  if (desc.caps & DLCAPS_FIELD_PARITY) fprintf(stderr,"field_parity " );
   if (desc.caps & DLCAPS_OPACITY) fprintf(stderr,"opacity " );
   if (desc.caps & DLCAPS_SATURATION) fprintf(stderr,"saturation " );
   if (desc.caps & DLCAPS_SCREEN_LOCATION) fprintf(stderr,"screen_location " );
@@ -612,8 +613,8 @@ void cDFBVideoOut::SetParams()
           //exit(1);
         }
 
-        if (setupStore.useMGAtv)
-          videoLayer->SetFieldParity(0);
+        //if (setupStore.useMGAtv)
+          //videoLayer->SetFieldParity(0);
 
 #if HAVE_SetSourceLocation
         try
@@ -660,9 +661,9 @@ void cDFBVideoOut::SetParams()
           videoSurface->Clear(COLORKEY,0); //clear and
           videoSurface->Release();
         }
-        
-        if (setupStore.useMGAtv)
-          videoLayer->SetFieldParity(0);
+
+        //if (setupStore.useMGAtv)
+          //videoLayer->SetFieldParity(0);
 
         videoSurface=NULL;
         videoSurface=dfb->CreateSurface(vidDsc);
@@ -686,73 +687,10 @@ void cDFBVideoOut::Pause(void)
 
 #if VDRVERSNUM >= 10307
 
-#if 0
-
 /* ---------------------------------------------------------------------------
  */
 void cDFBVideoOut::OSDStart()
 {
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBVideoOut::OSDCommit()
-{
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBVideoOut::Refresh(cBitmap *Bitmap)
-{
-    int pitch;
-    int dx1 = 0, dx2 = 0, dy1 = 0, dy2 = 0;
-    uint8_t *dst;
-    IDirectFBSurface  *tmpSurface;
-
-  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-
-  /* --------------------------------------------------------------------------
-   * ?? if that clear is removed, radeon OSD does not flicker
-   * any more. but it has some other negative effects on mga.
-   * ??
-   */
-  //tmpSurface->Clear(0,0,0,clearAlpha);
-  tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-  if (Bitmap->Dirty(dx1,dy1,dx2,dy2))
-  {
-    Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
-    Bitmap->Clean();
-  }
-  tmpSurface->Unlock();
-
-  if (useStretchBlit)
-  {
-    OSDpresent = true;
-    //tmpSurface->Flip();
-  }
-  //tmpSurface->Flip();
-}
-
-#else
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBVideoOut::OSDStart()
-{
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBVideoOut::OSDCommit()
-{
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBVideoOut::Refresh(cBitmap *Bitmap)
-{
-    int pitch;
-    uint8_t *dst;
     IDirectFBSurface  *tmpSurface;
 
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
@@ -763,8 +701,46 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
    * ??
    */
   tmpSurface->Clear(0,0,0,clearAlpha);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::OSDCommit()
+{
+    IDirectFBSurface  *tmpSurface;
+
+  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+  tmpSurface->Flip();
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::Refresh(cBitmap *Bitmap)
+{
+    int pitch;
+    uint8_t *dst;
+    IDirectFBSurface  *tmpSurface;
+
+  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+
   tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+#if 0
+  {
+    /* ------------------------------------------------------------------------
+     * handling of dirty/modified regions only, does not work for now
+     * due to double buffering :-( .
+     */
+      int dx1 = 0, dx2 = 0, dy1 = 0, dy2 = 0;
+
+    if (Bitmap->Dirty(dx1,dy1,dx2,dy2))
+    {
+      Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
+      Bitmap->Clean();
+    }
+  }
+#else
   Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
+#endif
   tmpSurface->Unlock();
 
   if (useStretchBlit)
@@ -772,9 +748,7 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
     OSDpresent = true;
     //tmpSurface->Flip();
   }
-  tmpSurface->Flip();
 }
-#endif
 
 #else
 

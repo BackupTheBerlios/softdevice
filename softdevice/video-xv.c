@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.11 2004/12/31 01:00:10 lucke Exp $
+ * $Id: video-xv.c,v 1.12 2005/01/15 08:33:04 lucke Exp $
  */
 
 #include <unistd.h>
@@ -999,8 +999,8 @@ void cXvVideoOut::Refresh(cBitmap *Bitmap)
     ++osd_refresh_counter;
     osd_x = OSDxOfs;
     osd_y = OSDyOfs;
-    osd_w = Bitmap->Width();
-    osd_h = Bitmap->Height();
+    osd_w = OSDw;
+    osd_h = OSDh;
     pthread_mutex_unlock(&xv_mutex);
   }
 }
