@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.6 2004/10/29 16:41:39 iampivot Exp $
+ * $Id: mpeg2decoder.c,v 1.7 2004/11/09 21:41:18 lucke Exp $
  */
 
 #include <vdr/plugin.h>
@@ -785,7 +785,8 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
         else if ( (syncword >= 0x000001C0) && (syncword <= 0x000001CF) )
         {
           state=PAYLOAD;
-          streamtype=syncword & 0x000000FF;
+          //streamtype=syncword & 0x000000FF;
+          streamtype=0xc0;
         }
         break;
       case PAYLOAD:		//Payload length(hi)
