@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.14 2005/03/20 15:46:49 lucke Exp $
+ * $Id: video.c,v 1.15 2005/04/02 14:16:47 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -240,7 +240,7 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
              aspect_I,context->dtg_active_format,
              aspect_F,new_asp);
 #if LIBAVCODEC_BUILD > 4686
-    if (picture->pan_scan->width) {
+    if (picture->pan_scan && picture->pan_scan->width) {
       dsyslog("[VideoOut]: PAN/SCAN info present ([%d] %d - %d, %d %d)",
                picture->pan_scan->id,
                picture->pan_scan->width,

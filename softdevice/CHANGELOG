@@ -1,4 +1,6 @@
 Changelog
+2005-04-02:
+    - video.c: fix possible segfault if pan_scan info is not present
 2005-03-28:
     - dfb-out: chg. OSD drawing to update only modified areas.
                chg. videolayer to double buffered.
