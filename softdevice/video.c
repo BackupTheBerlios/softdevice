@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.11 2005/03/02 08:39:36 wachm Exp $
+ * $Id: video.c,v 1.12 2005/03/03 18:21:41 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -485,7 +485,7 @@ void cVideoOut::Draw(cBitmap *Bitmap,
             (OSDxOfs + SCALEX(Bitmap->X0() + x1) ) * depth;
     PixelMaskPtr=PixelMask + 
            linelen/16 * ( OSDyOfs + y + SCALEY(Bitmap->Y0())) +
-            (OSDxOfs + SCALEX(Bitmap->X0() + x1)/8 );
+            (OSDxOfs + SCALEX(Bitmap->X0() + x1))/8;
     prev_pix = false;
 
     for (int x = SCALEX(x1); x <= SCALEX(x2); x++)
