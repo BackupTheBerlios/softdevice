@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.10 2005/02/24 22:35:51 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.11 2005/02/27 08:52:33 lucke Exp $
  */
 
 #include "video.h"
@@ -129,6 +129,7 @@ cSetupStore::cSetupStore ()
   screenPixelAspect   = 0;
 
   strcpy (alsaDevice, "");
+  voArgs = aoArgs = NULL;
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)

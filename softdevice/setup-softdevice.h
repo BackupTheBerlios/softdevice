@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.7 2005/02/24 22:35:51 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.8 2005/02/27 08:52:33 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -38,6 +38,8 @@ class cSetupStore {
     int   shouldSuspend;
     int   osdMode;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
+    char  *voArgs;
+    char  *aoArgs;
 };
 
 #define OSDMODE_PSEUDO    0

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.14 2005/02/24 22:35:51 lucke Exp $
+ * $Id: softdevice.c,v 1.15 2005/02/27 08:52:33 lucke Exp $
  */
 
 #include <getopt.h>
@@ -225,7 +225,8 @@ void cSoftOsd::CloseWindow(cWindow *Window) {
 // --- cSoftDevice ------------------------------------------------------------
 class cPluginSoftDevice : public cPlugin {
 private:
-  int voutMethod;
+  int   voutMethod;
+  char  *pluginPath;
 
 public:
   cPluginSoftDevice(void);
@@ -265,7 +266,7 @@ private:
   cCondVar  readyForPlayCondVar;
 
 public:
-  cSoftDevice(int method = 0);
+  cSoftDevice(int method, char *pluginPath);
   ~cSoftDevice();
   virtual bool HasDecoder(void) const;
   virtual bool CanReplay(void) const;
@@ -294,7 +295,7 @@ public:
 #endif
 };
 
-cSoftDevice::cSoftDevice(int method)
+cSoftDevice::cSoftDevice(int method,char *pluginPath)
 {
     freezeModeEnabled = false;
 
@@ -305,7 +306,6 @@ cSoftDevice::cSoftDevice(int method)
     setupStore.outputMethod = method;
 #ifdef USE_SUBPLUGINS
   {
-      char  *pluginPath = "./PLUGINS/lib";
       char  *subPluginFileName = NULL;
       char  *outMethodName  = NULL;
       int   reconfigureArg  = 0;
@@ -611,6 +611,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
 #else
   voutMethod = 0;
 #endif
+  pluginPath = PLUGINLIBDIR;
 }
 
 cPluginSoftDevice::~cPluginSoftDevice()
@@ -638,6 +639,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 #ifdef VIDIX_SUPPORT
   "  -vo vidix:               enable output via vidix driver\n"
 #endif
+  "  -L <plugin_path_name>    search path for loading subplugins\n"
   "\n";
 }
 
@@ -657,6 +659,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 
         if (!strncmp (vo_argv, "xv:", 3)) {
           vo_argv += 3;
+          setupStore.voArgs = vo_argv;
 #ifdef XV_SUPPORT
           voutMethod = VOUT_XV;
           if (!strncmp (vo_argv, "aspect=", 7)) {
@@ -680,6 +683,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "fb:", 3)) {
           vo_argv += 3;
+          setupStore.voArgs = vo_argv;
 #ifdef FB_SUPPORT
           voutMethod = VOUT_FB;
 #else
@@ -687,6 +691,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "dfb:", 4)) {
           vo_argv += 4;
+          setupStore.voArgs = vo_argv;
 #ifdef DFB_SUPPORT
           voutMethod = VOUT_DFB;
           if (!strncmp (vo_argv, "mgatv", 5))
@@ -696,6 +701,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "vidix:", 6)) {
           vo_argv += 6;
+          setupStore.voArgs = vo_argv;
 #ifdef VIDIX_SUPPORT
           voutMethod = VOUT_VIDIX;
 #else
@@ -710,9 +716,15 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           char *ao_argv = argv[i];
         if (!strncmp(ao_argv, "alsa:", 5)) {
           ao_argv += 5;
+          setupStore.aoArgs = ao_argv;
           fprintf(stderr, "[softdevice] using alsa device %s\n", ao_argv);
           strncpy(setupStore.alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);
         }
+      }
+    } else if (!strcmp (argv[i], "-L")) {
+      ++i; --argc;
+      if (argc > 0) {
+        pluginPath = argv[i];
       }
     }
     ++i;
@@ -732,7 +744,7 @@ bool cPluginSoftDevice::Initialize(void)
 {
   // Start any background activities the plugin shall perform.
   fprintf(stderr,"[softdevice] initializing Plugin\n");
-  new cSoftDevice(voutMethod);
+  new cSoftDevice(voutMethod,pluginPath);
   return true;
 }
 

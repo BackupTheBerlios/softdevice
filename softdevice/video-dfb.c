@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.18 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-dfb.c,v 1.19 2005/02/27 08:52:33 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -584,9 +584,9 @@ void cDFBVideoOut::SetParams()
         dlc.height  = sheight;
       }
 #endif
-               dlc.flags   = (DFBDisplayLayerConfigFlags)
-                              ((int) dlc.flags | DLCONF_OPTIONS);
-               dlc.options  = DLOP_FIELD_PARITY; //DLOP_NONE; //DLOP_FIELD_PARITY;
+      dlc.flags = (DFBDisplayLayerConfigFlags)((int) dlc.flags | DLCONF_OPTIONS);
+
+      dlc.options = DLOP_FIELD_PARITY;
 
       vidDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
                                                    DSDESC_WIDTH |
@@ -645,9 +645,16 @@ void cDFBVideoOut::SetParams()
         if (setupStore->useMGAtv)
           dlc.options = (DFBDisplayLayerOptions)((int)dlc.options|
                                                  DLOP_FIELD_PARITY);
-
-        if (isVIAUnichrome)
-          videoLayer->SetLevel(1);
+        try
+        {
+          if (isVIAUnichrome)
+            videoLayer->SetLevel(1);
+        }
+        catch (DFBException *ex)
+        {
+          fprintf (stderr,"Caught: action=%s, result=%s\n",
+                   ex->GetAction(), ex->GetResult());
+        }
 
         /* --------------------------------------------------------------------
          * OK, try to set the video layer configuration
@@ -660,11 +667,7 @@ void cDFBVideoOut::SetParams()
         {
           fprintf (stderr,"Caught: action=%s, result=%s\n",
                    ex->GetAction(), ex->GetResult());
-          //exit(1);
         }
-
-        //if (setupStore->useMGAtv)
-          //videoLayer->SetFieldParity(0);
 
 #if HAVE_SetSourceLocation
         try
@@ -774,7 +777,7 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
     uint8_t *dst;
     IDirectFBSurface  *tmpSurface;
 
-  // don't update only dirty areas 
+  // don't update only dirty areas
   OSDdirty=true;
 
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;

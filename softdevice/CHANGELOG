@@ -1,4 +1,9 @@
 Changelog
+ 2005-02-27:
+    - save "vo" and "ao" calling args in setup store.
+    - new runtime arg "-L path_name". Default set in Makefile to: "./PLUGINS/lib"
+    - USE_SUBPLUGINS is now default build option
+    - dfb-out: fix for segfault on via unichrome with current DirectFB cvs.
  2005-02-25:
     - vidix-out: fix segfaults upon switch from software OSD back to pseudo mode.
                  match available fourcc against selected.

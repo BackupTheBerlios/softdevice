@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.6 2005/02/24 22:35:50 lucke Exp $
+# $Id: Makefile,v 1.7 2005/02/27 08:52:33 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -55,7 +55,7 @@ PP_LIBAVCODEC=1
 
 # -----------------------------------------------------------------------------
 # if you want output methods build as separate libs uncomment this
-#USE_SUBPLUGINS = 1
+USE_SUBPLUGINS = 1
 
 # -----------------------------------------------------------------------------
 # framebuffer device name
@@ -145,6 +145,7 @@ PACKAGE = vdr-$(ARCHIVE)
 INCLUDES += -I$(VDRDIR)/include -I$(DVBDIR)/include -I$(LIBAVCODEC)
 
 DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -D_GNU_SOURCE
+DEFINES += -DPLUGINLIBDIR='"./PLUGINS/lib"'
 
 ### The object files (add further files here):
 
