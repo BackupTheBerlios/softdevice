@@ -1,4 +1,10 @@
 Changelog
+ 2005-02-18:
+    - support for DIRECTCOLOR framebuffer ( most ATI cards, tested with Mach64)
+    - fixed osd flickering in framebuffer mode vdr>1.3.7
+    - software alpha blending implemented for Vidix (vdr>1.3.7)
+    - software alpha blending done in software for Xv out and vdr>1.3.7
+    - osd scaling for vdr and Xv >1.3.7
  2005-02-13:
     - a/v sync: auto adjusting back index instead of using fixed value 4
  2005-02-08:

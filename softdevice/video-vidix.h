@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.1 2004/08/01 05:07:04 lucke Exp $
+ * $Id: video-vidix.h,v 1.2 2005/02/18 13:31:27 wachm Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -44,7 +44,9 @@ public:
   virtual ~cVidixVideoOut();
 
 #if VDRVERSNUM >= 10307
+  virtual void ClearOSD();
   virtual void Refresh(cBitmap *Bitmap);
+  virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight); 
 #else
   virtual void Refresh();
 #endif

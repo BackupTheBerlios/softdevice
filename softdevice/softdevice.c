@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.12 2005/01/15 08:33:04 lucke Exp $
+ * $Id: softdevice.c,v 1.13 2005/02/18 13:31:27 wachm Exp $
  */
 
 #include <getopt.h>
@@ -155,6 +155,7 @@ cSoftOsdProvider::cSoftOsdProvider(cVideoOut *VideoOut) : cOsdProvider()
 cOsd * cSoftOsdProvider::CreateOsd(int Left, int Top)
 {
     osd = new cSoftOsd(videoOut, Left, Top);
+    videoOut->SetOsd(osd);
     return osd;
 }
 

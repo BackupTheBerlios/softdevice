@@ -3,18 +3,44 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.7 2005/01/23 14:54:22 wachm Exp $
+ * $Id: video.h,v 1.8 2005/02/18 13:31:27 wachm Exp $
  */
 
 #ifndef VIDEO_H
 #define VIDEO_H
 
 #include <vdr/plugin.h>
+#if VDRVERSNUM >= 10307
+#include <vdr/osd.h>
+#endif
 #include <avcodec.h>
 
 #define DV_FORMAT_UNKNOWN -1
 #define DV_FORMAT_NORMAL  1
 #define DV_FORMAT_WIDE    2
+
+#define OSD_FULL_WIDTH    736
+#define OSD_FULL_HEIGHT   576
+
+// MMX - 3Dnow! defines
+
+#undef PREFETCH
+#undef EMMS
+
+#ifdef USE_3DNOW
+//#warning Using 3Dnow! extensions
+#define PREFETCH "prefetch "
+#define EMMS     __asm__ (" femms \n": :  )
+#elif defined ( USE_MMX2 )
+//#warning Using MMX2 extensions
+#define PREFETCH "prefetchnta "
+#define EMMS     __asm__ (" emms \n": :  )
+#else
+//#warning Using MMX extensions
+#define PREFETCH
+#define EMMS     __asm__ (" emms \n": :  )
+#endif
+
 
 #if VDRVERSNUM < 10307
 
@@ -37,7 +63,7 @@ class cWindowLayer {
 
 #endif
 
-class cVideoOut {
+class cVideoOut: public cThread {
 private:
 protected:
     cMutex  osdMutex;
@@ -45,12 +71,14 @@ protected:
             OSDw, OSDh;
     bool    OSDpresent,
             OSDpseudo_alpha;
+    int     current_osdMode;
     int     Xres, Yres, Bpp; // the child class MUST set these params (for OSD Drawing)
-    int     dx, dy, dwidth, dheight,
+    int     dx, dy, 
+            dwidth, dheight,
             old_x, old_y, old_dwidth, old_dheight,
-            screenPixelAspect,
-            fwidth, fheight,
-            swidth, sheight,
+            screenPixelAspect;
+    volatile int        fwidth, fheight;
+    int     swidth, sheight,
             sxoff, syoff,
             lwidth, lheight,
             lxoff, lyoff,
@@ -60,8 +88,13 @@ protected:
             currentPixelFormat,
             aspect_changed,
             current_afd;
+    
+    cOsd *osd;
+    bool active;
+    bool OSDdirty;
 
 public:
+    cVideoOut();
     virtual ~cVideoOut();
     virtual void Size(int w, int h) {OSDw = w; OSDh = h;};
     virtual void OSDStart();
@@ -76,20 +109,62 @@ public:
     virtual bool Reconfigure (int format) {return 1;};
     virtual bool GetInfo(int *fmt, unsigned char **dest,int *w, int *h) {return false;};
 
-    virtual void Suspend(void) { printf("Video Suspend\n"); return;};
-    virtual bool Resume(void) {printf("Video Resume\n"); return true;};
+    virtual void Suspend(void) { return;};
+    virtual bool Resume(void) { return true;};
 
+    virtual void Action(void);
+    // osd control thread. Refreshes the osd on dimension changes and
+    // activates fallback mode if the osd was not updated for a too long
+    // time
+
+    void SetOsd(cOsd * Osd) {osd=Osd;};
+    // sets a pointer to the current osd. For refreshing of the osd 
+
+    uint8_t *PixelMask;
 #if VDRVERSNUM >= 10307
+    uint8_t *OsdPy;
+    uint8_t *OsdPu; 
+    uint8_t *OsdPv;
+    uint8_t *OsdPAlphaY; 
+    uint8_t *OsdPAlphaUV;
+    // buffers for software osd alpha blending 
+    
+    uint16_t OsdHeight;
+    uint16_t OsdWidth;
+    // current dimensions of the OSD
+    
+    uint16_t OsdRefreshCounter;
+    // should be setted to null everytime OSD is shown 
+    // (software alpha blending mode).  
 
+    virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight)
+    // called whenever OSD is to be displayed
+    // every video-out should implement a method which desired osd dimension
+    // for scaling, if -1,-1 is returned no scaling is done.
+    { OsdWidth=-1;OsdHeight=-1;};
+
+    virtual void ClearOSD();
+    // clear the OSD buffer
+    
     virtual void Refresh(cBitmap *Bitmap) { return; };
+    
     void Draw(cBitmap *Bitmap,
               unsigned char * buf,
               int linelen,
               bool inverseAlpha = false);
+    // draws the bitmap in buf. The bitmap is scaled automaticaly if
+    // GetOSDDimension return smaller dimensions
+      
+   void ToYUV(cBitmap *Bitmap);
+   // converts the bitmap to YUV format, saved in OSDP[yuv] and 
+   // OSDPAlpha[YUV]. The bitmap is also scaled if requested
+   
+   void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
+       uint8_t *alpha,uint16_t count);
+   // performes alpha blending in software
 
 #else
     cWindowLayer *layer[MAXNUMWINDOWS];
-    uint8_t *PixelMask;
     virtual bool OpenWindow(cWindow *Window);
     virtual void CommitWindow(cWindow *Window);
     virtual void ShowWindow(cWindow *Window);

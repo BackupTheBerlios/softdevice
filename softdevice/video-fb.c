@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.2 2004/12/21 05:55:42 lucke Exp $
+ * $Id: video-fb.c,v 1.3 2005/02/18 13:31:27 wachm Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -16,7 +16,7 @@
 #include <vdr/plugin.h>
 #include "video-fb.h"
 #include "utils.h"
-
+#include "setup-softdevice.h"
 
 static  pthread_mutex_t fb_mutex = PTHREAD_MUTEX_INITIALIZER;
 // --- cFrameBuffer --------------------------------------------------------
@@ -25,38 +25,107 @@ cFBVideoOut::cFBVideoOut()
     printf("[video-fb] Initializing Driver\n");
 
     if ((fbdev = open(FBDEV, O_RDWR)) == -1) {
-	printf("[video-fb] cant open framebuffer %s\n", FBDEV);
-	exit(1);
+        printf("[video-fb] cant open framebuffer %s\n", FBDEV);
+        exit(1);
     }
 
     if (ioctl(fbdev, FBIOGET_VSCREENINFO, &fb_vinfo)) {
         printf("[video-fb] Can't get VSCREENINFO\n");
-	exit(1);
+        exit(1);
     }
     if (ioctl(fbdev, FBIOGET_FSCREENINFO, &fb_finfo)) {
-	printf("[video-fb] Can't get FSCREENINFO\n");
-	exit(1);
+        printf("[video-fb] Can't get FSCREENINFO\n");
+        exit(1);
     }
 
     fb_orig_vinfo = fb_vinfo;
+         
+    switch (fb_finfo.visual) {
+
+       case FB_VISUAL_TRUECOLOR:
+           printf("[video-fb] Truecolor FB found\n");
+           break;
+
+       case FB_VISUAL_DIRECTCOLOR:
+
+           struct fb_cmap cmap;
+           __u16 red[256], green[256], blue[256];
+
+           printf("[video-fb] DirectColor FB found\n");
+
+           orig_cmaplen = 32;
+           orig_cmap = (__u16 *) malloc ( 3 * orig_cmaplen * sizeof(*orig_cmap) );
+
+           if ( orig_cmap == NULL ) {
+               printf("cFBVideoOut: Can't alloc memory for cmap\n");
+               exit(1);
+           }
+           cmap.start  = 0;
+           cmap.len    = orig_cmaplen;
+           cmap.red    = &orig_cmap[0*orig_cmaplen];
+           cmap.green  = &orig_cmap[1*orig_cmaplen];
+           cmap.blue   = &orig_cmap[2*orig_cmaplen];
+           cmap.transp = NULL;
+
+           if ( ioctl(fbdev, FBIOGETCMAP, &cmap)) {
+               printf("cFBVideoOut: Can't get cmap\n");
+               exit(-1);
+           }
+
+           for ( int i=0; i < orig_cmaplen; ++i ) {
+               red[i]   = (65535/(orig_cmaplen+1))*i;
+               green[i] = (65535/(orig_cmaplen+1))*i;
+               blue[i] =  (65535/(orig_cmaplen+1))*i;
+               //(i<<8)|i;
+           }
+
+           cmap.start  = 0;
+           cmap.len    = orig_cmaplen;
+           cmap.red    = red;
+           cmap.green  = green;
+           cmap.blue   = blue;
+           cmap.transp = NULL;
+
+           if ( ioctl(fbdev, FBIOPUTCMAP, &cmap)) {
+               printf("cVidixVideoOut: Can't put cmap\n");
+               exit(-1);
+           }
+
+           break;
+
+       default:
+           printf("cFBVideoOut: Unsupported FB. Don't know if it will work.\n");
+    }
+
 
     // currently we support only 16 bit FB's
 
     size = fb_finfo.smem_len;
     line_len = fb_finfo.line_length;
     if ((fb = (unsigned char *) mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fbdev, 0)) == (unsigned char *) -1) {
-	printf("[video-fb] Can't mmap\n");
-	exit(1);
+        printf("[video-fb] Can't mmap\n");
+        exit(1);
     }
 
     Xres=fb_vinfo.xres;
     Yres=fb_vinfo.yres;
     Bpp = fb_vinfo.bits_per_pixel;
     if (Bpp != 16 && Bpp != 15) {
-	printf ("[video-fb] In software-mode only 15/16 bit Framebuffer supported\n");
-	exit(1);
+        printf ("[video-fb] In software-mode only 15/16 bit Framebuffer supported\n");
+        exit(1);
     }
+
+    // set rgb unpack method
+    mmx_unpack=mmx_unpack_16rgb;
+    if (fb_vinfo.red.length==5 && fb_vinfo.green.length==5 
+         && fb_vinfo.blue.length==5 ) {
+      mmx_unpack=mmx_unpack_15rgb;
+      printf("[video-fb] Using mmx_unpack_15rgb\n");
+    };
+      
 #if VDRVERSNUM < 10307
+    PixelMask = (unsigned char *)malloc(Xres*Yres/8 ); // where the Video window should be transparent
+#else
     PixelMask = (unsigned char *)malloc(Yres*line_len / ((Bpp+7) / 8) / 8); // where the Video window should be transparent
 #endif
 
@@ -68,8 +137,8 @@ cFBVideoOut::cFBVideoOut()
     unsigned char * fbinit;
     fbinit=fb;
     for (int i = 0; i <Yres*line_len; i++) {
-	*fbinit=0;
-	fbinit++;
+        *fbinit=0;
+        fbinit++;
     }
     screenPixelAspect = -1;
 }
@@ -78,14 +147,35 @@ void cFBVideoOut::Pause(void)
 {
 }
 
-
 #if VDRVERSNUM >= 10307
+/* ---------------------------------------------------------------------------
+ */
+void cFBVideoOut::ClearOSD()
+{
+  cVideoOut::ClearOSD();
+  if (PixelMask) 
+    memset(PixelMask, 0, Xres * Yres/8);
+};
+
+/* ---------------------------------------------------------------------------
+ */
+void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
+   switch (current_osdMode) {
+      case OSDMODE_PSEUDO :
+                OsdWidth=Xres;
+                OsdHeight=Yres;
+             break;
+    };
+};
+
 void cFBVideoOut::Refresh(cBitmap *Bitmap)
 {
+  OSDpresent=true;
   Draw(Bitmap,fb,line_len);
 }
 
 #else
+
 void cFBVideoOut::Refresh()
 {
   // refreshes the OSD screen
@@ -112,11 +202,7 @@ void cFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Heig
 {
   pthread_mutex_lock(&fb_mutex);
   if (OSDpresent) {
-#if VDRVERSNUM < 10307
     yuv_to_rgb (fb, Py, Pu, Pv, Width, Height, line_len,Ystride,UVstride,Xres,Yres,Bpp, PixelMask);
-#else
-    yuv_to_rgb (fb, Py, Pu, Pv, Width, Height, line_len,Ystride,UVstride,Xres,Yres,Bpp, NULL);
-#endif
   } else {
     yuv_to_rgb (fb, Py, Pu, Pv, Width, Height, line_len,Ystride,UVstride,Xres,Yres,Bpp, NULL);
   }
@@ -125,6 +211,30 @@ void cFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Heig
 
 cFBVideoOut::~cFBVideoOut()
 {
+    switch (fb_finfo.visual) {
+       case FB_VISUAL_DIRECTCOLOR:
+       {
+           struct fb_cmap cmap;
+
+           if ( orig_cmap ) {
+
+               cmap.start  = 0;
+               cmap.len    = orig_cmaplen;
+               cmap.red    = &orig_cmap[0*orig_cmaplen];
+               cmap.green  = &orig_cmap[1*orig_cmaplen];
+               cmap.blue   = &orig_cmap[2*orig_cmaplen];
+               cmap.transp = NULL;
+
+               if ( ioctl(fbdev, FBIOPUTCMAP, &cmap)) {
+                   printf("cFBVideoOut : Can't put cmap\n");
+               }
+
+               free(orig_cmap);
+               orig_cmap = NULL;
+           }
+           break;
+       }
+  }
   if (fbdev)
     close(fbdev);
 #if VDRVERSNUM < 10307

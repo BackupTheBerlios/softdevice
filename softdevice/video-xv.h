@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.4 2005/01/23 14:54:22 wachm Exp $
+ * $Id: video-xv.h,v 1.5 2005/02/18 13:31:27 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -46,10 +46,11 @@
 #define XV_SIZE_NORMAL    0x04
 #define XV_SIZE_QUARTER   0x08
 
-#define XV_NOSAWINDOW     0x10  /* not use at the moment	*/
+#define XV_NOSAWINDOW     0x10  /* not use at the moment*/
 
 #define XV_SRC_HEIGHT         576
 #define XV_SRC_WIDTH          736
+
 
 #define XV_DEST_HEIGHT        XV_SRC_HEIGHT
 #define XV_DEST_WIDTH_4_3     ((XV_DEST_HEIGHT/3)*4)
@@ -145,6 +146,8 @@ public:
   void ShowOSD (int skip, int do_sync);
 
 #if VDRVERSNUM >= 10307
+  virtual void ClearOSD();
+  virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
   virtual void Refresh(cBitmap *Bitmap);
 #else
   virtual void Refresh();

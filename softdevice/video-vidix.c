@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.4 2004/12/21 05:55:42 lucke Exp $
+ * $Id: video-vidix.c,v 1.5 2005/02/18 13:31:27 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -14,23 +14,34 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-cVidixVideoOut::cVidixVideoOut()
+//#define TIMINGS
+
+#ifdef TIMINGS
+uint64_t startTime;
+#define START startTime=getTimeMilis()
+#define TIMINGS(out...)  {printf("time %d: ",getTimeMilis()-startTime);printf(out);}
+#else
+#define TIMINGS(out...)
+#define START
+#endif
+
+cVidixVideoOut::cVidixVideoOut() : cVideoOut()
 {
     int err;
     if ((fbdev = open(FBDEV, O_RDWR)) == -1) {
-	printf("cVidixVideoOut: Can't open framebuffer\n");
+        printf("cVidixVideoOut: Can't open framebuffer\n");
         exit(1);
     }
     
     if (ioctl(fbdev, FBIOGET_VSCREENINFO, &fb_vinfo)) {
-	printf("cVidixVideoOut: Can't get VSCREENINFO\n");
+        printf("cVidixVideoOut: Can't get VSCREENINFO\n");
         exit(1);
     }
     if (ioctl(fbdev, FBIOGET_FSCREENINFO, &fb_finfo)) {
         printf("cVidixVideoOut: Can't get FSCREENINFO\n");
         exit(1);
     }
-	         
+         
     switch (fb_finfo.visual) {
 
        case FB_VISUAL_TRUECOLOR:
@@ -138,7 +149,8 @@ cVidixVideoOut::cVidixVideoOut()
        printf("cVidixVideoOut: Couldn't get capability: %s\n", strerror(err) );
        exit(1);
     }
-
+    printf("cVidixVideoOut: capabilities:  0x%0x\n", vidix_cap.flags );
+    
     OSDpseudo_alpha = true;
 
     if (setupStore.pixelFormat == 0)
@@ -165,20 +177,26 @@ cVidixVideoOut::cVidixVideoOut()
     vidix_play.dest.y       = 0;
     vidix_play.dest.w       = Xres;
     vidix_play.dest.h       = Yres;
-    vidix_play.num_frames   = 1;
+    vidix_play.num_frames   = 2;
+    //vidix_play.num_frames   = 1;
 
-
+    printf("cVidixVideoOut: fourcc.flags:  0x%0x\n",vidix_fourcc.flags);
     if( vidix_fourcc.flags & VID_CAP_COLORKEY )
     {
+       printf("cVidixVideoOut: set colorkey\n");
        vdlGetGrKeys(vidix_handler, &gr_key);
 
        gr_key.key_op = KEYS_PUT;
 
        gr_key.ckey.op = CKEY_TRUE;
-       gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0;
+       gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 32;
 
        vdlSetGrKeys(vidix_handler, &gr_key);
     }
+  //start osd refresh thread
+  active=true;
+  Start();
+
 }
 
 void cVidixVideoOut::Pause(void)
@@ -191,7 +209,9 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
     uint8_t *dst;
     uint32_t apitch;
     int hi, wi;
-
+    START;
+    TIMINGS("start...\n");
+    
     if (aspect_changed || currentPixelFormat != setupStore.pixelFormat)
     {
        printf("cVidixVideoOut: Video changed format to %dx%d\n", Width, Height);
@@ -244,6 +264,19 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
            printf("cVidixVideoOut : Can't start playback: %s\n", strerror(err));
            exit(1);
        }
+  
+       if( vidix_fourcc.flags & VID_CAP_COLORKEY )
+       {
+         printf("cVidixVideoOut: set colorkey\n");
+         vdlGetGrKeys(vidix_handler, &gr_key);
+
+         gr_key.key_op = KEYS_PUT;
+
+         gr_key.ckey.op = CKEY_TRUE;
+         gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0xff;
+
+         vdlSetGrKeys(vidix_handler, &gr_key);
+       }
 
        next_frame = 0;
 
@@ -284,7 +317,8 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
        printf("cVidixVideoOut : dstrides.u=%d\n", dstrides.u);
        printf("cVidixVideoOut : dstrides.v=%d\n", dstrides.v);
     }
-
+    TIMINGS("after if, before Y\n");
+    
     // Plane Y
     dst = (uint8_t *) vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.y;
 
@@ -292,12 +326,28 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
     Pv += (UVstride * syoff/2);
     Pu += (UVstride * syoff/2);
 
+#if VDRVERSNUM >= 10307
+    OsdRefreshCounter=0;
+    if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
+       for(hi=0; hi < sheight; hi++){
+           AlphaBlend(dst,OsdPy+hi*OSD_FULL_WIDTH,
+            Py + sxoff,
+            OsdPAlphaY+hi*OSD_FULL_WIDTH,swidth);
+          Py  += Ystride;
+          dst += dstrides.y;
+  
+       }
+       EMMS;
+    } else
+#endif
     for(hi=0; hi < sheight; hi++){
-       memcpy(dst, Py+sxoff, swidth);
-        Py  += Ystride;
-        dst += dstrides.y;
-    }
-
+         memcpy(dst, Py+sxoff, swidth);
+         Py  += Ystride;
+          dst += dstrides.y;
+      }
+    
+    TIMINGS("Before YUV\n");
+    
     if (vidix_play.flags & VID_PLAY_INTERLEAVED_UV)
     {
         dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
@@ -313,33 +363,93 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
            Pv += UVstride;
        }
     } else {
-       // Plane U
-       dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.u;
+      
+      // Plane U
+      dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.u;
 
-       for(hi=0; hi < sheight/2; hi++) {
+#if VDRVERSNUM >= 10307
+      if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) { 
+         for(hi=0; hi < sheight/2; hi++){
+             AlphaBlend(dst,OsdPu+hi*OSD_FULL_WIDTH/2,
+               Pu + sxoff/2,
+               OsdPAlphaUV+hi*OSD_FULL_WIDTH/2,swidth/2);
+             Pu  += UVstride;
+             dst += dstrides.y / 2;
+         }
+         
+         // Plane V
+         dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
+         for(hi=0; hi < sheight/2; hi++) {
+                 AlphaBlend(dst, OsdPv+hi*OSD_FULL_WIDTH/2,
+                   Pv + sxoff/2, 
+                   OsdPAlphaUV+hi*OSD_FULL_WIDTH/2, swidth/2);
+                 Pv   += UVstride;
+                 dst += dstrides.v / 2;
+         }
+
+         EMMS;
+     } else 
+#endif
+     {
+        for(hi=0; hi < sheight/2; hi++) {
                memcpy(dst, Pu+sxoff/2, swidth/2);
                Pu   += UVstride;
                dst += dstrides.u / 2;
-       }
+         }
 
-       // Plane V
-       dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
-       for(hi=0; hi < sheight/2; hi++) {
-               memcpy(dst, Pv+sxoff/2, swidth/2);
-               Pv   += UVstride;
-               dst += dstrides.v / 2;
+         // Plane V
+         dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
+         for(hi=0; hi < sheight/2; hi++) {
+                memcpy(dst, Pv+sxoff/2, swidth/2);
+                Pv   += UVstride;
+                dst += dstrides.v / 2;
+         }
        }
     }
 
+    TIMINGS("After UV\n");
     vdlPlaybackFrameSelect(vidix_handler, next_frame);
     next_frame = (next_frame+1) % vidix_play.num_frames;
+    TIMINGS("End\n");
 }
 
 #if VDRVERSNUM >= 10307
 
+/* ---------------------------------------------------------------------------
+ */
+void cVidixVideoOut::ClearOSD()
+{
+  cVideoOut::ClearOSD();
+  if (current_osdMode==OSDMODE_PSEUDO)
+    memset(fb, 0, fb_line_len * Yres);
+};
+
+/* ---------------------------------------------------------------------------
+ */
+void cVidixVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
+   switch (current_osdMode) {
+      case OSDMODE_PSEUDO :
+                OsdWidth=Xres;//*9/10;
+                OsdHeight=Yres;//*9/10;
+             break;
+      case OSDMODE_SOFTWARE:
+                OsdWidth=swidth;//*9/10;
+                OsdHeight=sheight;//*9/10;
+             break;
+    };
+};
+
+
 void cVidixVideoOut::Refresh(cBitmap *Bitmap)
 {
-  Draw(Bitmap,fb,fb_line_len);
+    switch (current_osdMode) {
+      case OSDMODE_PSEUDO :
+              Draw(Bitmap, fb,fb_line_len);
+            break;
+      case OSDMODE_SOFTWARE:
+              ToYUV(Bitmap);
+            break;
+    };
 }
 
 #else
@@ -357,6 +467,7 @@ void cVidixVideoOut::Refresh()
 
 void cVidixVideoOut::CloseOSD()
 {
+    cVideoOut::CloseOSD();
     memset(fb, 0, fb_line_len * Yres);
 }
 

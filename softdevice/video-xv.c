@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.14 2005/02/08 21:31:17 lucke Exp $
+ * $Id: video-xv.c,v 1.15 2005/02/18 13:31:27 wachm Exp $
  */
 
 #include <unistd.h>
@@ -613,6 +613,9 @@ cXvVideoOut::cXvVideoOut(int aspect, int port, int crop, int xres, int yres)
   } else {
     lwidth = dwidth = XV_DEST_WIDTH_16_9;
   }
+  //start osd refresh thread
+  active=true;
+  Start();
 }
 
 /* ---------------------------------------------------------------------------
@@ -943,7 +946,6 @@ bool cXvVideoOut::Reconfigure(int format)
                      lxoff,  lyoff,     /* dx, dy */
                      lwidth, lheight,   /* dw, dh */
                      False);
-		     
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
   
   rc = XSync(dpy, False);
@@ -958,8 +960,11 @@ bool cXvVideoOut::Reconfigure(int format)
 
 /* ---------------------------------------------------------------------------
  */
-cXvVideoOut::cXvVideoOut()
+cXvVideoOut::cXvVideoOut() : cVideoOut()
 {
+  //start osd refresh thread
+  active=true;
+  Start();  
 }
 
 /* ---------------------------------------------------------------------------
@@ -1020,7 +1025,8 @@ bool cXvVideoOut::GetInfo(int *fmt, unsigned char **dest, int *w, int *h)
  */
 void cXvVideoOut::CloseOSD()
 {
-  OSDpresent=false;
+  cVideoOut::CloseOSD();
+  osdMutex.Lock();
 #if VDRVERSNUM < 10307
   for (int i = 0; i < MAXNUMWINDOWS; i++)
   {
@@ -1040,9 +1046,34 @@ void cXvVideoOut::CloseOSD()
     XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
   }
+  osdMutex.Unlock();
 }
 
 #if VDRVERSNUM >= 10307
+/* ---------------------------------------------------------------------------
+ */
+void cXvVideoOut::ClearOSD()
+{
+  cVideoOut::ClearOSD();
+  if (initialized && current_osdMode==OSDMODE_PSEUDO)
+    memset (osd_buffer, 0, osd_image->bytes_per_line * height);
+};
+
+/* ---------------------------------------------------------------------------
+ */
+
+void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
+   switch (current_osdMode) {
+      case OSDMODE_PSEUDO :
+                OsdWidth=lwidth;//*9/10;
+                OsdHeight=lheight;//*9/10;
+             break;
+      case OSDMODE_SOFTWARE:
+                OsdWidth=swidth;//*9/10;
+                OsdHeight=sheight;//*9/10;
+             break;
+    };
+};
 
 /* ---------------------------------------------------------------------------
  */
@@ -1052,16 +1083,24 @@ void cXvVideoOut::Refresh(cBitmap *Bitmap)
   // copy video Data
   if (!initialized)
     return;
-  if (OSDpresent)
+//  if (OSDpresent)
   {
-    Draw(Bitmap, osd_buffer, osd_image->bytes_per_line);
-
+    switch (current_osdMode) {
+      case OSDMODE_PSEUDO :
+              Draw(Bitmap, osd_buffer, osd_image->bytes_per_line);
+            break;
+      case OSDMODE_SOFTWARE:
+              ToYUV(Bitmap);
+            break;
+    };
+    
     pthread_mutex_lock(&xv_mutex);
     ++osd_refresh_counter;
     osd_x = OSDxOfs;
     osd_y = OSDyOfs;
     osd_w = OSDw;
     osd_h = OSDh;
+    //OSDpresent=true;
     pthread_mutex_unlock(&xv_mutex);
   }
 }
@@ -1133,16 +1172,24 @@ void cXvVideoOut::ShowOSD (int skip, int do_sync)
 {
   if (OSDpresent) {
     if (osd_refresh_counter) {
-      if (osd_skip_counter > skip) {
+      if (current_osdMode==OSDMODE_PSEUDO && osd_skip_counter > skip) {
+      
+        int x= lwidth > OSD_FULL_WIDTH ? osd_x + (dwidth - width) / 2:
+                osd_x * lwidth/OSD_FULL_WIDTH *9/10;
+        int y= lheight > OSD_FULL_HEIGHT ? osd_y + (dheight - height) / 2:
+                osd_y * lheight/OSD_FULL_HEIGHT *9/10;
+
         XShmPutImage (dpy, win, gc, osd_image,
-                      osd_x, osd_y,
-                      osd_x + (dwidth - width) / 2,
-                      osd_y + (dheight - height) / 2,
+                      osd_x, 
+                      osd_y,
+                      x,y,
                       osd_w, osd_h,
                       False);
+
         if (do_sync)
           XSync(dpy, False);
         osd_skip_counter = 0;
+        //osd_refresh_counter--;
       } else {
         osd_skip_counter++;
       }
@@ -1158,29 +1205,44 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 {
   if (!initialized || !xv_initialized)
     return;
-
+#if VDRVERSNUM >= 10307
+  OsdRefreshCounter=0;
+  
   /* -------------------------------------------------------------------------
    * don't know where those funny stride values (752,376) come from.
    * therefor  we have to copy line by line :-( .
    * Hmm .. for HDTV they should be larger anyway and for some other
    * unusual resolutions they should be configurable swidth/sheight ?
    */
-  for (int i = 0; i < fheight; i++)
-  {
-    memcpy (pixels [0] + i * width, Py + i * Ystride, fwidth);
-  }
 
-  for (int i = 0; i < fheight / 2; i++)
-  {
-    memcpy (pixels [1] + i * width / 2, Pv + i * UVstride, fwidth / 2);
-  }
+  // if (0) {
+  if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
+        for (int i = 0; i < fheight; i++)
+        {
+          AlphaBlend(pixels[0]+i*width,OsdPy+i*OSD_FULL_WIDTH,
+            Py + i * Ystride,
+            OsdPAlphaY+i*OSD_FULL_WIDTH,fwidth);
+        }
+ 
+        for (int i = 0; i < fheight / 2; i++)
+        {
+          AlphaBlend(pixels[1]+i*width/2,
+            OsdPv+i*OSD_FULL_WIDTH/2,Pv+ i * UVstride,
+            OsdPAlphaUV+i*OSD_FULL_WIDTH/2,fwidth/2);
+        }
 
-  for (int i = 0; i < fheight / 2; i++)
-  {
-    memcpy (pixels [2] + i * width / 2, Pu + i * UVstride, fwidth / 2);
-  }
-  pthread_mutex_lock(&xv_mutex);
-  XvShmPutImage(dpy, port,
+        for (int i = 0; i < fheight / 2; i++)
+        {
+          AlphaBlend(pixels[2]+i*width/2,
+            OsdPu+i*OSD_FULL_WIDTH/2,Pu+i*UVstride,
+            OsdPAlphaUV+i*OSD_FULL_WIDTH/2,fwidth/2);
+        }
+#ifdef USE_MMX
+     EMMS;
+#endif
+
+        pthread_mutex_lock(&xv_mutex);
+        XvShmPutImage(dpy, port,
                 win, gc,
                 xv_image,
                 sxoff, syoff,      /* sx, sy */
@@ -1188,7 +1250,29 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                 lxoff,  lyoff,     /* dx, dy */
                 lwidth, lheight,   /* dw, dh */
                 False);
-  ShowOSD (2, False);
+
+  }
+  else 
+#endif
+ {
+          for (int i = 0; i < fheight; i++)
+             memcpy (pixels [0] + i * width, Py + i * Ystride, fwidth);
+          for (int i = 0; i < fheight / 2; i++) 
+             memcpy (pixels [1] + i * width / 2, Pv + i * UVstride, fwidth / 2);
+          for (int i = 0; i < fheight / 2; i++)
+             memcpy (pixels [2] + i * width / 2, Pu + i * UVstride, fwidth / 2);
+   
+          pthread_mutex_lock(&xv_mutex);
+          XvShmPutImage(dpy, port,
+                win, gc,
+                xv_image,
+                sxoff, syoff,      /* sx, sy */
+                swidth, sheight,   /* sw, sh */
+                lxoff,  lyoff,     /* dx, dy */
+                lwidth, lheight,   /* dw, dh */
+                False);
+          ShowOSD (1, False);
+  }
   ProcessEvents ();
   events_not_done = 0;
   XSync(dpy, False);

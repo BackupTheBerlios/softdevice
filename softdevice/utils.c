@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: utils.c,v 1.2 2005/02/18 13:31:27 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -21,6 +21,7 @@
 #include "setup-softdevice.h"
 
 #define VERT_SCALING
+void (*mmx_unpack)(uint8_t * image, int lines, int stride);
 
 static inline void mmx_yuv2rgb (uint8_t * py, uint8_t * pu, uint8_t * pv)
 {
@@ -100,7 +101,7 @@ static inline void mmx_yuv2rgb (uint8_t * py, uint8_t * pu, uint8_t * pv)
 
 
 
-static inline void mmx_unpack_16rgb (uint8_t * image, int lines, int stride)
+void mmx_unpack_16rgb (uint8_t * image, int lines, int stride)
 {
     static mmx_t mmx_bluemask = {0xf8f8f8f8f8f8f8f8ll};
     static mmx_t mmx_greenmask = {0xfcfcfcfcfcfcfcfcll};
@@ -134,15 +135,64 @@ static inline void mmx_unpack_16rgb (uint8_t * image, int lines, int stride)
 
     psllq_i2r (3, mm7);
 
-
     
     // jetzt muss ich die an bestimmten Stellen verdoppeln.
-    
     movntq (mm0, *(image));
 
     punpckhbw_r2r (mm1, mm5);
     por_r2r (mm7, mm5);
+    
+    movntq (mm5, *(image+8));
+    while(--lines) { // write the same in the line above
+      image -= stride;
+      movntq (mm0, *(image));
+      movntq (mm5, *(image+8));
+    }
 
+}
+
+void mmx_unpack_15rgb (uint8_t * image, int lines, int stride)
+{
+    static mmx_t mmx_bluemask = {0xf8f8f8f8f8f8f8f8ll};
+    static mmx_t mmx_greenmask = {0xf8f8f8f8f8f8f8f8ll};
+    static mmx_t mmx_redmask = {0xf8f8f8f8f8f8f8f8ll};
+
+    /*
+     * convert RGB plane to RGB 16 bits
+     * mm0 -> B, mm1 -> R, mm2 -> G
+     * mm4 -> GB, mm5 -> AR pixel 4-7
+     * mm6 -> GB, mm7 -> AR pixel 0-3
+     */
+
+    pand_m2r (mmx_bluemask, mm0);       // mm0 = b7b6b5b4b3______
+    pxor_r2r (mm4, mm4);                // mm4 = 0
+
+    pand_m2r (mmx_greenmask, mm2);      // mm2 = g7g6g5g4g3g2____
+    psrlq_i2r (2, mm0);                 // mm0 = ______b7b6b5b4b3
+
+    movq_r2r (mm2, mm7);                // mm7 = g7g6g5g4g3g2____
+    movq_r2r (mm0, mm5);                // mm5 = ______b7b6b5b4b3
+
+    pand_m2r (mmx_redmask, mm1);        // mm1 = r7r6r5r4r3______
+    punpcklbw_r2r (mm4, mm2);
+
+    punpcklbw_r2r (mm1, mm0);
+
+    psllq_i2r (3, mm2);
+
+    punpckhbw_r2r (mm4, mm7);
+    por_r2r (mm2, mm0);
+
+    psllq_i2r (3, mm7);
+    
+    // jetzt muss ich die an bestimmten Stellen verdoppeln.
+    psrlq_i2r(1,mm0);//MW 
+    movntq (mm0, *(image));
+
+    punpckhbw_r2r (mm1, mm5);
+    por_r2r (mm7, mm5);
+    
+    psrlq_i2r(1,mm5); //MW
     movntq (mm5, *(image+8));
     while(--lines) { // write the same in the line above
       image -= stride;
@@ -226,14 +276,14 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
     for (int x = 0; x < dstW; x+=8) {
       if (!m) { // no mask given
         mmx_yuv2rgb (sY, sU, sV);
-        mmx_unpack_16rgb (IM, lines, rgb_stride);
+        mmx_unpack (IM, lines, rgb_stride);
       } else { // mask given
         if (*m != 0xFF) { // not all bits masked
           mmx_yuv2rgb (sY, sU, sV);
           if (*m == 0) { // no bit is masked
-            mmx_unpack_16rgb (IM, lines, rgb_stride);
+            mmx_unpack (IM, lines, rgb_stride);
           } else { // at least one bit is masked
-            mmx_unpack_16rgb ((uint8_t *)pix, 1, rgb_stride);
+            mmx_unpack ((uint8_t *)pix, lines, rgb_stride);
             for (int i = 0; i < 8; i++) {
               if (! (*m & (1 << i)) ) {
                 for (int j = 0; j < lines; j++) {

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.8 2005/01/23 14:56:08 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.9 2005/02/18 13:31:26 wachm Exp $
  */
 
 #include "video.h"
@@ -73,6 +73,13 @@ char *suspendVideo [] = {
         NULL
      };
 
+/* ----------------------------------------------------------------------------
+ */
+char *osdMode [] = {
+        "pseudo",
+        "software",
+        NULL
+     };
 
 /* ----------------------------------------------------------------------------
  */
@@ -195,7 +202,10 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   } else if (!strcasecmp(Name, "PixelAspect")) {
     screenPixelAspect = atoi (Value);
     screenPixelAspect = clamp (0, screenPixelAspect, 4);
-  } else return false;
+  } else if (!strcasecmp(Name, "OSDalphablend")) {
+    osdMode = atoi (Value);
+    osdMode = clamp (0, osdMode, 1);
+  } else  return false;
 
   return true;
 }
@@ -292,6 +302,10 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(void)
                             &data->shouldSuspend,
                             2,
                             suspendVideo));
+  Add(new cMenuEditStraItem(tr("OSD alpha blending"),
+                            &data->osdMode,
+                            2,
+                            osdMode));
 }
 
 /* ---------------------------------------------------------------------------
@@ -345,4 +359,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("AlsaDevice",         setupStore.alsaDevice);
   SetupStore ("PixelAspect",        setupStore.screenPixelAspect);
   SetupStore ("Suspend",            setupStore.shouldSuspend);
+  SetupStore ("OSDalphablend",      setupStore.osdMode);
 }

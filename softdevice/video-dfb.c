@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.16 2005/02/08 21:31:17 lucke Exp $
+ * $Id: video-dfb.c,v 1.17 2005/02/18 13:31:27 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -774,6 +774,9 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
     uint8_t *dst;
     IDirectFBSurface  *tmpSurface;
 
+  // don't update only dirty areas 
+  OSDdirty=true;
+
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
 
   tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
@@ -801,6 +804,7 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
     OSDpresent = true;
     //tmpSurface->Flip();
   }
+    OSDpresent = true;
 }
 
 #else
