@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.10 2004/12/30 18:38:57 lucke Exp $
+ * $Id: video-xv.c,v 1.11 2004/12/31 01:00:10 lucke Exp $
  */
 
 #include <unistd.h>
@@ -859,7 +859,7 @@ bool cXvVideoOut::Reconfigure(int format)
 
   attributeStore.SetXInfo(dpy,port);
   attributeStore.Save();
-  attributeStore.SetColorkey(0x01000000);
+  attributeStore.SetColorkey(0x00000000);
   attributeStore.SetValue("XV_AUTOPAINT_COLORKEY",1);
 
   /*
