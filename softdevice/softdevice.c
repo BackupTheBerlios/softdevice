@@ -3,11 +3,16 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.13 2005/02/18 13:31:27 wachm Exp $
+ * $Id: softdevice.c,v 1.14 2005/02/24 22:35:51 lucke Exp $
  */
 
 #include <getopt.h>
 #include <stdlib.h>
+
+#ifdef USE_SUBPLUGINS
+#include <dlfcn.h>
+#endif
+
 #include <vdr/interface.h>
 #include <vdr/plugin.h>
 #include <vdr/player.h>
@@ -74,8 +79,6 @@ static const char *DESCRIPTION    = "A software emulated MPEG2 device";
 static const char *MAINMENUENTRY  = "Softdevice";
 
 #define INBUF_SIZE 4096
-
-
 
 #if VDRVERSNUM >= 10307
 
@@ -300,10 +303,88 @@ cSoftDevice::cSoftDevice(int method)
             "[softdevice] ffmpeg version(%s) build(%d)\n",
             FFMPEG_VERSION, LIBAVCODEC_BUILD);
     setupStore.outputMethod = method;
+#ifdef USE_SUBPLUGINS
+  {
+      char  *pluginPath = "./PLUGINS/lib";
+      char  *subPluginFileName = NULL;
+      char  *outMethodName  = NULL;
+      int   reconfigureArg  = 0;
+    switch (method) {
+    case VOUT_XV:
+#ifdef XV_SUPPORT
+      outMethodName = "xv";
+      reconfigureArg = FOURCC_YV12;
+#endif
+      break;
+    case VOUT_FB:
+#ifdef FB_SUPPORT
+      outMethodName = "fb";
+#endif
+      break;
+    case VOUT_DFB:
+#ifdef DFB_SUPPORT
+      outMethodName = "dfb";
+#endif
+      break;
+    case VOUT_VIDIX:
+#ifdef VIDIX_SUPPORT
+      outMethodName = "vidix";
+#endif
+      break;
+    default:
+      break;
+    }
+
+    asprintf (&subPluginFileName,
+              "%s/%s%s.so.%s",
+              pluginPath,
+              "libvdr-softdevice-",
+              outMethodName,
+              VDRVERSION);
+    void *handle = dlopen (subPluginFileName, RTLD_NOW);
+    char *err = dlerror();
+    if (!err)
+    {
+        void  *(*creator)(cSetupStore *store);
+
+      creator = (void *(*)(cSetupStore *))dlsym(handle,
+                                                "SubPluginCreator");
+      err = dlerror();
+      if (!err)
+      {
+        videoOut = (cVideoOut *) creator (&setupStore);
+      }
+      else
+      {
+        esyslog("[softdevice] could not load (%s)[%s] exiting\n",
+                "SubPluginCreator", err);
+        exit(1);
+      }
+      if (videoOut->Initialize () &&
+          videoOut->Reconfigure (reconfigureArg))
+      {
+          dsyslog("[softdevice] videoOut OK !\n");
+      }
+      else
+      {
+        esyslog("[softdevice] videoOut failure exiting\n");
+        exit (1);
+      }
+
+    }
+    else
+    {
+      esyslog("[softdevice] could not load (%s)[%s] exiting\n",
+              subPluginFileName, err);
+      exit(1);
+    }
+
+    }
+#else
     switch (method) {
       case VOUT_XV:
 #ifdef XV_SUPPORT
-        videoOut = new cXvVideoOut (setupStore. xvAspect);
+        videoOut = new cXvVideoOut (&setupStore);
         if (videoOut->Initialize () && videoOut->Reconfigure (FOURCC_YV12)) {
           fprintf (stderr, "[softdevice] Xv out OK !\n");
         } else {
@@ -314,23 +395,24 @@ cSoftDevice::cSoftDevice(int method)
         break;
       case VOUT_FB:
 #ifdef FB_SUPPORT
-        videoOut=new cFBVideoOut();
+        videoOut=new cFBVideoOut(&setupStore);
 #endif
         break;
       case VOUT_DFB:
 #ifdef DFB_SUPPORT
-        videoOut=new cDFBVideoOut();
+        videoOut=new cDFBVideoOut(&setupStore);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_VIDIX:
 #ifdef VIDIX_SUPPORT
-        videoOut=new cVidixVideoOut();
+        videoOut=new cVidixVideoOut(&setupStore);
 #endif
         break;
       default:
         break;
     }
+#endif
     fprintf(stderr,"[softdevice] Video Out seems to be OK\n");
     fprintf(stderr,"[softdevice] Initializing Audio Out\n");
     audioOut=new cAlsaAudioOut(setupStore.alsaDevice);

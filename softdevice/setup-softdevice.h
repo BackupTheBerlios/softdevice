@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.6 2005/02/18 13:31:27 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.7 2005/02/24 22:35:51 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -20,10 +20,10 @@
  */
 class cSetupStore {
   public:
-    cSetupStore ();
-    bool  SetupParse(const char *Name, const char *Value);
-    char  *getPPValue(void);
-    void  getScreenDimension(int &w, int &h);
+                  cSetupStore ();
+    bool          SetupParse(const char *Name, const char *Value);
+    char          *getPPValue(void);
+    virtual void  getScreenDimension(int &w, int &h);
 
     int   xvAspect;
     int   outputMethod;

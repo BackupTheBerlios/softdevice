@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.9 2005/02/18 17:38:06 lucke Exp $
+ * $Id: video.c,v 1.10 2005/02/24 22:35:51 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -15,14 +15,15 @@
 #include "setup-softdevice.h"
 
 
-cVideoOut::cVideoOut()
+cVideoOut::cVideoOut(cSetupStore *setupStore)
 {
 #if VDRVERSNUM >= 10307
   OsdWidth=OSD_FULL_WIDTH;
   OsdHeight=OSD_FULL_HEIGHT;
 #endif
-  syoff=sxoff=0;
+  sxoff = syoff = lxoff = lyoff = 0;
   PixelMask=NULL;
+  this->setupStore=setupStore;
  //start thread
  // active=true;
  // Start();
@@ -48,14 +49,14 @@ void cVideoOut::Action()
     
     OsdRefreshCounter++;
     
-    changeMode=(current_osdMode != setupStore.osdMode);
-    newOsdMode=setupStore.osdMode;
+    changeMode=(current_osdMode != setupStore->osdMode);
+    newOsdMode=setupStore->osdMode;
     // if software osd has not been shown for some time fall back
     // to pseudo osd..
-    if ( OsdRefreshCounter > 40 && setupStore.osdMode == OSDMODE_SOFTWARE ) {
+    if ( OsdRefreshCounter > 40 && setupStore->osdMode == OSDMODE_SOFTWARE ) {
         changeMode= (current_osdMode != OSDMODE_PSEUDO);
         newOsdMode=OSDMODE_PSEUDO;
-    };
+    }
     
     GetOSDDimension(newOsdWidth,newOsdHeight);
     if ( newOsdWidth==-1 || newOsdHeight==-1 )
@@ -84,13 +85,13 @@ void cVideoOut::Action()
         current_osdMode=newOsdMode;
         OpenOSD(OSDxOfs,OSDyOfs);
         osd=osdSave;
-      };
+      }
       osd->Flush();
     }
     usleep(50000);
-  };
+  }
 #endif
-};
+}
 
 /* ---------------------------------------------------------------------------
  */
@@ -111,15 +112,15 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
   /* -------------------------------------------------------------------------
    * override afd value with crop value from setup
    */
-  new_afd = (setupStore.cropMode) ? setupStore.cropMode : new_afd;
+  new_afd = (setupStore->cropMode) ? setupStore->cropMode : new_afd;
 
   /* -------------------------------------------------------------------------
    * check for changes of screen width/height change
    */
 
-  if (screenPixelAspect != setupStore.screenPixelAspect)
+  if (screenPixelAspect != setupStore->screenPixelAspect)
   {
-    screenPixelAspect = setupStore.screenPixelAspect;
+    screenPixelAspect = setupStore->screenPixelAspect;
     /* -----------------------------------------------------------------------
      * force recalculation for aspect ration handling
      */
@@ -132,7 +133,7 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
     return;
   }
 
-  setupStore.getScreenDimension (screenWidth, screenHeight);
+  setupStore->getScreenDimension (screenWidth, screenHeight);
   aspect_changed = 1;
 
   d_asp = (double) dwidth / (double) dheight;
@@ -342,12 +343,12 @@ void cVideoOut::OpenOSD(int X, int Y)
 
 void cVideoOut::CloseOSD()
 {
-  osdMutex.Lock(); 
+  osdMutex.Lock();
   if (OsdPAlphaY)
-       memset(OsdPAlphaY,0,Xres*Yres);
+       memset(OsdPAlphaY,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
   if (OsdPAlphaUV)
-       memset(OsdPAlphaUV,0,Xres*Yres/4);
- 
+       memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
+
   osd=NULL;
   OSDpresent=false;
   osdMutex.Unlock();
@@ -588,9 +589,9 @@ void cVideoOut::ToYUV(cBitmap *Bitmap)
       //printf("++++++++++++++++++++++new OsdHeight+++++++ OSDdirty %d+++++\n",
       //  OSDdirty);
       x1=y1=0;
-      x2=Bitmap->Width();
-      y2=Bitmap->Height();
-   };
+      x2=Bitmap->Width()-1;
+      y2=Bitmap->Height()-1;
+   }
 
 #define SCALEX(x) ((x) * OsdWidth/OSD_FULL_WIDTH)
 #define SCALEY(y) ((y) * OsdHeight/OSD_FULL_HEIGHT)

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dummy.c,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: video-dummy.c,v 1.2 2005/02/24 22:35:51 lucke Exp $
  *
  * This is a dummy output driver.
  */
@@ -12,7 +12,8 @@
 #include "video-dummy.h"
 
 
-cDummyVideoOut::cDummyVideoOut()
+cDummyVideoOut::cDummyVideoOut(cSetupStore *setupStore)
+                : cVideoOut(setupStore)
 {
     printf("[video-dummy] Initializing Driver, no output supported. You have to configure a driver IN the Makefile\n");
 }

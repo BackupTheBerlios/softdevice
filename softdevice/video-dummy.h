@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dummy.h,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: video-dummy.h,v 1.2 2005/02/24 22:35:51 lucke Exp $
  */
 
 #ifndef VIDEO_DUMMY_H
@@ -13,7 +13,7 @@
 class cDummyVideoOut : public cVideoOut {
 private:
 public:
-  cDummyVideoOut();
+  cDummyVideoOut(cSetupStore *setupStore);
   virtual ~cDummyVideoOut();
 
 #if VDRVERSNUM >= 10307

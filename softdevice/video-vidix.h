@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.2 2005/02/18 13:31:27 wachm Exp $
+ * $Id: video-vidix.h,v 1.3 2005/02/24 22:35:51 lucke Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -40,7 +40,7 @@ private:
     uint8_t            next_frame;
 
 public:
-  cVidixVideoOut();
+  cVidixVideoOut(cSetupStore *setupStore);
   virtual ~cVidixVideoOut();
 
 #if VDRVERSNUM >= 10307
@@ -55,6 +55,8 @@ public:
 //  virtual void OpenOSD();  
   virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
   virtual void Pause(void);
+
+  bool matchPixelFormat(void);
 };
 
 #endif // VIDEO_VIDIX_H

@@ -1,4 +1,13 @@
 Changelog
+ 2005-02-25:
+    - vidix-out: fix segfaults upon switch from software OSD back to pseudo mode.
+                 match available fourcc against selected.
+                 support for YUY2 added (without soft alpha [todo]).
+    - all-out: unified constuctor parameter
+               optionaly output method is loaded at runtime. by this, one can
+               build and ship binaries with all methods enabled to target
+               enviroments where not all libs are present.
+    - removed obsolete OSD option "sync on" (I-frame/all frames).
  2005-02-18:
     - support for DIRECTCOLOR framebuffer ( most ATI cards, tested with Mach64)
     - fixed osd flickering in framebuffer mode vdr>1.3.7

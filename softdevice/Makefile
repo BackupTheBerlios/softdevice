@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.5 2005/01/23 14:54:22 wachm Exp $
+# $Id: Makefile,v 1.6 2005/02/24 22:35:50 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -52,6 +52,10 @@ SUSPEND_BY_KEY = 1
 #   cp libpostproc.a /usr/local/lib/
 #
 PP_LIBAVCODEC=1
+
+# -----------------------------------------------------------------------------
+# if you want output methods build as separate libs uncomment this
+#USE_SUBPLUGINS = 1
 
 # -----------------------------------------------------------------------------
 # framebuffer device name
@@ -144,47 +148,79 @@ DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -D_GNU_SOURCE
 
 ### The object files (add further files here):
 
-OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o video-dummy.o setup-softdevice.o
+ifdef USE_SUBPLUGINS
+  DEFINES += -DUSE_SUBPLUGINS
+endif
+
+TARGETS = libvdr-$(PLUGIN).so
 LIBS = $(FFMPEGLIBS) -lasound -lz
+OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o video-dummy.o setup-softdevice.o
+ALL_OBJS = $(OBJS)
 
 ifdef DFB_SUPPORT
-OBJS     += video-dfb.o
-DEFINES  += -DDFB_SUPPORT
-INCLUDES += -I/usr/local/include/dfb++ -I/usr/local/include/directfb
-LIBS 	 += -L/usr/local/lib -ldfb++
-#INCLUDES += -I/opt/directfb/include/directfb -I/opt/directfb/include
-#LIBS 	 += -L/opt/directfb/lib -ldfb++
+  ifdef USE_SUBPLUGINS
+    DFB_LIBS  = -L/usr/local/lib -ldfb++
+    DFB_OBJS  = video.o video-dfb.o
+    ALL_OBJS += $(DFB_OBJS)
+    TARGETS  += libvdr-$(PLUGIN)-dfb.so
+  else
+    OBJS     += video-dfb.o
+    LIBS     += -L/usr/local/lib -ldfb++
+  endif
+  DEFINES  += -DDFB_SUPPORT
+  INCLUDES += -I/usr/local/include/dfb++ -I/usr/local/include/directfb
 endif
 
 ifdef FB_SUPPORT
-OBJS 	+= video-fb.o
-DEFINES += -DFB_SUPPORT -DFBDEV=\"$(FBDEV)\"
+  ifdef USE_SUBPLUGINS
+    FB_LIBS   =
+    FB_OBJS   = video.o video-fb.o
+    ALL_OBJS  += $(FB_OBJS)
+    TARGETS   += libvdr-$(PLUGIN)-fb.so
+  else
+    OBJS 	+= video-fb.o
+  endif
+  DEFINES += -DFB_SUPPORT -DFBDEV=\"$(FBDEV)\"
 endif
 
 ifdef XV_SUPPORT
-OBJS 	+= video-xv.o xscreensaver.o
-DEFINES += -DXV_SUPPORT
-ifdef LIBXDPMS_SUPPORT
-DEFINES += -DLIBXDPMS_SUPPORT
-endif
-LIBS 	+= -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv
+  ifdef USE_SUBPLUGINS
+    XV_LIBS   = -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv
+    XV_OBJS   = video.o video-xv.o xscreensaver.o
+    ALL_OBJS  += $(XV_OBJS)
+    TARGETS   += libvdr-$(PLUGIN)-xv.so
+  else
+    OBJS 	+= video-xv.o xscreensaver.o
+    LIBS 	+= -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv
+  endif
+  ifdef LIBXDPMS_SUPPORT
+    DEFINES += -DLIBXDPMS_SUPPORT
+  endif
+  DEFINES += -DXV_SUPPORT
 endif
 
 ifdef VIDIX_SUPPORT
-OBJS        += video-vidix.o
-CXXFLAGS    += -L$(VIDIX_DIR)/lib
-INCLUDES    += -I$(VIDIX_DIR)/include/vidix
-DEFINES     += -DVIDIX_SUPPORT -DVIDIX_DIR=\"$(VIDIX_DIR)/lib/vidix/\" -DFBDEV=\"$(FBDEV)\"
-LIBS        += -lvidix
+  ifdef USE_SUBPLUGINS
+    VIDIX_OBJS  = video.o video-vidix.o
+    VIDIX_LIBS  = -lvidix
+    ALL_OBJS    += $(VIDIX_OBJS)
+    TARGETS     += libvdr-$(PLUGIN)-vidix.so
+  else
+    OBJS        += video-vidix.o
+    LIBS        += -lvidix
+  endif
+  CXXFLAGS    += -L$(VIDIX_DIR)/lib
+  INCLUDES    += -I$(VIDIX_DIR)/include/vidix
+  DEFINES     += -DVIDIX_SUPPORT -DVIDIX_DIR=\"$(VIDIX_DIR)/lib/vidix/\" -DFBDEV=\"$(FBDEV)\"
 endif
 
 ifdef PP_LIBAVCODEC
-DEFINES     += -DPP_LIBAVCODEC
-FFMPEGLIBS  += -lpostproc
+  DEFINES     += -DPP_LIBAVCODEC
+  FFMPEGLIBS  += -lpostproc
 endif
 
 ifdef SUSPEND_BY_KEY
-DEFINES     += -DSUSPEND_BY_KEY
+  DEFINES     += -DSUSPEND_BY_KEY
 endif
 
 ### Implicit rules:
@@ -204,12 +240,31 @@ $(DEPFILE): Makefile
 
 ### Targets:
 
-all: libvdr-$(PLUGIN).so
-
+all: $(TARGETS)
 
 libvdr-$(PLUGIN).so: $(OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(LIBS) -o $@
 	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+
+ifdef USE_SUBPLUGINS
+
+libvdr-$(PLUGIN)-dfb.so: $(DFB_OBJS)
+	$(CXX) $(CXXFLAGS) -shared $(DFB_OBJS) $(DFB_LIBS) -o $@
+	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+
+libvdr-$(PLUGIN)-fb.so: $(FB_OBJS)
+	$(CXX) $(CXXFLAGS) -shared $(FB_OBJS) $(FB_LIBS) -o $@
+	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+
+libvdr-$(PLUGIN)-xv.so: $(XV_OBJS)
+	$(CXX) $(CXXFLAGS) -shared $(XV_OBJS) $(XV_LIBS) -o $@
+	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+
+libvdr-$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
+	$(CXX) $(CXXFLAGS) -shared $(VIDIX_OBJS) $(VIDIX_LIBS) -o $@
+	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+
+endif
 
 dist: clean
 	@-rm -rf $(TMPDIR)/$(ARCHIVE)

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.17 2005/02/18 13:31:27 wachm Exp $
+ * $Id: video-dfb.c,v 1.18 2005/02/24 22:35:51 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -229,7 +229,8 @@ static DFBEnumerationResult EnumVideoModeCallback(int x, int y, int bpp, void *d
 
 /* ---------------------------------------------------------------------------
  */
-cDFBVideoOut::cDFBVideoOut()
+cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
+              : cVideoOut(setupStore)
 {
     DFBDisplayLayerDescription    desc;
     tLayerSelectItem              *layerInfo;
@@ -242,9 +243,8 @@ cDFBVideoOut::cDFBVideoOut()
   swidth  = fwidth  = 720;
   sheight = fheight = 576;
 
-  sxoff = syoff = lxoff = lyoff = 0;
   screenPixelAspect = -1;
-  currentPixelFormat = setupStore.pixelFormat;
+  currentPixelFormat = setupStore->pixelFormat;
   isVIAUnichrome = false;
   clearAlpha = 0x00;
 
@@ -252,7 +252,7 @@ cDFBVideoOut::cDFBVideoOut()
 
   DirectFB::Init();
   dfb = DirectFB::Create();
-  if (!setupStore.useMGAtv)
+  if (!setupStore->useMGAtv)
     dfb->SetCooperativeLevel(DFSCL_FULLSCREEN);
 
   reportCardInfo (dfb);
@@ -275,17 +275,17 @@ cDFBVideoOut::cDFBVideoOut()
 
   videoLayer = NULL;
   layerInfo = &layerList [ANY_LAYER];
-  if (setupStore.useMGAtv) {
+  if (setupStore->useMGAtv) {
     layerInfo = &layerList [CRTC2_LAYER_NEW];
-    currentPixelFormat = setupStore.pixelFormat = 2;
-    if (!setupStore.screenPixelAspect)
-      setupStore.screenPixelAspect = 1;
+    currentPixelFormat = setupStore->pixelFormat = 2;
+    if (!setupStore->screenPixelAspect)
+      setupStore->screenPixelAspect = 1;
   }
 
   dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
   videoLayer = layerInfo->layer;
 
-  if (setupStore.useMGAtv && !videoLayer) {
+  if (setupStore->useMGAtv && !videoLayer) {
     layerInfo = &layerList [CRTC2_LAYER_OLD];
     fprintf(stderr, "[dfb] New layer name allocation failed. Trying old (dfb-0.9.20) layer name\n");
     dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
@@ -301,7 +301,7 @@ cDFBVideoOut::cDFBVideoOut()
   //DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_DOUBLE);
   scrDsc.pixelformat = DSPF_ARGB;
 
-  if (setupStore.useMGAtv)
+  if (setupStore->useMGAtv)
   {
       DFBDisplayLayerConfig   dlc;
 
@@ -408,11 +408,11 @@ cDFBVideoOut::cDFBVideoOut()
 
     useStretchBlit = false;
     OSDpseudo_alpha = true;
-    if (setupStore.pixelFormat == 0)
+    if (setupStore->pixelFormat == 0)
       vidDsc.pixelformat = DSPF_I420;
-    else if (setupStore.pixelFormat == 1)
+    else if (setupStore->pixelFormat == 1)
       vidDsc.pixelformat = DSPF_YV12;
-    else if (setupStore.pixelFormat == 2)
+    else if (setupStore->pixelFormat == 2)
     {
       vidDsc.pixelformat = DSPF_YUY2;
       useStretchBlit = true;
@@ -456,7 +456,7 @@ cDFBVideoOut::cDFBVideoOut()
 
     reportSurfaceCapabilities ("videoSurface:", videoSurface);
 
-    if (!setupStore.useMGAtv)
+    if (!setupStore->useMGAtv)
     {
       fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
       videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
@@ -475,7 +475,7 @@ cDFBVideoOut::cDFBVideoOut()
   
   /* create an event buffer with all devices attached */
   events = dfb->CreateInputEventBuffer(DICAPS_ALL,
-                                       (setupStore.useMGAtv) ? DFB_TRUE : DFB_FALSE);
+                                       (setupStore->useMGAtv) ? DFB_TRUE : DFB_FALSE);
 }
 
 /* ---------------------------------------------------------------------------
@@ -540,7 +540,7 @@ void cDFBVideoOut::SetParams()
   {
     if (!videoSurface ||
         aspect_changed ||
-        currentPixelFormat != setupStore.pixelFormat)
+        currentPixelFormat != setupStore->pixelFormat)
     {
 
       fprintf(stderr,
@@ -550,11 +550,11 @@ void cDFBVideoOut::SetParams()
 
       useStretchBlit = false;
       OSDpseudo_alpha = (isVIAUnichrome) ? false: true;
-      if (setupStore.pixelFormat == 0)
+      if (setupStore->pixelFormat == 0)
         dlc.pixelformat = DSPF_I420;
-      else if (setupStore.pixelFormat == 1)
+      else if (setupStore->pixelFormat == 1)
         dlc.pixelformat = DSPF_YV12;
-      else if (setupStore.pixelFormat == 2)
+      else if (setupStore->pixelFormat == 2)
       {
         dlc.pixelformat = DSPF_YUY2;
         useStretchBlit = true;
@@ -597,7 +597,7 @@ void cDFBVideoOut::SetParams()
       vidDsc.height      = dlc.height;
       vidDsc.pixelformat = dlc.pixelformat;
 
-      currentPixelFormat = setupStore.pixelFormat;
+      currentPixelFormat = setupStore->pixelFormat;
 
       pixelformat = dlc.pixelformat;
 
@@ -642,7 +642,7 @@ void cDFBVideoOut::SetParams()
           }
         }
 
-        if (setupStore.useMGAtv)
+        if (setupStore->useMGAtv)
           dlc.options = (DFBDisplayLayerOptions)((int)dlc.options|
                                                  DLOP_FIELD_PARITY);
 
@@ -663,7 +663,7 @@ void cDFBVideoOut::SetParams()
           //exit(1);
         }
 
-        //if (setupStore.useMGAtv)
+        //if (setupStore->useMGAtv)
           //videoLayer->SetFieldParity(0);
 
 #if HAVE_SetSourceLocation
@@ -1068,7 +1068,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 #endif
 
       }
-      scrSurface->Flip(NULL, (setupStore.useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
+      scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
 
       if (aspect_changed || osdClrBack)
         scrSurface->Clear(0,0,0,0);
@@ -1100,3 +1100,13 @@ cDFBVideoOut::~cDFBVideoOut()
   if (osdLayer)     osdLayer->Release();
   if (dfb)          dfb->Release();
 }
+
+#ifdef USE_SUBPLUGINS
+/* ---------------------------------------------------------------------------
+ */
+extern "C" void *
+SubPluginCreator(cSetupStore *s)
+{
+  return new cDFBVideoOut(s);
+}
+#endif

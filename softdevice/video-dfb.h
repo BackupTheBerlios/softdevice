@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.4 2004/12/21 05:55:42 lucke Exp $
+ * $Id: video-dfb.h,v 1.5 2005/02/24 22:35:51 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -43,7 +43,7 @@ class cDFBVideoOut : public cVideoOut {
 
   public:
     IDirectFB	*dfb;
-    cDFBVideoOut();
+    cDFBVideoOut(cSetupStore *setupStore);
     virtual ~cDFBVideoOut();
     void ProcessEvents ();
     void ShowOSD ();

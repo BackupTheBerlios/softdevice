@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.15 2005/02/18 13:31:27 wachm Exp $
+ * $Id: video-xv.c,v 1.16 2005/02/24 22:35:51 lucke Exp $
  */
 
 #include <unistd.h>
@@ -507,7 +507,7 @@ void cXvVideoOut::ProcessEvents ()
 #ifdef SUSPEND_BY_KEY 
           case 'r':
           case 'R':
-            setupStore.shouldSuspend=!setupStore.shouldSuspend;
+            setupStore->shouldSuspend=!setupStore->shouldSuspend;
 #endif
           default:
             if (xvRemote) {
@@ -575,7 +575,8 @@ void cXvVideoOut::ProcessEvents ()
 
 /* ---------------------------------------------------------------------------
  */
-cXvVideoOut::cXvVideoOut(int aspect, int port, int crop, int xres, int yres)
+cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
+              : cVideoOut(setupStore)
 {
   OSDpresent = false;
   OSDpseudo_alpha = true;
@@ -583,14 +584,14 @@ cXvVideoOut::cXvVideoOut(int aspect, int port, int crop, int xres, int yres)
   /* -------------------------------------------------------------------------
    * could be specified by argv ! TODO
    */
-  display_aspect = current_aspect = aspect;
+  display_aspect = current_aspect = setupStore->xvAspect;
   scale_size = 0;
   screenPixelAspect = -1;
-  width = xres;
-  height = yres;
+  width = XV_SRC_WIDTH;
+  height = XV_SRC_HEIGHT;
 
   format = FOURCC_YV12;
-  use_xv_port = port;
+  use_xv_port = 0;
   len = width * height * 4;
   outbuffer = NULL;
   w_name = "vdr";
@@ -605,7 +606,6 @@ cXvVideoOut::cXvVideoOut(int aspect, int port, int crop, int xres, int yres)
    */
   fwidth = lwidth = dwidth = swidth = width;
   fheight = lheight = dheight = sheight = height;
-  sxoff = syoff = lxoff = lyoff = 0;
 
   if (current_aspect == DV_FORMAT_NORMAL) {
     lwidth = dwidth = XV_DEST_WIDTH_4_3;
@@ -956,15 +956,6 @@ bool cXvVideoOut::Reconfigure(int format)
   initialized = 1;
   xv_initialized = 1;
   return true;
-}
-
-/* ---------------------------------------------------------------------------
- */
-cXvVideoOut::cXvVideoOut() : cVideoOut()
-{
-  //start osd refresh thread
-  active=true;
-  Start();  
 }
 
 /* ---------------------------------------------------------------------------
@@ -1331,3 +1322,13 @@ cXvVideoOut::~cXvVideoOut()
   }
 #endif
 }
+
+#ifdef USE_SUBPLUGINS
+/* ---------------------------------------------------------------------------
+ */
+extern "C" void *
+SubPluginCreator(cSetupStore *s)
+{
+  return new cXvVideoOut(s);
+}
+#endif

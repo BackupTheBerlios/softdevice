@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.9 2005/02/18 13:31:26 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.10 2005/02/24 22:35:51 lucke Exp $
  */
 
 #include "video.h"
@@ -58,13 +58,6 @@ char *xv_startup_aspect [] = {
         NULL
      };
 
-/* ----------------------------------------------------------------------------
- */
-char *syncOnFramesStr [] = {
-        "I-Frames",
-        "Any Frames",
-        NULL
-     };
 /* ----------------------------------------------------------------------------
  */
 char *suspendVideo [] = {
@@ -284,10 +277,6 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(void)
   Add(new cMenuEditBoolItem(tr("Picture mirroring"),
                             &data->mirror, tr("off"), tr("on")));
 
-  Add(new cMenuEditStraItem(tr("A/V Sync"),
-                            &data->syncOnFrames,
-                            2,
-                            syncOnFramesStr));
   Add(new cMenuEditIntItem(tr("A/V Offset"),
                            &data->avOffset,
                            MINAVOFFSET, MAXAVOFFSET));
@@ -354,7 +343,6 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Deinterlace Method", setupStore.deintMethod);
   SetupStore ("PixelFormat",        setupStore.pixelFormat);
   SetupStore ("Picture mirroring",  setupStore.mirror);
-  SetupStore ("SyncAllFrames",      setupStore.syncOnFrames);
   SetupStore ("avOffset",           setupStore.avOffset);
   SetupStore ("AlsaDevice",         setupStore.alsaDevice);
   SetupStore ("PixelAspect",        setupStore.screenPixelAspect);

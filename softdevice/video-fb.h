@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.2 2005/02/18 17:32:36 lucke Exp $
+ * $Id: video-fb.h,v 1.3 2005/02/24 22:35:51 lucke Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -25,7 +25,7 @@ private:
   int line_len;
   unsigned char * fb;	// Framebuffer memory
 public:
-  cFBVideoOut();
+  cFBVideoOut(cSetupStore *setupStore);
   virtual ~cFBVideoOut();
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.15 2005/02/13 18:12:31 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.16 2005/02/24 22:35:50 lucke Exp $
  */
 
 #include <math.h>
@@ -572,7 +572,6 @@ int cVideoStreamDecoder::DecodeData(uchar *Data, int Length)
     newBackIndex++;
   }
 
-#if 1 // new method for setting the video PTS
   if (picture->coded_picture_number)
   {
     if (picture->pict_type == FF_I_TYPE)
@@ -608,17 +607,6 @@ int cVideoStreamDecoder::DecodeData(uchar *Data, int Length)
     pts = newPTS - 2 * frametime;
     //fprintf (stderr, "+ using PTS value (%lld)\n", pts);
   }
-#else
-  if (validPTS &&
-      (setupStore.syncOnFrames ||
-       context->coded_frame->pict_type == FF_I_TYPE))
-  {
-    //pts=(GET_MPEG2_PTS(header)/90);
-    pts=newPTS;
-    MPGDEB("Got Video PTS: %lld \n",pts);
-    validPTS=false;
-  }
-#endif
 
   historyPTS[historyPTSIndex++%PTS_COUNT] = newPTS;
 

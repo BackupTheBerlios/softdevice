@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.5 2005/02/18 13:31:27 wachm Exp $
+ * $Id: video-xv.h,v 1.6 2005/02/24 22:35:51 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -138,9 +138,7 @@ private:
 
 
 public:
-  cXvVideoOut();
-  cXvVideoOut (int aspect = DV_FORMAT_NORMAL, int port = 0, int crop = 0,
-               int xres = XV_SRC_WIDTH, int yres = XV_SRC_HEIGHT);
+  cXvVideoOut(cSetupStore *setupStore);
   virtual ~cXvVideoOut();
   void ProcessEvents ();
   void ShowOSD (int skip, int do_sync);

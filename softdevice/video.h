@@ -3,13 +3,15 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.8 2005/02/18 13:31:27 wachm Exp $
+ * $Id: video.h,v 1.9 2005/02/24 22:35:51 lucke Exp $
  */
 
 #ifndef VIDEO_H
 #define VIDEO_H
 
 #include <vdr/plugin.h>
+#include "setup-softdevice.h"
+
 #if VDRVERSNUM >= 10307
 #include <vdr/osd.h>
 #endif
@@ -88,13 +90,15 @@ protected:
             currentPixelFormat,
             aspect_changed,
             current_afd;
-    
+
+    cSetupStore *setupStore;
+                
     cOsd *osd;
     bool active;
     bool OSDdirty;
 
 public:
-    cVideoOut();
+    cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
     virtual void Size(int w, int h) {OSDw = w; OSDh = h;};
     virtual void OSDStart();
