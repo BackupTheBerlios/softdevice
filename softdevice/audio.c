@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.5 2004/11/04 07:01:52 lucke Exp $
+ * $Id: audio.c,v 1.6 2004/11/21 13:45:37 lucke Exp $
  */
 
 #include <unistd.h>
@@ -136,6 +136,8 @@ int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
       exit(1);
     }
 
+    dsyslog ("[softdevice-audio] samplerate: %dHz, channels: #%d",
+             samplerate, channels);
     rate=samplerate;
     chn=channels;
     snd_pcm_hw_params_t *params;
