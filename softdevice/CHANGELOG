@@ -1,4 +1,8 @@
 Changelog
+  2004-10-18:
+   - xv-out: allow disabling screensaver when in full screen mode (Torgeir Veimo)
+   - mpeg2decoder: enable adjustable audio / video offset (Torgeir Veimo)
+   - DFB: fix compare DFXL_NONE using equals (Torgeir Veimo)
   2004-08-09:
    - DFB+vidix: fix wrong colors in crop mode
    - fix: segfaults during decoding
