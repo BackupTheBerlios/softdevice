@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.3 2005/02/18 13:31:27 wachm Exp $
+ * $Id: video-fb.c,v 1.4 2005/02/18 17:32:36 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -39,7 +39,7 @@ cFBVideoOut::cFBVideoOut()
     }
 
     fb_orig_vinfo = fb_vinfo;
-         
+
     switch (fb_finfo.visual) {
 
        case FB_VISUAL_TRUECOLOR:
