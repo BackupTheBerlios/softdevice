@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.9 2005/03/17 20:15:35 wachm Exp $
+ * $Id: audio.c,v 1.10 2005/03/18 18:33:43 wachm Exp $
  */
 
 #include <unistd.h>
@@ -35,6 +35,7 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
       exit(1);
     }
     currContext.channels=0;
+    currContext.samplerate=48000;
     dsyslog("[softdevice-audio] Device opened! Ready to play");
 }
 
