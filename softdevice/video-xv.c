@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.3 2004/10/18 03:32:37 iampivot Exp $
+ * $Id: video-xv.c,v 1.4 2004/10/23 21:33:26 lucke Exp $
  */
 
 #include <unistd.h>
@@ -455,6 +455,7 @@ void cXvVideoOut::ProcessEvents ()
 cXvVideoOut::cXvVideoOut(int aspect, int port, int crop, int xres, int yres)
 {
   OSDpresent = false;
+  OSDpseudo_alpha = true;
   initialized = 0;
   /* -------------------------------------------------------------------------
    * could be specified by argv ! TODO

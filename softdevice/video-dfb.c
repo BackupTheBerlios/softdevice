@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.4 2004/10/18 03:29:36 iampivot Exp $
+ * $Id: video-dfb.c,v 1.5 2004/10/23 21:33:26 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -307,6 +307,7 @@ cDFBVideoOut::cDFBVideoOut()
     osdDsc.pixelformat = DSPF_ARGB;
 
     useStretchBlit = false;
+    OSDpseudo_alpha = true;
     if (setupStore.pixelFormat == 0)
       vidDsc.pixelformat = DSPF_I420;
     else if (setupStore.pixelFormat == 1)
@@ -315,6 +316,7 @@ cDFBVideoOut::cDFBVideoOut()
     {
       vidDsc.pixelformat = DSPF_YUY2;
       useStretchBlit = true;
+      OSDpseudo_alpha = false;
     }
 
     osdSurface   = dfb->CreateSurface (osdDsc);
@@ -437,6 +439,7 @@ void cDFBVideoOut::SetParams()
       dlc.flags   = (DFBDisplayLayerConfigFlags)(DLCONF_WIDTH | DLCONF_HEIGHT | DLCONF_PIXELFORMAT | DLCONF_OPTIONS);
 
       useStretchBlit = false;
+      OSDpseudo_alpha = true;
       if (setupStore.pixelFormat == 0)
         dlc.pixelformat = DSPF_I420;
       else if (setupStore.pixelFormat == 1)
@@ -445,6 +448,7 @@ void cDFBVideoOut::SetParams()
       {
         dlc.pixelformat = DSPF_YUY2;
         useStretchBlit = true;
+        OSDpseudo_alpha = false;
       }
 
 #if HAVE_SetSourceLocation

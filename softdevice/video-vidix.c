@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.2 2004/08/09 18:45:49 lucke Exp $
+ * $Id: video-vidix.c,v 1.3 2004/10/23 21:33:26 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -138,6 +138,8 @@ cVidixVideoOut::cVidixVideoOut()
        printf("cVidixVideoOut: Couldn't get capability: %s\n", strerror(err) );
        exit(1);
     }
+
+    OSDpseudo_alpha = true;
 
     if (setupStore.pixelFormat == 0)
       vidix_fourcc.fourcc = IMGFMT_I420;

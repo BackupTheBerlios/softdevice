@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.1 2004/08/01 05:07:05 lucke Exp $
+ * $Id: video.c,v 1.2 2004/10/23 21:33:26 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -164,6 +164,10 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
   CheckAspect (aspect_I, aspect_F);
 }
 
+#define OPACITY_THRESHOLD 0x8F
+#define TRANSPARENT_THRESHOLD 0x0F
+#define IS_BACKGROUND(a) (((a) < OPACITY_THRESHOLD) && (a > TRANSPARENT_THRESHOLD))
+
 #if VDRVERSNUM >= 10307
 
 void cVideoOut::OpenOSD(int X, int Y)
@@ -182,6 +186,7 @@ void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
 {
     int           depth = (Bpp + 7) / 8;
     int           a, r, g, b;
+    bool          prev_pix = false, do_dither;
     tColor        c;
     tIndex        *buf;
     const tIndex  *adr;
@@ -191,9 +196,12 @@ void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
     buf = (tIndex *) osd_buf +
             linelen * ( OSDyOfs + y ) +
             OSDxOfs * depth;
+    prev_pix = false;
 
     for (int x = 0; x < Bitmap->Width(); x++)
     {
+      do_dither = ((x % 2 == 1 && y % 2 == 1) ||
+                    x % 2 == 0 && y % 2 == 0 || prev_pix);
       adr = Bitmap->Data(x, y);
       c = Bitmap->Color(*adr);
       a = (c >> 24) & 255; //Alpha
@@ -202,7 +210,8 @@ void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
       b = c & 255;         //Blue
       switch (depth) {
         case 4:
-          if (a == 255 && r == 0 && g == 0 && b == 0)
+          if ((do_dither && IS_BACKGROUND(a) && OSDpseudo_alpha) ||
+              (a == 255 && r == 0 && g == 0 && b == 0))
           {
             buf[0] = 1; buf[1] = 1; buf[2] = 1; buf[3] = 255;
           } else {
@@ -211,10 +220,12 @@ void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
             buf[2] = r;
             buf[3] = a;
           }
+
           buf += 4;
           break;
         case 3:
-          if (a == 255 && r == 0 && g == 0 && b == 0)
+          if ((do_dither && IS_BACKGROUND(a)) ||
+              (a == 255 && r == 0 && g == 0 && b == 0))
           {
             buf[0] = 1; buf[1] = 1; buf[2] = 1;
           } else {
@@ -222,16 +233,19 @@ void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
             buf[1] = g;
             buf[2] = r;
           }
+
           buf += 3;
           break;
         case 2:
-          if (a == 255 && r == 0 && g == 0 && b == 0)
+          if ((do_dither && IS_BACKGROUND(a)) ||
+              (a == 255 && r == 0 && g == 0 && b == 0))
           {
               buf[0] = 0x21; buf[1] = 0x08;
           } else {
             buf[0] = ((b >> 3)& 0x1F) | ((g & 0x1C) << 3);
             buf[1] = (r & 0xF8) | (g >> 5);
           }
+
           buf += 2;
           break;
         default:
@@ -239,6 +253,7 @@ void cVideoOut::Draw(cBitmap *Bitmap, unsigned char *osd_buf, int linelen)
             exit(1);
           break;
       }
+      prev_pix = !IS_BACKGROUND(a);
     }
   }
 }
@@ -363,17 +378,24 @@ void cWindowLayer::Draw(unsigned char * buf, int linelen, unsigned char * keymap
     im = imagedata;
     int depth = (bpp + 7) / 8;
     int dx = linelen - width * depth;
+    bool          prev_pix = false, do_dither;
+
     buf += top * linelen + left * depth; // upper left corner
     for (int y = top; y < top+height; y++) {
+      prev_pix = false;
+
 	for (int x = left; x < left+width; x++) {
 	   if ( (im[3] != 0)
 		&& (x >= 0) && (x < xres)
 		&& (y >= 0) && (y < yres))  { // Alpha != 0 and in the screen
+      do_dither = ((x % 2 == 1 && y % 2 == 1) ||
+                    x % 2 == 0 && y % 2 == 0 || prev_pix);
 
 		//if (keymap) keymap[(x+y*linelen / depth) / 8] |= (1 << (x % 8));
 		switch (depth) {
 		    case 4:
-          if (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0) {
+          if ((do_dither && IS_BACKGROUND(im[3]) && OSDpseudo_alpha) ||
+              (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
             *buf++ = 1; *buf++ = 1; *buf++ = 1; *buf++ = 255;
           } else {
             *(buf++)=im[2];
@@ -384,7 +406,8 @@ void cWindowLayer::Draw(unsigned char * buf, int linelen, unsigned char * keymap
 			//buf++;
 			break;
 		    case 3:
-          if (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0) {
+          if ((do_dither && IS_BACKGROUND(im[3])) ||
+              (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
             *buf++ = 1; *buf++ = 1; *buf++ = 1;
           } else {
             *(buf++)=im[2];
@@ -393,7 +416,8 @@ void cWindowLayer::Draw(unsigned char * buf, int linelen, unsigned char * keymap
           }
 			break;
 		    case 2: // 565 RGB
-          if (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0) {
+          if ((do_dither && IS_BACKGROUND(im[3])) ||
+              (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
             *buf++ = 0x21; *buf++ = 0x08;
           } else {
             *(buf++)= ((im[2] >> 3)& 0x1F) | ((im[1] & 0x1C) << 3);
@@ -404,6 +428,8 @@ void cWindowLayer::Draw(unsigned char * buf, int linelen, unsigned char * keymap
 			dsyslog("[video] Unsupported depth %d exiting",depth);
 			exit(1);
     		}
+        prev_pix = !IS_BACKGROUND(a);
+
 
 	    } else  {
 	        buf += depth; // skip this pixel

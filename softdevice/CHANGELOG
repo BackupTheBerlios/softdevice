@@ -1,6 +1,7 @@
 Changelog
   2004-10-23:
    - some fixes upon deinterlacing selection (bug: #002267)
+   - added pseudo alpha OSD background upon an idea of Torgeir Veimo
   2004-10-18:
    - xv-out: allow disabling screensaver when in full screen mode (Torgeir Veimo)
    - mpeg2decoder: enable adjustable audio / video offset (Torgeir Veimo)
