@@ -1,4 +1,8 @@
 Changelog
+  2005-01-13:
+    - compatibility fix for vdr-1.3.18
+    - aspect ratio handling for 16:9 TV output
+    - dfb-out TVout: set top field first and acpect scaleing for TV mode if not set
   2005-01-12:
     - fix aspect ratio calculation/recognition on some dvds
   2005-01-04: softdevice-0.0.8

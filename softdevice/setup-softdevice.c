@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.6 2004/12/21 05:55:42 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.7 2005/01/13 20:48:20 lucke Exp $
  */
 
 #include "video.h"
@@ -69,10 +69,10 @@ char *syncOnFramesStr [] = {
 /* ----------------------------------------------------------------------------
  */
 char *videoAspectNames [] = {
-        "default (PAL)",
-        "tv-out (PAL)",
+        "Monitor",
+        "TV  4:3 PAL",
+        "TV 16:9 PAL",
         "5:4 as 4:3",
-        "test 1",
         "test 2",
         NULL
      };
@@ -82,8 +82,8 @@ struct sVideoAspectsValues {
 } videoAspectValues [] = {
   { 768, 576},
   { 720, 576},
+  { 540, 576},
   { 800, 576},
-  {10240, 6144},
   {1280, 1024},
   {768,576}
 };
@@ -185,7 +185,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     fprintf(stderr, "[setup-softdevice] alsa device set to: %s\n", alsaDevice);
   } else if (!strcasecmp(Name, "PixelAspect")) {
     screenPixelAspect = atoi (Value);
-    screenPixelAspect = clamp (0, screenPixelAspect, 1);
+    screenPixelAspect = clamp (0, screenPixelAspect, 4);
   } else return false;
 
   return true;

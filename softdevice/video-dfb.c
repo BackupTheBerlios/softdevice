@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.13 2005/01/02 09:48:31 lucke Exp $
+ * $Id: video-dfb.c,v 1.14 2005/01/13 20:48:20 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -275,6 +275,8 @@ cDFBVideoOut::cDFBVideoOut()
   if (setupStore.useMGAtv) {
     layerInfo = &layerList [CRTC2_LAYER_NEW];
     currentPixelFormat = setupStore.pixelFormat = 2;
+    if (!setupStore.screenPixelAspect)
+      setupStore.screenPixelAspect = 1;
   }
 
   dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
@@ -610,6 +612,9 @@ void cDFBVideoOut::SetParams()
           //exit(1);
         }
 
+        if (setupStore.useMGAtv)
+          videoLayer->SetFieldParity(0);
+
 #if HAVE_SetSourceLocation
         try
         {
@@ -655,6 +660,10 @@ void cDFBVideoOut::SetParams()
           videoSurface->Clear(COLORKEY,0); //clear and
           videoSurface->Release();
         }
+        
+        if (setupStore.useMGAtv)
+          videoLayer->SetFieldParity(0);
+
         videoSurface=NULL;
         videoSurface=dfb->CreateSurface(vidDsc);
       }
