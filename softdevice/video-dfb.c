@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.10 2004/12/21 05:55:42 lucke Exp $
+ * $Id: video-dfb.c,v 1.11 2005/01/01 14:28:00 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -781,7 +781,7 @@ void cDFBVideoOut::Refresh()
   if (useStretchBlit)
     OSDpresent = true;
 
-  //tmpSurface->Flip();
+  tmpSurface->Flip();
 }
 #endif
 
