@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.1 2004/08/01 05:07:06 lucke Exp $
+ * $Id: video-dfb.c,v 1.2 2004/08/08 20:28:19 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -449,15 +449,12 @@ void cDFBVideoOut::SetParams()
 
 #if HAVE_SetSourceLocation
       /* ----------------------------------------------------------------------
-       * this should be the settings if SetSourceLocation is working for
+       * this should be the settings if SetSourceRectangle is working for
        * all drivers.
+       * SetSourceRectangle() moved, after layer is reconfigured
        */
       dlc.width   = fwidth;
       dlc.height  = fheight;
-      if (!useStretchBlit)
-      {
-        videoLayer->SetSourceRectangle (sxoff, syoff, swidth, sheight);
-      }
 #else
       /* ----------------------------------------------------------------------
        * for now we have to do another trick
@@ -494,17 +491,6 @@ void cDFBVideoOut::SetParams()
           videoSurface->Release();
         videoSurface = NULL;
 
-        if (desc.caps & DLCAPS_SCREEN_LOCATION)
-        {
-          videoLayer->SetScreenLocation((float) lxoff / (float) dwidth,
-                                        (float) lyoff / (float) dheight,
-                                        (float) lwidth / (float) dwidth,
-                                        (float) lheight / (float) dheight);
-        }
-        else
-        {
-          fprintf(stderr,"Can't configure ScreenLocation. Hope it is Fullscreen\n");
-        }
         /* --------------------------------------------------------------------
          * set the default options to none
          */
@@ -538,6 +524,7 @@ void cDFBVideoOut::SetParams()
             dlc.options = (DFBDisplayLayerOptions)((int)dlc.options|DLOP_DST_COLORKEY);
           }
         }
+
         /* --------------------------------------------------------------------
          * OK, try to set the video layer configuration
          */
@@ -547,10 +534,34 @@ void cDFBVideoOut::SetParams()
         }
         catch (DFBException *ex)
         {
-          fprintf(stderr,"Caught: %s", ex);
+          fprintf (stderr,"Caught: action=%s, result=%s\n",
+                   ex->GetAction(), ex->GetResult());
           exit(1);
         }
 
+#if HAVE_SetSourceLocation
+        try
+        {
+          videoLayer->SetSourceRectangle (sxoff, syoff, swidth, sheight);
+        }
+        catch (DFBException *ex)
+        {
+          fprintf (stderr,"Caught: action=%s, result=%s\n",
+                   ex->GetAction(), ex->GetResult());
+        }
+#endif
+
+        if (desc.caps & DLCAPS_SCREEN_LOCATION)
+        {
+          videoLayer->SetScreenLocation((float) lxoff / (float) dwidth,
+                                        (float) lyoff / (float) dheight,
+                                        (float) lwidth / (float) dwidth,
+                                        (float) lheight / (float) dheight);
+        }
+        else
+        {
+          fprintf(stderr,"Can't configure ScreenLocation. Hope it is Fullscreen\n");
+        }
         /* --------------------------------------------------------------------
          * set colorkey now. some driver accepct that _after_ configuration
          * has been set !
