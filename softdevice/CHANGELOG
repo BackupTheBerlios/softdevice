@@ -1,4 +1,6 @@
 Changelog
+ 2005-03-15:
+    - get cvs version of dvd-plugin work in _non_ ac3 mode
  2005-03-11:
     - xv-out: fix OSD misplacement in downscaleing mode (pseudo mode)
     - fix OSD misplacement for software alpha when in crop mode (info menu)
