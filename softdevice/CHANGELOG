@@ -1,5 +1,7 @@
 Changelog
   2004-10-18:
+   - some fixes upon deinterlacing selection (bug: #002267)
+  2004-10-18:
    - xv-out: allow disabling screensaver when in full screen mode (Torgeir Veimo)
    - mpeg2decoder: enable adjustable audio / video offset (Torgeir Veimo)
    - DFB: fix compare DFXL_NONE using equals (Torgeir Veimo)
