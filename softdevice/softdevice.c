@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.16 2005/03/04 20:04:20 lucke Exp $
+ * $Id: softdevice.c,v 1.17 2005/03/05 13:50:49 lucke Exp $
  */
 
 #include <getopt.h>
@@ -285,6 +285,12 @@ public:
   virtual void PlayAudio(const uchar *Data, int Length);
 #else
   virtual int  PlayAudio(const uchar *Data, int Length);
+  virtual void SetDigitalAudioDevice(bool On);
+
+protected:
+  virtual void SetAudioTrackDevice(eTrackType Type);
+
+public:
 #endif
 #if VDRVERSNUM >= 10307
   virtual int ProvidesCa(const cChannel *Channel) const;
@@ -573,6 +579,20 @@ void cSoftDevice::PlayAudio(const uchar *Data, int Length)
 int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
   return decoder->PlayAudio(Data, Length);
+}
+
+/* ----------------------------------------------------------------------------
+ */
+void cSoftDevice::SetAudioTrackDevice(eTrackType Type)
+{
+  //fprintf (stderr, "[SetAudioTrackDevice] (%d)\n",Type);
+}
+
+/* ----------------------------------------------------------------------------
+ */
+void cSoftDevice::SetDigitalAudioDevice(bool On)
+{
+  //fprintf (stderr, "[SetDigitalAudioDevice] (%s)\n",(On)? "TRUE":"FALSE");
 }
 #endif
 

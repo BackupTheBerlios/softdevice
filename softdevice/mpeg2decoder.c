@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.16 2005/02/24 22:35:50 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.17 2005/03/05 13:50:49 lucke Exp $
  */
 
 #include <math.h>
@@ -303,11 +303,28 @@ cAudioStreamDecoder::cAudioStreamDecoder(unsigned int StreamID,
   }
 }
 
-uint64_t cAudioStreamDecoder::GetPTS() 
+/* ---------------------------------------------------------------------------
+ */
+uint64_t cAudioStreamDecoder::GetPTS()
 {
   return pts - audioOut->GetDelay() + setupStore.avOffset;
-};
+}
 
+/* ---------------------------------------------------------------------------
+ */
+void cAudioStreamDecoder::setStreamId(int id)
+{
+  /* -------------------------------------------------------------------------
+   * don't hook on DD stream
+   */
+  if (id != 0x01bd)
+  {
+    streamID = id;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
 int cAudioStreamDecoder::DecodeData(uchar *Data, int Length)
 {
     int len;
@@ -1230,6 +1247,7 @@ int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
 #if VDRVERSNUM >= 10318
   if (running)
     aout->Write((uchar *)Data,Length);
+    aout->setStreamId(Data[2]<<8|Data[3]);
 #endif
   return Length;
 }

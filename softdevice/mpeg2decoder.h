@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.12 2005/02/13 18:12:31 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.13 2005/03/05 13:50:49 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -103,6 +103,8 @@ public:
     virtual uint64_t GetPTS()  {return pts;};
 
     virtual void Stop();
+    virtual void setStreamId (int id) {return;};
+
     cStreamDecoder(unsigned int StreamID);
     virtual ~cStreamDecoder();
 };
@@ -118,6 +120,7 @@ public:
     cAudioStreamDecoder(unsigned int StreamID, cAudioOut *AudioOut);
     ~cAudioStreamDecoder();
     virtual uint64_t GetPTS();
+    virtual void setStreamId (int id);
 };
 
 class cVideoStreamDecoder : public cStreamDecoder {
