@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.7 2004/10/29 20:36:07 lucke Exp $
+ * $Id: video-xv.c,v 1.8 2004/10/30 12:37:33 lucke Exp $
  */
 
 #include <unistd.h>
@@ -27,7 +27,7 @@
 #include "xscreensaver.h"
 #include "utils.h"
 
-#define PATCH_VERSION "007_pre_3+"
+#define PATCH_VERSION "007_pre_4"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
