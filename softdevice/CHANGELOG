@@ -1,5 +1,7 @@
 Changelog
-  2005-01-15:
+ 2005-01-23:
+    - added suspend video playback patch. 
+ 2005-01-15:
     - fix OSD drawing when multiple areas are used (with text2skin plugin)
     - dfb out: reverted top-field first setting as it may crash
     - removed some unused code

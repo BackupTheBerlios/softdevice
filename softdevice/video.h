@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.6 2005/01/15 08:33:04 lucke Exp $
+ * $Id: video.h,v 1.7 2005/01/23 14:54:22 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -75,6 +75,9 @@ public:
     virtual bool Initialize(void) {return 1;};
     virtual bool Reconfigure (int format) {return 1;};
     virtual bool GetInfo(int *fmt, unsigned char **dest,int *w, int *h) {return false;};
+
+    virtual void Suspend(void) { printf("Video Suspend\n"); return;};
+    virtual bool Resume(void) {printf("Video Resume\n"); return true;};
 
 #if VDRVERSNUM >= 10307
 

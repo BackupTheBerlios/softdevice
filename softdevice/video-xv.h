@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.3 2004/10/29 20:36:07 lucke Exp $
+ * $Id: video-xv.h,v 1.4 2005/01/23 14:54:22 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -99,6 +99,7 @@ private:
                     net_wm_STATE_ABOVE,
                     net_wm_STATE;
   int               initialized,
+                    xv_initialized,
                     osd_refresh_counter,
                     osd_skip_counter,
                     osd_x, osd_y,
@@ -155,6 +156,9 @@ public:
   virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
   virtual void Pause(void);
   virtual bool GetInfo(int *fmt, unsigned char **dest,int *w, int *h);
+
+  virtual void Suspend();
+  virtual bool Resume();
 };
 
 /* ---------------------------------------------------------------------------

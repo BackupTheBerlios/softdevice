@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.13 2005/01/15 09:29:29 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.14 2005/01/23 14:54:22 wachm Exp $
  */
 
 #include <math.h>
@@ -42,6 +42,13 @@
 #ifndef BUFDEB
 #define BUFDEB(out...)
 #endif
+
+//#define CMDDEB(out...) {printf("CMD[%04d]:",getTimeMilis() % 10000);printf(out);}
+
+#ifndef CMDDEB
+#define CMDDEB(out...)
+#endif
+
 
 //#define AV_STATS
 
@@ -974,6 +981,8 @@ cVideoStreamDecoder::~cVideoStreamDecoder()
 }
 
 //----------------------------   create a new MPEG Decoder
+
+
 cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
 {
   avcodec_init();
@@ -987,6 +996,7 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
 
   running=false;
   decoding=false;
+  IsSuspended=false;
 }
 
 cMpeg2Decoder::~cMpeg2Decoder()
@@ -1001,6 +1011,11 @@ cMpeg2Decoder::~cMpeg2Decoder()
 
 void cMpeg2Decoder::Start(void)
 {
+  CMDDEB("Start IsSuspended %d \n",IsSuspended);
+  if (IsSuspended)
+    // don't start if we are suspended
+    return;
+
   // ich weiß nicht, ob man's so kompliziert machen soll, aber jetzt hab ich's
   // schon so gemacht, das 2 Threads gestartet werden.
   // Audio is the master, Video syncs on Audio
@@ -1010,20 +1025,62 @@ void cMpeg2Decoder::Start(void)
   running=true;
 }
 
+void cMpeg2Decoder::Suspend()
+{
+  CMDDEB("Suspend\n");
+  Stop();
+  audioOut->Suspend();
+  videoOut->Suspend();
+  IsSuspended=true;
+}
+
+void cMpeg2Decoder::Resume()
+{
+  CMDDEB("Resume\n");
+  IsSuspended=false;
+  if (!videoOut->Resume()) {
+    fprintf(stderr,"Could not open video out! Sleeping again...\n");
+    videoOut->Suspend();
+    setupStore.shouldSuspend=true;
+    IsSuspended=true;
+    return;
+  };
+
+  if (!audioOut->Resume()) {
+   fprintf(stderr,"Could not open audio out! Sleeping again...\n");
+   setupStore.shouldSuspend=true;
+   IsSuspended=true;
+   videoOut->Suspend();
+   return;
+  };
+
+  Start();
+  IsSuspended=false;
+}
+
 void cMpeg2Decoder::Play(void)
 {
-  aout->Play();
-  vout->Play();
+  CMDDEB("Play\n");
+  if (running) 
+  {
+    aout->Play();
+    vout->Play();
+  };
 };
 
 void cMpeg2Decoder::Freeze(void)
 {
-  aout->Freeze();
-  vout->Freeze();
+  CMDDEB("Freeze\n");
+  if (running) 
+  {
+    aout->Freeze();
+    vout->Freeze();
+  };
 };
   
 void cMpeg2Decoder::Stop(void)
 {
+  CMDDEB("Stop\n");
   if (running)
   {
     running=false;
@@ -1052,23 +1109,35 @@ int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
 
 void cMpeg2Decoder::Clear(void)
 {
-  aout->Clear();
-  vout->Clear();
+  CMDDEB("Clear\n");
+  if (running)
+  {
+    aout->Clear();
+    vout->Clear();
+  };
 }
 
 void cMpeg2Decoder::TrickSpeed(int Speed)
 {
-  aout->TrickSpeed(Speed);
-  vout->TrickSpeed(Speed);
+  CMDDEB("TrickSpeed %d\n",Speed);
+  if (running)
+  {
+    aout->TrickSpeed(Speed);
+    vout->TrickSpeed(Speed);
+  };
 }
 
 int64_t cMpeg2Decoder::GetSTC(void) {
-  return vout->GetPTS()*90;
+  if (running)
+    return vout->GetPTS()*90;
+  else return 0;
 };
 
 bool cMpeg2Decoder::BufferFilled() 
 {
-  return vout->BufferFill()>95;
+  if (running)
+    return vout->BufferFill()>95;
+  else return false;
 }
 
 /* ----------------------------------------------------------------------------
@@ -1143,7 +1212,8 @@ int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
              ((*p)&1)+1, sampleRates[((*p)&3)>>4]);
   }
 #if VDRVERSNUM >= 10318
-  aout->Write((uchar *)Data,Length);
+  if (running)
+    aout->Write((uchar *)Data,Length);
 #endif
   return Length;
 }
@@ -1157,13 +1227,18 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
     inbuf_ptr = (uint8_t *)Data;
     int size=Length;
 
-  decoding=true;
-  if (!running)
-  {
-    decoding=false;
-    return Length;
-  }
+  if (running && !IsSuspended && setupStore.shouldSuspend)
+     // still running and should suspend
+     Suspend();
 
+  if (!running && IsSuspended && !setupStore.shouldSuspend)
+     // not running and should resume
+     Resume();
+     
+  if (!running)
+    return Length;
+
+  decoding=true;
   while (size > 0)
   {
     len=1;

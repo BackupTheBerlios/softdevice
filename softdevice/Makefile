@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.4 2004/12/21 05:55:42 lucke Exp $
+# $Id: Makefile,v 1.5 2005/01/23 14:54:22 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -35,6 +35,9 @@ VIDIX_SUPPORT=1
 
 # Set this if you want to use DPMS
 LIBXDPMS_SUPPORT = 1
+
+# Set this if you want to be able to toggle suspend mode by keyboard (XV only)
+SUSPEND_BY_KEY = 1
 
 # Enable the usage from some deinterlacing pp-filters of libavcodec
 # ffmpeg must be compiled with the options --enable-pp --enable-gpl
@@ -178,6 +181,10 @@ endif
 ifdef PP_LIBAVCODEC
 DEFINES     += -DPP_LIBAVCODEC
 FFMPEGLIBS  += -lpostproc
+endif
+
+ifdef SUSPEND_BY_KEY
+DEFINES     += -DSUSPEND_BY_KEY
 endif
 
 ### Implicit rules:

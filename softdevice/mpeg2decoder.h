@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.10 2005/01/13 20:31:08 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.11 2005/01/23 14:54:22 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -176,6 +176,7 @@ private:
     cVideoOut       *videoOut;
     int             ac3Mode, ac3Parm, lpcmMode;
     bool running;
+    bool IsSuspended;
     bool decoding;
 public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);
@@ -188,6 +189,8 @@ public:
     void Freeze(void);
     void Stop(void);
     void Clear(void);
+    void Suspend(void);
+    void Resume(void);
     void TrickSpeed(int Speed);
     bool BufferFilled(void);
     int64_t GetSTC(void);

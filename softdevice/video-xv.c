@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.12 2005/01/15 08:33:04 lucke Exp $
+ * $Id: video-xv.c,v 1.13 2005/01/23 14:54:22 wachm Exp $
  */
 
 #include <unistd.h>
@@ -26,6 +26,7 @@
 #include "video-xv.h"
 #include "xscreensaver.h"
 #include "utils.h"
+#include "setup-softdevice.h"
 
 #define PATCH_VERSION "008_pre_2"
 
@@ -446,48 +447,67 @@ void cXvVideoOut::ProcessEvents ()
             toggleFullScreen();
             break;
           case 'b':
-            attributeStore.Decrement("XV_BRIGHTNESS");
+            if (xv_initialized)
+              attributeStore.Decrement("XV_BRIGHTNESS");
             break;
           case 'B':
-            attributeStore.Increment("XV_BRIGHTNESS");
+            if (xv_initialized)
+              attributeStore.Increment("XV_BRIGHTNESS");
             break;
           case 'c':
-            attributeStore.Decrement("XV_CONTRAST");
+            if (xv_initialized)
+              attributeStore.Decrement("XV_CONTRAST");
             break;
           case 'C':
-            attributeStore.Increment("XV_CONTRAST");
+            if (xv_initialized)
+              attributeStore.Increment("XV_CONTRAST");
             break;
           case 'h':
-            attributeStore.Decrement("XV_HUE");
+            if (xv_initialized)
+              attributeStore.Decrement("XV_HUE");
             break;
           case 'H':
-            attributeStore.Increment("XV_HUE");
+            if (xv_initialized)
+              attributeStore.Increment("XV_HUE");
             break;
           case 's':
-            attributeStore.Decrement("XV_SATURATION");
+            if (xv_initialized)
+              attributeStore.Decrement("XV_SATURATION");
             break;
           case 'S':
-            attributeStore.Increment("XV_SATURATION");
+            if (xv_initialized)
+              attributeStore.Increment("XV_SATURATION");
             break;
 #if 1
           case 'o':
-            attributeStore.Decrement("XV_OVERLAY_ALPHA");
+            if (xv_initialized)
+              attributeStore.Decrement("XV_OVERLAY_ALPHA");
             break;
           case 'O':
-            attributeStore.Increment("XV_OVERLAY_ALPHA");
+            if (xv_initialized)
+              attributeStore.Increment("XV_OVERLAY_ALPHA");
             break;
           case 'g':
-            attributeStore.Decrement("XV_GRAPHICS_ALPHA");
+            if (xv_initialized)
+              attributeStore.Decrement("XV_GRAPHICS_ALPHA");
             break;
           case 'G':
-            attributeStore.Increment("XV_GRAPHICS_ALPHA");
+            if (xv_initialized)
+              attributeStore.Increment("XV_GRAPHICS_ALPHA");
             break;
           case 'a':
-            attributeStore.Decrement("XV_ALPHA_MODE");
+            if (xv_initialized)
+              attributeStore.Decrement("XV_ALPHA_MODE");
             break;
           case 'A':
-            attributeStore.Increment("XV_ALPHA_MODE");
+            if (xv_initialized)
+              attributeStore.Increment("XV_ALPHA_MODE");
             break;
+#endif
+#ifdef SUSPEND_BY_KEY 
+          case 'r':
+          case 'R':
+            setupStore.shouldSuspend=!setupStore.shouldSuspend;
 #endif
           default:
             if (xvRemote) {
@@ -504,7 +524,7 @@ void cXvVideoOut::ProcessEvents ()
                    win,
                    RevertToParent,
                    CurrentTime);
-          if (map_count > 2) {
+          if (map_count > 2 && xv_initialized) {
             XvShmPutImage(dpy, port,
                           win, gc,
                           xv_image,
@@ -519,7 +539,8 @@ void cXvVideoOut::ProcessEvents ()
         }
         break;
       case UnmapNotify:
-        XvStopVideo (dpy,port,win);
+        if (xv_initialized)
+          XvStopVideo (dpy,port,win);
         if(cursor_visible == False) {
           XUndefineCursor(dpy, win);
           cursor_visible = True;
@@ -530,7 +551,7 @@ void cXvVideoOut::ProcessEvents ()
     }
   }
 
-  if (initialized && map_count) {
+  if (xv_initialized && map_count) {
     XvShmPutImage(dpy, port,
                   win, gc,
                   xv_image,
@@ -776,6 +797,8 @@ bool cXvVideoOut::Reconfigure(int format)
     XvAdaptorInfo       *ad_info;
     XvImageFormatValues *fmt_info;
 
+  pthread_mutex_lock(&xv_mutex);
+
   /*
    * So let's first check for an available adaptor and port
    */
@@ -922,13 +945,16 @@ bool cXvVideoOut::Reconfigure(int format)
                      lxoff,  lyoff,     /* dx, dy */
                      lwidth, lheight,   /* dw, dh */
                      False);
-
+		     
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
-
+  
   rc = XSync(dpy, False);
+  
+  pthread_mutex_unlock(&xv_mutex);
 
   this->format = format;
   initialized = 1;
+  xv_initialized = 1;
   return true;
 }
 
@@ -943,6 +969,43 @@ cXvVideoOut::cXvVideoOut()
 void cXvVideoOut::Pause(void)
 {
 }
+
+/* ---------------------------------------------------------------------------
+ */
+void cXvVideoOut::Suspend(void)
+{
+  if (!xv_initialized)
+    return;
+
+  pthread_mutex_lock(&xv_mutex);
+
+  XvStopVideo(dpy, port, win);
+  XvUngrabPort(dpy, port, CurrentTime);
+  
+  pthread_mutex_unlock(&xv_mutex);
+
+  if(shminfo.shmaddr)
+  {
+    shmdt(shminfo.shmaddr);
+    shminfo.shmaddr = NULL;
+  }
+
+  if (xv_image)
+  {
+    free(xv_image);
+    xv_image = NULL;
+  }
+  
+  xv_initialized = 0;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+bool cXvVideoOut::Resume(void)
+{
+  return Reconfigure(format);
+}
+
 
 /* ---------------------------------------------------------------------------
  */
@@ -1095,7 +1158,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                       int Width, int Height,
                       int Ystride, int UVstride)
 {
-  if (!initialized)
+  if (!initialized || !xv_initialized)
     return;
 
   /* -------------------------------------------------------------------------
@@ -1139,17 +1202,27 @@ cXvVideoOut::~cXvVideoOut()
   if (!initialized)
     return;
 
-  pthread_mutex_lock(&xv_mutex);
-
-  XvStopVideo(dpy, port, win);
-
-  pthread_mutex_unlock(&xv_mutex);
-
-  if(shminfo.shmaddr)
+  if (xv_initialized) 
   {
-    shmdt(shminfo.shmaddr);
-    shminfo.shmaddr = NULL;
+    pthread_mutex_lock(&xv_mutex);
+
+    XvStopVideo(dpy, port, win);
+
+    pthread_mutex_unlock(&xv_mutex);
+
+    if(shminfo.shmaddr)
+    {
+      shmdt(shminfo.shmaddr);
+      shminfo.shmaddr = NULL;
+    }
+  
+    if (xv_image)
+    {
+      free(xv_image);
+      xv_image = NULL;
+    }
   }
+
 
   if(osd_shminfo.shmaddr)
   {
@@ -1157,11 +1230,6 @@ cXvVideoOut::~cXvVideoOut()
     osd_shminfo.shmaddr = NULL;
   }
 
-  if (xv_image)
-  {
-    free(xv_image);
-    xv_image = NULL;
-  }
 
   if (osd_image)
   {
