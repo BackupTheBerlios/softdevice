@@ -1,4 +1,6 @@
 Changelog
+ 2005-03-04: 0.1.0pre1
+    - some i18n changes
  2005-03-03:
     - fb-out: fix for build option USE_SUBPLUGINS
               fix alpha mask misplacement

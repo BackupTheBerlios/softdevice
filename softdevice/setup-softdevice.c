@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.11 2005/02/27 08:52:33 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.12 2005/03/04 20:04:20 lucke Exp $
  */
 
 #include "video.h"
@@ -278,7 +278,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(void)
   Add(new cMenuEditBoolItem(tr("Picture mirroring"),
                             &data->mirror, tr("off"), tr("on")));
 
-  Add(new cMenuEditIntItem(tr("A/V Offset"),
+  Add(new cMenuEditIntItem(tr("A/V Delay"),
                            &data->avOffset,
                            MINAVOFFSET, MAXAVOFFSET));
 

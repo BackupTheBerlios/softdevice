@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.8 2005/03/03 18:16:26 lucke Exp $
+# $Id: Makefile,v 1.9 2005/03/04 20:04:20 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -54,7 +54,7 @@ SUSPEND_BY_KEY = 1
 PP_LIBAVCODEC=1
 
 # -----------------------------------------------------------------------------
-# if you want output methods build as separate libs uncomment this
+# if you want output methods build as a single lib comment the following line
 USE_SUBPLUGINS = 1
 
 # -----------------------------------------------------------------------------
