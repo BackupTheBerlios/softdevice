@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.6 2004/11/04 07:01:52 lucke Exp $
+ * $Id: softdevice.c,v 1.7 2004/11/14 16:24:38 wachm Exp $
  */
 
 #include <getopt.h>
@@ -132,7 +132,7 @@ public:
     virtual cOsd *CreateOsd(int Left, int Top);
 };
 
-cSoftOsdProvider::cSoftOsdProvider(cVideoOut *VideoOut)
+cSoftOsdProvider::cSoftOsdProvider(cVideoOut *VideoOut) : cOsdProvider()
 {
     videoOut = VideoOut;
 }
@@ -258,6 +258,7 @@ public:
   virtual void SetVolumeDevice (int Volume);
   virtual void StillPicture(const uchar *Data, int Length);
   virtual bool Poll(cPoller &Poller, int TimeoutMs = 0);
+  virtual int64_t GetSTC(void);
   virtual int PlayVideo(const uchar *Data, int Length);
 #if VDRVERSNUM >= 10307
   virtual int ProvidesCa(const cChannel *Channel) const;
@@ -323,7 +324,9 @@ cSoftDevice::~cSoftDevice()
     delete(videoOut);
 }
 
-
+int64_t cSoftDevice::GetSTC(void) {
+  return decoder->GetSTC();
+};
 
 #if VDRVERSNUM >= 10307
 
@@ -387,47 +390,69 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
 
 void cSoftDevice::TrickSpeed(int Speed)
 {
-    fprintf(stderr,"[softdevice] Trickspeed not implemented yet...\n");
+    //fprintf(stderr,"[softdevice] Trickspeed(%d) ...\n",Speed);
+    decoder->TrickSpeed(Speed);
 }
 void cSoftDevice::Clear(void)
 {
-    fprintf(stderr,"[softdevice] Clear not implemented yet...\n");
+    //fprintf(stderr,"[softdevice] Clear ...\n");
+    cDevice::Clear();
+    decoder->Clear();
 }
 void cSoftDevice::Play(void)
 {
+    //fprintf(stderr,"[softdevice] Play...\n");
+    cDevice::Play();
+    decoder->TrickSpeed(1);
+    decoder->Play();
     playMutex.Lock();
     freezeModeEnabled = false;
     playMutex.Unlock();
     readyForPlayCondVar.Broadcast();
 }
+
 void cSoftDevice::Freeze(void)
 {
+    //fprintf(stderr,"[softdevice] Freeze...\n");
+    cDevice::Freeze();
+    decoder->Freeze();
     playMutex.Lock();
     freezeModeEnabled = true;
     playMutex.Unlock();
 }
+
 void cSoftDevice::Mute(void)
 {
-    fprintf(stderr,"[softdevice] Mute not implemented yet...\n");
+    //fprintf(stderr,"[softdevice] Mute not implemented yet...\n");
+    cDevice::Mute();
 }
 
 void cSoftDevice::SetVolumeDevice(int Volume)
 {
-  fprintf (stderr, "[softdevice] should set volume to %d\n", Volume);
+  //fprintf (stderr, "[softdevice] should set volume to %d\n", Volume);
   audioOut->SetVolume(Volume);
 }
 
 void cSoftDevice::StillPicture(const uchar *Data, int Length)
 {
+    //fprintf(stderr,"[softdevice] StillPicture...\n");
     decoder->StillPicture((uchar *)Data,Length);
 }
 
 bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
 {
+  // fprintf(stderr,"[softdevice] Poll TimeoutMs: %d ....\n",TimeoutMs);
   playMutex.Lock();
   if (freezeModeEnabled)
     readyForPlayCondVar.TimedWait(playMutex,TimeoutMs);
   playMutex.Unlock();
+
+  if (decoder->BufferFilled()) {
+     //fprintf(stderr,"[softdevice] Buffer filled, sleeping\n");
+     usleep(TimeoutMs*1000);
+     return decoder->BufferFilled();
+  }
+
   return true;
 }
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.3 2004/10/29 16:41:39 iampivot Exp $
+ * $Id: mpeg2decoder.h,v 1.4 2004/11/14 16:24:38 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -17,33 +17,89 @@
 #include <vdr/ringbuffer.h>
 #define MAX_HDR_LEN 0xFF
 
+#define DEFAULT_FRAMETIME 40   // for PAL
+#define DVB_BUF_SIZE   (4* 256*1024)  // same value as in dvbplayer.c
+#define AVG_FRAME_SIZE 15000         // dito 
+
+struct PES_Header1 {
+  unsigned int is_original:1;
+  unsigned int has_copyright:1;
+  unsigned int data_alignment:1;
+  unsigned int priority:1;
+  unsigned int scrambling_ctrl:2;
+  unsigned int flag:2;
+};
+
+struct PES_Header2 {
+  unsigned int extension_exists:1;
+  unsigned int has_crc:1;
+  unsigned int has_copy_info:1;
+  unsigned int trick_mode_flag:1;
+  unsigned int has_es_rate:1;
+  unsigned int has_escr:1;
+  unsigned int ptsdts_flags:2;
+};
+
+// wrapper class to access protected methods
+class cSoftRingBufferLinear : public cRingBufferLinear {
+public:
+  cSoftRingBufferLinear(int Size, int Margin = 0, bool Statistics = false, const     char *Description = NULL) 
+     : cRingBufferLinear(Size,Margin,Statistics,Description) {};
+  ~cSoftRingBufferLinear() {};
+
+  virtual int Available(void) {return cRingBufferLinear::Available();} ;
+  int Size(void) { return cRingBufferLinear::Size(); }
+};
+
 // Output device handler
-class cStreamDecoder  {
+class cStreamDecoder : public cThread {
 private:
-    unsigned int streamID; // stream to filter
+
+    // used by ParseStreamIntern
     unsigned int syncword;
     int payload;
     int state;
     int headerLength;
     unsigned char * hdr_ptr;
+
+    struct PES_Header1 Header1;
+    struct PES_Header2 Header2;
+
+
+    bool freezeMode;
 protected:
-    uint64_t *cPTS;
+    unsigned int streamID; // stream to filter
+    int64_t newPTS;
     int64_t pts;
     int frame;
     bool validPTS;
     unsigned char header[MAX_HDR_LEN];     
     AVCodec *codec;
     AVCodecContext *context;
+    
+    cMutex              mutex;
+    cSoftRingBufferLinear   *ringBuffer;
+    bool                active, running;
+    
     int ParseStream(uchar *Data, int Length);
     int ParseStreamIntern(uchar *Data, int Length, unsigned int lowID, unsigned int highID);
+    inline void ClearParseStream() {state=0;};
+    
+    virtual void Action(void);
 public:
     virtual int DecodeData(uchar *Data, int Length) = 0;
-    virtual void Write(uchar *Data, int Length) = 0;
+    virtual void Write(uchar *Data, int Length);
+    virtual void Clear(void);
+    virtual void Freeze(void);
+    virtual void Play(void);
+    virtual void TrickSpeed(int Speed) {return;};
     virtual int StillPicture(uchar *Data, int Length) {return 0;};
+    virtual int BufferFill(void);
+    virtual uint64_t GetPTS()  {return pts;};
 
+    virtual void Stop();
     cStreamDecoder(unsigned int StreamID);
     virtual ~cStreamDecoder();
-    void SyncPTS(uint64_t spts);
 };
 
 
@@ -54,15 +110,14 @@ private:
 protected:
 public:
     virtual int DecodeData(uchar *Data, int Length);
-    cAudioStreamDecoder(unsigned int StreamID, cAudioOut *AudioOut, uint64_t *commonPTS);
+    cAudioStreamDecoder(unsigned int StreamID, cAudioOut *AudioOut);
     ~cAudioStreamDecoder();
-    virtual void Write(uchar *Data, int Length);
-
+    virtual uint64_t GetPTS();
 };
 
-class cVideoStreamDecoder : public cStreamDecoder , cThread {
+class cVideoStreamDecoder : public cStreamDecoder {
   private:
-    cMutex              mutex;
+    cAudioStreamDecoder *AudioStream;
     AVFrame             *picture;
     AVPicture           avpic_src, avpic_dest;
 
@@ -75,11 +130,16 @@ class cVideoStreamDecoder : public cStreamDecoder , cThread {
 #endif //PP_LIBAVCODEC
 
     cVideoOut           *videoOut;
-    uint64_t            vpts;
-    int                 avgOffset;
-    cRingBufferLinear   *ringBuffer;
-    bool                active, running;
 
+    // A-V syncing stuff
+    bool               syncOnAudio;
+    int64_t            lastTime;
+    int                offset;
+    int                delay;
+    int                rtc_fd; 
+    int                frametime;
+    int32_t GetRelTime();
+   
     void    resetCodec(void);
     uchar   *allocatePicBuf(uchar *pic_buf);
     void    deintLibavcodec(void);
@@ -89,16 +149,14 @@ class cVideoStreamDecoder : public cStreamDecoder , cThread {
 #endif //PP_LIBAVCODEC
     void    Mirror(void);
 
-  protected:
-    virtual void Action(void);
-
   public:
-    cVideoStreamDecoder(unsigned int StreamID, cVideoOut *VideoOut, uint64_t *commonPTS);
+    cVideoStreamDecoder(unsigned int StreamID, cVideoOut *VideoOut,
+       cAudioStreamDecoder *AudioStreamDecoder );
     ~cVideoStreamDecoder();
 
     virtual int   DecodeData(uchar *Data, int Length);
     virtual int   StillPicture(uchar *Data, int Length);
-    virtual void  Write(uchar *Data, int Length);
+    virtual void TrickSpeed(int Speed);
 };
 
 
@@ -111,7 +169,6 @@ private:
     cStreamDecoder *vout, *aout;
     cAudioOut *audioOut;
     cVideoOut *videoOut;
-    uint64_t commonPTS;
     bool running;
     bool decoding;
 public:
@@ -120,7 +177,13 @@ public:
     int Decode(const uchar *Data, int Length);
     int StillPicture(uchar *Data, int Length);
     void Start(void);
+    void Play(void);
+    void Freeze(void);
     void Stop(void);
+    void Clear(void);
+    void TrickSpeed(int Speed);
+    bool BufferFilled(void);
+    int64_t GetSTC(void);
 };
 
 #endif // MPEG2DECODER_H
