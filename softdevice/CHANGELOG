@@ -1,5 +1,9 @@
 Changelog
- 2005-03-15:
+2005-03-17:
+    - add left/right channel only support
+    - be more precise in GetSTC
+    - use libavformat for PES stream parsing
+2005-03-15:
     - get cvs version of dvd-plugin work in _non_ ac3 mode
  2005-03-11:
     - xv-out: fix OSD misplacement in downscaleing mode (pseudo mode)

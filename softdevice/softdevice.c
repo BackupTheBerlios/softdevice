@@ -3,8 +3,10 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.19 2005/03/10 21:05:56 lucke Exp $
+ * $Id: softdevice.c,v 1.20 2005/03/17 20:15:35 wachm Exp $
  */
+
+#include "softdevice.h"
 
 #include <getopt.h>
 #include <stdlib.h>
@@ -12,10 +14,6 @@
 #ifdef USE_SUBPLUGINS
 #include <dlfcn.h>
 #endif
-
-#include <vdr/interface.h>
-#include <vdr/plugin.h>
-#include <vdr/player.h>
 
 #if VDRVERSNUM >= 10307
 #include <vdr/osd.h>
@@ -27,9 +25,6 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <linux/fb.h>
-#include "i18n.h"
-#include "setup-softdevice.h"
-
 #include "video-dummy.h"
 
 #undef  VOUT_DEFAULT
@@ -225,85 +220,6 @@ void cSoftOsd::CloseWindow(cWindow *Window) {
 
 #endif
 
-// --- cSoftDevice ------------------------------------------------------------
-class cPluginSoftDevice : public cPlugin {
-private:
-  int   voutMethod, aoutMethod;
-  char  *pluginPath;
-
-public:
-  cPluginSoftDevice(void);
-  virtual ~cPluginSoftDevice();
-  virtual const char *Version(void) { return VERSION; }
-  virtual const char *Description(void) { return tr(DESCRIPTION); }
-  virtual const char *CommandLineHelp(void);
-  virtual bool Initialize(void);
-  virtual bool ProcessArgs(int argc, char *argv[]);
-  virtual bool Start(void);
-  virtual void Housekeeping(void);
-  virtual const char *MainMenuEntry(void) { return tr(MAINMENUENTRY); }
-  virtual cOsdObject *MainMenuAction(void);
-  virtual cMenuSetupPage *SetupMenu(void);
-  virtual bool SetupParse(const char *Name, const char *Value);
-  };
-
-// Global variables that control the overall behaviour:
-
-#define AC3_TEST  1
-
-// --- cSoftDevice --------------------------------------------------
-class cSoftDevice : public cDevice {
-private:
-  cMpeg2Decoder *decoder;
-
-#if VDRVERSNUM < 10307
-  cOsdBase *OSD;
-#endif
-
-  cVideoOut *videoOut;
-  cAudioOut *audioOut;
-  int       outMethod;
-
-  bool      freezeModeEnabled;
-  cMutex    playMutex;
-  cCondVar  readyForPlayCondVar;
-
-public:
-  cSoftDevice(int method, int audioMethod, char *pluginPath);
-  ~cSoftDevice();
-  virtual bool HasDecoder(void) const;
-  virtual bool CanReplay(void) const;
-  virtual bool SetPlayMode(ePlayMode PlayMode);
-  virtual void TrickSpeed(int Speed);
-  virtual void Clear(void);
-  virtual void Play(void);
-  virtual void Freeze(void);
-  virtual void Mute(void);
-  virtual void SetVolumeDevice (int Volume);
-  virtual void StillPicture(const uchar *Data, int Length);
-  virtual bool Poll(cPoller &Poller, int TimeoutMs = 0);
-  virtual int64_t GetSTC(void);
-  virtual int PlayVideo(const uchar *Data, int Length);
-#if VDRVERSNUM < 10318
-  virtual void PlayAudio(const uchar *Data, int Length);
-#else
-  virtual int  PlayAudio(const uchar *Data, int Length);
-  virtual void SetDigitalAudioDevice(bool On);
-
-protected:
-  virtual void SetAudioTrackDevice(eTrackType Type);
-
-public:
-#endif
-#if VDRVERSNUM >= 10307
-  virtual int ProvidesCa(const cChannel *Channel) const;
-  virtual void MakePrimaryDevice(bool On);
-#else
-  int ProvidesCa(int Ca);
-  virtual cOsdBase *NewOsd(int x, int y);
-#endif
-};
-
 cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 {
     freezeModeEnabled = false;
@@ -372,6 +288,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       if (videoOut->Initialize () &&
           videoOut->Reconfigure (reconfigureArg))
       {
+          printf("Subplugin successfully opend\n");
           dsyslog("[softdevice] videoOut OK !\n");
       }
       else
@@ -497,6 +414,7 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
           playMutex.Unlock();
 	    break;
 	default:
+	    printf("playmode not implemented... %d\n",PlayMode);
 	    decoder->Stop();
 	    break;
 
@@ -504,6 +422,19 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
 //    printf("setting Playmode not implemented yet... %d\n",PlayMode);
     return true;
 }
+
+void cSoftDevice::SetAudioChannelDevice(int AudioChannel)
+{
+  if (decoder)
+     decoder->SetAudioMode(AudioChannel);
+};
+
+int  cSoftDevice::GetAudioChannelDevice(void)
+{
+  if (decoder)
+    return decoder->GetAudioMode();
+  else return 0;
+};
 
 void cSoftDevice::TrickSpeed(int Speed)
 {
@@ -564,28 +495,50 @@ bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
     readyForPlayCondVar.TimedWait(playMutex,TimeoutMs);
   playMutex.Unlock();
 
-  if (decoder->BufferFilled()) {
-     //fprintf(stderr,"[softdevice] Buffer filled, sleeping\n");
-     usleep(TimeoutMs*1000);
-     return decoder->BufferFilled();
+  if ( decoder->BufferFill() > 90 ) {
+     //fprintf(stderr,"[softdevice] Buffer filled, TimeoutMs %d, fill %d\n",
+     //  TimeoutMs,decoder->BufferFill());
+     int64_t TimeoutUs=TimeoutMs*1000;
+     cRelTimer Timer;
+     Timer.Reset();
+  
+     while ( TimeoutUs > 0 ) {
+       usleep(10000);
+       TimeoutUs-=Timer.GetRelTime();
+     };
+     
+     return decoder->BufferFill() < 99;
   }
 
   return true;
 }
+
+bool cSoftDevice::Flush(int TimeoutMs)
+{
+  int64_t TimeoutUs=TimeoutMs*1000;
+  cRelTimer Timer;
+  Timer.Reset();
+  
+  while ( TimeoutUs > 0 && decoder->BufferFill() > 0 ) {
+       usleep(1000);
+       TimeoutUs-=Timer.GetRelTime();
+  };
+      
+  return  decoder->BufferFill() == 0;
+};
 
 #if VDRVERSNUM < 10318
 /* ----------------------------------------------------------------------------
  */
 void cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
-  decoder->PlayAudio(Data, Length);
 }
 #else
 /* ----------------------------------------------------------------------------
  */
 int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
-  return decoder->PlayAudio(Data, Length);
+  return decoder->Decode(Data, Length);
 }
 
 /* ----------------------------------------------------------------------------
@@ -646,6 +599,15 @@ cPluginSoftDevice::~cPluginSoftDevice()
 {
   // Clean up after yourself!
 }
+
+const char *cPluginSoftDevice::Version(void) 
+{ return VERSION; }
+
+const char *cPluginSoftDevice::Description(void) 
+{ return tr(DESCRIPTION); }
+
+const char *cPluginSoftDevice::MainMenuEntry(void)
+{ return tr(MAINMENUENTRY); }
 
 const char *cPluginSoftDevice::CommandLineHelp(void)
 {

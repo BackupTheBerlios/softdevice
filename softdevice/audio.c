@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.8 2005/03/10 21:05:56 lucke Exp $
+ * $Id: audio.c,v 1.9 2005/03/17 20:15:35 wachm Exp $
  */
 
 #include <unistd.h>
@@ -34,7 +34,7 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
               device, snd_strerror(err));
       exit(1);
     }
-    chn=0;
+    currContext.channels=0;
     dsyslog("[softdevice-audio] Device opened! Ready to play");
 }
 
@@ -56,7 +56,7 @@ bool cAlsaAudioOut::Resume() {
      return false;
    }
    //force setting of the parameters after resume 
-   chn=0;
+   currContext.channels=0;
    return true;
 };
 
@@ -64,7 +64,7 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
 {
     int err;
     size_t size;
-    size = Length/(2*chn);
+    size = Length/(2*currContext.channels);
   while (size) {
     while (paused) usleep(1000); // block
     err = snd_pcm_mmap_writei(handle,Data, size);
@@ -108,7 +108,7 @@ int cAlsaAudioOut::GetDelay(void) {
             snd_strerror(res));
 		exit(EXIT_FAILURE);
 	}
-    return snd_pcm_status_get_delay(status) *1000 / rate;
+    return snd_pcm_status_get_delay(status) *1000 / currContext.samplerate;
 }
 
 /* I/O error handler */
@@ -117,6 +117,7 @@ void cAlsaAudioOut::Xrun(void)
 	snd_pcm_status_t *status;
 	int res;
 	snd_pcm_status_alloca(&status);
+        printf("alsa-audio: Xrun\n");
 	if ((res = snd_pcm_status(handle, status))<0) {
     dsyslog("[softdevice-audio]: Xrun status error: %s FATAL exiting",
             snd_strerror(res));
@@ -137,14 +138,21 @@ void cAlsaAudioOut::Xrun(void)
 	exit(EXIT_FAILURE);
 }
 
-
-int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
+int cAlsaAudioOut::SetParams(SampleContext &context)
+//int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
 {
       int err;
 
     // not needed to set again
-    if ((chn == channels) && (rate == samplerate)) return 0;
-
+    //if ((chn == channels) && (rate == samplerate)) return 0;
+    if (currContext.samplerate == context.samplerate &&
+        currContext.channels == context.channels ) {
+      context=currContext;
+      return 0;
+    };
+    printf("alsa-audio: SetParams\n");
+    currContext=context;
+    
     snd_pcm_close(handle);
     if ((err = snd_pcm_open(&handle,
                             device,
@@ -155,9 +163,9 @@ int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
     }
 
     dsyslog ("[softdevice-audio] samplerate: %dHz, channels: #%d",
-             samplerate, channels);
-    rate=samplerate;
-    chn=channels;
+             currContext.samplerate, currContext.channels);
+    //rate=samplerate;
+    //chn=channels;
     snd_pcm_hw_params_t *params;
     snd_pcm_sw_params_t *swparams;
     snd_pcm_uframes_t xfer_align;
@@ -187,20 +195,24 @@ int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
       exit(EXIT_FAILURE);
     }
 
-    err = snd_pcm_hw_params_set_channels(handle, params, channels);
+    err = snd_pcm_hw_params_set_channels(handle, params,currContext.channels);
     if (err < 0) {
       dsyslog("[softdevice-audio] Channels count non available FATAL exiting");
       exit(EXIT_FAILURE);
     }
 
-    err = snd_pcm_hw_params_set_rate_near(handle, params, &rate, 0);
+    err = snd_pcm_hw_params_set_rate_near(handle, params, &currContext.samplerate, 0);
     assert(err >= 0);
+    /*
     if (rate != samplerate ) {
       dsyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) FATAL exiting",samplerate,rate);
       exit(1);
     }
-
+*/
     // set period size
+    snd_pcm_uframes_t bufferSize;
+    snd_pcm_uframes_t periodSize;
+    //periodSize = 8;
     periodSize = 4608 / 4;
     err = snd_pcm_hw_params_set_period_size_near(handle, params, &periodSize, 0);
     if ( err < 0)  {
@@ -231,6 +243,9 @@ int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
     dsyslog("[softdevice-audio] Period size %lu Buffer size %lu",
             periodSize, bufferSize);
 
+    currContext.buffer_size=bufferSize;
+    currContext.period_size=periodSize;  
+    
     snd_pcm_sw_params_current(handle, swparams);
     err = snd_pcm_sw_params_get_xfer_align(swparams, &xfer_align);
     if (err < 0) {
@@ -238,8 +253,8 @@ int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
       exit(EXIT_FAILURE);
     }
     dsyslog("[softdevice-audio] Hardware initialized");
-    //usleep(200000);
-    // audioOut->Play(audiosamples,audio_size);
+
+    context=currContext;
     return 0;
 }
 
@@ -293,7 +308,6 @@ void cAlsaAudioOut::SetVolume (int vol)
 cDummyAudioOut::cDummyAudioOut(cSetupStore *setupStore)
 {
   paused=false;
-  rate = chn=0;
   dsyslog("[softdevice-audio-dummy] Device opened! Ready to play");
 }
 
@@ -328,15 +342,17 @@ int cDummyAudioOut::GetDelay(void)
 
 /* ---------------------------------------------------------------------------
  */
-int cDummyAudioOut::SetParams(int channels, unsigned int samplerate)
+int cDummyAudioOut::SetParams(SampleContext &context)
 {
-  if ((chn == channels) && (rate == samplerate))
-    return 0;
+  int err;
 
-  dsyslog ("[softdevice-audio-dummy] samplerate: %dHz, channels: #%d",
-           samplerate, channels);
-  rate=samplerate;
-  chn=channels;
+  // not needed to set again
+  if (currContext.samplerate == context.samplerate &&
+      currContext.channels == context.channels ) {
+    context=currContext;
+    return 0;
+  };
+  currContext=context;
 
   return 0;
 }

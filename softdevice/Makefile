@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.9 2005/03/04 20:04:20 lucke Exp $
+# $Id: Makefile,v 1.10 2005/03/17 20:15:35 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -86,7 +86,7 @@ LIBAVCODEC=/usr/local/include/ffmpeg/
 #
 #
 # DON'T touch this:
-FFMPEGLIBS = -lavcodec
+FFMPEGLIBS = -lavcodec -lavformat
 #
 # -----------------------------------------------------------------------------
 # Depending on your ffmpeg lib you may need some additional libs

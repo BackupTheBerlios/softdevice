@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.14 2005/03/15 17:20:22 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.15 2005/03/17 20:15:35 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -13,34 +13,58 @@
 #endif //PP_LIBAVCODEC
 #include "video.h"
 #include "audio.h"
+#include <avformat.h>
+#include <sys/time.h>
 #include <vdr/plugin.h>
 #include <vdr/ringbuffer.h>
-#define MAX_HDR_LEN 0xFF
 
 #define DEFAULT_FRAMETIME 40   // for PAL
-#define DVB_BUF_SIZE   (4* 256*1024)  // same value as in dvbplayer.c
-#define AVG_FRAME_SIZE 15000         // dito 
-#define PTS_COUNT       4             // history of four PTS values
+#define DVB_BUF_SIZE   (64*1024)  // same value as in dvbplayer.c
 
-struct PES_Header1 {
-  unsigned int is_original:1;
-  unsigned int has_copyright:1;
-  unsigned int data_alignment:1;
-  unsigned int priority:1;
-  unsigned int scrambling_ctrl:2;
-  unsigned int flag:2;
+#define NO_STREAM    -1
+#define DONT_PLAY  -100
+
+class cAudioStreamDecoder; 
+
+// -----------------cClock --------------------------------------------
+class cClock {
+    static cAudioStreamDecoder *audioClock;
+
+public:
+    cClock() {audioClock=NULL;};
+    virtual ~cClock() {};
+    static void SetAudioClock(cAudioStreamDecoder *AudioClock)
+    {audioClock=AudioClock;};
+    virtual uint64_t GetPTS();
+};	
+
+// -----------------cPacketQueue -----------------------------------------
+class cPacketQueue {
+    // Only one thread may read, and only one thread may write!!!
+public:
+   const static int MaxPackets=500;
+private:
+    AVPacket queue[MaxPackets];
+    int FirstPacket,LastPacket;
+
+    inline int Next(int Packet) 
+    { return (Packet+1)%MaxPackets; };
+    
+public:
+    cPacketQueue();
+    ~cPacketQueue() {};
+
+    int PutPacket(const AVPacket &Packet);
+
+    AVPacket * GetReadPacket();
+    void FreeReadPacket(AVPacket *Packet);
+
+    void Clear();
+    inline int Available()
+    { return (LastPacket+MaxPackets - FirstPacket)%MaxPackets; }; 
 };
-
-struct PES_Header2 {
-  unsigned int extension_exists:1;
-  unsigned int has_crc:1;
-  unsigned int has_copy_info:1;
-  unsigned int trick_mode_flag:1;
-  unsigned int has_es_rate:1;
-  unsigned int has_escr:1;
-  unsigned int ptsdts_flags:2;
-};
-
+ 
+//--------------------------cSoftRingBufferLinear --------------------------
 // wrapper class to access protected methods
 class cSoftRingBufferLinear : public cRingBufferLinear {
 public:
@@ -53,92 +77,101 @@ public:
   int Size(void) { return cRingBufferLinear::Size(); }
 };
 
+//-------------------------cRelTimer-----------------------------------
+class cRelTimer {
+   private:
+      int64_t lastTime;
+      inline int64_t GetTime()
+      {  
+        struct timeval tv;
+        struct timezone tz;
+        gettimeofday(&tv,&tz);
+        return tv.tv_sec*1000000+tv.tv_usec;
+      };
+
+   public:
+      cRelTimer() {lastTime=GetTime();};
+      ~cRelTimer() {};
+      
+      int32_t TimePassed();
+      int32_t GetRelTime();
+      inline void Reset() { lastTime=GetTime(); };
+};
+      
+//-------------------------cStreamDecoder ----------------------------------
 // Output device handler
 class cStreamDecoder : public cThread {
 private:
 
-    // used by ParseStreamIntern
-    unsigned int syncword;
-    int payload;
-    int state;
-    int headerLength;
-    unsigned char * hdr_ptr;
-
-    struct PES_Header1 Header1;
-    struct PES_Header2 Header2;
-
-
     bool freezeMode;
+    cPacketQueue PacketQueue;
 protected:
-    unsigned int          streamID; // stream to filter
-    int64_t               newPTS,
-                          prevPTS,
-                          historyPTS[PTS_COUNT],
-                          pts;
-    int                   frame,
-                          packetLength,
-                          historyPTSIndex;
-    bool                  validPTS;
-    unsigned char         header[MAX_HDR_LEN];
+    int64_t               pts;
+    int                   frame;
+    
     AVCodec               *codec;
     AVCodecContext        *context;
     
     cMutex                mutex;
-    cSoftRingBufferLinear *ringBuffer;
     bool                  active, running;
     
-    int ParseStream(uchar *Data, int Length);
-    int ParseStreamIntern(uchar *Data, int Length, unsigned int lowID, unsigned int highID);
-    inline void ClearParseStream() {state=0;};
-    
     virtual void Action(void);
+    virtual int DecodePacket(AVPacket *pkt) = 0;
 public:
-    virtual int DecodeData(uchar *Data, int Length) = 0;
-    virtual void Write(uchar *Data, int Length);
+    inline int PutPacket(const AVPacket &pkt)
+    { return PacketQueue.PutPacket(pkt); };
+
     virtual void Clear(void);
     virtual void Freeze(void);
     virtual void Play(void);
+    virtual void Stop();
     virtual void TrickSpeed(int Speed) {return;};
     virtual int StillPicture(uchar *Data, int Length) {return 0;};
     virtual int BufferFill(void);
+    bool    initCodec(void);
+    void    resetCodec(void);
     virtual uint64_t GetPTS()  {return pts;};
-
-    virtual void Stop();
-    virtual void setStreamId (int id, const uchar *d) {return;};
-
-    cStreamDecoder(unsigned int StreamID);
+    
+    cStreamDecoder(AVCodecContext * Context);
     virtual ~cStreamDecoder();
 };
 
-
-  enum PCMState {
-      SNone,
-      SHeader=10,
-      SData=50,
-  } ;
-
+//----------------------------cAudioStreamDecoder ----------------------------
 class cAudioStreamDecoder : public cStreamDecoder {
 private:
-    uint8_t   *audiosamples;
+    uint8_t * audiosamples;
+    cSoftRingBufferLinear *audioBuffer;
     cAudioOut *audioOut;
-    int       PCMpos,
-              PCMState;
-    uchar     PCMHeader[10];
+    SampleContext audioOutContext;
+    int audioMode;
 
+    void OnlyLeft(uint8_t *samples,int Length);
+    // copy left data to right channel
+    void OnlyRight(uint8_t *samples,int Length);
+    // copy right data to left channel
 protected:
 public:
-    virtual int DecodeData(uchar *Data, int Length);
-    cAudioStreamDecoder(unsigned int StreamID, cAudioOut *AudioOut);
+    virtual int DecodePacket(AVPacket *pkt);
+    cAudioStreamDecoder(AVCodecContext *Context, cAudioOut *AudioOut,
+       int AudioChannel=0);
     ~cAudioStreamDecoder();
-    virtual uint64_t  GetPTS();
-    virtual void      setStreamId (int id, const uchar *d);
-    virtual int       PCMDecode(AVCodecContext *context, short *audiosamples,
-                                int *audio_size, uchar *Data, int Length);
+    inline void SetAudioMode(int AudioMode)
+      { audioMode=AudioMode; };
+    virtual uint64_t GetPTS();
 };
 
+//---------------------------cVideoStreamDecoder -----------------------------
 class cVideoStreamDecoder : public cStreamDecoder {
   private:
-    cAudioStreamDecoder *AudioStream;
+    cClock *clock;
+#define NO_PTS_VALUES 10
+    struct {
+       int coded_frame_no;
+       int64_t pts;
+    } pts_values[NO_PTS_VALUES];
+    int lastPTSidx;
+    int lastCodedPictNo;
+    int64_t lastPTS;
     AVFrame             *picture;
     AVPicture           avpic_src, avpic_dest;
 
@@ -154,16 +187,14 @@ class cVideoStreamDecoder : public cStreamDecoder {
 
     // A-V syncing stuff
     bool               syncOnAudio;
-    int64_t            lastTime;
+    cRelTimer          Timer;
     int                offset;
     int                delay;
+    int                timePassed;
     int                rtc_fd; 
     int                frametime;
-    int                 newBackIndex, currentBackIndex,
-                        workBackIndex, backIndexTab [5];
     int32_t GetRelTime();
    
-    void    resetCodec(void);
     uchar   *allocatePicBuf(uchar *pic_buf);
     void    deintLibavcodec(void);
     uchar   *freePicBuf(uchar *pic_buf);
@@ -173,44 +204,74 @@ class cVideoStreamDecoder : public cStreamDecoder {
     void    Mirror(void);
 
   public:
-    cVideoStreamDecoder(unsigned int StreamID, cVideoOut *VideoOut,
-       cAudioStreamDecoder *AudioStreamDecoder );
+    cVideoStreamDecoder(AVCodecContext *Context, cVideoOut *VideoOut,
+       cClock *clock);
     ~cVideoStreamDecoder();
 
-    virtual int   DecodeData(uchar *Data, int Length);
-    virtual int   StillPicture(uchar *Data, int Length);
+    virtual int DecodePacket(AVPacket *pkt);
+    virtual int StillPicture(uchar *Data, int Length);
     virtual void TrickSpeed(int Speed);
+    virtual uint64_t GetPTS();
 };
 
 
-class cMpeg2Decoder {
+//--------------------------------cMpeg2Decoder -------------------------
+class cMpeg2Decoder: public cThread  {
 private:
-    uint8_t * audiosamples;
-    int  state, payload, streamtype;
-    unsigned char header[6];     
-    unsigned int syncword;
-    cStreamDecoder  *vout, *aout;
+    cVideoStreamDecoder  *vout;
+    cAudioStreamDecoder  *aout;
     cAudioOut       *audioOut;
     cVideoOut       *videoOut;
-    int             ac3Mode, ac3Parm, lpcmMode, lpcmSubstreamId;
     bool running;
     bool IsSuspended;
     bool decoding;
+    bool freezeMode;
+    
+    AVFormatContext *ic;
+    int LastSize;
+    cMutex  mutex;
+    cSoftRingBufferLinear *StreamBuffer;
+    void initStream();
+    virtual void Action(void);
+    volatile bool   ThreadActive, ThreadRunning;
+    cClock  clock;
+    //demuxing
+    int AudioIdx;
+    int VideoIdx;
+
+    int audioMode;
+public:
+    int read_packet(uint8_t *buf, int buf_size);
+    int seek(offset_t offset, int whence);
+
 public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);
     ~cMpeg2Decoder();
-    int PlayAudio(const uchar *Data, int Length);
+
+    void DecodePacket(const AVFormatContext *ic,AVPacket &pkt);
     int Decode(const uchar *Data, int Length);
     int StillPicture(uchar *Data, int Length);
-    void Start(void);
+    void Start(bool GetMutex=true);
     void Play(void);
     void Freeze(void);
-    void Stop(void);
+    void Stop(bool GetMutex=true);
     void Clear(void);
     void Suspend(void);
     void Resume(void);
     void TrickSpeed(int Speed);
-    bool BufferFilled(void);
+    
+    void PlayAudioVideo(bool playVideo,bool playAudio)
+    { AudioIdx=playAudio?NO_STREAM:DONT_PLAY;
+      VideoIdx=playVideo?NO_STREAM:DONT_PLAY;}
+
+    inline void SetAudioMode(int AudioMode) 
+    { audioMode=AudioMode; if (aout) aout->SetAudioMode(audioMode); };
+    inline int GetAudioMode()
+    { return audioMode; };
+    
+    int BufferFill(void);
+    // in percent 
+    
     int64_t GetSTC(void);
 };
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.4 2005/03/10 21:05:56 lucke Exp $
+ * $Id: audio.h,v 1.5 2005/03/17 20:15:35 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -14,17 +14,26 @@
 #include <vdr/plugin.h>
 #include "setup-softdevice.h"
 
+struct SampleContext {
+   uint32_t channels;
+   uint32_t samplerate;
+   uint32_t pcm_fmt;
+   uint32_t period_size;
+   uint32_t buffer_size;
+};
+
 /* ---------------------------------------------------------------------------
  * Abstract class for an audio device
  */
 class cAudioOut  {
 private:
 protected:
+  SampleContext currContext;
 public:
   virtual ~cAudioOut();
   virtual void Write(uchar *Data, int Length)=0;
   // length should always be a multiple of 4
-  virtual int SetParams(int channels, unsigned int samplerate)=0;
+  virtual int SetParams(SampleContext &context)=0;
   virtual int GetDelay(void)=0; // returns delay in ms
   virtual void Pause(void)=0;
   virtual void Play(void)=0;
@@ -41,10 +50,10 @@ public:
 class cAlsaAudioOut : public cAudioOut  {
 private:
   void Xrun(void);
-  unsigned int rate;
-  int chn;
-  snd_pcm_uframes_t bufferSize;
-  snd_pcm_uframes_t periodSize;
+  //unsigned int rate;
+  //int chn;
+  //snd_pcm_uframes_t bufferSize;
+  //snd_pcm_uframes_t periodSize;
   snd_pcm_t *handle;
   char *device;
   volatile bool paused;
@@ -53,7 +62,8 @@ public:
   cAlsaAudioOut(cSetupStore *setupStore);
   virtual ~cAlsaAudioOut();
   virtual void Write(uchar *Data, int Length);
-  virtual int SetParams(int channels, unsigned int samplerate);
+  //virtual int SetParams(int channels, unsigned int samplerate);
+  virtual int SetParams(SampleContext &context);
   virtual int GetDelay(void);
   virtual void Pause(void);
   virtual void Play(void);
@@ -66,14 +76,12 @@ public:
  */
 class cDummyAudioOut : public cAudioOut  {
 private:
-  unsigned int rate;
-  int chn;
   volatile bool paused;
 public:
   cDummyAudioOut(cSetupStore *setupStore);
   virtual ~cDummyAudioOut() { return; };
   virtual void Write(uchar *Data, int Length);
-  virtual int SetParams(int channels, unsigned int samplerate);
+  virtual int SetParams(SampleContext &context);
   virtual int GetDelay(void);
   virtual void Pause(void);
   virtual void Play(void);
