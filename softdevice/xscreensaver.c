@@ -18,7 +18,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  * 
- * $Id: xscreensaver.c,v 1.1 2004/10/18 03:28:37 iampivot Exp $
+ * $Id: xscreensaver.c,v 1.2 2004/10/24 17:28:29 iampivot Exp $
  */
 
 #include <vdr/plugin.h>
@@ -34,7 +34,7 @@ static int BadWindow_ehandler(Display *dpy, XErrorEvent *error) {
     return 0;
   } else {
     if (!old_handler)
-      printf("[softdevice-xscreensaver]: old handler not found!\n");
+      isyslog("[softdevice-xscreensaver]: old handler not found!\n");
     return(*old_handler) (dpy, error);
   }
 }
@@ -56,9 +56,9 @@ cScreensaver::cScreensaver(Display *dpy) {
 
   window = FindWindow();
   if (window) {
-    printf("[softdevice-xscreensaver]: window is 0x%lx\n", window);
+    dsyslog("[softdevice-xscreensaver]: window is 0x%lx\n", window);
   } else {
-    printf("[softdevice-xscreensaver]: xscreensaver not running\n");
+    dsyslog("[softdevice-xscreensaver]: xscreensaver not running\n");
   }
   disabled = false; // don't disable screensaver until asked to
   last = 0;
@@ -74,22 +74,22 @@ void cScreensaver::DisableScreensaver(bool disable) {
   if ((DPMSQueryExtension(dpy, &dpms_dummy, &dpms_dummy)) && (DPMSCapable(dpy))) {
     Status stat;
     if (disable) {
-      printf("[softdevice-xscreensaver]: disabling DPMS\n");
+      dsyslog("[softdevice-xscreensaver]: disabling DPMS\n");
       DPMSInfo(dpy, &dpms_state, &dpms_on);
       stat = DPMSDisable(dpy);
-      printf("[softdevice-xscreensaver]: disabling DPMS stat: %d\n", stat);
+      dsyslog("[softdevice-xscreensaver]: disabling DPMS stat: %d\n", stat);
     } else {
-      printf("[softdevice-xscreensaver]: reenabling DPMS\n");
+      dsyslog("[softdevice-xscreensaver]: reenabling DPMS\n");
       if (!DPMSEnable(dpy)) {
-        printf("[softdevice-xscreensaver]: DPMS not available?\n");
+        dsyslog("[softdevice-xscreensaver]: DPMS not available?\n");
       } else {
         // According to mplayer sources: DPMS does not seem to be enabled unless we call DPMSInfo
         DPMSForceLevel(dpy, DPMSModeOn);
         DPMSInfo(dpy, &dpms_state, &dpms_on);
         if (onoff) {
-          printf("[softdevice-xscreensaver]: Successfully enabled DPMS\n");
+          dsyslog("[softdevice-xscreensaver]: Successfully enabled DPMS\n");
         } else {
-          printf("[softdevice-xscreensaver]: Could not enable DPMS\n");
+          dsyslog("[softdevice-xscreensaver]: Could not enable DPMS\n");
         }
       }
     }
@@ -103,7 +103,7 @@ void cScreensaver::MaybeSendDeactivate(void) {
     gettimeofday(&current, NULL);
     if (current.tv_sec - last > INTERVAL) {
       last = current.tv_sec;
-      printf("[softdevice-xscreensaver]: sending xscreensaver deactivation command DPMS\n");
+      //dsyslog("[softdevice-xscreensaver]: sending xscreensaver deactivation command DPMS\n");
 
       XEvent event;
       event.xany.type = ClientMessage;
@@ -114,7 +114,7 @@ void cScreensaver::MaybeSendDeactivate(void) {
       memset(&event.xclient.data, 0, sizeof(event.xclient.data));
       event.xclient.data.l[0] = XA_DEACTIVATE;
       if (!XSendEvent (dpy, window, False, 0L, &event)) {
-        printf("[softdevice-xscreensaver]: failed to send deactivation command\n");
+        esyslog("[softdevice-xscreensaver]: failed to send deactivation command\n");
         return;
       }
       XSync (dpy, 0);
@@ -129,11 +129,11 @@ int cScreensaver::FindWindow() {
   unsigned int nkids;
    
   if (! XQueryTree (dpy, root, &root2, &parent, &kids, &nkids))
-    printf("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
+    esyslog("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
   if (root != root2)
-    printf("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
+    esyslog("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
   if (parent)
-    printf("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
+    esyslog("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
   if (! (kids && nkids))
     return 0;
   for (i = 0; i < nkids; i++) {
@@ -151,7 +151,7 @@ int cScreensaver::FindWindow() {
 */
     XSync (dpy, False);
     if (old_handler)
-      printf("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
+      esyslog("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
     got_badwindow = False;
     old_handler = XSetErrorHandler (BadWindow_ehandler);
     status = XGetWindowProperty(dpy, kids[i], XA_SCREENSAVER_VERSION,
