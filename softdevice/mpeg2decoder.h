@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.11 2005/01/23 14:54:22 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.12 2005/02/13 18:12:31 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -143,6 +143,8 @@ class cVideoStreamDecoder : public cStreamDecoder {
     int                delay;
     int                rtc_fd; 
     int                frametime;
+    int                 newBackIndex, currentBackIndex,
+                        workBackIndex, backIndexTab [5];
     int32_t GetRelTime();
    
     void    resetCodec(void);

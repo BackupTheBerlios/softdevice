@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.14 2005/01/23 14:54:22 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.15 2005/02/13 18:12:31 lucke Exp $
  */
 
 #include <math.h>
@@ -354,6 +354,13 @@ cVideoStreamDecoder::cVideoStreamDecoder(unsigned int StreamID,
                                          : cStreamDecoder(StreamID)
 {
   width = height = -1;
+  workBackIndex = currentBackIndex = 4;
+  newBackIndex = 0;
+  backIndexTab[0] = 0;
+  backIndexTab[1] = 1;
+  backIndexTab[2] = 2;
+  backIndexTab[3] = 2;
+  backIndexTab[4] = 4;
   pic_buf_lavc = pic_buf_mirror = pic_buf_pp = NULL;
   currentMirrorMode  = setupStore.mirror;
   currentDeintMethod = setupStore.deintMethod;
@@ -556,17 +563,38 @@ int cVideoStreamDecoder::DecodeData(uchar *Data, int Length)
           picture->coded_picture_number);
 #endif
 
+  if (context->coded_frame->pict_type == FF_I_TYPE)
+  {
+    newBackIndex = 1;
+  }
+  else
+  {
+    newBackIndex++;
+  }
+
 #if 1 // new method for setting the video PTS
   if (picture->coded_picture_number)
   {
     if (picture->pict_type == FF_I_TYPE)
     {
+      if (newBackIndex > 0 && newBackIndex <=4)
+      {
+        if (newBackIndex != currentBackIndex)
+        {
+          dsyslog("[mpeg2decoder]: back index change (%d -> %d(%d))\n",
+                  currentBackIndex,
+                  newBackIndex,
+                  backIndexTab[newBackIndex]);
+        }
+        currentBackIndex = newBackIndex;
+        workBackIndex = backIndexTab [currentBackIndex];
+      }
 #if 0
       fprintf (stderr, " changing PTS from %lld to %lld. delta %lld\n",
                pts, historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT],
-               historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT]-pts);
+               historyPTS[(historyPTSIndex+PTS_COUNT-workBackIndex)%PTS_COUNT]-pts);
 #endif
-      pts = historyPTS[(historyPTSIndex+PTS_COUNT-4)%PTS_COUNT];
+      pts = historyPTS[(historyPTSIndex+PTS_COUNT-workBackIndex)%PTS_COUNT];
       //fprintf (stderr, "* using PTS value (%lld)\n", pts);
     }
   }

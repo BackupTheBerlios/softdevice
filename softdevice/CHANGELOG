@@ -1,4 +1,6 @@
 Changelog
+ 2005-02-13:
+    - a/v sync: auto adjusting back index instead of using fixed value 4
  2005-02-08:
     - dfb-out: fix for field parity in tv-out mode
     - xv-out: fix compile warnings on amd64 (reported by Konrad Naumann)
