@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.1 2004/08/01 05:07:03 lucke Exp $
+ * $Id: video-vidix.c,v 1.2 2004/08/09 18:45:49 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -286,8 +286,8 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
     dst = (uint8_t *) vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.y;
 
     Py += (Ystride * syoff);
-    Pv += (UVstride * syoff);
-    Pu += (UVstride * syoff);
+    Pv += (UVstride * syoff/2);
+    Pu += (UVstride * syoff/2);
 
     for(hi=0; hi < sheight; hi++){
        memcpy(dst, Py+sxoff, swidth);

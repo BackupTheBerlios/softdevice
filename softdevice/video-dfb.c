@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.2 2004/08/08 20:28:19 lucke Exp $
+ * $Id: video-dfb.c,v 1.3 2004/08/09 18:45:49 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -709,8 +709,8 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 #else
 
     Py += (Ystride * syoff);
-    Pv += (UVstride * syoff);
-    Pu += (UVstride * syoff);
+    Pv += (UVstride * syoff/2);
+    Pu += (UVstride * syoff/2);
 
     for(hi=0; hi < sheight; hi++){
       memcpy(dst, Py+sxoff, swidth);
