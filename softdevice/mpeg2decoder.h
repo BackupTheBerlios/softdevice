@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.9 2004/12/21 05:55:42 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.10 2005/01/13 20:31:08 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -180,7 +180,7 @@ private:
 public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);
     ~cMpeg2Decoder();
-    void PlayAudio(const uchar *Data, int Length);
+    int PlayAudio(const uchar *Data, int Length);
     int Decode(const uchar *Data, int Length);
     int StillPicture(uchar *Data, int Length);
     void Start(void);

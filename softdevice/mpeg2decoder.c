@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.11 2004/12/21 05:55:42 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.12 2005/01/13 20:31:08 lucke Exp $
  */
 
 #include <math.h>
@@ -1083,7 +1083,7 @@ bool cMpeg2Decoder::BufferFilled()
 
 /* ----------------------------------------------------------------------------
  */
-void cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
+int cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
 {
     const uchar *p;
     int         ac3ModeNew, ac3ParmNew, lpcmModeNew;
@@ -1152,6 +1152,10 @@ void cMpeg2Decoder::PlayAudio(const uchar *Data, int Length)
     dsyslog ("[Mpeg2Decoder]: LPCM info: %dch@%sHz",
              ((*p)&1)+1, sampleRates[((*p)&3)>>4]);
   }
+#if VDRVERSNUM >= 10318
+  aout->Write((uchar *)Data,Length);
+#endif
+  return Length;
 }
 
 /* ----------------------------------------------------------------------------
@@ -1205,17 +1209,21 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
         if (streamtype >= 0xE0 && streamtype <= 0xEF) {
           vout->Write(header,6);
         }
+#if VDRVERSNUM < 10318
         if (streamtype >= 0xC0 && streamtype <= 0xCF) {
           aout->Write(header,6);
         }
+#endif
         state=PAYLOADDATA;
         break;
       case PAYLOADDATA:
         streamlen =min(payload,size);
         if (streamtype == 0xE0)
           vout->Write(inbuf_ptr,streamlen);
+#if VDRVERSNUM < 10318
         if (streamtype == 0xC0)
           aout->Write(inbuf_ptr,streamlen);
+#endif
         payload-=streamlen;
         len = streamlen;
         if (payload <= 0)

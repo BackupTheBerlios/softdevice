@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.10 2005/01/04 19:00:01 lucke Exp $
+ * $Id: softdevice.c,v 1.11 2005/01/13 20:31:08 lucke Exp $
  */
 
 #include <getopt.h>
@@ -275,7 +275,11 @@ public:
   virtual bool Poll(cPoller &Poller, int TimeoutMs = 0);
   virtual int64_t GetSTC(void);
   virtual int PlayVideo(const uchar *Data, int Length);
+#if VDRVERSNUM < 10318
   virtual void PlayAudio(const uchar *Data, int Length);
+#else
+  virtual int  PlayAudio(const uchar *Data, int Length);
+#endif
 #if VDRVERSNUM >= 10307
   virtual int ProvidesCa(const cChannel *Channel) const;
   virtual void MakePrimaryDevice(bool On);
@@ -472,12 +476,21 @@ bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
   return true;
 }
 
+#if VDRVERSNUM < 10318
 /* ----------------------------------------------------------------------------
  */
 void cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
   decoder->PlayAudio(Data, Length);
 }
+#else
+/* ----------------------------------------------------------------------------
+ */
+int cSoftDevice::PlayAudio(const uchar *Data, int Length)
+{
+  return decoder->PlayAudio(Data, Length);
+}
+#endif
 
 /* ----------------------------------------------------------------------------
  */
