@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.6 2004/10/29 17:54:22 lucke Exp $
+ * $Id: video-xv.c,v 1.7 2004/10/29 20:36:07 lucke Exp $
  */
 
 #include <unistd.h>
@@ -27,7 +27,7 @@
 #include "xscreensaver.h"
 #include "utils.h"
 
-#define PATCH_VERSION "007_pre_3"
+#define PATCH_VERSION "007_pre_3+"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
@@ -282,19 +282,94 @@ void cXvRemote::XvRemoteStart(void)
  */
 void cXvVideoOut::toggleFullScreen(void)
 {
+    XEvent      e;
+    XSizeHints  wmHints;
+    Atom        wmAtom;
+    int         x, y, w, h;
+
   fullScreen = !fullScreen;
-  XEvent e;
+
+  if (fullScreen)
+  {
+      XWindowAttributes winAttr;
+      Window            dummyWin;
+
+
+    if (XGetWindowAttributes(dpy, win, &winAttr))
+    {
+        XVisualInfo vistemp, *vinfo;
+        int         dummy;
+
+      vinfo = XGetVisualInfo(dpy, VisualIDMask, &vistemp, &dummy);
+      XTranslateCoordinates (dpy, win, winAttr.root,
+                             -winAttr.border_width,
+                             -winAttr.border_width,
+                             &old_x, &old_y, &dummyWin);
+    }
+    else
+    {
+      old_x       = dx;
+      old_y       = dy;
+    }
+    old_dwidth  = dwidth;
+    old_dheight = dheight;
+
+    x = y = 0;
+    w = DisplayWidth(dpy,DefaultScreen(dpy));
+    h = DisplayHeight(dpy,DefaultScreen(dpy));
+  }
+  else
+  {
+    x = old_x;
+    y = old_y;
+    w = old_dwidth;
+    h = old_dheight;
+  }
+
+  wmHints.flags = PSize | PPosition | PWinGravity;
+  wmHints.win_gravity = StaticGravity;
+  wmHints.x = x;
+  wmHints.y = y;
+  wmHints.width  = w;
+  wmHints.height = h;
+  wmHints.max_width  = 0;
+  wmHints.max_height = 0;
+
+  if ((wmAtom = XInternAtom (dpy, "_MOTIF_WM_HINTS", False)))
+  {
+      int         mwmHints [5];
+
+    mwmHints [0] = 2;
+    mwmHints [2] = (fullScreen) ? 0 : 1;
+    mwmHints [1] = mwmHints [3] = mwmHints [4] = 0;
+    XChangeProperty (dpy, win, wmAtom, wmAtom,
+                     32, PropModeReplace, (unsigned char *) mwmHints, 5);
+  }
+
+  XSetWMNormalHints(dpy, win, &wmHints);
 
   memset(&e,0,sizeof(e));
   e.xclient.type = ClientMessage;
-  e.xclient.message_type = _NET_WM_STATE;
+  e.xclient.message_type = net_wm_STATE;
   e.xclient.display = dpy;
   e.xclient.window = win;
   e.xclient.format = 32;
-  e.xclient.data.l[0] = fullScreen ? 1 : 0;
-  e.xclient.data.l[1] = _NET_WM_STATE_FULLSCREEN;
+  e.xclient.data.l[0] = (fullScreen) ? 1 : 0;
+  if (net_wm_STATE_ABOVE)
+    e.xclient.data.l[1] = net_wm_STATE_ABOVE;
+  else if (net_wm_STATE_FULLSCREEN)
+    e.xclient.data.l[1] = net_wm_STATE_FULLSCREEN;
+  else //if (net_wm_STATE_STAYS_ON_TOP)
+    e.xclient.data.l[1] = net_wm_STATE_STAYS_ON_TOP;
   XSendEvent(dpy, DefaultRootWindow(dpy), False, SubstructureRedirectMask, &e);
 
+  XReparentWindow (dpy, win, DefaultRootWindow(dpy), x, y);
+  XMoveResizeWindow (dpy, win, x, y, w, h);
+
+  //XMapRaised (dpy, win);
+  //XRaiseWindow (dpy, win);
+
+  XFlush (dpy);
   xScreensaver->DisableScreensaver(fullScreen); // enable of disable based on fullScreen state
 }
 
@@ -305,7 +380,8 @@ void cXvVideoOut::ProcessEvents ()
 
     float           old_aspect;
     char            buffer [80];
-    int             len;
+    int             len,
+                    map_count = 0;
     XComposeStatus  compose;
     KeySym          keysym;
     struct timeval  current_time;
@@ -337,6 +413,8 @@ void cXvVideoOut::ProcessEvents ()
         }
         break;
       case ConfigureNotify:
+        dx = event.xconfigure.x;
+        dy = event.xconfigure.y;
         dwidth = event.xconfigure.width;
         dheight = event.xconfigure.height;
         /* --------------------------------------------------------------------
@@ -419,17 +497,25 @@ void cXvVideoOut::ProcessEvents ()
         break;
 
       case MapNotify:
+        map_count++;
         if (initialized) {
-          XvShmPutImage(dpy, port,
-                        win, gc,
-                        xv_image,
-                        sxoff, syoff,      /* sx, sy */
-                        swidth, sheight,   /* sw, sh */
-                        lxoff,  lyoff,     /* dx, dy */
-                        lwidth, lheight,   /* dw, dh */
-                        False);
+          XSetInputFocus(dpy,
+                   win,
+                   RevertToParent,
+                   CurrentTime);
+          if (map_count > 2) {
+            XvShmPutImage(dpy, port,
+                          win, gc,
+                          xv_image,
+                          sxoff, syoff,      /* sx, sy */
+                          swidth, sheight,   /* sw, sh */
+                          lxoff,  lyoff,     /* dx, dy */
+                          lwidth, lheight,   /* dw, dh */
+                          False);
             XSync(dpy, False);
+            map_count = 0;
           }
+        }
         break;
       case UnmapNotify:
         XvStopVideo (dpy,port,win);
@@ -442,6 +528,19 @@ void cXvVideoOut::ProcessEvents ()
         break;
     }
   }
+
+  if (initialized && map_count) {
+    XvShmPutImage(dpy, port,
+                  win, gc,
+                  xv_image,
+                  sxoff, syoff,      /* sx, sy */
+                  swidth, sheight,   /* sw, sh */
+                  lxoff,  lyoff,     /* dx, dy */
+                  lwidth, lheight,   /* dw, dh */
+                  False);
+    XSync(dpy, False);
+  }
+
   if(cursor_visible == True) {
     gettimeofday(&current_time, NULL);
     if(current_time.tv_sec - motion_time >= 2) {
@@ -587,8 +686,10 @@ bool cXvVideoOut::Initialize (void)
   gettimeofday(&current_time, NULL);
   button_time = motion_time = current_time.tv_sec;
 
-  _NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
-  _NET_WM_STATE = XInternAtom(dpy, "_NET_WM_STATE", False);
+  net_wm_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+  net_wm_STATE_STAYS_ON_TOP = XInternAtom(dpy, "_NET_WM_STATE_STAYS_ON_TOP", False);
+  net_wm_STATE_ABOVE = XInternAtom(dpy, "_NET_WM_STATE_ABOVE", False);
+  net_wm_STATE = XInternAtom(dpy, "_NET_WM_STATE", False);
   fullScreen = false;
 
   /* -----------------------------------------------------------------------

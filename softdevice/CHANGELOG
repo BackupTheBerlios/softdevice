@@ -1,5 +1,6 @@
 Changelog
   2004-10-29:
+   - xv-out: changed fullscreen mode. works now with more wms (bug: #2265)
    - xv-out: fix possible race condition causing segfault during init (bug: #2699)
    - allow setting alsa device with command line parameter or in setup.conf
   2004-10-25:

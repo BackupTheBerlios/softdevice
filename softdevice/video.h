@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.3 2004/10/25 17:58:59 lucke Exp $
+ * $Id: video.h,v 1.4 2004/10/29 20:36:07 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -45,7 +45,8 @@ protected:
     bool    OSDpresent,
             OSDpseudo_alpha;
     int     Xres, Yres, Bpp; // the child class MUST set these params (for OSD Drawing)
-    int     dwidth, dheight,
+    int     dx, dy, dwidth, dheight,
+            old_x, old_y, old_dwidth, old_dheight,
             fwidth, fheight,
             swidth, sheight,
             sxoff, syoff,

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.2 2004/08/08 20:55:59 lucke Exp $
+ * $Id: video-xv.h,v 1.3 2004/10/29 20:36:07 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -94,7 +94,10 @@ private:
   Cursor            hidden_cursor;
   Bool              cursor_visible;
   long              motion_time, button_time;
-  Atom              _NET_WM_STATE_FULLSCREEN, _NET_WM_STATE;
+  Atom              net_wm_STATE_FULLSCREEN,
+                    net_wm_STATE_STAYS_ON_TOP,
+                    net_wm_STATE_ABOVE,
+                    net_wm_STATE;
   int               initialized,
                     osd_refresh_counter,
                     osd_skip_counter,
