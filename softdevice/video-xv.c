@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.5 2004/10/25 02:54:39 lucke Exp $
+ * $Id: video-xv.c,v 1.6 2004/10/29 17:54:22 lucke Exp $
  */
 
 #include <unistd.h>
@@ -419,15 +419,17 @@ void cXvVideoOut::ProcessEvents ()
         break;
 
       case MapNotify:
-        XvShmPutImage(dpy, port,
-                      win, gc,
-                      xv_image,
-                      sxoff, syoff,      /* sx, sy */
-                      swidth, sheight,   /* sw, sh */
-                      lxoff,  lyoff,     /* dx, dy */
-                      lwidth, lheight,   /* dw, dh */
-                      False);
-          XSync(dpy, False);
+        if (initialized) {
+          XvShmPutImage(dpy, port,
+                        win, gc,
+                        xv_image,
+                        sxoff, syoff,      /* sx, sy */
+                        swidth, sheight,   /* sw, sh */
+                        lxoff,  lyoff,     /* dx, dy */
+                        lwidth, lheight,   /* dw, dh */
+                        False);
+            XSync(dpy, False);
+          }
         break;
       case UnmapNotify:
         XvStopVideo (dpy,port,win);
@@ -638,6 +640,11 @@ bool cXvVideoOut::Initialize (void)
   if (osd_shminfo. shmid > 0)
     shmctl (osd_shminfo. shmid, IPC_RMID, 0);
 
+  if (!xScreensaver)
+  {
+    xScreensaver = new cScreensaver(dpy);
+  }
+
   /* -------------------------------------------------------------------------
    * get up our remote running
    */
@@ -647,11 +654,7 @@ bool cXvVideoOut::Initialize (void)
     xvRemote->SetX11Info(dpy,win);
     xvRemote->XvRemoteStart();
   }
-  if (!xScreensaver)
-  {
-    xScreensaver = new cScreensaver(dpy);
-  }
-  initialized = 1;
+
   dsyslog("[XvVideoOut]: initialized OK");
 
   return true;
@@ -818,6 +821,7 @@ bool cXvVideoOut::Reconfigure(int format)
   rc = XSync(dpy, False);
 
   this->format = format;
+  initialized = 1;
   return true;
 }
 

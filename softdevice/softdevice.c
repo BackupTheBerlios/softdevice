@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.3 2004/10/29 16:41:39 iampivot Exp $
+ * $Id: softdevice.c,v 1.4 2004/10/29 17:54:22 lucke Exp $
  */
 
 #include <getopt.h>
@@ -281,10 +281,11 @@ cSoftDevice::cSoftDevice(int method)
       case VOUT_XV:
 #ifdef XV_SUPPORT
         videoOut = new cXvVideoOut (setupStore. xvAspect);
-        if (videoOut->Initialize ()) {
-          videoOut->Reconfigure (FOURCC_YV12);
+        if (videoOut->Initialize () && videoOut->Reconfigure (FOURCC_YV12)) {
+          fprintf (stderr, "[softdevice] Xv out OK !\n");
         } else {
           fprintf (stderr, "[softdevice] Xv out failure !\n");
+          exit (1);
         }
 #endif
         break;

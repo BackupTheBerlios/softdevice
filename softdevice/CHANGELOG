@@ -1,5 +1,6 @@
 Changelog
   2004-10-29:
+   - xv-out: fix possible race condition causing segfault during init (bug: #2699)
    - allow setting alsa device with command line parameter or in setup.conf
   2004-10-25:
    - compile fix for older vdr versions. tested with 1.2.1 .
