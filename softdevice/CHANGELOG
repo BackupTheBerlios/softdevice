@@ -1,4 +1,6 @@
 Changelog
+  2004-10-24:
+   - fix for DFB-out OSD not shown while paused in YUY2 mode (bug: #002266)
   2004-10-23:
    - some fixes upon deinterlacing selection (bug: #002267)
    - added pseudo alpha OSD background upon an idea of Torgeir Veimo

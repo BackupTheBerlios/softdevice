@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.7 2004/10/24 08:07:42 lucke Exp $
+ * $Id: video-dfb.c,v 1.8 2004/10/24 11:27:27 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -29,14 +29,14 @@
            }                                                         \
      }
 
+static int              events_not_done = 0;
+
 // --- cDFBRemote ---------------------------------------------------
 /* ---------------------------------------------------------------------------
  */
 cDFBRemote::cDFBRemote(const char *Name, cDFBVideoOut *vout) : cRemote(Name)
 {
   video_out = vout;
-  /* create an event buffer with all devices attached */
-  events = vout->dfb->CreateInputEventBuffer( DICAPS_ALL );
 }
 
 /* ---------------------------------------------------------------------------
@@ -58,19 +58,18 @@ void cDFBRemote::PutKey(DFBInputDeviceKeySymbol key)
  */
 void cDFBRemote::Action(void)
 {
-    DFBInputEvent event;
-
   dsyslog("DFB remote control thread started (pid=%d)", getpid());
   active = true;
   while (active)
   {
-    //usleep (25000);
-    events->WaitForEvent();
-
-    /* handle all events, exit if HandleEvent() returns true */
-    while (events->GetEvent( DFB_EVENT(&event) ))
-      video_out->ProcessEvents (event);
-
+    usleep (25000);
+    if (events_not_done > 1) {
+      video_out->ProcessEvents ();
+      video_out->ShowOSD ();
+      events_not_done = 0;
+    } else {
+      events_not_done++;
+    }
   }
   dsyslog("DFB remote control thread ended (pid=%d)", getpid());
 }
@@ -372,6 +371,9 @@ cDFBVideoOut::cDFBVideoOut()
     fprintf(stderr,"[dfb] Using this layer for Video out: %s\n", desc.name);
 
   }
+  
+  /* create an event buffer with all devices attached */
+  events = dfb->CreateInputEventBuffer( DICAPS_ALL );
 }
 
 /* ---------------------------------------------------------------------------
@@ -397,26 +399,31 @@ bool cDFBVideoOut::Initialize (void)
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::ProcessEvents (DFBInputEvent &event)
+void cDFBVideoOut::ProcessEvents ()
 {
-  switch (event.type)
+    DFBInputEvent event;
+
+  while (events->GetEvent( DFB_EVENT(&event) ))
   {
-    case DIET_KEYPRESS:
-      if (dfbRemote)
-      {
-        switch (event.key_symbol)
+    switch (event.type)
+    {
+      case DIET_KEYPRESS:
+        if (dfbRemote)
         {
-          case DIKS_SHIFT: case DIKS_CONTROL: case DIKS_ALT:
-          case DIKS_ALTGR: case DIKS_META: case DIKS_SUPER: case DIKS_HYPER:
-            break;
-          default:
-            dfbRemote->PutKey(event.key_symbol);
-            break;
+          switch (event.key_symbol)
+          {
+            case DIKS_SHIFT: case DIKS_CONTROL: case DIKS_ALT:
+            case DIKS_ALTGR: case DIKS_META: case DIKS_SUPER: case DIKS_HYPER:
+              break;
+            default:
+              dfbRemote->PutKey(event.key_symbol);
+              break;
+          }
         }
-      }
-      break;
-    default:
-      break;
+        break;
+      default:
+        break;
+    }
   }
 }
 
@@ -673,6 +680,7 @@ void cDFBVideoOut::CloseOSD()
     osdMutex.Lock();
     OSDpresent  = false;
     osdClrBack = true;
+    tmpSurface->Clear(COLORKEY,0); //clear and
     osdMutex.Unlock();
   }
   else
@@ -681,6 +689,56 @@ void cDFBVideoOut::CloseOSD()
     tmpSurface->Flip(); // Flip the field
     tmpSurface->Clear(COLORKEY,0); //clear and
     tmpSurface->Flip(); // Flip the field
+  }
+
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::ShowOSD ()
+{
+  if (useStretchBlit && (OSDpresent || osdClrBack)) {
+    // do image and OSD mix here
+      DFBRectangle  src, dst, osdsrc;
+
+    src.x = sxoff;
+    src.y = syoff;
+    src.w = swidth;
+    src.h = sheight;
+    dst.x = lxoff;
+    dst.y = lyoff;
+    dst.w = lwidth;
+    dst.h = lheight;
+
+    osdMutex.Lock();
+    try {
+      if (osdClrBack) {
+        scrSurface->Clear(0,0,0,0);
+        osdSurface->Clear(0,0,0,0);
+        osdSurface->Flip();
+      }
+
+      scrSurface->SetBlittingFlags(DSBLIT_NOFX);
+      scrSurface->StretchBlit(videoSurface, &src, &dst);
+
+      osdsrc.x = osdsrc.y = 0;
+      osdsrc.w = Xres;osdsrc.h=Yres;
+      scrSurface->SetBlittingFlags(DSBLIT_BLEND_ALPHACHANNEL);
+      scrSurface->Blit(osdSurface, &osdsrc, 0, 0);
+
+      scrSurface->Flip(NULL, DSFLIP_ONSYNC);
+
+      if (osdClrBack) {
+        scrSurface->Clear(0,0,0,0);
+        osdSurface->Clear(0,0,0,0);
+        osdSurface->Flip();
+      }
+
+    } catch (DFBException *ex){
+      fprintf(stderr,"--- OSD refresh failed failed\n");
+    }
+    osdClrBack = false;
+    osdMutex.Unlock();
   }
 }
 
@@ -844,6 +902,8 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   } catch (DFBException *ex){
     fprintf(stderr,"Flip failed\n");
   }
+  ProcessEvents ();
+  events_not_done = 0;
 }
 
 /* ---------------------------------------------------------------------------

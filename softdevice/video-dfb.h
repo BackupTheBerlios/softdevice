@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.2 2004/10/24 08:07:42 lucke Exp $
+ * $Id: video-dfb.h,v 1.3 2004/10/24 11:27:27 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -30,6 +30,8 @@ class cDFBVideoOut : public cVideoOut {
     DFBSurfacePixelFormat pixelformat;
     cDFBRemote            *dfbRemote;
 
+    IDirectFBEventBuffer  *events;
+
     bool deinterlace;
     bool alphablend;
     bool useStretchBlit;
@@ -40,7 +42,8 @@ class cDFBVideoOut : public cVideoOut {
     IDirectFB	*dfb;
     cDFBVideoOut();
     virtual ~cDFBVideoOut();
-    void ProcessEvents (DFBInputEvent &event);
+    void ProcessEvents ();
+    void ShowOSD ();
 
 #if VDRVERSNUM >= 10307
     virtual void Refresh(cBitmap *Bitmap);
@@ -60,7 +63,6 @@ class cDFBVideoOut : public cVideoOut {
 class cDFBRemote : public cRemote, private cThread {
   private:
     bool                  active;
-    IDirectFBEventBuffer  *events;
     cDFBVideoOut          *video_out;
 
     virtual void  Action(void);
