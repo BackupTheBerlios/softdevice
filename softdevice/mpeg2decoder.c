@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.21 2005/03/17 20:15:35 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.22 2005/03/18 17:36:45 wachm Exp $
  */
 
 #include <math.h>
@@ -268,7 +268,7 @@ cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
 uint64_t cAudioStreamDecoder::GetPTS()
 {
   uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset;
-  if (audioBuffer && context)
+  if (audioBuffer && audioOutContext.channels)
      PTS-=(audioBuffer->Available() /
        (audioOutContext.samplerate/1000*2*audioOutContext.channels));
  
@@ -1136,6 +1136,7 @@ void cMpeg2Decoder::Start(bool GetMutex)
   StreamBuffer->Clear();
   initStream();
   ThreadActive=true;
+  freezeMode=false;
   cThread::Start();
   running=true;
   if (GetMutex)
