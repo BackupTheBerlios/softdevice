@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.8 2004/10/24 11:27:27 lucke Exp $
+ * $Id: video-dfb.c,v 1.9 2004/11/09 21:48:53 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -249,7 +249,7 @@ cDFBVideoOut::cDFBVideoOut()
   dfb->EnumDisplayLayers(EnumCallBack, &videoLayer);
   if (videoLayer) {
     videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
-    videoLayer->SetDstColorKey(COLORKEY);
+    //videoLayer->SetDstColorKey(COLORKEY); // no need to do that now
 
     videoSurface=videoLayer->GetSurface();
     videoSurface->Clear(COLORKEY,0); //clear and
@@ -294,6 +294,14 @@ cDFBVideoOut::cDFBVideoOut()
     if (Yres > 576)
       Yres = 576;
 #endif
+
+    /* ------------------------------------------------------------------------
+     * clear screen surface at startup
+     */
+    scrSurface->Clear(0,0,0,0);
+    scrSurface->Flip();
+    scrSurface->Clear(0,0,0,0);
+
     osdDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
                                                  DSDESC_WIDTH |
                                                  DSDESC_HEIGHT |
@@ -519,9 +527,10 @@ void cDFBVideoOut::SetParams()
         if (desc.caps & DLCAPS_ALPHACHANNEL)
         {
           /* ------------------------------------------------------------------
-           * use alpha channel if it is supported
-          */
+           * use alpha channel if it is supported and disable pseudo alpha mode
+           */
           dlc.options = (DFBDisplayLayerOptions)((int)dlc.options|DLOP_ALPHACHANNEL);
+          OSDpseudo_alpha = false;
         }
         else
         {
@@ -575,9 +584,10 @@ void cDFBVideoOut::SetParams()
         }
         /* --------------------------------------------------------------------
          * set colorkey now. some driver accepct that _after_ configuration
-         * has been set !
+         * has been set ! But check that color keying is supported.
          */
-        videoLayer->SetDstColorKey(COLORKEY);
+        if (desc.caps & DLCAPS_DST_COLORKEY)
+          videoLayer->SetDstColorKey(COLORKEY);
 
         videoSurface=videoLayer->GetSurface();
         videoSurface->Clear(COLORKEY,0xff); //clear and
@@ -626,6 +636,11 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
 
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
 
+  /* --------------------------------------------------------------------------
+   * ?? if that clear is removed, radeon OSD does not flicker
+   * any more. but it has some other negative effects on mga.
+   * ??
+   */
   tmpSurface->Clear(0,0,0,0);
   tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
   Draw(Bitmap,dst,pitch);
