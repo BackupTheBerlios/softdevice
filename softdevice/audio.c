@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.4 2004/10/29 16:41:39 iampivot Exp $
+ * $Id: audio.c,v 1.5 2004/11/04 07:01:52 lucke Exp $
  */
 
 #include <unistd.h>
@@ -58,6 +58,9 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
     } else if (err == -ESTRPIPE) {
       //suspend();
       dsyslog("[softdevice-audio]: Suspend");
+    } else if (err == -EINTR) {
+      dsyslog ("[softdevice-audio]: EINTR");
+      return;
     } else if (err < 0) {
       dsyslog("[softdevice-audio]: write error: %s FATAL exiting",
               snd_strerror(err));
