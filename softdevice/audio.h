@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.6 2005/03/20 12:21:27 wachm Exp $
+ * $Id: audio.h,v 1.7 2005/03/27 09:01:26 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -50,10 +50,7 @@ public:
 class cAlsaAudioOut : public cAudioOut  {
 private:
   void Xrun(void);
-  //unsigned int rate;
-  //int chn;
-  //snd_pcm_uframes_t bufferSize;
-  //snd_pcm_uframes_t periodSize;
+  cMutex handleMutex;
   snd_pcm_t *handle;
   char *device;
   volatile bool paused;

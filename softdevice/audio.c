@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.12 2005/03/20 12:21:27 wachm Exp $
+ * $Id: audio.c,v 1.13 2005/03/27 09:01:26 wachm Exp $
  */
 
 #include <unistd.h>
@@ -41,11 +41,13 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
 
 
 cAlsaAudioOut::~cAlsaAudioOut() {
-    snd_pcm_close(handle);
+    if (handle)
+      snd_pcm_close(handle);
 }
 
 void cAlsaAudioOut::Suspend() {
   snd_pcm_close(handle);
+  handle=0;
 }
 
 bool cAlsaAudioOut::Resume() {
@@ -104,12 +106,16 @@ int cAlsaAudioOut::GetDelay(void) {
 	snd_pcm_status_t *status;
 	snd_pcm_status_alloca(&status);
 	int res;
+	handleMutex.Lock();
 	if ((res = snd_pcm_status(handle, status))<0) {
     dsyslog("[softdevice-audio]: GetDelay status error: %s FATAL exiting",
             snd_strerror(res));
 		exit(EXIT_FAILURE);
 	}
-    return snd_pcm_status_get_delay(status) *10000 / currContext.samplerate;
+        res=snd_pcm_status_get_delay(status) *10000 / 
+	  currContext.samplerate;
+	handleMutex.Unlock();
+	return res;
 }
 
 /* I/O error handler */
@@ -153,7 +159,8 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     };
     printf("alsa-audio: SetParams\n");
     currContext=context;
-    
+ 
+    handleMutex.Lock();
     snd_pcm_close(handle);
     if ((err = snd_pcm_open(&handle,
                             device,
@@ -253,6 +260,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
       exit(EXIT_FAILURE);
     }
     dsyslog("[softdevice-audio] Hardware initialized");
+    handleMutex.Unlock();
 
     context=currContext;
     return 0;
