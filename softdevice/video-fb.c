@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.7 2005/03/03 18:32:46 lucke Exp $
+ * $Id: video-fb.c,v 1.8 2005/03/03 20:22:17 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -151,10 +151,19 @@ void cFBVideoOut::Pause(void)
 #if VDRVERSNUM >= 10307
 /* ---------------------------------------------------------------------------
  */
+void cFBVideoOut::OpenOSD(int X, int Y)
+{
+  OSDxOfs = X & ~7;
+  OSDyOfs = Y & ~1;
+  OSDdirty=true;
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cFBVideoOut::ClearOSD()
 {
   cVideoOut::ClearOSD();
-  if (PixelMask) 
+  if (PixelMask)
     memset(PixelMask, 0, Xres * Yres/8);
 };
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.3 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-fb.h,v 1.4 2005/03/03 20:22:17 lucke Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -28,6 +28,7 @@ public:
   cFBVideoOut(cSetupStore *setupStore);
   virtual ~cFBVideoOut();
 #if VDRVERSNUM >= 10307
+  virtual void OpenOSD(int X, int Y);
   virtual void ClearOSD();
   virtual void Refresh(cBitmap *Bitmap);
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
