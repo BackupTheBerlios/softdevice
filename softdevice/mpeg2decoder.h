@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.4 2004/11/14 16:24:38 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.5 2004/11/14 20:19:58 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -43,8 +43,8 @@ struct PES_Header2 {
 // wrapper class to access protected methods
 class cSoftRingBufferLinear : public cRingBufferLinear {
 public:
-  cSoftRingBufferLinear(int Size, int Margin = 0, bool Statistics = false, const     char *Description = NULL) 
-     : cRingBufferLinear(Size,Margin,Statistics,Description) {};
+  cSoftRingBufferLinear(int Size, int Margin = 0, bool Statistics = false) 
+     : cRingBufferLinear(Size,Margin,Statistics) {};
   ~cSoftRingBufferLinear() {};
 
   virtual int Available(void) {return cRingBufferLinear::Available();} ;
