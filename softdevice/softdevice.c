@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.18 2005/03/08 17:27:33 lucke Exp $
+ * $Id: softdevice.c,v 1.19 2005/03/10 21:05:56 lucke Exp $
  */
 
 #include <getopt.h>
@@ -79,6 +79,9 @@ static const char *DESCRIPTION    = "A software emulated MPEG2 device";
 static const char *MAINMENUENTRY  = "Softdevice";
 
 #define INBUF_SIZE 4096
+
+#define AOUT_ALSA   1
+#define AOUT_DUMMY  2
 
 #if VDRVERSNUM >= 10307
 
@@ -225,7 +228,7 @@ void cSoftOsd::CloseWindow(cWindow *Window) {
 // --- cSoftDevice ------------------------------------------------------------
 class cPluginSoftDevice : public cPlugin {
 private:
-  int   voutMethod;
+  int   voutMethod, aoutMethod;
   char  *pluginPath;
 
 public:
@@ -266,7 +269,7 @@ private:
   cCondVar  readyForPlayCondVar;
 
 public:
-  cSoftDevice(int method, char *pluginPath);
+  cSoftDevice(int method, int audioMethod, char *pluginPath);
   ~cSoftDevice();
   virtual bool HasDecoder(void) const;
   virtual bool CanReplay(void) const;
@@ -301,7 +304,7 @@ public:
 #endif
 };
 
-cSoftDevice::cSoftDevice(int method,char *pluginPath)
+cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 {
     freezeModeEnabled = false;
 
@@ -421,7 +424,14 @@ cSoftDevice::cSoftDevice(int method,char *pluginPath)
 #endif
     fprintf(stderr,"[softdevice] Video Out seems to be OK\n");
     fprintf(stderr,"[softdevice] Initializing Audio Out\n");
-    audioOut=new cAlsaAudioOut(setupStore.alsaDevice);
+    switch (audioMethod) {
+      case AOUT_ALSA:
+        audioOut=new cAlsaAudioOut(&setupStore);
+        break;
+      case AOUT_DUMMY:
+        audioOut=new cDummyAudioOut(&setupStore);
+        break;
+    }
     fprintf(stderr,"[softdevice] Audio out seems to be OK\n");
     fprintf(stderr,"[softdevice] A/V devices initialized, now initializing MPEG2 Decoder\n");
     decoder= new cMpeg2Decoder(audioOut, videoOut);
@@ -465,9 +475,6 @@ int cSoftDevice::ProvidesCa(int Ca)
 }
 
 #endif
-
-
-
 
 bool cSoftDevice::HasDecoder(void) const
 {
@@ -631,6 +638,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
 #else
   voutMethod = 0;
 #endif
+  aoutMethod = AOUT_ALSA;
   pluginPath = PLUGINLIBDIR;
 }
 
@@ -644,6 +652,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   // Return a string that describes all known command line options.
   return
   "  -ao alsa:devicename      alsa output device\n"
+  "  -ao dummy:               dummy output device\n"
 #ifdef XV_SUPPORT
   "  -vo xv:                  enable output via X11-Xv\n"
   "  -vo xv:aspect=wide       use a 16:9 display area (1024x576)\n"
@@ -737,8 +746,13 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
         if (!strncmp(ao_argv, "alsa:", 5)) {
           ao_argv += 5;
           setupStore.aoArgs = ao_argv;
+          aoutMethod = AOUT_ALSA;
           fprintf(stderr, "[softdevice] using alsa device %s\n", ao_argv);
           strncpy(setupStore.alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);
+        } else if (!strncmp(ao_argv, "dummy:", 6)) {
+          ao_argv += 6;
+          setupStore.aoArgs = ao_argv;
+          aoutMethod = AOUT_DUMMY;
         }
       }
     } else if (!strcmp (argv[i], "-L")) {
@@ -764,7 +778,7 @@ bool cPluginSoftDevice::Initialize(void)
 {
   // Start any background activities the plugin shall perform.
   fprintf(stderr,"[softdevice] initializing Plugin\n");
-  new cSoftDevice(voutMethod,pluginPath);
+  new cSoftDevice(voutMethod,aoutMethod,pluginPath);
   return true;
 }
 
@@ -777,7 +791,7 @@ cOsdObject *cPluginSoftDevice::MainMenuAction(void)
 {
   // Perform the action when selected from the main VDR menu.
   fprintf (stderr, "[MainMenuAction]\n");
-  return new cMenuSetupSoftdevice;
+  return new cMenuSetupSoftdevice(this);
 //  return NULL;
 }
 

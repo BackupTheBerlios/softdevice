@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.12 2005/03/04 20:04:20 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.13 2005/03/10 21:05:56 lucke Exp $
  */
 
 #include "video.h"
@@ -226,8 +226,11 @@ char *cSetupStore::getPPValue(void)
 
 /* ---------------------------------------------------------------------------
  */
-cMenuSetupSoftdevice::cMenuSetupSoftdevice(void)
+cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 {
+  if (plugin)
+    SetPlugin(plugin);
+    
   copyData = setupStore;
   data = &setupStore;
 

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.17 2005/03/04 20:04:20 lucke Exp $
+ * $Id: video-xv.c,v 1.18 2005/03/10 21:05:56 lucke Exp $
  */
 
 #include <unistd.h>
@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "010_pre_1"
+#define PATCH_VERSION "2005-03-10"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
@@ -478,7 +478,6 @@ void cXvVideoOut::ProcessEvents ()
             if (xv_initialized)
               attributeStore.Increment("XV_SATURATION");
             break;
-#if 1
           case 'o':
             if (xv_initialized)
               attributeStore.Decrement("XV_OVERLAY_ALPHA");
@@ -503,8 +502,7 @@ void cXvVideoOut::ProcessEvents ()
             if (xv_initialized)
               attributeStore.Increment("XV_ALPHA_MODE");
             break;
-#endif
-#ifdef SUSPEND_BY_KEY 
+#ifdef SUSPEND_BY_KEY
           case 'r':
           case 'R':
             setupStore->shouldSuspend=!setupStore->shouldSuspend;
@@ -587,8 +585,8 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
   display_aspect = current_aspect = setupStore->xvAspect;
   scale_size = 0;
   screenPixelAspect = -1;
-  width = XV_SRC_WIDTH;
-  height = XV_SRC_HEIGHT;
+  xvWidth  = width  = XV_SRC_WIDTH;
+  xvHeight = height = XV_SRC_HEIGHT;
 
   format = FOURCC_YV12;
   use_xv_port = 0;
@@ -859,8 +857,33 @@ bool cXvVideoOut::Reconfigure(int format)
         if (use_xv_port != 0 && use_xv_port != port)
           continue;
         if(!XvGrabPort(dpy, port, CurrentTime)) {
+            unsigned int    encodingCount, n;
+            XvEncodingInfo  *encodingInfo;
+
           dsyslog("[XvVideoOut]: grabbed port %ld", port);
           got_port = True;
+          XvQueryEncodings(dpy,ad_info[i].base_id,&encodingCount,&encodingInfo);
+          for (n = 0; n < encodingCount; ++n)
+          {
+            if (!strcmp(encodingInfo[n].name, "XV_IMAGE"))
+            {
+              fprintf(stderr, "[XvVideoOut]: max area size %d x %d\n",
+                      encodingInfo[n].width, encodingInfo[n].height);
+              dsyslog("[XvVideoOut]: max area size %lu x %lu",
+                      encodingInfo[n].width, encodingInfo[n].height);
+              /* --------------------------------------------------------------
+               * adjust width to 8 byte boundary and height to an even
+               * number of lines.
+               */
+              xvWidth  = (encodingInfo[n].width & ~7);
+              xvHeight = (encodingInfo[n].height & ~1);
+              fprintf(stderr, "[XvVideoOut]: using area size %d x %d\n",
+                      xvWidth, xvHeight);
+              dsyslog("[XvVideoOut]: using area size %d x %d",
+                      xvWidth, xvHeight);
+              len = xvWidth * xvHeight * 2;
+            }
+          }
           break;
         } /* if */
       } /* for */
@@ -892,7 +915,7 @@ bool cXvVideoOut::Reconfigure(int format)
    */
   xv_image = XvShmCreateImage(dpy, port,
                               format, (char *) outbuffer,
-                              width, height,
+                              xvWidth, xvHeight,
                               &shminfo);
 
   if (xv_image) {
@@ -925,8 +948,8 @@ bool cXvVideoOut::Reconfigure(int format)
   shminfo.readOnly = False;
 
   pixels [0] = outbuffer;
-  pixels [1] = outbuffer + width * height;
-  pixels [2] = pixels [1] + width * height / 4;
+  pixels [1] = outbuffer + xvWidth * xvHeight;
+  pixels [2] = pixels [1] + xvWidth * xvHeight / 4;
   rc = XShmAttach(dpy, &shminfo);
   dsyslog("[XvVideoOut]: XShmAttach    rc = %d %s",
           rc,(rc == 1) ? "(should be OK)":"(thats NOT OK!)");
@@ -934,9 +957,9 @@ bool cXvVideoOut::Reconfigure(int format)
   if (shminfo. shmid > 0)
     shmctl (shminfo. shmid, IPC_RMID, 0);
 
-  memset (pixels [0], 0, width*height);
-  memset (pixels [1], 128, width*height/4);
-  memset (pixels [2], 128, width*height/4);
+  memset (pixels [0], 0, xvWidth*xvHeight);
+  memset (pixels [1], 128, xvWidth*xvHeight/4);
+  memset (pixels [2], 128, xvWidth*xvHeight/4);
 //    dv_display_event(dv_dpy);
   rc = XvShmPutImage(dpy, port,
                      win, gc,
@@ -1210,21 +1233,21 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
         for (int i = 0; i < fheight; i++)
         {
-          AlphaBlend(pixels[0]+i*width,OsdPy+i*OSD_FULL_WIDTH,
+          AlphaBlend(pixels[0]+i*xvWidth,OsdPy+i*OSD_FULL_WIDTH,
             Py + i * Ystride,
             OsdPAlphaY+i*OSD_FULL_WIDTH,fwidth);
         }
  
         for (int i = 0; i < fheight / 2; i++)
         {
-          AlphaBlend(pixels[1]+i*width/2,
+          AlphaBlend(pixels[1]+i*xvWidth/2,
             OsdPv+i*OSD_FULL_WIDTH/2,Pv+ i * UVstride,
             OsdPAlphaUV+i*OSD_FULL_WIDTH/2,fwidth/2);
         }
 
         for (int i = 0; i < fheight / 2; i++)
         {
-          AlphaBlend(pixels[2]+i*width/2,
+          AlphaBlend(pixels[2]+i*xvWidth/2,
             OsdPu+i*OSD_FULL_WIDTH/2,Pu+i*UVstride,
             OsdPAlphaUV+i*OSD_FULL_WIDTH/2,fwidth/2);
         }
@@ -1247,12 +1270,12 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 #endif
  {
           for (int i = 0; i < fheight; i++)
-             memcpy (pixels [0] + i * width, Py + i * Ystride, fwidth);
-          for (int i = 0; i < fheight / 2; i++) 
-             memcpy (pixels [1] + i * width / 2, Pv + i * UVstride, fwidth / 2);
+             memcpy (pixels [0] + i * xvWidth, Py + i * Ystride, fwidth);
           for (int i = 0; i < fheight / 2; i++)
-             memcpy (pixels [2] + i * width / 2, Pu + i * UVstride, fwidth / 2);
-   
+             memcpy (pixels [1] + i * xvWidth / 2, Pv + i * UVstride, fwidth / 2);
+          for (int i = 0; i < fheight / 2; i++)
+             memcpy (pixels [2] + i * xvWidth / 2, Pu + i * UVstride, fwidth / 2);
+
           pthread_mutex_lock(&xv_mutex);
           XvShmPutImage(dpy, port,
                 win, gc,

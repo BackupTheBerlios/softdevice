@@ -1,4 +1,9 @@
 Changelog
+ 2005-03-10:
+    - xv-out: support max available area (pre for hdtv spport)
+    - audio-out: new dummy device (-ao dummy:)
+                 audio device constructor gets pointer to setup-store like video-out
+    - save options when called via main menu
  2005-03-08: softdevice-0.1.0
  2005-03-05:
     - mpeg2decoder: fix to initialize ppmode if pp based deinterlace selected

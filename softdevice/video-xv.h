@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.6 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-xv.h,v 1.7 2005/03/10 21:05:56 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -109,6 +109,7 @@ private:
                     /* -------------------------------------------------------
                      * could be specified via argv or parameters
                      */
+                    xvWidth, xvHeight,
                     width, height,
                     attr,
                     len,

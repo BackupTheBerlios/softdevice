@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.7 2005/01/23 14:56:08 wachm Exp $
+ * $Id: audio.c,v 1.8 2005/03/10 21:05:56 lucke Exp $
  */
 
 #include <unistd.h>
@@ -22,11 +22,11 @@
 cAudioOut::~cAudioOut() {
 }
 
-cAlsaAudioOut::cAlsaAudioOut(char *alsaDevice) {
-    if (strlen(alsaDevice) == 0)
-      strcpy (alsaDevice, "default");
-    dsyslog("[softdevice-audio] Opening alsa device %s",alsaDevice);
-    device = alsaDevice;
+cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
+    if (strlen(setupStore->alsaDevice) == 0)
+      strcpy (setupStore->alsaDevice, "default");
+    dsyslog("[softdevice-audio] Opening alsa device %s",setupStore->alsaDevice);
+    device = setupStore->alsaDevice;
     int err;
     paused=false;
     if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
@@ -289,3 +289,55 @@ void cAlsaAudioOut::SetVolume (int vol)
 
   snd_mixer_close(mHandle);
 }
+
+cDummyAudioOut::cDummyAudioOut(cSetupStore *setupStore)
+{
+  paused=false;
+  rate = chn=0;
+  dsyslog("[softdevice-audio-dummy] Device opened! Ready to play");
+}
+
+
+/* ---------------------------------------------------------------------------
+ */
+void cDummyAudioOut::Write(uchar *Data, int Length)
+{
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDummyAudioOut::Pause(void)
+{
+  dsyslog("[softdevice-audio-dummy]: Should pause now");
+  paused=true;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDummyAudioOut::Play(void)
+{
+  paused=false;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cDummyAudioOut::GetDelay(void)
+{
+  return 0;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cDummyAudioOut::SetParams(int channels, unsigned int samplerate)
+{
+  if ((chn == channels) && (rate == samplerate))
+    return 0;
+
+  dsyslog ("[softdevice-audio-dummy] samplerate: %dHz, channels: #%d",
+           samplerate, channels);
+  rate=samplerate;
+  chn=channels;
+
+  return 0;
+}
+

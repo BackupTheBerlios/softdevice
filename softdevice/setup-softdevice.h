@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.8 2005/02/27 08:52:33 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.9 2005/03/10 21:05:56 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -54,7 +54,7 @@ class cMenuSetupSoftdevice : public cMenuSetupPage {
     virtual eOSState ProcessKey(eKeys Key);
     virtual void Store(void);
   public:
-    cMenuSetupSoftdevice(void);
+    cMenuSetupSoftdevice(cPlugin *plugin = NULL);
 };
 
 extern cSetupStore setupStore;
