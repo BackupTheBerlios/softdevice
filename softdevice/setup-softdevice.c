@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.3 2004/10/18 03:33:37 iampivot Exp $
+ * $Id: setup-softdevice.c,v 1.4 2004/10/22 21:51:46 lucke Exp $
  */
 
 #include "video.h"
@@ -26,7 +26,9 @@ char *crop_str [] = {
 char *deint_str [] = {
         "none",
         "lavc",
+#ifdef FB_SUPPORT
         "FB-intern",
+#endif        
 #ifdef PP_LIBAVCODEC
         "linblend",
         "linipol",
