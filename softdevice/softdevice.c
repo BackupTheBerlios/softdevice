@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.24 2005/03/27 10:18:01 wachm Exp $
+ * $Id: softdevice.c,v 1.25 2005/04/02 12:19:06 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -415,6 +415,9 @@ bool cSoftDevice::CanReplay(void) const
 
 bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
 {
+    packetMode=PlayMode < 0;
+    PlayMode=(ePlayMode) abs(PlayMode);
+    ic=NULL;
     switch(PlayMode) {
       // FIXME - Implement audio or video only Playmode (is this really needed?)
       case pmAudioVideo:
@@ -449,8 +452,13 @@ void cSoftDevice::TrickSpeed(int Speed)
 void cSoftDevice::Clear(void)
 {
     //fprintf(stderr,"[softdevice] Clear ...\n");
-    cDevice::Clear();
-    decoder->Clear();
+    if ( ! decoder )
+      return;
+      
+    if ( !packetMode ) {
+      cDevice::Clear();
+      decoder->Clear();
+    } else decoder->ClearPacketQueue();
 }
 void cSoftDevice::Play(void)
 {
@@ -532,7 +540,20 @@ void cSoftDevice::PlayAudio(const uchar *Data, int Length)
  */
 int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
-  return decoder->Decode(Data, Length);
+  if (! packetMode)
+    return decoder->Decode(Data, Length);
+
+  if (Length==-1) {
+     // Length = -1 : pass pointer to format context
+     ic=(AVFormatContext *) Data;
+     return 0;
+  };
+  if ( packetMode && ic && Length == -2 ) {
+     // Length = -2 : pass pointer to packet
+     decoder->QueuePacket(ic,( AVPacket &) *Data);
+     return 0;
+  };
+  return -1;
 }
 
 /* ----------------------------------------------------------------------------
@@ -572,14 +593,20 @@ int  cSoftDevice::GetAudioChannelDevice(void)
  */
 int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 {
-    int result=decoder->Decode(Data, Length);
-    // restart the decoder
-    if (result == -1) {
-        delete(decoder);
-        decoder= new cMpeg2Decoder(audioOut,videoOut);
-        return 0;
-    }
-    return Length;
+   if (! packetMode)
+    return decoder->Decode(Data, Length);
+
+  if (Length==-1) {
+     // Length = -1 : pass pointer to format context
+     ic=(AVFormatContext *) Data;
+     return 0;
+  };
+  if ( packetMode && ic && Length == -2 ) {
+     // Length = -2 : pass pointer to packet
+     decoder->QueuePacket(ic,( AVPacket &) *Data);
+     return 0;
+  };
+  return -1;
 }
 
 // --- cPluginSoftDevice ----------------------------------------------------------

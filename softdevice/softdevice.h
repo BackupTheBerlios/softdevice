@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.3 2005/03/25 13:42:30 wachm Exp $
+ * $Id: softdevice.h,v 1.4 2005/04/02 12:19:06 wachm Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -53,6 +53,9 @@ private:
   cVideoOut *videoOut;
   cAudioOut *audioOut;
   int       outMethod;
+
+  bool      packetMode;
+  AVFormatContext *ic;
 
 public:
   cSoftDevice(int method, int audioMethod, char *pluginPath);

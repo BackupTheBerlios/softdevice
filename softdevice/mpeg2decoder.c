@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.25 2005/03/25 13:42:30 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.26 2005/04/02 12:19:06 wachm Exp $
  */
 
 #include <math.h>
@@ -1408,6 +1408,9 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
     BUFDEB("not running..\n");
     return Length;
   };
+
+  if (freezeMode)
+    return 0;
 
   //MPGDEB("Decode: StreamBuffer: %d plus %d\n",StreamBuffer->Available(),Length);
 
