@@ -1,4 +1,7 @@
 Changelog
+ 2005-03-11:
+    - xv-out: fix OSD misplacement in downscaleing mode (pseudo mode)
+    - fix OSD misplacement for software alpha when in crop mode (info menu)
  2005-03-10:
     - xv-out: support max available area (pre for hdtv spport)
     - audio-out: new dummy device (-ao dummy:)

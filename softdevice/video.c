@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.12 2005/03/03 18:21:41 lucke Exp $
+ * $Id: video.c,v 1.13 2005/03/11 15:56:22 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -483,7 +483,7 @@ void cVideoOut::Draw(cBitmap *Bitmap,
     buf = (tIndex *) osd_buf +
             linelen * ( OSDyOfs + y + SCALEY(Bitmap->Y0())) +
             (OSDxOfs + SCALEX(Bitmap->X0() + x1) ) * depth;
-    PixelMaskPtr=PixelMask + 
+    PixelMaskPtr=PixelMask +
            linelen/16 * ( OSDyOfs + y + SCALEY(Bitmap->Y0())) +
             (OSDxOfs + SCALEX(Bitmap->X0() + x1))/8;
     prev_pix = false;
@@ -600,9 +600,9 @@ void cVideoOut::ToYUV(cBitmap *Bitmap)
   y2=SCALEY(y2);
   x1=SCALEX(x1);
   x2=SCALEX(x2);
-  int  x0=sxoff+OSDxOfs+SCALEX(Bitmap->X0());
-  int  y0=(syoff+OSDyOfs+SCALEY(Bitmap->Y0())) & ~1; // we need an even offset
-   
+  int  x0=sxoff+SCALEX(OSDxOfs+Bitmap->X0());
+  int  y0=(syoff+SCALEY(OSDyOfs+Bitmap->Y0())) & ~1; // we need an even offset
+
   // we need a even starting point
   y1&=~1;
   y2+=y2!=Bitmap->Height()?1:0;//FIXME funzt nicht mehr

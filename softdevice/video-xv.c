@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.18 2005/03/10 21:05:56 lucke Exp $
+ * $Id: video-xv.c,v 1.19 2005/03/11 15:56:22 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1189,12 +1189,12 @@ void cXvVideoOut::ShowOSD (int skip, int do_sync)
       if (current_osdMode==OSDMODE_PSEUDO && osd_skip_counter > skip) {
       
         int x= lwidth > OSD_FULL_WIDTH ? osd_x + (dwidth - width) / 2:
-                osd_x * lwidth/OSD_FULL_WIDTH *9/10;
+                lxoff + (osd_x * lwidth/OSD_FULL_WIDTH *9/10);
         int y= lheight > OSD_FULL_HEIGHT ? osd_y + (dheight - height) / 2:
-                osd_y * lheight/OSD_FULL_HEIGHT *9/10;
+                lyoff + (osd_y * lheight/OSD_FULL_HEIGHT *9/10);
 
         XShmPutImage (dpy, win, gc, osd_image,
-                      osd_x, 
+                      osd_x,
                       osd_y,
                       x,y,
                       osd_w, osd_h,
