@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.2 2004/10/23 21:33:26 lucke Exp $
+ * $Id: video.h,v 1.3 2004/10/25 17:58:59 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -23,8 +23,10 @@ class cWindowLayer {
     int left, top;
     int width, height, bpp, xres, yres;
     unsigned char *imagedata;
+    bool          OSDpseudo_alpha;
   public:
-    cWindowLayer(int X, int Y, int W, int H, int Bpp, int Xres, int Yres);
+    cWindowLayer(int X, int Y, int W, int H, int Bpp,
+                 int Xres, int Yres, bool alpha);
     ~cWindowLayer();
     void Render(cWindow *Window);
     void Draw(unsigned char * buf, int linelen, unsigned char * keymap);

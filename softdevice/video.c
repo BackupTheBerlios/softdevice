@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.2 2004/10/23 21:33:26 lucke Exp $
+ * $Id: video.c,v 1.3 2004/10/25 17:58:59 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -266,7 +266,7 @@ bool cVideoOut::OpenWindow(cWindow *Window) {
                                               Window->Width(),
                                               Window->Height(),
                                               Bpp,
-                                              Xres, Yres);
+                                              Xres, Yres, OSDpseudo_alpha);
     return true;
 }
 
@@ -327,7 +327,8 @@ void cVideoOut::CloseWindow(cWindow *Window) {
 
 
 // --- cWindowLayer --------------------------------------------------
-cWindowLayer::cWindowLayer(int X, int Y, int W, int H, int Bpp, int Xres, int Yres) {
+cWindowLayer::cWindowLayer(int X, int Y, int W, int H, int Bpp,
+                           int Xres, int Yres, bool alpha) {
     left=X;
     top=Y;
     width=W;
@@ -336,6 +337,7 @@ cWindowLayer::cWindowLayer(int X, int Y, int W, int H, int Bpp, int Xres, int Yr
     xres=Xres;
     yres=Yres;
     visible=false;
+    OSDpseudo_alpha = alpha;
     imagedata=(unsigned char *)malloc(W*H*4); // RGBA Screen memory
     printf("[video] Creating WindowLayer at %d x %d, (%d x %d)\n",X,Y,W,H);
 }
@@ -428,7 +430,7 @@ void cWindowLayer::Draw(unsigned char * buf, int linelen, unsigned char * keymap
 			dsyslog("[video] Unsupported depth %d exiting",depth);
 			exit(1);
     		}
-        prev_pix = !IS_BACKGROUND(a);
+        prev_pix = !IS_BACKGROUND(im[3]);
 
 
 	    } else  {
