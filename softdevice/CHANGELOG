@@ -1,4 +1,5 @@
 Changelog
+  2005-01-04: softdevice-0.0.8
   2005-01-02:
     -dfb-out: override pixelformat when mgatv is specified.
   2005-01-01:
