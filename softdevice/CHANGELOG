@@ -1,6 +1,7 @@
 Changelog
   2004-08-09:
    - DFB+vidix: fix wrong colors in crop mode
+   - fix: segfaults during decoding
   2004-08-08:
     - DFB: fix calling sequence to avoid sig 6
     - xv-out: added fullscreen patch (Torgeir Veimo)
