@@ -1,4 +1,8 @@
 Changelog
+  2004-10-25:
+   - fix compile issues with X11 dpms headers. they are not usable for
+     C++ code. see: http://freedesktop.org/bugzilla/show_bug.cgi?id=830 .
+   - bumped level to 0.0.7pre3 .
   2004-10-24:
    - fix for DFB-out OSD not shown while paused in YUY2 mode (bug: #002266)
   2004-10-23:
