@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.13 2005/03/10 21:05:56 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.14 2005/03/27 09:18:10 wachm Exp $
  */
 
 #include "video.h"
@@ -199,7 +199,11 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   } else if (!strcasecmp(Name, "OSDalphablend")) {
     osdMode = atoi (Value);
     osdMode = clamp (0, osdMode, 1);
-  } else  return false;
+  } else if (!strcasecmp(Name, "Suspend")) {
+    shouldSuspend = atoi (Value);
+    fprintf(stderr, "[setup-softdevice] shouldSuspend to: %d\n", shouldSuspend);
+    shouldSuspend = clamp (0, shouldSuspend, 1);
+  }  else  return false;
 
   return true;
 }
