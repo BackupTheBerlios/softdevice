@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.1 2004/08/01 05:07:03 lucke Exp $
+# $Id: Makefile,v 1.2 2004/10/18 03:32:37 iampivot Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -32,6 +32,9 @@ FB_SUPPORT=1
 
 # Vidix support by Vadim Catana
 VIDIX_SUPPORT=1
+
+# Set this if you want to use DPMS
+LIBXDPMS_SUPPORT = 1
 
 # Enable the usage from some deinterlacing pp-filters of libavcodec
 # ffmpeg must be compiled with the options --enable-pp --enable-gpl
@@ -155,7 +158,7 @@ DEFINES += -DFB_SUPPORT -DFBDEV=\"$(FBDEV)\"
 endif
 
 ifdef XV_SUPPORT
-OBJS 	+= video-xv.o
+OBJS 	+= video-xv.o xscreensaver.o
 DEFINES += -DXV_SUPPORT
 LIBS 	+= -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv
 endif

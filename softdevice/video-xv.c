@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.2 2004/08/08 20:55:59 lucke Exp $
+ * $Id: video-xv.c,v 1.3 2004/10/18 03:32:37 iampivot Exp $
  */
 
 #include <unistd.h>
@@ -24,12 +24,14 @@
 #include <fcntl.h>
 #include <vdr/plugin.h>
 #include "video-xv.h"
+#include "xscreensaver.h"
 #include "utils.h"
 
 #define PATCH_VERSION "007_pre_2+"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
+static cScreensaver     *xScreensaver = NULL;
 static int              events_not_done = 0;
 
 /* ---------------------------------------------------------------------------
@@ -292,6 +294,8 @@ void cXvVideoOut::toggleFullScreen(void)
   e.xclient.data.l[0] = fullScreen ? 1 : 0;
   e.xclient.data.l[1] = _NET_WM_STATE_FULLSCREEN;
   XSendEvent(dpy, DefaultRootWindow(dpy), False, SubstructureRedirectMask, &e);
+
+  xScreensaver->DisableScreensaver(fullScreen); // enable of disable based on fullScreen state
 }
 
 /* ---------------------------------------------------------------------------
@@ -443,6 +447,7 @@ void cXvVideoOut::ProcessEvents ()
       cursor_visible = False;
     }
   }
+  xScreensaver->MaybeSendDeactivate();
 }
 
 /* ---------------------------------------------------------------------------
@@ -640,6 +645,10 @@ bool cXvVideoOut::Initialize (void)
     xvRemote = new cXvRemote ("softdevice-xv", this);
     xvRemote->SetX11Info(dpy,win);
     xvRemote->XvRemoteStart();
+  }
+  if (!xScreensaver)
+  {
+    xScreensaver = new cScreensaver(dpy);
   }
   initialized = 1;
   dsyslog("[XvVideoOut]: initialized OK");
