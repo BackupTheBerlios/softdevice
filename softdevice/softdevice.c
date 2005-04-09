@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.26 2005/04/09 06:49:57 lucke Exp $
+ * $Id: softdevice.c,v 1.27 2005/04/09 08:47:10 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -383,7 +383,7 @@ int cSoftDevice::ProvidesCa(const cChannel *Channel) const
 
 cSpuDecoder *cSoftDevice::GetSpuDecoder(void) 
 {
-  printf("GetSpuDecoder %x\n",spuDecoder);
+  //printf("GetSpuDecoder %x\n",spuDecoder);
   if (IsPrimaryDevice() && !spuDecoder)
     spuDecoder = new cDvbSpuDecoder();
   return spuDecoder;
@@ -522,7 +522,7 @@ bool cSoftDevice::Flush(int TimeoutMs)
   Timer.Reset();
   
   while ( TimeoutUs > 0 && decoder->BufferFill() > 0 ) {
-       usleep(1000);
+       usleep(10000);
        TimeoutUs-=Timer.GetRelTime();
   };
       
@@ -546,14 +546,14 @@ int cSoftDevice::PlayAudio(const uchar *Data, int Length)
   if (Length==-1) {
      // Length = -1 : pass pointer to format context
      ic=(AVFormatContext *) Data;
-     return 0;
+     return -1;
   };
   if ( packetMode && ic && Length == -2 ) {
      // Length = -2 : pass pointer to packet
      decoder->QueuePacket(ic,( AVPacket &) *Data);
-     return 0;
+     return -2;
   };
-  return -1;
+  return 0;
 }
 
 /* ----------------------------------------------------------------------------
@@ -599,14 +599,14 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
   if (Length==-1) {
      // Length = -1 : pass pointer to format context
      ic=(AVFormatContext *) Data;
-     return 0;
+     return -1;
   };
   if ( packetMode && ic && Length == -2 ) {
      // Length = -2 : pass pointer to packet
      decoder->QueuePacket(ic,( AVPacket &) *Data);
-     return 0;
+     return -2;
   };
-  return -1;
+  return 0;
 }
 
 // --- cPluginSoftDevice ----------------------------------------------------------
@@ -650,6 +650,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   "  -vo xv:aspect=wide       use a 16:9 display area (1024x576)\n"
   "  -vo xv:aspect=normal     use a  4:3 display area (768x576)\n"
   "  -vo xv:max-area          use maximum available area\n"
+  "  -vo xv:full              startup fullscreen\n"
 #endif
 #ifdef FB_SUPPORT
   "  -vo fb:                  enable output via framebuffer\n"
@@ -709,7 +710,12 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
             } else if (!strncmp (vo_argv, "max-area", 8)) {
               setupStore.xvMaxArea = 1;
               fprintf (stderr,
-                       "[ProcessArgs] xv: using max available area)\n");
+                       "[ProcessArgs] xv: using max available area\n");
+              vo_argv += 8;
+            } else if (!strncmp (vo_argv, "full", 4)) {
+              setupStore.xvFullscreen = 1;
+              fprintf (stderr,
+                       "[ProcessArgs] xv: start up fullscreen\n");
               vo_argv += 8;
             } else {
               break;

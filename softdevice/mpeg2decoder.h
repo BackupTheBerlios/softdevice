@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.17 2005/03/25 13:42:30 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.18 2005/04/09 08:47:10 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -111,6 +111,28 @@ class cRelTimer {
       int32_t GetRelTime();
       inline void Reset() { lastTime=GetTime(); };
 };
+
+//-------------------------cSleepTimer-----------------------------------
+class cSleepTimer : public cRelTimer {
+   private:
+     pthread_mutex_t mutex;
+     pthread_cond_t cond;
+ 
+   public:
+      cSleepTimer() : cRelTimer()
+      {
+        pthread_mutex_init(&mutex, NULL);
+        pthread_cond_init(&cond, NULL);
+      };
+      ~cSleepTimer()
+      {
+        pthread_cond_broadcast(&cond); // wake up any sleepers
+        pthread_cond_destroy(&cond);
+        pthread_mutex_destroy(&mutex);
+      };
+       
+      void Sleep( int timeoutUS );
+};
       
 //-------------------------cStreamDecoder ----------------------------------
 // Output device handler
@@ -200,7 +222,8 @@ class cVideoStreamDecoder : public cStreamDecoder {
 
     // A-V syncing stuff
     bool               syncOnAudio;
-    cRelTimer          Timer;
+    int                hurry_up; 
+    cSleepTimer        Timer;
     int                offset;
     int                delay;
     int                rtc_fd; 

@@ -1,4 +1,10 @@
 Changelog
+2005-04-10:
+    - xv-out: add "-vo xv:full" option to start up in fullsceen mode
+    - replace unneeded usleep<10000usec with >=10000usec
+    - add SIG_TIMING option (default: disabled, enable in mpeg2decoder.c)
+    - introduce meaningful return values in packet mode. 
+    - disable debugging output.
 2005-04-09:
     - xv-out: new command line option max-area to use the maximum
               available area for decoded frames. " .. -vo xv:max-area .. "

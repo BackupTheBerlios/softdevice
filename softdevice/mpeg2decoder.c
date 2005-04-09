@@ -3,16 +3,19 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.26 2005/04/02 12:19:06 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.27 2005/04/09 08:47:10 wachm Exp $
  */
 
 #include <math.h>
 
 #include <vdr/plugin.h>
 
+#define SIG_TIMING
+#ifndef SIG_TIMING
 // for RTC
 #include <sys/ioctl.h>
 #include <linux/rtc.h>
+#endif
 
 #include "mpeg2decoder.h"
 #include "audio.h"
@@ -26,7 +29,7 @@
 #define MPGDEB(out...)
 #endif
 
-#define CMDDEB(out...) {printf("CMD[%04d]:",getTimeMilis() % 10000);printf(out);}
+//#define CMDDEB(out...) {printf("CMD[%04d]:",getTimeMilis() % 10000);printf(out);}
 
 #ifndef CMDDEB
 #define CMDDEB(out...)
@@ -122,6 +125,28 @@ int32_t cRelTimer::GetRelTime()
   lastTime=now;
   return ret;
 };
+//-----------------------cSleepTimer-----------------------
+ 
+void cSleepTimer::Sleep( int timeoutUS )
+{
+  if ( timeoutUS < 0 )
+    return;
+ 
+  struct timeval tv;
+  gettimeofday(&tv,NULL);
+  struct timespec timeout;
+  timeout.tv_nsec=(tv.tv_usec+timeoutUS);//*1000;
+  timeout.tv_sec=tv.tv_sec + timeout.tv_nsec / 1000000;
+  timeout.tv_nsec%=1000000;
+  timeout.tv_nsec*=1000;
+  pthread_mutex_lock(&mutex);
+  int retcode=0;
+  while ( retcode != ETIMEDOUT ) {
+    retcode = pthread_cond_timedwait(&cond, &mutex, &timeout);
+  }
+ 
+  pthread_mutex_unlock(&mutex);
+};
 
 // --- cStreamDecoder ---------------------------------------------------------
 
@@ -157,7 +182,7 @@ void cStreamDecoder::Action()
   while ( PacketQueue.Available() < 7 && active) { 
     BUFDEB("wait while loop packets %d StreamDecoder  pid:%d type %d\n",
       PacketQueue.Available(),getpid(),context->codec_type );
-    usleep(5000);
+    usleep(10000);
   };
  
   while(active)
@@ -165,7 +190,7 @@ void cStreamDecoder::Action()
     BUFDEB("while loop start StreamDecoder  pid:%d type %d\n",getpid(),context->codec_type );
 
     while (freezeMode && active)
-        usleep(10000);
+        usleep(50000);
 
     mutex.Lock();
     if ( (pkt=PacketQueue.GetReadPacket())!= 0 ) {
@@ -187,7 +212,7 @@ void cStreamDecoder::Action()
         printf("Type: %d Buffer fill: %d\n",
           context->codec_type,PacketQueue.Available());
         count=0;
-        usleep(1000);
+        usleep(10000);
       };
     };
 #endif
@@ -329,7 +354,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       //first frame - wait for ready for play
       cClock::SetAudioClock(this);
       while ( !cClock::ReadyForPlay() ) {
-         usleep(1000);
+         usleep(10000);
          MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
       };
     };
@@ -407,8 +432,10 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   syncOnAudio=1;
   offset=0;
   delay=0;
+  hurry_up=0;
   Timer.Reset();
 
+#ifndef SIG_TIMING
   if ( (rtc_fd = open("/dev/rtc",O_RDONLY)) < 0 ) 
     fprintf(stderr,"Could not open /dev/rtc \n");
   else 
@@ -417,17 +444,20 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
 
     if ( ioctl(rtc_fd, RTC_IRQP_SET, irqp) < 0) 
     {
-      fprintf(stderr,"Could not set irq period\n");
+      //fprintf(stderr,"Could not set irq period\n");
       close(rtc_fd);
       rtc_fd=-1;
     }
     else if ( ioctl( rtc_fd, RTC_PIE_ON, 0 ) < 0) 
     {
-      fprintf(stderr,"Error in rtc_pie on \n");
+      //fprintf(stderr,"Error in rtc_pie on \n");
       close(rtc_fd);
       rtc_fd=-1;
-    } else  fprintf(stderr,"Set up to use linux RTC\n");
+    };// else fprintf(stderr,"Set up to use linux RTC\n");
  };
+#else
+  rtc_fd=-1;
+#endif
 
   picture=avcodec_alloc_frame();
 }
@@ -482,7 +512,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       cClock::SetVideoClock(this);
       while ( !cClock::ReadyForPlay() ) {
         MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
-        usleep(1000);
+        usleep(10000);
       };
     };
       
@@ -547,9 +577,14 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   // prepare picture for display
   videoOut->CheckAspectDimensions(picture,context);
   
+  if (!hurry_up || frame % 2 ) {
   // sleep ....
   delay-=Timer.GetRelTime();
   MPGDEB("Frame# %-5d  aPTS: %lld offset: %d delay %d \n",frame,clock->GetPTS(),offset,delay );
+#ifdef SIG_TIMING
+  Timer.Sleep(delay-1000);
+  delay-=Timer.GetRelTime();
+#else
   if ( rtc_fd >= 0 ) {
     // RTC timinig
     while (delay > 15000) {
@@ -584,11 +619,13 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     //   printf("Loop2 %d \n",delay);
     //};
   }
+#endif
+  
   // display picture
   videoOut->YUV(picture->data[0], picture->data[1],picture->data[2],
       context->width,context->height,
       picture->linesize[0],picture->linesize[1]);
-
+  };
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
   // the A-V syncing code is partly based on MPlayer...
@@ -619,13 +656,12 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   else if (delay < -2*frametime*1000)
     delay = -2*frametime*1000;    
 
-/*
-  //context->hurry_up=1;
-  if (offset >  8*frametime*1000)
-     context->hurry_up++;
-  else if ( (offset < 2*frametime*1000) && (context->hurry_up > 0) )
-     context->hurry_up--;
-*/
+
+  if (offset >  8*frametime*10)
+     hurry_up=1;
+  else if ( (offset < 2*frametime*10) && (hurry_up > 0) )
+     hurry_up=0;
+
 #if 1
   int dispTime=Timer.GetRelTime();
   delay-=dispTime;
@@ -649,8 +685,8 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     static float DispTSqSum=0;
     static int StatCount=0;
 
-    offsetSum+=(float)offset;
-    offsetSqSum+=(float) offset*offset;
+    offsetSum+=(float)offset/10.0;
+    offsetSqSum+=(float) offset*offset/100.0;
     DispTSum+=(float) dispTime;
     DispTSqSum+=(float) dispTime*dispTime;
     StatCount+=1;
@@ -660,8 +696,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       printf("A-V: %02.2f+-%02.2f ms DispTime: %02.2f ms hurry_up: %d\n",
        offsetSum/(float)Freq,
        sqrt(offsetSqSum/((float)Freq)-(offsetSum*offsetSum)/((float)Freq*Freq)),
-       DispTSum/(float)Freq/1000,
-       context->hurry_up);
+       DispTSum/(float)Freq/1000,hurry_up);
       offsetSum=offsetSqSum=DispTSum=DispTSqSum=0;
       StatCount=0;
     };
@@ -996,7 +1031,7 @@ start:
     while ( size < buf_size && ThreadActive 
            && count <  1  ) {
       size = StreamBuffer->Available();
-      usleep(5000);
+      usleep(10000);
       if (size>188) {
         count++;
         BUFDEB("read_packet: sleeping while data (%d) in buffer\n",size);
@@ -1050,7 +1085,7 @@ void cMpeg2Decoder::initStream() {
 
    init_put_byte(&ic->pb, NULL, 32*1024, 0, this,
        read_packet_RingBuffer,NULL,seek_RingBuffer);
-   printf("init put byte finished\n");
+   CMDDEB("init put byte finished\n");
 };
 
 //------------------------------------------------------
@@ -1067,7 +1102,7 @@ void cMpeg2Decoder::Action()
   
   while(ThreadActive) {
         while (freezeMode && ThreadActive)
-          usleep(10000);
+          usleep(50000);
       
         //ret = av_read_frame(ic, &pkt);
         BUFDEB("av_read_frame start\n");
@@ -1095,11 +1130,11 @@ void cMpeg2Decoder::Action()
         };
 
         if (!(PacketCount % 100)) {
-          usleep(1000);
+          usleep(10000);
         };
 
-        if (PacketCount == 200)
-          dump_format(ic, 0, "test", 0);
+//        if (PacketCount == 200)
+//          dump_format(ic, 0, "test", 0);
   }
   running=false;
   CMDDEB("Thread beendet : mpegDecoder pid %d\n",getpid());
@@ -1154,13 +1189,13 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     BUFDEB("QueuePacket video stream\n");
     while ( vout->PutPacket(pkt) == -1 ) {
       //printf("Video Buffer full\n");
-      usleep(10000);
+      usleep(50000);
     };
   } else if ( pkt.stream_index == AudioIdx && aout ) {
     BUFDEB("QueuePacket audio stream\n");
     while ( aout->PutPacket(pkt) == -1 ) {
       //printf("Audio Buffer full\n");
-      usleep(10000);
+      usleep(50000);
     };
   } else {
     //printf("Unknown packet or vout or aout not init!!\n");
@@ -1329,7 +1364,7 @@ int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
     while ( (P = StreamBuffer->Put(data, Size)) != Size ) {
       data+=P;
       Size-=P;
-      usleep( 1000 );
+      usleep( 10000 );
     }
   }
   CMDDEB("StillPicture end \n");
@@ -1420,7 +1455,7 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
   while ( (P = StreamBuffer->Put(Data, Size)) != Size ) {
     Data+=P;
     Size-=P;
-    usleep( 10000 );
+    usleep( 50000 );
   }
   mutex.Unlock();
   BUFDEB("Deocde finished\n");

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.20 2005/04/09 06:49:57 lucke Exp $
+ * $Id: video-xv.c,v 1.21 2005/04/09 08:47:10 wachm Exp $
  */
 
 #include <unistd.h>
@@ -783,6 +783,11 @@ bool cXvVideoOut::Initialize (void)
 
   dsyslog("[XvVideoOut]: initialized OK");
 
+  if (setupStore->xvFullscreen) 
+  {
+    toggleFullScreen();
+    setupStore->xvFullscreen=0;
+  };
   return true;
 }
 
@@ -976,7 +981,7 @@ bool cXvVideoOut::Reconfigure(int format)
                      lwidth, lheight,   /* dw, dh */
                      False);
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
-  
+   
   rc = XSync(dpy, False);
   
   pthread_mutex_unlock(&xv_mutex);

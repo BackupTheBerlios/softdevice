@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.13 2005/03/27 09:01:26 wachm Exp $
+ * $Id: audio.c,v 1.14 2005/04/09 08:47:10 wachm Exp $
  */
 
 #include <unistd.h>
@@ -124,7 +124,7 @@ void cAlsaAudioOut::Xrun(void)
 	snd_pcm_status_t *status;
 	int res;
 	snd_pcm_status_alloca(&status);
-        printf("alsa-audio: Xrun\n");
+        //printf("alsa-audio: Xrun\n");
 	if ((res = snd_pcm_status(handle, status))<0) {
     dsyslog("[softdevice-audio]: Xrun status error: %s FATAL exiting",
             snd_strerror(res));
@@ -157,7 +157,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
       context=currContext;
       return 0;
     };
-    printf("alsa-audio: SetParams\n");
+    //printf("alsa-audio: SetParams\n");
     currContext=context;
  
     handleMutex.Lock();
