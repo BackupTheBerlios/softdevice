@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.28 2005/04/09 13:09:17 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.29 2005/04/09 14:14:58 wachm Exp $
  */
 
 #include <math.h>
@@ -353,9 +353,11 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     {
       //first frame - wait for ready for play
       cClock::SetAudioClock(this);
-      while ( !cClock::ReadyForPlay() ) {
+      int count=0;
+      while ( !cClock::ReadyForPlay() && count < 10 ) {
          usleep(10000);
          MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
+	 count++;
       };
     };
     audioOutContext.channels=context->channels;
@@ -510,9 +512,11 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     {
       //first frame - wait for ready for play 
       cClock::SetVideoClock(this);
-      while ( !cClock::ReadyForPlay() ) {
+      int count=0;
+      while ( !cClock::ReadyForPlay() && count < 10) {
         MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
         usleep(10000);
+	count++;
       };
     };
       
@@ -1416,6 +1420,8 @@ int64_t cMpeg2Decoder::GetSTC(void) {
 
 int cMpeg2Decoder::BufferFill() 
 {
+  if (freezeMode)
+    return 100;
   int fill=0;
   if (running && vout )
     fill= vout->BufferFill();
