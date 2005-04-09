@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.28 2005/04/09 12:29:02 lucke Exp $
+ * $Id: softdevice.c,v 1.29 2005/04/09 12:43:47 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -429,10 +429,12 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
           decoder->SetPlayMode(cMpeg2Decoder::PmAudioOnly);
           decoder->Start();
           break;
+#if VDRVERSNUM > 10310
       case pmVideoOnly:
           decoder->SetPlayMode(cMpeg2Decoder::PmVideoOnly);
           decoder->Start();
           break;
+#endif
       case pmNone:
           decoder->Stop();
           break;
