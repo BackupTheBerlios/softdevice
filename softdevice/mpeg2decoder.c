@@ -3,14 +3,14 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.27 2005/04/09 08:47:10 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.28 2005/04/09 13:09:17 wachm Exp $
  */
 
 #include <math.h>
 
 #include <vdr/plugin.h>
 
-#define SIG_TIMING
+//#define SIG_TIMING
 #ifndef SIG_TIMING
 // for RTC
 #include <sys/ioctl.h>
