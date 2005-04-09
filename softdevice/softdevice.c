@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.25 2005/04/02 12:19:06 wachm Exp $
+ * $Id: softdevice.c,v 1.26 2005/04/09 06:49:57 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -649,6 +649,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   "  -vo xv:                  enable output via X11-Xv\n"
   "  -vo xv:aspect=wide       use a 16:9 display area (1024x576)\n"
   "  -vo xv:aspect=normal     use a  4:3 display area (768x576)\n"
+  "  -vo xv:max-area          use maximum available area\n"
 #endif
 #ifdef FB_SUPPORT
   "  -vo fb:                  enable output via framebuffer\n"
@@ -683,20 +684,35 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           setupStore.voArgs = vo_argv;
 #ifdef XV_SUPPORT
           voutMethod = VOUT_XV;
-          if (!strncmp (vo_argv, "aspect=", 7)) {
-            vo_argv += 7;
-            if (!strncmp (vo_argv, "wide", 4)) {
+          while (strlen(vo_argv) > 1) {
+            if (*vo_argv == ':')
+               ++vo_argv;
+
+            if (!strncmp (vo_argv, "aspect=", 7)) {
+              vo_argv += 7;
+              if (!strncmp (vo_argv, "wide", 4)) {
+                fprintf (stderr,
+                         "[ProcessArgs] xv: startup aspect ratio set to wide (16:9)\n");
+                setupStore. xvAspect = XV_FORMAT_WIDE;
+                vo_argv += 4;
+              } else if (!strncmp (vo_argv, "normal", 6)) {
+                fprintf (stderr,
+                         "[ProcessArgs] xv: startup aspect ratio set to normal (4:3)\n");
+                setupStore. xvAspect = XV_FORMAT_NORMAL;
+                vo_argv += 6;
+              } else {
+                fprintf (stderr,
+                         "[ProcessArgs] xv: illegal value for sub option aspect (%s)\n",
+                         vo_argv);
+                break;
+              }
+            } else if (!strncmp (vo_argv, "max-area", 8)) {
+              setupStore.xvMaxArea = 1;
               fprintf (stderr,
-                       "[ProcessArgs] xv: startup aspect ratio set to wide (16:9)\n");
-              setupStore. xvAspect = XV_FORMAT_WIDE;
-            } else if (!strncmp (vo_argv, "normal", 6)) {
-              fprintf (stderr,
-                       "[ProcessArgs] xv: startup aspect ratio set to normal (4:3)\n");
-              setupStore. xvAspect = XV_FORMAT_NORMAL;
+                       "[ProcessArgs] xv: using max available area)\n");
+              vo_argv += 8;
             } else {
-              fprintf (stderr,
-                       "[ProcessArgs] xv: illegal value for sub option aspect (%s)\n",
-                       vo_argv);
+              break;
             }
           }
 #else

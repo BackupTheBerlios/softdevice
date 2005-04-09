@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.19 2005/03/11 15:56:22 lucke Exp $
+ * $Id: video-xv.c,v 1.20 2005/04/09 06:49:57 lucke Exp $
  */
 
 #include <unistd.h>
@@ -871,12 +871,18 @@ bool cXvVideoOut::Reconfigure(int format)
                       encodingInfo[n].width, encodingInfo[n].height);
               dsyslog("[XvVideoOut]: max area size %lu x %lu",
                       encodingInfo[n].width, encodingInfo[n].height);
-              /* --------------------------------------------------------------
-               * adjust width to 8 byte boundary and height to an even
-               * number of lines.
-               */
-              xvWidth  = (encodingInfo[n].width & ~7);
-              xvHeight = (encodingInfo[n].height & ~1);
+
+              if (setupStore->xvMaxArea) {
+                /* ------------------------------------------------------------
+                 * adjust width to 8 byte boundary and height to an even
+                 * number of lines.
+                 */
+                xvWidth  = (encodingInfo[n].width & ~7);
+                xvHeight = (encodingInfo[n].height & ~1);
+              } else {
+                xvWidth  = XV_SRC_WIDTH;
+                xvHeight = XV_SRC_HEIGHT;
+              }
               fprintf(stderr, "[XvVideoOut]: using area size %d x %d\n",
                       xvWidth, xvHeight);
               dsyslog("[XvVideoOut]: using area size %d x %d",

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.9 2005/03/10 21:05:56 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.10 2005/04/09 06:49:57 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -26,6 +26,7 @@ class cSetupStore {
     virtual void  getScreenDimension(int &w, int &h);
 
     int   xvAspect;
+    int   xvMaxArea;
     int   outputMethod;
     int   pixelFormat;
     int   cropMode;

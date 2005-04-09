@@ -1,4 +1,7 @@
 Changelog
+2005-04-09:
+    - xv-out: new command line option max-area to use the maximum
+              available area for decoded frames. " .. -vo xv:max-area .. "
 2005-04-02:
     - video.c: fix possible segfault if pan_scan info is not present
 2005-03-28:

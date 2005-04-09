@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.14 2005/03/27 09:18:10 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.15 2005/04/09 06:49:57 lucke Exp $
  */
 
 #include "video.h"
@@ -114,6 +114,7 @@ cSetupStore setupStore;
 cSetupStore::cSetupStore ()
 {
   xvAspect      = 1;   // XV_FORMAT_NORMAL;
+  xvMaxArea     = 0;
   outputMethod  = 0;
   cropMode      = 0;
   deintMethod   = 0;
@@ -176,6 +177,16 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
              "[setup-softdevice] startup aspect set to (%s)\n",
              xv_startup_aspect [xvAspect]);
 
+  } else if(!strcasecmp(Name, "Xv-MaxArea")) {
+    /* ------------------------------------------------------------------------
+     * ignore that on setup load as it would override commandline settings
+     */
+    //xvMaxArea = atoi(Value);
+    //xvMaxArea = clamp (0, xvMaxArea, 1);
+    //fprintf (stderr,
+    //         "[setup-softdevice] using max area (%s)\n",
+    //         (xvMaxArea) ? "YES" : "NO");
+    ; // empty statement
   } else if(!strcasecmp(Name, "Picture mirroring")) {
     mirror = atoi(Value);
     fprintf(stderr,"[softdevice] picture mirroring set to %d (%s)\n",
@@ -234,7 +245,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 {
   if (plugin)
     SetPlugin(plugin);
-    
+
   copyData = setupStore;
   data = &setupStore;
 
@@ -244,6 +255,13 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                              &data->xvAspect,
                              2,
                              xv_startup_aspect));
+
+    /* ------------------------------------------------------------------------
+     * don't offer that menu option as there is no immediate check
+     * if we have a still a operational system
+     */
+    //Add(new cMenuEditBoolItem(tr("Xv MaxArea"),
+    //                         &data->xvMaxArea, tr("no"), tr("yes")));
   }
 
   Add(new cMenuEditStraItem(tr("CropMode"),
@@ -347,6 +365,8 @@ void cMenuSetupSoftdevice::Store(void)
   fprintf (stderr, "[setup-softdevice] storing data\n");
 //  setupStore = data;
   SetupStore ("Xv-Aspect",          setupStore.xvAspect);
+  // don't save max area value as it is ignored on load
+  //SetupStore ("Xv-MaxArea",         setupStore.xvMaxArea);
   SetupStore ("CropMode",           setupStore.cropMode);
   SetupStore ("Deinterlace Method", setupStore.deintMethod);
   SetupStore ("PixelFormat",        setupStore.pixelFormat);
