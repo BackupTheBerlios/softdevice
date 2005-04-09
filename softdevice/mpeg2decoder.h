@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.18 2005/04/09 08:47:10 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.19 2005/04/09 16:04:23 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -239,7 +239,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
 
   public:
     cVideoStreamDecoder(AVCodecContext *Context, cVideoOut *VideoOut,
-       cClock *clock);
+       cClock *clock, int Trickspeed);
     ~cVideoStreamDecoder();
 
     virtual int DecodePacket(AVPacket *pkt);
@@ -273,6 +273,7 @@ private:
     int VideoIdx;
 
     int audioMode;
+    int Speed;
 
 public:
     enum softPlayMode {

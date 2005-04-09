@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.29 2005/04/09 14:14:58 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.30 2005/04/09 16:04:23 wachm Exp $
  */
 
 #include <math.h>
@@ -412,7 +412,8 @@ cAudioStreamDecoder::~cAudioStreamDecoder()
 // --- VIDEO ------------------------------------------------------------------
 
 cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
-                                         cVideoOut *VideoOut, cClock *Clock)
+                                         cVideoOut *VideoOut, cClock *Clock,
+					 int Trickspeed)
                                          : cStreamDecoder(Context)
 {
   width = height = -1;
@@ -460,6 +461,8 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
 #else
   rtc_fd=-1;
 #endif
+  frametime = DEFAULT_FRAMETIME * Trickspeed;
+  syncOnAudio = ( Trickspeed == 1);
 
   picture=avcodec_alloc_frame();
 }
@@ -1013,6 +1016,7 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
   running=false;
   decoding=false;
   IsSuspended=false;
+  Speed=1;
 }
 
 cMpeg2Decoder::~cMpeg2Decoder()
@@ -1185,7 +1189,7 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
       vout = NULL;
     };
     vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec, 
-                   videoOut, &clock );
+                   videoOut, &clock, Speed );
   };
   
   // write streams 
@@ -1390,13 +1394,21 @@ void cMpeg2Decoder::Clear(void)
 
 /* ----------------------------------------------------------------------------
  */
-void cMpeg2Decoder::TrickSpeed(int Speed)
+void cMpeg2Decoder::TrickSpeed(int trickSpeed)
 {
   CMDDEB("TrickSpeed %d\n",Speed);
   if ( Speed!=1 )
     clock.SetWaitForSync(false);
   else clock.SetWaitForSync(curPlayMode==PmAudioVideo);
-
+  Speed=trickSpeed;
+  // XXX hack to ingore audio junk sent by vdr in the
+  if (trickSpeed!=1) {
+    if (aout)
+      aout->Clear();
+    AudioIdx=DONT_PLAY;
+  } else AudioIdx=NO_STREAM;
+  
+  Play();
   if (running)
   {
     if (aout)
