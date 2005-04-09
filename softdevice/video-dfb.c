@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.20 2005/03/28 08:02:22 lucke Exp $
+ * $Id: video-dfb.c,v 1.21 2005/04/09 12:03:32 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -593,7 +593,7 @@ void cDFBVideoOut::SetParams()
                                                       DLCONF_OPTIONS);
       dlc.options       = DLOP_FIELD_PARITY;
 
-#if 1
+#if (DIRECTFB_MAJOR_VERSION > 0 || ((DIRECTFB_MINOR_VERSION == 9) && DIRECTFB_MICRO_VERSION > 22))
       dlc.flags = (DFBDisplayLayerConfigFlags)
                       ((int) dlc.flags | DLCONF_SURFACE_CAPS);
       dlc.surface_caps  = DSCAPS_DOUBLE;

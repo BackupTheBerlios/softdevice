@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.6 2005/03/28 08:02:22 lucke Exp $
+ * $Id: video-dfb.h,v 1.7 2005/04/09 12:03:32 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -12,6 +12,7 @@
 #include "video.h"
 #include <dfb++.h>
 #include <directfb.h>
+#include <directfb_version.h>
 #include <directfb_keynames.h>
 
 #include <pthread.h>

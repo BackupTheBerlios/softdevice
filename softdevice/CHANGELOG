@@ -1,6 +1,7 @@
 Changelog
 2005-04-10:
     - xv-out: add "-vo xv:full" option to start up in fullsceen mode
+    - dfb-out: added dfb version check for struct access
     - replace unneeded usleep<10000usec with >=10000usec
     - add SIG_TIMING option (default: disabled, enable in mpeg2decoder.c)
     - introduce meaningful return values in packet mode. 
