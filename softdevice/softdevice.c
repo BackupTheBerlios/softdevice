@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.27 2005/04/09 08:47:10 wachm Exp $
+ * $Id: softdevice.c,v 1.28 2005/04/09 12:29:02 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -716,7 +716,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               setupStore.xvFullscreen = 1;
               fprintf (stderr,
                        "[ProcessArgs] xv: start up fullscreen\n");
-              vo_argv += 8;
+              vo_argv += 4;
             } else {
               break;
             }
