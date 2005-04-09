@@ -1,9 +1,10 @@
 This is a "plugin" for the Video Disk Recorder (VDR).
 
-Written by:                  The Softdevice Team
-                             Stefan Lucke, Torgeir Vemo, Martin Wache     
-			     
-Project's homepage:	     http://softdevice.berlios.de
+Initial versions by:         Roland Praml
+Further development by:      The Softdevice Team
+                             Stefan Lucke, Torgeir Veimo, Martin Wache
+
+Project's homepage:          http://softdevice.berlios.de
 
 
 Description:
@@ -19,7 +20,7 @@ Requirements:
 
 - libavcodec (i took the one shipped with ffmpeg 0.4.8)
 - libavformat (also included in ffmpeg)
-- ALSA 
+- ALSA
 And one of the following:
 - DirectFB compatible VGA-Card
 - DirectFB (I use cvs, 0.9.20 should work also)
@@ -33,7 +34,7 @@ And one of the following:
 - A strong CPU and a Framebuffer with 16 bit
 
 Typically a CPU with around 1 GHz gives you smooth playback for
-all accelerated video out methods (all except frambuffer). 
+all accelerated video out methods (all except framebuffer).
 
 Installation:
 -------------
@@ -52,7 +53,7 @@ If you don't plan to use Xv,set up a framebuffer on /dev/fb0
 
 recommened resolution: 768x576
 16bit with Framebuffer output
-32bit with XV/DFB/Vidix output
+32bit with DFB/Vidix output
 
 Start vdr with -P" softdevice -vo [your prefered output method]:"
 Example:
@@ -70,17 +71,20 @@ Framebuffer mode is not well maintained and  _completly_ unaccelerated.
 Problems/todo:
 --------------
 What does NOT work:
-- Only 16 bit framebuffer is supported. (in FB-mode)
+- Other depths than 16/15 bit framebuffer are not supported. (in FB-mode)
 
 The code in the plugin is based on parts of:
 - mplayer
 - mpeg2dec
 - alsa
 
-Many thanks to
-- Roland Praml <praml.roland @ t-online.de> for writing the first versions of
-  the softdevice
-- Holger Wachechtler <holger @ convergence.de> for some DFB-examples and useful tips
-- Stefan Lucke <stefan @ lucke.in-berlin.de> for the Xv-output
-- Vadim Catana <vcatana @ registru.md> for the Vidix-output
+Many thanks to:
+- Colin Paton
+- Herbert Attenberger
+- Holger Waechtler
+- Martin Wache
+- Roland Praml
+- Stefan Lucke
+- Torgeir Veimo
+- Vadim Catana
 
