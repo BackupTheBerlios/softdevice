@@ -1,5 +1,5 @@
 Changelog
-2005-04-10:
+2005-04-10: softdevice-0.1.1
     - xv-out: add "-vo xv:full" option to start up in fullsceen mode
     - dfb-out: added dfb version check for struct access
     - replace unneeded usleep<10000usec with >=10000usec
