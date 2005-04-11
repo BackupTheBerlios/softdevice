@@ -1,0 +1,28 @@
+This is a "plugin" for the Video Disk Recorder (VDR) with Softdevice.
+
+Written by:                  The Softdevice Team
+                             Stefan Lucke, Torgeir Vemo and Martin Wache
+
+Project's homepage:          http://softdevice.berlios.de
+
+Latest version available at: http://softdevice.berlios.de
+
+See the file COPYING for license information.
+
+Description:
+
+Plays media files with the VDR and the Softdevice as output device.
+
+The softdevice uses ffmpeg to decode the mpeg2 video and audio streams. 
+Since ffmpeg supports a lot more codecs than just mpeg2 it's quite easy
+to make the softdevice decode all other codecs which are supported by ffmpeg.
+This is what SoftPlay does. It reads the media file, puts the softdevice to
+a special playback mode which supports other video/audio codecs than mpeg2 and
+sends the video/audio packets directly to the softdevice.
+
+Please note that this is a very early release, for me it works without any
+troubles for .avi and for .mp3 files. Other file formats may or may not work.
+
+Start with :
+./vdr -Psoftdevice -P"softplay --media-path /path/to/media/files"
+
