@@ -3,10 +3,11 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.30 2005/04/09 16:04:23 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.31 2005/04/12 21:58:32 wachm Exp $
  */
 
 #include <math.h>
+#include <sched.h>
 
 #include <vdr/plugin.h>
 
@@ -29,7 +30,7 @@
 #define MPGDEB(out...)
 #endif
 
-//#define CMDDEB(out...) {printf("CMD[%04d]:",getTimeMilis() % 10000);printf(out);}
+#define CMDDEB(out...) {printf("CMD[%04d]:",getTimeMilis() % 10000);printf(out);}
 
 #ifndef CMDDEB
 #define CMDDEB(out...)
@@ -127,8 +128,12 @@ int32_t cRelTimer::GetRelTime()
 };
 //-----------------------cSleepTimer-----------------------
  
-void cSleepTimer::Sleep( int timeoutUS )
+void cSigTimer::Sleep( int timeoutUS )
 {
+  if (got_signal) {
+    got_signal=false;
+    return;
+  };
   if ( timeoutUS < 0 )
     return;
  
@@ -141,10 +146,19 @@ void cSleepTimer::Sleep( int timeoutUS )
   timeout.tv_nsec*=1000;
   pthread_mutex_lock(&mutex);
   int retcode=0;
-  while ( retcode != ETIMEDOUT ) {
+  while ( retcode != ETIMEDOUT && !got_signal ) {
     retcode = pthread_cond_timedwait(&cond, &mutex, &timeout);
   }
- 
+
+  got_signal = false;
+  pthread_mutex_unlock(&mutex);
+};
+
+void cSigTimer::Signal()
+{
+  pthread_mutex_lock(&mutex);
+  got_signal=true;
+  pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&mutex);
 };
 
@@ -465,6 +479,13 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   syncOnAudio = ( Trickspeed == 1);
 
   picture=avcodec_alloc_frame();
+}
+
+void cVideoStreamDecoder::Stop(void) 
+{
+  active=false;
+  Timer.Signal(); // abort waiting for frame display
+  Cancel(3);
 }
 
 uint64_t cVideoStreamDecoder::GetPTS() {
@@ -1011,7 +1032,7 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
   aout=NULL;
   vout=NULL;
   
-  StreamBuffer=new cSoftRingBufferLinear(DVB_BUF_SIZE,16);
+  StreamBuffer=new cSoftRingBufferLinear(DVB_BUF_SIZE,0);
   
   running=false;
   decoding=false;
@@ -1032,18 +1053,18 @@ cMpeg2Decoder::~cMpeg2Decoder()
 int cMpeg2Decoder::read_packet(uint8_t *buf, int buf_size) {
 //    printf("Del %d\n",LastSize);
     StreamBuffer->Del(LastSize);
+    EnablePutSignal.Signal();
 start:
-    BUFDEB("read_packet: StreamBuffer: %d\n",StreamBuffer->Available());
     int size=StreamBuffer->Available(); 
     int count=0;
     while ( size < buf_size && ThreadActive 
            && count <  1  ) {
       size = StreamBuffer->Available();
-      usleep(10000);
       if (size>188) {
+        //try to get more data...
         count++;
-        BUFDEB("read_packet: sleeping while data (%d) in buffer\n",size);
       };
+     EnableGetSignal.Sleep(50000);
     };
     
     // signal eof if thread should end...
@@ -1053,7 +1074,7 @@ start:
     size = buf_size;
     uchar *u =StreamBuffer->Get(size);
     if (u) {
-       size-=8;
+       //size-=8;
        // libavformat wants to be able to read beyond the boundaries
        if (size>buf_size)
          size=buf_size;
@@ -1136,11 +1157,11 @@ void cMpeg2Decoder::Action()
             printf("Codec %d ID: %d\n",i,ic->streams[i]->codec.codec_id);
           };*/
         };
-
+/*
         if (!(PacketCount % 100)) {
-          usleep(10000);
+          sched_yield();
         };
-
+*/
 //        if (PacketCount == 200)
 //          dump_format(ic, 0, "test", 0);
   }
@@ -1195,13 +1216,13 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
   // write streams 
   if ( pkt.stream_index == VideoIdx && vout ) {
     BUFDEB("QueuePacket video stream\n");
-    while ( vout->PutPacket(pkt) == -1 ) {
+    while ( vout->PutPacket(pkt) == -1 && ThreadActive ) {
       //printf("Video Buffer full\n");
       usleep(50000);
     };
   } else if ( pkt.stream_index == AudioIdx && aout ) {
     BUFDEB("QueuePacket audio stream\n");
-    while ( aout->PutPacket(pkt) == -1 ) {
+    while ( aout->PutPacket(pkt) == -1 && ThreadActive ) {
       //printf("Audio Buffer full\n");
       usleep(50000);
     };
@@ -1333,8 +1354,9 @@ void cMpeg2Decoder::Stop(bool GetMutex)
     running=false;
     
     ThreadActive=false;
-    Cancel(4);
     StreamBuffer->Clear();
+    EnableGetSignal.Signal();
+    Cancel(4);
    
     if (vout) {
       vout->Stop();
@@ -1466,15 +1488,17 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
     return 0;
 
   //MPGDEB("Decode: StreamBuffer: %d plus %d\n",StreamBuffer->Available(),Length);
-
+  EnablePutSignal.Sleep(-100);//clear got_signal
   mutex.Lock();
   int P;
   int Size=Length;
   while ( (P = StreamBuffer->Put(Data, Size)) != Size ) {
     Data+=P;
     Size-=P;
-    usleep( 50000 );
+    EnableGetSignal.Signal();
+    EnablePutSignal.Sleep(50000);
   }
+  EnableGetSignal.Signal();
   mutex.Unlock();
   BUFDEB("Deocde finished\n");
   

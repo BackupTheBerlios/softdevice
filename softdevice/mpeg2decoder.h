@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.19 2005/04/09 16:04:23 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.20 2005/04/12 21:58:32 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -20,7 +20,7 @@
 
 #define DEFAULT_FRAMETIME 40   // for PAL
 #define DVB_BUF_SIZE   (64*1024)  // same value as in dvbplayer.c
-
+// 100 packet and 96*1024 works quite well...
 #define NO_STREAM    -1
 #define DONT_PLAY  -100
 
@@ -112,19 +112,20 @@ class cRelTimer {
       inline void Reset() { lastTime=GetTime(); };
 };
 
-//-------------------------cSleepTimer-----------------------------------
-class cSleepTimer : public cRelTimer {
+//-------------------------cSigTimer-----------------------------------
+class cSigTimer : public cRelTimer {
    private:
      pthread_mutex_t mutex;
      pthread_cond_t cond;
+     bool got_signal;
  
    public:
-      cSleepTimer() : cRelTimer()
+      cSigTimer() : cRelTimer()
       {
         pthread_mutex_init(&mutex, NULL);
         pthread_cond_init(&cond, NULL);
       };
-      ~cSleepTimer()
+      ~cSigTimer()
       {
         pthread_cond_broadcast(&cond); // wake up any sleepers
         pthread_cond_destroy(&cond);
@@ -132,6 +133,8 @@ class cSleepTimer : public cRelTimer {
       };
        
       void Sleep( int timeoutUS );
+
+      void Signal(void);
 };
       
 //-------------------------cStreamDecoder ----------------------------------
@@ -223,7 +226,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
     // A-V syncing stuff
     bool               syncOnAudio;
     int                hurry_up; 
-    cSleepTimer        Timer;
+    cSigTimer          Timer;
     int                offset;
     int                delay;
     int                rtc_fd; 
@@ -242,6 +245,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
        cClock *clock, int Trickspeed);
     ~cVideoStreamDecoder();
 
+    virtual void Stop();
     virtual int DecodePacket(AVPacket *pkt);
     virtual void TrickSpeed(int Speed);
     virtual uint64_t GetPTS();
@@ -263,6 +267,8 @@ private:
     AVFormatContext *ic;
     int LastSize;
     cMutex  mutex;
+    cSigTimer EnablePutSignal;
+    cSigTimer EnableGetSignal;
     cSoftRingBufferLinear *StreamBuffer;
     void initStream();
     virtual void Action(void);
