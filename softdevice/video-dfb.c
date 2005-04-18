@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.21 2005/04/09 12:03:32 lucke Exp $
+ * $Id: video-dfb.c,v 1.22 2005/04/18 20:44:16 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -249,7 +249,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   currentPixelFormat = setupStore->pixelFormat;
   isVIAUnichrome = false;
   clearAlpha = 0x00;
-
+  clearBackground = 0;
+  clearBackCount = 2; // by default for double buffering;
   OSDpresent = false;
 
   DirectFB::Init();
@@ -309,7 +310,9 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
     dlc.flags = (DFBDisplayLayerConfigFlags)
                   (DLCONF_PIXELFORMAT | DLCONF_BUFFERMODE | DLCONF_OPTIONS);
-    dlc.buffermode = DLBM_BACKVIDEO;
+    //dlc.buffermode = DLBM_BACKVIDEO;
+    dlc.buffermode = DLBM_TRIPLE;
+    clearBackCount = 3;             // 3 for triple, 2 for double buffering
     dlc.pixelformat = DSPF_ARGB;
     dlc.options = DLOP_FIELD_PARITY;
 
@@ -669,7 +672,7 @@ void cDFBVideoOut::SetParams()
 
         /*
          * --------------------------------------------------------------------
-         * Try with tripple or double buffering
+         * Try with triple or double buffering
          */
         dlc.flags = (DFBDisplayLayerConfigFlags)
                       ((int) dlc.flags | DLCONF_BUFFERMODE);
@@ -680,7 +683,7 @@ void cDFBVideoOut::SetParams()
         //if (failed & DLCONF_BUFFERMODE)
         //{
         //  fprintf(stderr, "[dfb]: SetParms (): failed to set buffermode "
-        //          "to tripple mode, trying back video\n");
+        //          "to triple mode, trying back video\n");
           dlc.buffermode = DLBM_BACKVIDEO;
           videoLayer->TestConfiguration(dlc, &failed);
           if (failed & DLCONF_BUFFERMODE)
@@ -832,10 +835,10 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
      *       In case Draw() scales down, bitmap dirty area coordinates
      *       could not be transformed the following way.
      */
-    modArea.x1 += OSDxOfs;
-    modArea.y1 += OSDyOfs;
-    modArea.x2 += OSDxOfs;
-    modArea.y2 += OSDyOfs;
+    modArea.x1 += OSDxOfs + Bitmap->X0();
+    modArea.y1 += OSDyOfs + Bitmap->Y0();
+    modArea.x2 += OSDxOfs + Bitmap->X0();
+    modArea.y2 += OSDyOfs + Bitmap->Y0();
 
     tmpSurface->Flip(&modArea,DSFLIP_WAIT);
     osdsrc.x = modArea.x1;
@@ -890,7 +893,7 @@ void cDFBVideoOut::CloseOSD()
     OSDpresent  = false;
     osdClrBack = true;
     osdMutex.Unlock();
-    tmpSurface->Clear(COLORKEY,0); //clear and
+    tmpSurface->Clear(COLORKEY,clearAlpha); //clear and
   }
   else
   {
@@ -923,33 +926,31 @@ void cDFBVideoOut::ShowOSD ()
     dst.h = lheight;
 
     osdMutex.Lock();
+    if (osdClrBack) {
+      clearBackground = clearBackCount;
+      osdClrBack = false;
+    }
+
     try {
-      if (osdClrBack) {
+      if (clearBackground) {
         scrSurface->Clear(0,0,0,0);
-        osdSurface->Clear(0,0,0,0);
-        //osdSurface->Flip();
+        clearBackground--;
       }
 
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
-
-      osdsrc.x = osdsrc.y = 0;
-      osdsrc.w = Xres;osdsrc.h=Yres;
-      scrSurface->SetBlittingFlags(DSBLIT_BLEND_ALPHACHANNEL);
-      scrSurface->Blit(osdSurface, &osdsrc, 0, 0);
-
-      scrSurface->Flip(NULL, DSFLIP_ONSYNC);
-
-      if (osdClrBack) {
-        scrSurface->Clear(0,0,0,0);
-        osdSurface->Clear(0,0,0,0);
-        //osdSurface->Flip();
+      if (OSDpresent)
+      {
+        osdsrc.x = osdsrc.y = 0;
+        osdsrc.w = Xres;osdsrc.h=Yres;
+        scrSurface->SetBlittingFlags(DSBLIT_BLEND_ALPHACHANNEL);
+        scrSurface->Blit(osdSurface, &osdsrc, 0, 0);
       }
+      scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
 
     } catch (DFBException *ex){
       fprintf(stderr,"--- OSD refresh failed failed\n");
     }
-    osdClrBack = false;
     osdMutex.Unlock();
   }
 }
@@ -963,6 +964,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     int pitch;
     int hi;
 
+  events_not_done = 0;
   SetParams();
 
   //fprintf(stderr,"[dfb] draw frame (%d x %d) Y: %d UV: %d\n", Width, Height, Ystride, UVstride);
@@ -1071,7 +1073,6 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     if (useStretchBlit)
     {
         DFBRectangle  src, dst;
-        int     clearBackground;
 
       src.x = sxoff;
       src.y = syoff;
@@ -1085,12 +1086,16 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       //fprintf (stderr, "dst (%d,%d %dx%d)\n", lxoff,lyoff,lwidth,lheight);
 
       osdMutex.Lock();
-      clearBackground = (aspect_changed || osdClrBack) ? 1: 0;
+      clearBackground = (aspect_changed || osdClrBack) ? clearBackCount: clearBackground;
       osdClrBack = false;
-      osdMutex.Unlock();
 
       if (clearBackground)
+      {
         scrSurface->Clear(0,0,0,0);
+        clearBackground--;
+      }
+
+      osdMutex.Unlock();
 
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
@@ -1117,12 +1122,9 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       //scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
       scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
 
-      if (clearBackground)
-        scrSurface->Clear(0,0,0,0);
     }
     else
     {
-      //videoSurface->Flip();
       videoSurface->Flip(NULL, DSFLIP_ONSYNC);
     }
   } catch (DFBException *ex){

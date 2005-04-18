@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.7 2005/04/09 12:03:32 lucke Exp $
+ * $Id: video-dfb.h,v 1.8 2005/04/18 20:44:17 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -39,6 +39,8 @@ class cDFBVideoOut : public cVideoOut {
     bool osdClrBack;
     bool isVIAUnichrome;
     int   clearAlpha;
+    int   clearBackCount,
+          clearBackground;
 
     void SetParams();
 

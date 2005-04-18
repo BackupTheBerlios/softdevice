@@ -20,16 +20,26 @@ Requirements:
 
 - libavcodec (i took the one shipped with ffmpeg 0.4.8)
 - libavformat (also included in ffmpeg)
+  It is recommended that after building ffmpeg you do:
+  make install
+  make installlib
+  By this it is guaranteed that all libraries _and_ headers
+  get installed.
+
 - ALSA
+
 And one of the following:
 - DirectFB compatible VGA-Card
 - DirectFB (I use cvs, 0.9.20 should work also)
 - DFB++ (I use cvs, 0.9.20 should work also)
+
  OR
 - Vidix compatible VGA-Card
 - Vidix-library
+
  OR
 - XV compatible VGA-Card
+
  OR
 - A strong CPU and a Framebuffer with 16 bit
 
@@ -82,6 +92,8 @@ Many thanks to:
 - Colin Paton
 - Herbert Attenberger
 - Holger Waechtler
+- Konrad Naumann
+- Luca Olivetti
 - Martin Wache
 - Roland Praml
 - Stefan Lucke

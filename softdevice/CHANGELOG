@@ -1,4 +1,9 @@
 Changelog
+2005-04-10:
+    - dfb-out: triple buffering for mgatv,
+               corrected x/y coordinates for OSD drawing (fix for subtitles plugin)
+    - README: added contributor names mentioned in CHANGELOG
+              added hint from Makefile about installing ffmpeg
 2005-04-10: softdevice-0.1.1
     - xv-out: add "-vo xv:full" option to start up in fullsceen mode
     - dfb-out: added dfb version check for struct access
