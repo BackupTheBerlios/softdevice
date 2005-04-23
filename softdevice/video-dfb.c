@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.22 2005/04/18 20:44:16 lucke Exp $
+ * $Id: video-dfb.c,v 1.23 2005/04/23 19:20:47 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -156,6 +156,7 @@ static DFBEnumerationResult EnumCallBack(unsigned int id,
  */
 static void reportCardInfo (IDirectFB *dfb)
 {
+#if 0
     DFBCardCapabilities           caps;
 
   dfb->GetCardCapabilities(&caps);
@@ -195,6 +196,7 @@ static void reportCardInfo (IDirectFB *dfb)
   if (caps.blitting_flags & DSBLIT_DEMULTIPLY ) fprintf(stderr,"Demultiply ");
   if (caps.blitting_flags & DSBLIT_DEINTERLACE ) fprintf(stderr,"Deinterlace ");
   fprintf(stderr,"\n");
+#endif
 }
 
 /* ---------------------------------------------------------------------------

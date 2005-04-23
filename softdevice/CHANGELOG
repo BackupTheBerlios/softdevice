@@ -1,4 +1,6 @@
 Changelog
+2005-04-23:
+    - dfb-out: commented out use of DFBCardCapabilities required for current DirectFB cvs.
 2005-04-10:
     - dfb-out: triple buffering for mgatv,
                corrected x/y coordinates for OSD drawing (fix for subtitles plugin)
