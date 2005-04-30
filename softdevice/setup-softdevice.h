@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.11 2005/04/09 08:47:10 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.12 2005/04/30 20:50:42 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -23,7 +23,10 @@ class cSetupStore {
                   cSetupStore ();
     bool          SetupParse(const char *Name, const char *Value);
     char          *getPPValue(void);
+    void          CropModeNext(void);
+
     virtual void  getScreenDimension(int &w, int &h);
+    virtual bool  CatchRemoteKey(const char *remoteName, uint64 key);
 
     int   xvAspect;
     int   xvMaxArea;
@@ -31,6 +34,7 @@ class cSetupStore {
     int   outputMethod;
     int   pixelFormat;
     int   cropMode;
+    int   cropModeToggleKey;
     int   deintMethod;
     int   mirror;
     int   syncOnFrames;
@@ -39,7 +43,9 @@ class cSetupStore {
     int   useMGAtv;
     int   shouldSuspend;
     int   osdMode;
+    int   ac3Mode;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
+    char  alsaSPDIFDevice [ALSA_DEVICE_NAME_LENGTH];
     char  *voArgs;
     char  *aoArgs;
 };

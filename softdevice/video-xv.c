@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.21 2005/04/09 08:47:10 wachm Exp $
+ * $Id: video-xv.c,v 1.22 2005/04/30 20:50:42 lucke Exp $
  */
 
 #include <unistd.h>
@@ -508,7 +508,8 @@ void cXvVideoOut::ProcessEvents ()
             setupStore->shouldSuspend=!setupStore->shouldSuspend;
 #endif
           default:
-            if (xvRemote) {
+            if (xvRemote &&
+                !setupStore->CatchRemoteKey(xvRemote->Name(), keysym)) {
               xvRemote->PutKey (keysym);
             }
             break;
@@ -523,6 +524,7 @@ void cXvVideoOut::ProcessEvents ()
                    RevertToParent,
                    CurrentTime);
           if (map_count > 2 && xv_initialized) {
+            XClearArea (dpy, win, 0, 0, 0, 0, True);
             XvShmPutImage(dpy, port,
                           win, gc,
                           xv_image,
@@ -550,6 +552,7 @@ void cXvVideoOut::ProcessEvents ()
   }
 
   if (xv_initialized && map_count) {
+    XClearArea (dpy, win, 0, 0, 0, 0, True);
     XvShmPutImage(dpy, port,
                   win, gc,
                   xv_image,
@@ -1230,6 +1233,13 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 {
   if (!initialized || !xv_initialized)
     return;
+
+  if (aspect_changed)
+  {
+    XClearArea (dpy, win, 0, 0, 0, 0, True);
+    aspect_changed = 0;
+  }
+
 #if VDRVERSNUM >= 10307
   OsdRefreshCounter=0;
   

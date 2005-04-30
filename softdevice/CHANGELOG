@@ -1,4 +1,7 @@
 Changelog
+2005-04-30:
+    - some preparations for ac3 out selection
+    - xv-out & dfb-out: catch userX keys and map one of them to crop mode selection
 2005-04-23:
     - dfb-out: commented out use of DFBCardCapabilities required for current DirectFB cvs.
 2005-04-10:

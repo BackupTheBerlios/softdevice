@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.23 2005/04/23 19:20:47 lucke Exp $
+ * $Id: video-dfb.c,v 1.24 2005/04/30 20:50:42 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -527,7 +527,11 @@ void cDFBVideoOut::ProcessEvents ()
             case DIKS_ALTGR: case DIKS_META: case DIKS_SUPER: case DIKS_HYPER:
               break;
             default:
-              dfbRemote->PutKey(event.key_symbol);
+              if (!setupStore->CatchRemoteKey(dfbRemote->Name(),
+                                              event.key_symbol))
+              {
+                dfbRemote->PutKey(event.key_symbol);
+              }
               break;
           }
         }
