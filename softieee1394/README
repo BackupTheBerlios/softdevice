@@ -1,0 +1,37 @@
+This is a "plugin" for the Video Disk Recorder (VDR).
+
+Written by:                  Stefan Lucke <stefan@lucke.in-berlin.de>
+
+Project's homepage:          http://softdevice.berlios.de
+
+Latest version available at: via cvs
+
+See the file COPYING for license information.
+
+Description:
+
+softieee1394 is plugin which allows in combination with softdevice,
+DV-camcorder access and display of recordet tapes.
+
+
+The following vdr keys are supported:
+  fast forward
+  fast rewind
+  play
+  pause
+
+
+Additional required software:
+  kernel configured with a working firewire subsystem
+
+  softdevice-0.1.1
+    http://softdevice.berlios.de
+
+  libavc1394-0.5.0
+    http://sourceforge.net/projects/libavc1394
+
+  libraw1394-1.1.0
+    http://www.linux1394.org/download.php
+
+  ffmpeg-0.4.9-pre1
+    http://ffmpeg.sourceforge.net/download.php
