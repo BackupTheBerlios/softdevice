@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.15 2005/04/02 14:16:47 lucke Exp $
+ * $Id: video.c,v 1.16 2005/05/01 10:24:02 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -13,7 +13,7 @@
 #include "video.h"
 #include "utils.h"
 #include "setup-softdevice.h"
-
+#include "sync-timer.h"
 
 cVideoOut::cVideoOut(cSetupStore *setupStore)
 {
@@ -261,6 +261,14 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
   }
 
   CheckAspect (aspect_I, aspect_F);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
+{
+  syncTimer->Sleep(delay);
+  *delay -= syncTimer->GetRelTime();
 }
 
 #define OPACITY_THRESHOLD 0x8F

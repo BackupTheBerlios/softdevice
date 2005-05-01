@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.9 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video.h,v 1.10 2005/05/01 10:24:02 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -11,6 +11,7 @@
 
 #include <vdr/plugin.h>
 #include "setup-softdevice.h"
+#include "sync-timer.h"
 
 #if VDRVERSNUM >= 10307
 #include <vdr/osd.h>
@@ -105,6 +106,7 @@ public:
     virtual void OSDCommit();
     virtual void OpenOSD(int X, int Y);
     virtual void CloseOSD();
+    virtual void Sync(cSyncTimer *syncTimer, int *delay);
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
     virtual void Pause(void) {return;};
     virtual void CheckAspect(int new_afd, float new_asp);

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.31 2005/04/12 21:58:32 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.32 2005/05/01 10:24:02 lucke Exp $
  */
 
 #include <math.h>
@@ -11,32 +11,25 @@
 
 #include <vdr/plugin.h>
 
-//#define SIG_TIMING
-#ifndef SIG_TIMING
-// for RTC
-#include <sys/ioctl.h>
-#include <linux/rtc.h>
-#endif
-
 #include "mpeg2decoder.h"
 #include "audio.h"
 #include "utils.h"
 #include "setup-softdevice.h"
 
 
-//#define MPGDEB(out...) {printf("mpegdec[%04d]:",getTimeMilis() % 10000);printf(out);}
+//#define MPGDEB(out...) {printf("mpegdec[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef MPGDEB
 #define MPGDEB(out...)
 #endif
 
-#define CMDDEB(out...) {printf("CMD[%04d]:",getTimeMilis() % 10000);printf(out);}
+#define CMDDEB(out...) {printf("CMD[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef CMDDEB
 #define CMDDEB(out...)
 #endif
 
-//#define BUFDEB(out...) {printf("BUF[%04d]:",getTimeMilis() % 10000);printf(out);}
+//#define BUFDEB(out...) {printf("BUF[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef BUFDEB
 #define BUFDEB(out...)
@@ -64,7 +57,7 @@ int cPacketQueue::PutPacket(const AVPacket &Packet) {
 AVPacket * cPacketQueue::GetReadPacket() {
 //  printf("GetReadPacket %x FirstPacket %d LastPacket %d\n",
 //    queue,FirstPacket,LastPacket);
-  if (FirstPacket!=LastPacket) 
+  if (FirstPacket!=LastPacket)
     return &queue[FirstPacket];
   else return NULL;
 };
@@ -95,71 +88,6 @@ uint64_t  cClock::GetPTS() {
   if (audioClock)
      return audioClock->GetPTS();
   else return 0;
-};
-
-//-----------------------cRelTimer-----------------------
-int32_t cRelTimer::TimePassed()
-{
-  int64_t now;
-  int32_t ret;
-
-  now=GetTime();
-  if ( now < lastTime ) {
-    ret = (uint32_t) (now - lastTime + 60 *1000000); // untested
-    MPGDEB("now %lld kleiner als lastTime %lld\n",now,lastTime);
-  }
-  else ret = now - lastTime;
-  return ret;
-};
-
-int32_t cRelTimer::GetRelTime() 
-{
-  int64_t now;
-  int32_t ret;
-
-  now=GetTime();
-  if ( now < lastTime ) {
-    ret = (uint32_t) (now - lastTime + 60 *1000000); // untested
-    MPGDEB("now %lld kleiner als lastTime %lld\n",now,lastTime);
-  }
-  else ret = now - lastTime;
-  lastTime=now;
-  return ret;
-};
-//-----------------------cSleepTimer-----------------------
- 
-void cSigTimer::Sleep( int timeoutUS )
-{
-  if (got_signal) {
-    got_signal=false;
-    return;
-  };
-  if ( timeoutUS < 0 )
-    return;
- 
-  struct timeval tv;
-  gettimeofday(&tv,NULL);
-  struct timespec timeout;
-  timeout.tv_nsec=(tv.tv_usec+timeoutUS);//*1000;
-  timeout.tv_sec=tv.tv_sec + timeout.tv_nsec / 1000000;
-  timeout.tv_nsec%=1000000;
-  timeout.tv_nsec*=1000;
-  pthread_mutex_lock(&mutex);
-  int retcode=0;
-  while ( retcode != ETIMEDOUT && !got_signal ) {
-    retcode = pthread_cond_timedwait(&cond, &mutex, &timeout);
-  }
-
-  got_signal = false;
-  pthread_mutex_unlock(&mutex);
-};
-
-void cSigTimer::Signal()
-{
-  pthread_mutex_lock(&mutex);
-  got_signal=true;
-  pthread_cond_broadcast(&cond);
-  pthread_mutex_unlock(&mutex);
 };
 
 // --- cStreamDecoder ---------------------------------------------------------
@@ -283,6 +211,8 @@ bool cStreamDecoder::initCodec(void)
       context->codec_id);
     return false;
   }
+  printf("[mpegdecoder] open codec %d successfull\n",
+      context->codec_id);
   MPGDEB("Codec %d initialized.\n");
   return true;
 };
@@ -339,14 +269,35 @@ void cAudioStreamDecoder::OnlyRight(uint8_t *samples,int Length) {
  */
 
 int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
-  int len=0;
-  int audio_size=0;
-   
-  uint8_t *data=pkt->data;
-  int size=pkt->size;
+    int     len=0;
+    int     audio_size=0;
+    uint8_t *data=pkt->data;
+    int     size=pkt->size;
 
+  if (context->codec_id == CODEC_ID_AC3)
+  {
+    switch(setupStore.ac3Mode)
+    {
+      case 0:
+        // get the AC3 -> 2CH stereo data
+        context->channels = 2;
+        break;
+      case 1:
+        // feed data for AC3 pass through to device
+        audioOut->WriteAC3(data,size);
+        return size;
+      case 2:
+        // get the AC3 -> 4CH stereo data
+        context->channels = 4;
+        break;
+      case 3:
+        // set channels to auto mode to get decoded stream for analog out
+        context->channels = 0;
+        break;
+    }
+  }
   while ( size > 0 ) {
-    len=avcodec_decode_audio(context, (short *)audiosamples, 
+    len=avcodec_decode_audio(context, (short *)audiosamples,
                  &audio_size, data, size);
     if (len < 0) {
       printf("[mpegdecoder] Error while decoding audio frame %d\n", frame);
@@ -359,7 +310,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     MPGDEB("audio: count: %d  Length: %d len: %d a_size: %d a_delay: %d\n",
        frame,pkt->size,len, audio_size, audioOut->GetDelay());
 
-    // no new frame decoded, continue 
+    // no new frame decoded, continue
     if (audio_size == 0)
       continue;
 
@@ -380,8 +331,8 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     //audioOut->SetParams(context->channels,context->sample_rate);
     //audioOut->Write(audiosamples,audio_size);
     audioBuffer->Put(audiosamples,audio_size);
-    // adjust PTS according to audio_size, sampel_rate and no. of channels  
-    pts += (audio_size*10000/(context->sample_rate*2*context->channels)); 
+    // adjust PTS according to audio_size, sampel_rate and no. of channels
+    pts += (audio_size*10000/(context->sample_rate*2*context->channels));
 
     if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
       MPGDEB("audio pts %lld pkt->PTS : %lld pts - valid PTS: %lld \n",
@@ -395,7 +346,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
   while ( (unsigned) audioBuffer->Available() >= audioOutContext.period_size )
   {
     uint8_t *samples=audioBuffer->Get(audio_size);
-    if (!samples) 
+    if (!samples)
         break;
     if ( (unsigned) audio_size  > audioOutContext.period_size )
       audio_size=audioOutContext.period_size;
@@ -450,47 +401,25 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   offset=0;
   delay=0;
   hurry_up=0;
-  Timer.Reset();
+  syncTimer = new cSyncTimer (emRtcTimer);
+  syncTimer->Reset();
 
-#ifndef SIG_TIMING
-  if ( (rtc_fd = open("/dev/rtc",O_RDONLY)) < 0 ) 
-    fprintf(stderr,"Could not open /dev/rtc \n");
-  else 
-  {
-    uint64_t irqp = 1024;
-
-    if ( ioctl(rtc_fd, RTC_IRQP_SET, irqp) < 0) 
-    {
-      //fprintf(stderr,"Could not set irq period\n");
-      close(rtc_fd);
-      rtc_fd=-1;
-    }
-    else if ( ioctl( rtc_fd, RTC_PIE_ON, 0 ) < 0) 
-    {
-      //fprintf(stderr,"Error in rtc_pie on \n");
-      close(rtc_fd);
-      rtc_fd=-1;
-    };// else fprintf(stderr,"Set up to use linux RTC\n");
- };
-#else
-  rtc_fd=-1;
-#endif
   frametime = DEFAULT_FRAMETIME * Trickspeed;
   syncOnAudio = ( Trickspeed == 1);
 
   picture=avcodec_alloc_frame();
 }
 
-void cVideoStreamDecoder::Stop(void) 
+void cVideoStreamDecoder::Stop(void)
 {
   active=false;
-  Timer.Signal(); // abort waiting for frame display
+  syncTimer->Signal(); // abort waiting for frame display
   Cancel(3);
 }
 
 uint64_t cVideoStreamDecoder::GetPTS() {
-  return pts - (delay + Timer.TimePassed())/100;
-};
+  return pts - (delay + syncTimer->TimePassed())/100;
+}
 
 int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 {
@@ -540,7 +469,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       while ( !cClock::ReadyForPlay() && count < 10) {
         MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
         usleep(10000);
-	count++;
+        count++;
       };
     };
       
@@ -606,54 +535,16 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   videoOut->CheckAspectDimensions(picture,context);
   
   if (!hurry_up || frame % 2 ) {
-  // sleep ....
-  delay-=Timer.GetRelTime();
-  MPGDEB("Frame# %-5d  aPTS: %lld offset: %d delay %d \n",frame,clock->GetPTS(),offset,delay );
-#ifdef SIG_TIMING
-  Timer.Sleep(delay-1000);
-  delay-=Timer.GetRelTime();
-#else
-  if ( rtc_fd >= 0 ) {
-    // RTC timinig
-    while (delay > 15000) {
-      //sleep one timer tick
-      usleep(10000);
-      //MPGDEB("RTC sleep loop %d \n",delay);
-      delay-=Timer.GetRelTime();
-    }
-    while (delay  > 1200) {
-      uint32_t ts;
-      //MPGDEB("RTC Loop %d \n",delay);
-      if ( read(rtc_fd, &ts, sizeof(ts) )  <= 0) 
-      {
-        fprintf(stderr,"Linux RTC read error, disableing RTC\n");
-        close(rtc_fd);
-        rtc_fd=-1;
-      }
-      delay-=Timer.GetRelTime();
-    }
-  } else {
-    // usleep timing
-    const int rest=2200;
-    while (delay > rest) {     
-      //usleep(1000);
-      usleep(rest);
-      delay  -= Timer.GetRelTime();
-      //MPGDEB("Loop %d \n",delay);  return len;
-    }
-    // cpu burn timing
-    //while (delay > 100) { 
-    //  delay  -= Timer.GetRelTime();
-    //   printf("Loop2 %d \n",delay);
-    //};
+    // sleep ....
+    delay-=syncTimer->GetRelTime();
+    MPGDEB("Frame# %-5d  aPTS: %lld offset: %d delay %d \n",frame,clock->GetPTS(),offset,delay );
+
+    videoOut->Sync(syncTimer, &delay);
+    // display picture
+    videoOut->YUV(picture->data[0], picture->data[1],picture->data[2],
+                  context->width,context->height,
+                  picture->linesize[0],picture->linesize[1]);
   }
-#endif
-  
-  // display picture
-  videoOut->YUV(picture->data[0], picture->data[1],picture->data[2],
-      context->width,context->height,
-      picture->linesize[0],picture->linesize[1]);
-  };
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
   // the A-V syncing code is partly based on MPlayer...
@@ -691,7 +582,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
      hurry_up=0;
 
 #if 1
-  int dispTime=Timer.GetRelTime();
+  int dispTime=syncTimer->GetRelTime();
   delay-=dispTime;
   if (!(frame % 1) || context->hurry_up) {
     MPGDEB("Frame# %-5d A-V(ms) %-5d delay %d FrameT: %s, dispTime(ms): %1.2f\n",
@@ -999,10 +890,7 @@ void cVideoStreamDecoder::ppLibavcodec(void)
 cVideoStreamDecoder::~cVideoStreamDecoder()
 {
   cClock::SetVideoClock(NULL);
-  //RTC
-  if (rtc_fd)
-    close(rtc_fd);
-
+  delete(syncTimer);
   free(picture);
 }
 
@@ -1095,7 +983,7 @@ start:
 };
 
 int cMpeg2Decoder::seek(offset_t offset, int whence) {
-   printf("unimplemented: seek offset %d whence %d\n",offset,whence);
+   printf("unimplemented: seek offset %lld whence %d\n",offset,whence);
    return -EINVAL;
 };
 

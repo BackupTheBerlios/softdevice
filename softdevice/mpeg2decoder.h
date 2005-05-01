@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.20 2005/04/12 21:58:32 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.21 2005/05/01 10:24:02 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -11,8 +11,11 @@
 #ifdef PP_LIBAVCODEC
   #include <postproc/postprocess.h>
 #endif //PP_LIBAVCODEC
+
+#include "sync-timer.h"
 #include "video.h"
 #include "audio.h"
+
 #include <avformat.h>
 #include <sys/time.h>
 #include <vdr/plugin.h>
@@ -91,84 +94,39 @@ public:
   int Size(void) { return cRingBufferLinear::Size(); }
 };
 
-//-------------------------cRelTimer-----------------------------------
-class cRelTimer {
-   private:
-      int64_t lastTime;
-      inline int64_t GetTime()
-      {  
-        struct timeval tv;
-        struct timezone tz;
-        gettimeofday(&tv,&tz);
-        return tv.tv_sec*1000000+tv.tv_usec;
-      };
-
-   public:
-      cRelTimer() {lastTime=GetTime();};
-      ~cRelTimer() {};
-      
-      int32_t TimePassed();
-      int32_t GetRelTime();
-      inline void Reset() { lastTime=GetTime(); };
-};
-
-//-------------------------cSigTimer-----------------------------------
-class cSigTimer : public cRelTimer {
-   private:
-     pthread_mutex_t mutex;
-     pthread_cond_t cond;
-     bool got_signal;
- 
-   public:
-      cSigTimer() : cRelTimer()
-      {
-        pthread_mutex_init(&mutex, NULL);
-        pthread_cond_init(&cond, NULL);
-      };
-      ~cSigTimer()
-      {
-        pthread_cond_broadcast(&cond); // wake up any sleepers
-        pthread_cond_destroy(&cond);
-        pthread_mutex_destroy(&mutex);
-      };
-       
-      void Sleep( int timeoutUS );
-
-      void Signal(void);
-};
-      
 //-------------------------cStreamDecoder ----------------------------------
 // Output device handler
 class cStreamDecoder : public cThread {
 private:
-
     bool freezeMode;
     cPacketQueue PacketQueue;
-protected:
-    int64_t               pts;
-    int                   frame;
-    
-    AVCodec               *codec;
-    AVCodecContext        *context;
-    
-    cMutex                mutex;
-    bool                  active, running;
-    
-    virtual void Action(void);
-    virtual int DecodePacket(AVPacket *pkt) = 0;
-public:
-    inline int PutPacket(const AVPacket &pkt)
-    { return PacketQueue.PutPacket(pkt); };
 
-    virtual void Clear(void);
-    virtual void Freeze(void);
-    virtual void Play(void);
-    virtual void Stop();
-    virtual void TrickSpeed(int Speed) {return;};
-    virtual int BufferFill(void);
-    bool    initCodec(void);
-    void    resetCodec(void);
-    virtual uint64_t GetPTS()  {return pts;};
+protected:
+    int64_t           pts;
+    int               frame;
+
+    AVCodec           *codec;
+    AVCodecContext    *context;
+
+    cMutex            mutex;
+    bool              active, running;
+    
+    virtual void      Action(void);
+    virtual int       DecodePacket(AVPacket *pkt) = 0;
+
+public:
+    inline int        PutPacket(const AVPacket &pkt)
+                        { return PacketQueue.PutPacket(pkt); };
+
+    virtual void      Clear(void);
+    virtual void      Freeze(void);
+    virtual void      Play(void);
+    virtual void      Stop();
+    virtual void      TrickSpeed(int Speed) {return;};
+    virtual int       BufferFill(void);
+    bool              initCodec(void);
+    void              resetCodec(void);
+    virtual uint64_t  GetPTS()  {return pts;};
     
     cStreamDecoder(AVCodecContext * Context);
     virtual ~cStreamDecoder();
@@ -177,16 +135,18 @@ public:
 //----------------------------cAudioStreamDecoder ----------------------------
 class cAudioStreamDecoder : public cStreamDecoder {
 private:
-    uint8_t * audiosamples;
+    uint8_t               *audiosamples;
     cSoftRingBufferLinear *audioBuffer;
-    cAudioOut *audioOut;
-    SampleContext audioOutContext;
-    int audioMode;
+    cAudioOut             *audioOut;
+    SampleContext         audioOutContext;
+    int                   audioMode;
 
     void OnlyLeft(uint8_t *samples,int Length);
     // copy left data to right channel
+
     void OnlyRight(uint8_t *samples,int Length);
     // copy right data to left channel
+
 protected:
 public:
     virtual int DecodePacket(AVPacket *pkt);
@@ -226,12 +186,11 @@ class cVideoStreamDecoder : public cStreamDecoder {
     // A-V syncing stuff
     bool               syncOnAudio;
     int                hurry_up; 
-    cSigTimer          Timer;
+    cSyncTimer         *syncTimer;
     int                offset;
     int                delay;
-    int                rtc_fd; 
     int                frametime;
-   
+
     uchar   *allocatePicBuf(uchar *pic_buf);
     void    deintLibavcodec(void);
     uchar   *freePicBuf(uchar *pic_buf);

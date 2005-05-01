@@ -1,8 +1,11 @@
 Changelog
 2005-05-01:
     - audio-out: some other preparations for ac3
+                 selectiv set #channels to 2, to get 2ch downmix of 5.1
                  mute current mixer if volume is set to 0 and unmute if vol != 0
                  changed dsyslod to esyslog is case we exit()
+    - syncing: switched to a sync timer which can be controlled by current
+               selected output method
 2005-04-30:
     - some preparations for ac3 out selection
     - xv-out & dfb-out: catch userX keys and map one of them to crop mode selection
