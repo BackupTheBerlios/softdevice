@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.c,v 1.1 2005/05/01 09:32:13 lucke Exp $
+ * $Id: sync-timer.c,v 1.2 2005/05/01 10:15:48 lucke Exp $
  */
 
 #include <math.h>
@@ -141,7 +141,6 @@ cSyncTimer::~cSyncTimer()
  */
 void cSyncTimer::Sleep(int *timeoutUS)
 {
-fprintf(stderr, "s = %d, t = %d\n",syncMode,*timeoutUS);
   switch(syncMode)
   {
     case emUsleepTimer: // usleep timer mode
