@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.7 2005/03/27 09:01:26 wachm Exp $
+ * $Id: audio.h,v 1.8 2005/05/01 08:07:43 lucke Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -32,15 +32,16 @@ protected:
 public:
   virtual ~cAudioOut();
   virtual void Write(uchar *Data, int Length)=0;
+  virtual void WriteAC3(uchar *Data, int Length)=0;
   // length should always be a multiple of 4
   virtual int SetParams(SampleContext &context)=0;
   virtual int GetDelay(void)=0; // returns delay in 0.1 ms
   virtual void Pause(void)=0;
   virtual void Play(void)=0;
   virtual void SetVolume(int vol)=0;
-  virtual void Suspend(void) 
+  virtual void Suspend(void)
   {return;};
-  virtual bool Resume(void) 
+  virtual bool Resume(void)
   {return true;};
 };
 
@@ -49,16 +50,22 @@ public:
  */
 class cAlsaAudioOut : public cAudioOut  {
 private:
-  void Xrun(void);
-  cMutex handleMutex;
-  snd_pcm_t *handle;
-  char *device;
+  cMutex        handleMutex;
+  snd_pcm_t     *handle;
+  char          *device;
   volatile bool paused;
+  bool          ac3PassThrough;
+  SampleContext oldContext;
+
+  void SetAC3PassThroughMode(bool on);
+  void Xrun(void);
+
 protected:
 public:
   cAlsaAudioOut(cSetupStore *setupStore);
   virtual ~cAlsaAudioOut();
   virtual void Write(uchar *Data, int Length);
+  virtual void WriteAC3(uchar *Data, int Length);
   //virtual int SetParams(int channels, unsigned int samplerate);
   virtual int SetParams(SampleContext &context);
   virtual int GetDelay(void);
@@ -78,6 +85,7 @@ public:
   cDummyAudioOut(cSetupStore *setupStore);
   virtual ~cDummyAudioOut() { return; };
   virtual void Write(uchar *Data, int Length);
+  virtual void WriteAC3(uchar *Data, int Length);
   virtual int SetParams(SampleContext &context);
   virtual int GetDelay(void);
   virtual void Pause(void);

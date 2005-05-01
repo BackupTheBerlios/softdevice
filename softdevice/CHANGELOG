@@ -1,4 +1,8 @@
 Changelog
+2005-05-01:
+    - audio-out: some other preparations for ac3
+                 mute current mixer if volume is set to 0 and unmute if vol != 0
+                 changed dsyslod to esyslog is case we exit()
 2005-04-30:
     - some preparations for ac3 out selection
     - xv-out & dfb-out: catch userX keys and map one of them to crop mode selection

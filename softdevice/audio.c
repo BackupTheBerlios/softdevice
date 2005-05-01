@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.14 2005/04/09 08:47:10 wachm Exp $
+ * $Id: audio.c,v 1.15 2005/05/01 08:07:43 lucke Exp $
  */
 
 #include <unistd.h>
@@ -23,14 +23,16 @@ cAudioOut::~cAudioOut() {
 }
 
 cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
+    int err;
+
     if (strlen(setupStore->alsaDevice) == 0)
       strcpy (setupStore->alsaDevice, "default");
     dsyslog("[softdevice-audio] Opening alsa device %s",setupStore->alsaDevice);
     device = setupStore->alsaDevice;
-    int err;
     paused=false;
+    ac3PassThrough = false;
     if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-      dsyslog("[softdevice-audio] Playback open error: %s, %s FATAL exiting",
+      esyslog("[softdevice-audio] Playback open error: %s, %s FATAL exiting",
               device, snd_strerror(err));
       exit(1);
     }
@@ -39,22 +41,31 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
     dsyslog("[softdevice-audio] Device opened! Ready to play");
 }
 
-
-cAlsaAudioOut::~cAlsaAudioOut() {
-    if (handle)
-      snd_pcm_close(handle);
+/* ----------------------------------------------------------------------------
+ */
+cAlsaAudioOut::~cAlsaAudioOut()
+{
+  if (handle)
+    snd_pcm_close(handle);
+  handle = NULL;
 }
 
-void cAlsaAudioOut::Suspend() {
-  snd_pcm_close(handle);
-  handle=0;
+/* ----------------------------------------------------------------------------
+ */
+void cAlsaAudioOut::Suspend()
+{
+  if (handle)
+    snd_pcm_close(handle);
+  handle = NULL;
 }
 
+/* ----------------------------------------------------------------------------
+ */
 bool cAlsaAudioOut::Resume() {
    int err;
    printf("Device %s\n",device);
    if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-     dsyslog("[softdevice-audio] Playback open error: %s, %s FATAL exiting",
+     esyslog("[softdevice-audio] Playback open error: %s, %s FATAL",
              device, snd_strerror(err));
      return false;
    }
@@ -63,11 +74,19 @@ bool cAlsaAudioOut::Resume() {
    return true;
 };
 
+/* ----------------------------------------------------------------------------
+ */
 void cAlsaAudioOut::Write(uchar *Data, int Length)
 {
     int err;
     size_t size;
-    size = Length/(2*currContext.channels);
+
+  if (ac3PassThrough)
+  {
+    ac3PassThrough = false;
+    SetAC3PassThroughMode(ac3PassThrough);
+  }
+  size = Length/(2*currContext.channels);
   while (size) {
     while (paused) usleep(1000); // block
     err = snd_pcm_mmap_writei(handle,Data, size);
@@ -91,6 +110,81 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
   }
 }
 
+/* ----------------------------------------------------------------------------
+ */
+void cAlsaAudioOut::SetAC3PassThroughMode(bool on)
+{
+#if 0
+    int err;
+
+  if (handle)
+    snd_pcm_close(handle);
+  handle = NULL;
+
+  if (on)
+  {
+    oldContext = currContext;
+    if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0)
+    {
+      esyslog("[softdevice-audio] Playback open error: %s, %s FATAL exiting",
+              device, snd_strerror(err));
+      exit(1);
+    }
+
+  }
+  else
+  {
+    if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0)
+    {
+      esyslog("[softdevice-audio] Playback open error: %s, %s FATAL exiting",
+              device, snd_strerror(err));
+      exit(1);
+    }
+
+    currContext.channels = 0;
+    SetParams(oldContext);
+  }
+#endif
+}
+
+/* ----------------------------------------------------------------------------
+ */
+void cAlsaAudioOut::WriteAC3(uchar *Data, int Length)
+{
+    int err;
+    size_t size;
+
+
+  if (!ac3PassThrough)
+  {
+    ac3PassThrough = true;
+    SetAC3PassThroughMode(ac3PassThrough);
+  }
+
+#if 0
+  {
+      static int fd = -1;
+
+    if (fd == -1) fd = open ("/tmp/xx.ac3", O_CREAT|O_WRONLY|O_TRUNC, 0700);
+    if (fd >= 0) write (fd, Data,Length);
+  }
+#endif
+
+  if (!currContext.channels)
+    size = Length/(2*2);
+  else
+    size = Length/(2*currContext.channels);
+  while (size)
+  {
+    while (paused)
+      usleep(1000); // block
+
+    err = size;
+
+    size -= err;
+  }
+}
+
 void cAlsaAudioOut::Pause(void) {
     //    snd_pcm_pause(handle,1);
     dsyslog("[softdevice-audio]: Should pause now");
@@ -108,11 +202,11 @@ int cAlsaAudioOut::GetDelay(void) {
 	int res;
 	handleMutex.Lock();
 	if ((res = snd_pcm_status(handle, status))<0) {
-    dsyslog("[softdevice-audio]: GetDelay status error: %s FATAL exiting",
+    esyslog("[softdevice-audio]: GetDelay status error: %s FATAL exiting",
             snd_strerror(res));
 		exit(EXIT_FAILURE);
 	}
-        res=snd_pcm_status_get_delay(status) *10000 / 
+        res=snd_pcm_status_get_delay(status) *10000 /
 	  currContext.samplerate;
 	handleMutex.Unlock();
 	return res;
@@ -126,14 +220,14 @@ void cAlsaAudioOut::Xrun(void)
 	snd_pcm_status_alloca(&status);
         //printf("alsa-audio: Xrun\n");
 	if ((res = snd_pcm_status(handle, status))<0) {
-    dsyslog("[softdevice-audio]: Xrun status error: %s FATAL exiting",
+    esyslog("[softdevice-audio]: Xrun status error: %s FATAL exiting",
             snd_strerror(res));
 		exit(EXIT_FAILURE);
 	}
 	if (snd_pcm_status_get_state(status) == SND_PCM_STATE_XRUN) {
 //		snd_pcm_status_get_trigger_tstamp(status, &tstamp);
 		if ((res = snd_pcm_prepare(handle))<0) {
-      dsyslog("[softdevice-audio]: Xrun prepare error: %s FATAL exiting",
+      esyslog("[softdevice-audio]: Xrun prepare error: %s FATAL exiting",
               snd_strerror(res));
 			exit(EXIT_FAILURE);
 		}
@@ -141,7 +235,7 @@ void cAlsaAudioOut::Xrun(void)
 	}
 
 //	error("read/write error, state = %s", snd_pcm_state_name(snd_pcm_status_get_state(status)));
-  dsyslog("[softdevice-audio]: read/write error FATAL exiting");
+  esyslog("[softdevice-audio]: read/write error FATAL exiting");
 	exit(EXIT_FAILURE);
 }
 
@@ -165,7 +259,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     if ((err = snd_pcm_open(&handle,
                             device,
                             SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-      dsyslog("[softdevice-audio] Playback reopen error: %s, %s FATAL exiting",
+      esyslog("[softdevice-audio] Playback reopen error: %s, %s FATAL exiting",
               device, snd_strerror(err));
       exit(1);
     }
@@ -182,7 +276,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
 
     err = snd_pcm_hw_params_any(handle, params);
     if (err < 0) {
-      dsyslog("[softdevice-audio] Broken config for this PCM: no configurations available");
+      esyslog("[softdevice-audio] Broken config for this PCM: no configurations available");
       exit(EXIT_FAILURE);
     }
 
@@ -193,26 +287,26 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     snd_pcm_access_mask_set(mask, SND_PCM_ACCESS_MMAP_COMPLEX);
     err = snd_pcm_hw_params_set_access_mask(handle, params, mask);
     if (err < 0) {
-      dsyslog("[softdevice-audio] Access type not available FATAL exiting");
+      esyslog("[softdevice-audio] Access type not available FATAL exiting");
       exit(EXIT_FAILURE);
     }
 
     err = snd_pcm_hw_params_set_format(handle, params, PCM_FMT);
     if (err < 0) {
-      dsyslog("[softdevice-audio] Sample format non available FATAL exiting");
+      esyslog("[softdevice-audio] Sample format non available FATAL exiting");
       exit(EXIT_FAILURE);
     }
 
     err = snd_pcm_hw_params_set_channels(handle, params,currContext.channels);
     if (err < 0) {
-      dsyslog("[softdevice-audio] Channels count non available FATAL exiting");
+      esyslog("[softdevice-audio] Channels count non available FATAL exiting");
       exit(EXIT_FAILURE);
     }
 
     err = snd_pcm_hw_params_set_rate_near(handle, params, &currContext.samplerate, 0);
     assert(err >= 0);
     if (currContext.samplerate != context.samplerate ) {
-      dsyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) FATAL exiting",context.samplerate,currContext.samplerate);
+      esyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) FATAL exiting",context.samplerate,currContext.samplerate);
       exit(1);
     }
 
@@ -223,27 +317,27 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     periodSize = 4608 / 4;
     err = snd_pcm_hw_params_set_period_size_near(handle, params, &periodSize, 0);
     if ( err < 0)  {
-      dsyslog("[softdevice-audio] Failed to set period size!");
+      esyslog("[softdevice-audio] Failed to set period size!");
       exit(1);
     }
     
-    snd_pcm_uframes_t buffersize = 2 * 4608; 
+    snd_pcm_uframes_t buffersize = 2 * 4608;
     err = snd_pcm_hw_params_set_buffer_size_near(handle, params, &buffersize);
     if ( err < 0 ) {
-      dsyslog("[softdevice-audio] Failed to set buffer size!");
+      esyslog("[softdevice-audio] Failed to set buffer size!");
       exit(1);
     }
 
     err = snd_pcm_hw_params(handle, params);
     if (err < 0) {
-      dsyslog("[softdevice-audio] Unable to install hw params: FATAL exiting");
+      esyslog("[softdevice-audio] Unable to install hw params: FATAL exiting");
       exit(EXIT_FAILURE);
     }
 
     snd_pcm_hw_params_get_period_size(params, &periodSize, 0);
     snd_pcm_hw_params_get_buffer_size(params, &bufferSize);
     if (periodSize == bufferSize) {
-      dsyslog("[softdevice-audio] Can't use period equal to buffer size (%lu == %lu) FATAL exiting",
+      esyslog("[softdevice-audio] Can't use period equal to buffer size (%lu == %lu) FATAL exiting",
               periodSize, bufferSize);
       exit(EXIT_FAILURE);
     }
@@ -256,7 +350,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     snd_pcm_sw_params_current(handle, swparams);
     err = snd_pcm_sw_params_get_xfer_align(swparams, &xfer_align);
     if (err < 0) {
-      dsyslog("[softdevice-audio] Unable to obtain xfer align FATAL exiting");
+      esyslog("[softdevice-audio] Unable to obtain xfer align FATAL exiting");
       exit(EXIT_FAILURE);
     }
     dsyslog("[softdevice-audio] Hardware initialized");
@@ -308,6 +402,10 @@ void cAlsaAudioOut::SetVolume (int vol)
     setVol = (int) (((double)mixerMin+(mixerRange*volPercent))+0.5);
     snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_LEFT,setVol);
     snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_RIGHT,setVol);
+    if (snd_mixer_selem_has_playback_switch(mElem))
+    {
+      snd_mixer_selem_set_playback_switch_all(mElem, (vol) ? 1 : 0);
+    }
   }
 
   snd_mixer_close(mHandle);
@@ -324,6 +422,12 @@ cDummyAudioOut::cDummyAudioOut(cSetupStore *setupStore)
 /* ---------------------------------------------------------------------------
  */
 void cDummyAudioOut::Write(uchar *Data, int Length)
+{
+}
+
+/* ----------------------------------------------------------------------------
+ */
+void cDummyAudioOut::WriteAC3(uchar *Data, int Length)
 {
 }
 
