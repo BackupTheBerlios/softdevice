@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.24 2005/04/30 20:50:42 lucke Exp $
+ * $Id: video-dfb.c,v 1.25 2005/05/06 18:48:53 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -633,7 +633,7 @@ void cDFBVideoOut::SetParams()
          * set the default options to none
          */
         dlc.options = (DFBDisplayLayerOptions)( DLOP_NONE );
-
+#if 0
         if (desc.caps & DLCAPS_DEINTERLACING)
         {
           /* ------------------------------------------------------------------
@@ -641,7 +641,7 @@ void cDFBVideoOut::SetParams()
            */
           dlc.options = (DFBDisplayLayerOptions)( DLOP_DEINTERLACING );
         }
-
+#endif
         if (desc.caps & DLCAPS_ALPHACHANNEL)
         {
           /* ------------------------------------------------------------------

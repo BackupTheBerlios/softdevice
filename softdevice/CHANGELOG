@@ -1,4 +1,6 @@
 Changelog
+2005-05-06:
+    - video-dfb: disabled deinterlacing option of dfb.
 2005-05-01:
     - audio-out: some other preparations for ac3
                  selectiv set #channels to 2, to get 2ch downmix of 5.1
