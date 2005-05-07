@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.2 2005/05/07 09:07:57 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.3 2005/05/07 20:05:42 wachm Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -18,6 +18,7 @@
 #include <avformat.h>
 
 #include "../softdevice/softdevice.h"
+#include "PlayList.h"
 
 class cSoftPlayer : public cPlayer, cThread {
  private:
@@ -63,6 +64,8 @@ class cSoftPlayer : public cPlayer, cThread {
        { pause=false; };
 
        char * GetTitle(); 
+       virtual bool GetIndex(int &Current, int &Total, 
+        	bool SnapToIFrame = false);
        int GetDuration(); 
        int GetCurrPos();
  };
@@ -72,9 +75,18 @@ class cSoftControl: public cControl {
       cSoftPlayer *SoftPlayer;
       
       cSkinDisplayReplay *displayReplay;
-      bool visible;
+      cOsdMenu *privateMenu;
+      enum eOsdType {
+      	OsdNone,
+	OsdProgress,
+	OsdPrivMenu,
+	} OsdActive;
+
+      bool shouldStop;
+      cPlayList *playList;
   public:
      cSoftControl( const char * filename );
+     cSoftControl( cPlayList *PlayList );
      virtual ~cSoftControl();
      virtual void Hide();
      virtual eOSState ProcessKey(eKeys Key);

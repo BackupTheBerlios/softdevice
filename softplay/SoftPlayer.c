@@ -6,10 +6,11 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.2 2005/05/07 09:07:56 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.3 2005/05/07 20:05:42 wachm Exp $
  */
 
 #include "SoftPlayer.h"
+#include "softplay.h"
 
 #define PLDBG(out...) { printf("PLDBG: ");printf(out);}
 //#define PKTDBG(out...) {printf("PKTDBG: ");printf(out);}
@@ -153,7 +154,7 @@ void cSoftPlayer::Action() {
                    
                 // set video index if not yet set
                 if ( VideoIdx== -1 &&
-                     ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO )
+                     ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO )
                         VideoIdx=pkt.stream_index;
                
                 // skip packets which do not belont to the current streams
@@ -182,6 +183,8 @@ void cSoftPlayer::Action() {
 	   DeviceFlush(20000);
 	
 	DeviceClear();
+        // force a softdevice reset
+ 	SoftDevice->SetPlayMode( pmNone );
 	running=false;
 	PLDBG("Thread beendet : SoftPlayer \n");
 };
@@ -240,6 +243,12 @@ char *cSoftPlayer::GetTitle()  {
         } else return ic->filename; 
 };
 
+bool cSoftPlayer::GetIndex(int &Current, int &Total, bool SnapToIFrame ) {
+        Current=(int) SoftDevice->GetSTC()/(9*10000);
+        Total=ic->duration/AV_TIME_BASE;
+        return true;
+};
+        
 int cSoftPlayer::GetDuration() { 
         if (ic) 
                 return ic->duration/AV_TIME_BASE; 
@@ -257,9 +266,27 @@ int cSoftPlayer::GetCurrPos() {
 cSoftControl::cSoftControl(const char * filename ) : 
         cControl(new cSoftPlayer) {
   displayReplay=NULL;
-  visible=false;
+  OsdActive=OsdNone;
+  privateMenu=NULL;
+  displayReplay=NULL;
+  shouldStop=false;
+  playList=NULL;
   SoftPlayer = dynamic_cast<cSoftPlayer*> (player);
   SoftPlayer->OpenFile(filename);
+};
+
+cSoftControl::cSoftControl(cPlayList * PlayList ) : 
+        cControl(new cSoftPlayer) {
+  // FIXME delete displayReplay and privateMenu
+  displayReplay=NULL;
+  privateMenu=NULL;
+  
+  OsdActive=OsdNone;
+  shouldStop=false;
+  playList=PlayList;
+  playList->Shuffle();
+  SoftPlayer = dynamic_cast<cSoftPlayer*> (player);
+  SoftPlayer->OpenFile(PlayList->NextFile());
 };
 
 cSoftControl::~cSoftControl() {
@@ -271,18 +298,23 @@ cSoftControl::~cSoftControl() {
 };
 
 void cSoftControl::Hide() {
-	if (visible) {
+	if (OsdActive==OsdProgress) {
 		delete displayReplay;
 		displayReplay=NULL;
-		visible=false;
-	};
+		OsdActive=OsdNone;
+	} else if (OsdActive==OsdPrivMenu) {
+                delete privateMenu;
+                privateMenu=NULL;
+                OsdActive=OsdNone;
+        };
+                
 };
 
 void cSoftControl::ShowProgress() {
-	if (!visible) {
+	if ( OsdActive!=OsdProgress ) {
 	 	int TotalDuration=SoftPlayer->GetDuration();
 		displayReplay=Skins.Current()->DisplayReplay(false);
-		visible=true;
+		OsdActive=OsdProgress;
 		displayReplay->SetTitle(SoftPlayer->GetTitle());
 		displayReplay->SetProgress(SoftPlayer->GetCurrPos()
 		  ,TotalDuration);
@@ -298,41 +330,91 @@ void cSoftControl::ShowProgress() {
 eOSState cSoftControl::ProcessKey(eKeys Key) {
 	eOSState state = cOsdObject::ProcessKey(Key);
 
-	if (visible) {
-	  	displayReplay->SetProgress(SoftPlayer->GetCurrPos()
-		  ,SoftPlayer->GetDuration());
+        if ( state != osUnknown && state != osContinue ) {
+		PLDBG("cOsdObject::ProcessKey processed a key :-)\n");
+                 return state;
+        };
+
+	if ( OsdActive == OsdProgress ) {
+                int CurrentPos=SoftPlayer->GetCurrPos();
+	  	displayReplay->SetProgress(CurrentPos,
+		    SoftPlayer->GetDuration());
+               	char str[60];
+		sprintf(str,"%02d:%02d:%02d",CurrentPos/3600,
+			CurrentPos/60%60,CurrentPos%60);
+		displayReplay->SetCurrent(str);
 		PLDBG("CurrPos %d Duration %d\n",SoftPlayer->GetCurrPos()
 		  ,SoftPlayer->GetDuration());
 	};
 
-	if ( state != osUnknown) {
-		PLDBG("cOsdObject::ProcessKey processed a key :-)\n");
-		return state;
+
+	if ( !SoftPlayer->IsRunning()  ) {
+		PLDBG("SoftPlayer not runnig. Looking for next file\n");
+                char * nextFile;
+                if (!playList || !(nextFile=playList->NextFile())) {
+                        PLDBG("No playlist or no next file. Ending.\n");
+                        return osEnd;
+                };
+  		
+                SoftPlayer->OpenFile(nextFile);
+		SoftPlayer->Activate(true);
 	};
 
-	if ( !SoftPlayer->IsRunning() ) {
-		PLDBG("SoftPlayer not runnig. Ending\n");
-		return osEnd;
-	};
-	
+        if ( OsdActive == OsdPrivMenu  && privateMenu) {
+                state = privateMenu->ProcessKey(Key);
+                if (state == osUser3 ) {
+                        char * nextFile;
+                        SoftPlayer->Stop(); 
+                        if (!playList || !(nextFile=playList->NextFile())) {
+                                PLDBG("No playlist or no next file. Ending.\n");
+                                return osEnd;
+                        };
+
+                        SoftPlayer->OpenFile(nextFile);
+                        SoftPlayer->Activate(true);
+                };
+                if (state == osEnd) {
+                        PLDBG("private menu osEnd\n");
+                        delete privateMenu;
+                        privateMenu=NULL;
+                        OsdActive=OsdNone;
+                        return osContinue;
+                };
+                        
+                return state;
+        };
+
+
 	if(state==osUnknown) {
 		state = osContinue;
 
 		switch (Key) {
 			// Positioning:
-			//case kRed:     TimeSearch(); break;
+			case kRed:   
+                                if (Softplay->currList) {
+                                        Hide();
+                                        OsdActive=OsdPrivMenu;
+                                        privateMenu=Softplay->currList->EditList();
+                                        privateMenu->Display();
+                                        return osContinue;
+                                };
+                                break;
 			case kGreen|k_Repeat:
 			case kGreen:   SoftPlayer->SkipSeconds(-60); break;
 			case kYellow|k_Repeat:
 			case kYellow:  SoftPlayer->SkipSeconds( 60); break;
-			case kBlue:    SoftPlayer->Stop();  break;
+			case kBlue:    
+                                SoftPlayer->Stop(); 
+			        shouldStop=true;  
+                                return osEnd;
+                                break;
 			case kUp:
 			case kPlay:
 			              SoftPlayer->Play();  break;
 			case kDown:
 			case kPause:
 			              SoftPlayer->Pause();  break;
-			case kOk: if (visible)
+			case kOk: if (OsdActive==OsdProgress)
 					Hide();
 				  else ShowProgress(); 
 				  break;
