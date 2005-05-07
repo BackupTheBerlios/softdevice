@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.1 2005/04/11 16:03:32 wachm Exp $
+ * $Id: softplay.c,v 1.2 2005/05/07 09:07:57 wachm Exp $
  */
 
 #include <vdr/plugin.h>
@@ -12,15 +12,24 @@
 
 #include <dirent.h>
 
+#define NAME_LENGTH 120
+
 static const char *VERSION        = "0.0.1";
 static const char *DESCRIPTION    = "SoftPlay play media files with the softdevice";
 static const char *MAINMENUENTRY  = "SoftPlay";
+
 
 // --- cMenuDirectory -------------------------------------------
 
 class cMenuDirectory : public cOsdMenu {
 private:
-  char start_path[60];
+  char start_path[NAME_LENGTH];
+  struct DirEntry {
+      char name[NAME_LENGTH];
+      int type;
+  } * Entries;
+  int nEntries;
+      
 public:
   void PrepareDirectory(char * path);
   cMenuDirectory(void);
@@ -30,43 +39,78 @@ public:
 
 cMenuDirectory::cMenuDirectory(void) : cOsdMenu("Files") 
 {
+  Entries=NULL;
+  nEntries=0;
 };
 
 cMenuDirectory::~cMenuDirectory()
 {
+  delete Entries;
+  nEntries=0;
 };
 
 void cMenuDirectory::PrepareDirectory(char *path) 
 {
   struct dirent **namelist;
   int n;
+  char Name[60];
 
-  strncpy(start_path,path,60);
-  start_path[59]=0;
+  if (Entries) {
+  	delete Entries;
+	nEntries=0;
+  };
+
+  strncpy(start_path,path,NAME_LENGTH-1);
+  start_path[NAME_LENGTH]=0;
 
   n = scandir(path, &namelist, 0, alphasort);
-  if (n < 0)
+  if (n<0) {
 	  printf("scandir error\n");
-  else {
-	  while(n--) {
-		  Add(new cOsdItem(namelist[n]->d_name,osUnknown),false);
-		  //free(namelist[n]);
-		  
-	  }
-	  free(namelist);
+	  return;
+  };
+  Entries=new DirEntry[n];
+  nEntries=n;
+  
+  for (int i=0; i<n; i++) {
+  	  // fill Entries array and resolve symlinks
+	  snprintf(Entries[i].name,NAME_LENGTH,"%s/%s",
+	            start_path,namelist[i]->d_name);
+	  Entries[i].name[NAME_LENGTH-1]=0;
+	  Entries[i].type=namelist[i]->d_type;
+	  
+	  // add to menu using original names (symlinks!!)
+	  if (Entries[i].type == DT_DIR)  
+	    snprintf(Name,60," %4d [%s]",i+1,namelist[i]->d_name);
+	  else  snprintf(Name,60," %4d %s",i+1,namelist[i]->d_name);
+	  
+	  Add(new cOsdItem(strdup(Name),osUnknown),false);
+	  printf("Name %s type %d \n",Entries[i].name,Entries[i].type);
+
+          free(namelist[i]);	  
   }
+  free(namelist);
 };
 
 eOSState cMenuDirectory::ProcessKey(eKeys Key) {
   eOSState state = cOsdMenu::ProcessKey(Key);
-  char file[120];
+  int No=0;
 
   if (state == osUnknown) {
      switch (Key) {
        case kOk: 
-         sprintf(file,"%s/%s",start_path,Get(Current())->Text());
-         cControl::Launch(new cSoftControl(file));
-	 return osEnd;
+         sscanf(Get(Current())->Text(),"%d ",&No);
+	 No--;
+	 if (No>nEntries)
+	    break;
+	 if ( Entries[No].type == DT_REG ) { 
+		 cControl::Launch(new cSoftControl(Entries[No].name));
+		 return osEnd;
+	} else if ( Entries[No].type == DT_DIR ) { 
+		cMenuDirectory *Menu=new cMenuDirectory;
+		Menu->PrepareDirectory(Entries[No].name);
+		return AddSubMenu(Menu);
+	};
+	break;
        default:
          break;
      };

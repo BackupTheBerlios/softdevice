@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.1 2005/04/11 16:03:32 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.2 2005/05/07 09:07:57 wachm Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -18,17 +18,24 @@
 #include <avformat.h>
 
 #include "../softdevice/softdevice.h"
-//#include "../softdevice/mpeg2decoder.h"
 
 class cSoftPlayer : public cPlayer, cThread {
  private:
        bool running;
        bool reading;
+       bool pause;
+       bool forward;
+       int speed;
+       int skip;
+       int AudioIdx;
+       int VideoIdx;
+       
        int pollTimeouts;
+	cSoftDevice *SoftDevice;
        AVFormatContext *ic;
        AVFormatParameters ap;
-    
-       int skip;
+   	char title[120];
+   
        ePlayMode softPlayMode;
  public:
        cSoftPlayer();  
@@ -48,16 +55,30 @@ class cSoftPlayer : public cPlayer, cThread {
        ePlayMode GetPlayMode(AVFormatContext *IC); 
        
        void Stop();
+
+       inline void Pause()
+       { pause=true; };
+
+       inline void Play()
+       { pause=false; };
+
+       char * GetTitle(); 
+       int GetDuration(); 
+       int GetCurrPos();
  };
 
 class cSoftControl: public cControl {
   private:
       cSoftPlayer *SoftPlayer;
+      
+      cSkinDisplayReplay *displayReplay;
+      bool visible;
   public:
      cSoftControl( const char * filename );
      virtual ~cSoftControl();
-     virtual void Hide() {};
+     virtual void Hide();
      virtual eOSState ProcessKey(eKeys Key);
+     void ShowProgress();
 };
 
 
