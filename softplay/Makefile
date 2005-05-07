@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.1 2005/04/11 16:03:32 wachm Exp $
+# $Id: Makefile,v 1.2 2005/05/07 20:17:30 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -48,7 +48,7 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = $(PLUGIN).o SoftPlayer.o
+OBJS = $(PLUGIN).o SoftPlayer.o PlayList.o
 
 LIBS = -lavformat #-lvdr-softdevice -L$(VDRDIR)/PLUGINS/src/softdevice
 
