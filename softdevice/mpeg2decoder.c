@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.32 2005/05/01 10:24:02 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.33 2005/05/08 21:39:39 lucke Exp $
  */
 
 #include <math.h>
@@ -1316,8 +1316,8 @@ void cMpeg2Decoder::TrickSpeed(int trickSpeed)
     if (aout)
       aout->Clear();
     AudioIdx=DONT_PLAY;
-  } else AudioIdx=NO_STREAM;
-  
+  } else if (AudioIdx==DONT_PLAY)
+    AudioIdx=NO_STREAM;
   Play();
   if (running)
   {

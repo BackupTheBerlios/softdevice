@@ -1,4 +1,7 @@
 Changelog
+2005-05-08:
+    - fix for pause-play transition of softplay, does improve same transiton
+      of normal vdr recording playback too.
 2005-05-06:
     - video-dfb: disabled deinterlacing option of dfb.
 2005-05-01:
