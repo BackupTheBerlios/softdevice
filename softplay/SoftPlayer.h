@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.3 2005/05/07 20:05:42 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.4 2005/05/09 21:40:05 wachm Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -57,6 +57,8 @@ class cSoftPlayer : public cPlayer, cThread {
        
        void Stop();
 
+       inline void TogglePause()
+       { pause=!pause; };
        inline void Pause()
        { pause=true; };
 

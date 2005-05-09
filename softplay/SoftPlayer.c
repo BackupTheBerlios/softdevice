@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.3 2005/05/07 20:05:42 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.4 2005/05/09 21:40:05 wachm Exp $
  */
 
 #include "SoftPlayer.h"
@@ -284,9 +284,11 @@ cSoftControl::cSoftControl(cPlayList * PlayList ) :
   OsdActive=OsdNone;
   shouldStop=false;
   playList=PlayList;
-  playList->Shuffle();
+  playList->PrepareForPlayback();
   SoftPlayer = dynamic_cast<cSoftPlayer*> (player);
-  SoftPlayer->OpenFile(PlayList->NextFile());
+  char *nextfile=PlayList->NextFile();
+  if (nextfile)
+	  SoftPlayer->OpenFile(nextfile);
 };
 
 cSoftControl::~cSoftControl() {
@@ -373,7 +375,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
                         SoftPlayer->OpenFile(nextFile);
                         SoftPlayer->Activate(true);
                 };
-                if (state == osEnd) {
+                if (state == osEnd || state == osBack) {
                         PLDBG("private menu osEnd\n");
                         delete privateMenu;
                         privateMenu=NULL;
@@ -394,7 +396,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
                                 if (Softplay->currList) {
                                         Hide();
                                         OsdActive=OsdPrivMenu;
-                                        privateMenu=Softplay->currList->EditList();
+                                        privateMenu=Softplay->currList->ReplayList();
                                         privateMenu->Display();
                                         return osContinue;
                                 };
@@ -408,11 +410,11 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 			        shouldStop=true;  
                                 return osEnd;
                                 break;
+			case kPause: SoftPlayer->TogglePause(); break;
 			case kUp:
 			case kPlay:
 			              SoftPlayer->Play();  break;
 			case kDown:
-			case kPause:
 			              SoftPlayer->Pause();  break;
 			case kOk: if (OsdActive==OsdProgress)
 					Hide();

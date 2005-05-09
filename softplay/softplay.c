@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.3 2005/05/07 20:14:01 wachm Exp $
+ * $Id: softplay.c,v 1.4 2005/05/09 21:40:05 wachm Exp $
  */
 
 
@@ -13,7 +13,7 @@
 
 #include <dirent.h>
 
-#define NAME_LENGTH 120
+#define NAME_LENGTH 200
 
 static const char *VERSION        = "0.0.1";
 static const char *DESCRIPTION    = "SoftPlay play media files with the softdevice";
@@ -31,6 +31,7 @@ private:
       int type;
   } * Entries;
   int nEntries;
+  int keySelNo;
       
 public:
   void PrepareDirectory(char * path);
@@ -43,6 +44,7 @@ cMenuDirectory::cMenuDirectory(void) : cOsdMenu("Files")
 {
   Entries=NULL;
   nEntries=0;
+  keySelNo=0;
   SetHelp(NULL,"Play","Add To List","Play List");
 };
 
@@ -57,6 +59,8 @@ void cMenuDirectory::PrepareDirectory(char *path)
   struct dirent **namelist;
   int n;
   char Name[60];
+  char Title[60];
+
 
   if (Entries) {
   	delete Entries;
@@ -65,6 +69,10 @@ void cMenuDirectory::PrepareDirectory(char *path)
 
   strncpy(start_path,path,NAME_LENGTH-1);
   start_path[NAME_LENGTH]=0;
+
+  //FIXME find a clever way to cut down the directory name
+  snprintf(Title,60,"Files: %s",start_path);
+  SetTitle(Title);
 
   n = scandir(path, &namelist, 0, alphasort);
   if (n<0) {
@@ -115,6 +123,18 @@ eOSState cMenuDirectory::ProcessKey(eKeys Key) {
 		return state;
 
 	switch (Key) {
+                case k0 ... k9:
+                        {
+                                keySelNo*=10;keySelNo+=(Key - k0);
+                                int pos=1000;
+                                while (keySelNo>nEntries) {
+                                        keySelNo%=pos;pos/=10;
+                                };
+                                SetCurrent(Get(keySelNo-1));
+                                Display();
+                                printf("key %d keySelNo %d\n",(Key-k0),keySelNo);
+                                break;
+                        }
 		case kOk: 
 			sscanf(Get(Current())->Text(),"%d ",&No);
 			No--;
@@ -140,7 +160,8 @@ eOSState cMenuDirectory::ProcessKey(eKeys Key) {
 			} else if ( Entries[No].type == DT_DIR ) {
 				printf("create playlist %s\n",Entries[No].name);
 				cPlayList *Playlist=new cPlayList;
-				Playlist->AddDir(Entries[No].name,true);
+				Playlist->AddDir(Entries[No].name,
+					Entries[No].title,true);
                                 Softplay->SetTmpCurrList(Playlist);
 				cControl::Launch(
 				  	new cSoftControl(Playlist));
@@ -159,7 +180,8 @@ eOSState cMenuDirectory::ProcessKey(eKeys Key) {
                                         Softplay->SetTmpCurrList(PlayList);
                                 };
                                 if (Entries[No].type == DT_DIR)
-                                        PlayList->AddDir(Entries[No].name,true);
+                                        PlayList->AddDir(Entries[No].name,
+						Entries[No].title,true);
                                 else if (Entries[No].type == DT_REG)
                                         PlayList->AddFile(Entries[No].name,
                                                         Entries[No].title);
@@ -220,7 +242,7 @@ eOSState cMainMenu::ProcessKey(eKeys Key) {
             return AddSubMenu(Menu);
             break;
 
-    case osUser2: return AddSubMenu((*currList)->EditList());
+    case osUser2: return AddSubMenu((*currList)->ReplayList());
             break;
     case osUser3: cControl::Launch(
 				  new cSoftControl(*currList));
