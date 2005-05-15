@@ -1,4 +1,6 @@
 Changelog
+2005-05-15:
+    - offer selection of 14:9 mode
 2005-05-08:
     - fix for pause-play transition of softplay, does improve same transiton
       of normal vdr recording playback too.

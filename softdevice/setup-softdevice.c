@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.16 2005/04/30 20:50:42 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.17 2005/05/15 09:53:24 lucke Exp $
  */
 
 #include "video.h"
@@ -20,9 +20,11 @@ char *crop_str [] = {
         "none",
         "4:3",
         "16:9",
+        "14:9",
         NULL
      };
-#define CROPMODEMAX 2
+#define CROPMODEMAX 3
+#define CROPMODES (CROPMODEMAX+1)
 
 /* ---------------------------------------------------------------------------
  */
@@ -188,7 +190,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
             deint_str [deintMethod]);
   } else if(!strcasecmp(Name,"CropMode")) {
     cropMode = atoi(Value);
-    cropMode = clamp (0, cropMode, 2);
+    cropMode = clamp (0, cropMode, CROPMODEMAX);
     fprintf (stderr, "[setup-softdevice] cropping mode set to %d (%s)\n",
              cropMode,
              crop_str [cropMode]);
@@ -335,7 +337,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 
   Add(new cMenuEditStraItem(tr("CropMode"),
                             &data->cropMode,
-                            3,
+                            CROPMODES,
                             crop_str));
 
   Add(new cMenuEditStraItem(tr("CropModeToggleKey"),
