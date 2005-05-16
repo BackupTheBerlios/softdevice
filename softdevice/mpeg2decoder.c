@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.33 2005/05/08 21:39:39 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.34 2005/05/16 15:54:48 wachm Exp $
  */
 
 #include <math.h>
@@ -396,7 +396,6 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   clock = Clock;
 
   // init A-V syncing variables
-  frametime=DEFAULT_FRAMETIME;
   syncOnAudio=1;
   offset=0;
   delay=0;
@@ -404,7 +403,8 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   syncTimer = new cSyncTimer (emRtcTimer);
   syncTimer->Reset();
 
-  frametime = DEFAULT_FRAMETIME * Trickspeed;
+  default_frametime = DEFAULT_FRAMETIME;
+  trickspeed = Trickspeed;
   syncOnAudio = ( Trickspeed == 1);
 
   picture=avcodec_alloc_frame();
@@ -444,6 +444,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
         context->coded_frame->coded_picture_number!=lastCodedPictNo
         && lastPTS != (int64_t) AV_NOPTS_VALUE ) {
       pts_values[lastPTSidx].pts = lastPTS;
+      pts_values[lastPTSidx].duration = lastDuration;
       pts_values[lastPTSidx].coded_frame_no = 
         context->coded_frame->coded_picture_number;
       lastPTSidx = (lastPTSidx+1)%NO_PTS_VALUES;
@@ -455,8 +456,13 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       lastPTS = AV_NOPTS_VALUE;
     };
     
-    if (pkt->pts != (int64_t) AV_NOPTS_VALUE)
+    if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
          lastPTS=pkt->pts;
+	 lastDuration=pkt->duration;
+	 if (lastDuration)
+	 	default_frametime=lastDuration/1000;
+		
+    };
 
     if (!got_picture)
       continue;
@@ -559,26 +565,26 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 
   // calculate pts correction. Max. correction is 1/10 frametime.
   pts_corr = offset * 10;
-  if (pts_corr > frametime*100*2 )
-    pts_corr = frametime*100*2;
-  else if (pts_corr < -frametime*100*2)
-    pts_corr =-frametime*100*2;
+  if (pts_corr > frametime()*100*2 )
+    pts_corr = frametime()*100*2;
+  else if (pts_corr < -frametime()*100*2)
+    pts_corr =-frametime()*100*2;
 
   // calculate delay
-  delay += ( frametime *1000 - pts_corr ) ;
+  delay += ( frametime() *1000 - pts_corr ) ;
   // update video pts 
-  pts += frametime*10;
+  pts += frametime()*10;
   // so that pts - delay/1000 is always the current PTS
  
-  if (delay > 2*frametime*1000)
-    delay = 2*frametime*1000;
-  else if (delay < -2*frametime*1000)
-    delay = -2*frametime*1000;    
+  if (delay > 2*frametime()*1000)
+    delay = 2*frametime()*1000;
+  else if (delay < -2*frametime()*1000)
+    delay = -2*frametime()*1000;    
 
 
-  if (offset >  8*frametime*10)
+  if (offset >  8*frametime()*10)
      hurry_up=1;
-  else if ( (offset < 2*frametime*10) && (hurry_up > 0) )
+  else if ( (offset < 2*frametime()*10) && (hurry_up > 0) )
      hurry_up=0;
 
 #if 1
@@ -629,7 +635,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 
 void cVideoStreamDecoder::TrickSpeed(int Speed)
 {
-  frametime = DEFAULT_FRAMETIME * Speed;
+  trickspeed = Speed;
   syncOnAudio = ( Speed == 1);
 }
 

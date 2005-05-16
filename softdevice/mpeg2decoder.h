@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.21 2005/05/01 10:24:02 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.22 2005/05/16 15:54:48 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -166,10 +166,12 @@ class cVideoStreamDecoder : public cStreamDecoder {
     struct {
        int coded_frame_no;
        int64_t pts;
+       int duration;
     } pts_values[NO_PTS_VALUES];
     int lastPTSidx;
     int lastCodedPictNo;
     int64_t lastPTS;
+    int lastDuration;
     AVFrame             *picture;
     AVPicture           avpic_src, avpic_dest;
 
@@ -189,7 +191,10 @@ class cVideoStreamDecoder : public cStreamDecoder {
     cSyncTimer         *syncTimer;
     int                offset;
     int                delay;
-    int                frametime;
+    int                trickspeed;
+    int                default_frametime;
+    inline int frametime() 
+    {return trickspeed*default_frametime;};
 
     uchar   *allocatePicBuf(uchar *pic_buf);
     void    deintLibavcodec(void);
