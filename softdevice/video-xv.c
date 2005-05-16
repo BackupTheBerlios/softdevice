@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.22 2005/04/30 20:50:42 lucke Exp $
+ * $Id: video-xv.c,v 1.23 2005/05/16 15:53:12 wachm Exp $
  */
 
 #include <unistd.h>
@@ -614,9 +614,6 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
   } else {
     lwidth = dwidth = XV_DEST_WIDTH_16_9;
   }
-  //start osd refresh thread
-  active=true;
-  Start();
 }
 
 /* ---------------------------------------------------------------------------

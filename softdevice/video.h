@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.10 2005/05/01 10:24:02 lucke Exp $
+ * $Id: video.h,v 1.11 2005/05/16 15:53:13 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -128,12 +128,14 @@ public:
 
     uint8_t *PixelMask;
 #if VDRVERSNUM >= 10307
+    int Osd_changed;
     uint8_t *OsdPy;
     uint8_t *OsdPu; 
     uint8_t *OsdPv;
     uint8_t *OsdPAlphaY; 
     uint8_t *OsdPAlphaUV;
     // buffers for software osd alpha blending 
+    void init_OsdBuffers();
     
     uint16_t OsdHeight;
     uint16_t OsdWidth;

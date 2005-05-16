@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.6 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-vidix.c,v 1.7 2005/05/16 15:53:12 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -205,10 +205,6 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
 
        vdlSetGrKeys(vidix_handler, &gr_key);
     }
-  //start osd refresh thread
-  active=true;
-  Start();
-
 }
 
 /* ----------------------------------------------------------------------------

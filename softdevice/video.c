@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.16 2005/05/01 10:24:02 lucke Exp $
+ * $Id: video.c,v 1.17 2005/05/16 15:53:12 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -24,9 +24,9 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   sxoff = syoff = lxoff = lyoff = 0;
   PixelMask=NULL;
   this->setupStore=setupStore;
- //start thread
- // active=true;
- // Start();
+  //start osd thread
+  active=true;
+  Start();
 };
 
 cVideoOut::~cVideoOut()
@@ -37,8 +37,32 @@ cVideoOut::~cVideoOut()
 }
 
 /*----------------------------------------------------------------------------*/
+void cVideoOut::init_OsdBuffers()
+{
+    int Ysize=(OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
+    if (!OsdPy)
+       OsdPy=(uint8_t*)malloc(Ysize+8);
+    if (!OsdPAlphaY) 
+    {
+       OsdPAlphaY=(uint8_t*)malloc(Ysize+8);
+       memset(OsdPAlphaY,0,Ysize);
+    };
+    if (!OsdPu)
+       OsdPu=(uint8_t*)malloc(Ysize/4+8);
+    if (!OsdPv)
+       OsdPv=(uint8_t*)malloc(Ysize/4+8);
+    if (!OsdPAlphaUV)
+    {
+       OsdPAlphaUV=(uint8_t*)malloc(Ysize/4+8);
+       memset(OsdPAlphaUV,0,Ysize/4);
+    }
+}; 
+
+/*----------------------------------------------------------------------------*/
 void cVideoOut::Action() 
 {
+  init_OsdBuffers();
+  ClearOSD();
 #if VDRVERSNUM >= 10307
   while(active)
   {
@@ -51,11 +75,16 @@ void cVideoOut::Action()
     
     changeMode=(current_osdMode != setupStore->osdMode);
     newOsdMode=setupStore->osdMode;
-    // if software osd has not been shown for some time fall back
-    // to pseudo osd..
-    if ( OsdRefreshCounter > 80 && setupStore->osdMode == OSDMODE_SOFTWARE ) {
-        changeMode= (current_osdMode != OSDMODE_PSEUDO);
-        newOsdMode=OSDMODE_PSEUDO;
+    // if software osd has not been shown for some time or
+    // no signal 
+    if ( OsdRefreshCounter > 80 ||
+         (setupStore->osdMode == OSDMODE_SOFTWARE &&
+	  OsdRefreshCounter>10 && Osd_changed ) ) {
+	    osdMutex.Lock();
+	    YUV(OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight, 
+			    OSD_FULL_WIDTH, OSD_FULL_WIDTH/2); 
+	    Osd_changed=0;
+	    osdMutex.Unlock();
     }
     
     GetOSDDimension(newOsdWidth,newOsdHeight);
@@ -283,26 +312,8 @@ void cVideoOut::OSDStart()
   //fprintf (stderr, "+");
 
 #if VDRVERSNUM >= 10307
-  if (current_osdMode==OSDMODE_SOFTWARE) 
-  {
-    int Ysize=(OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
-    if (!OsdPy)
-       OsdPy=(uint8_t*)malloc(Ysize+8);
-    if (!OsdPAlphaY) 
-    {
-       OsdPAlphaY=(uint8_t*)malloc(Ysize+8);
-       memset(OsdPAlphaY,0,Ysize);
-    };
-    if (!OsdPu)
-       OsdPu=(uint8_t*)malloc(Ysize/4+8);
-    if (!OsdPv)
-       OsdPv=(uint8_t*)malloc(Ysize/4+8);
-    if (!OsdPAlphaUV)
-    {
-       OsdPAlphaUV=(uint8_t*)malloc(Ysize/4+8);
-       memset(OsdPAlphaUV,0,Ysize/4);
-    }
-  }
+  if (current_osdMode==OSDMODE_SOFTWARE)
+  	init_OsdBuffers();
 
   int newX,newY;
   GetOSDDimension(newX,newY);
@@ -352,13 +363,12 @@ void cVideoOut::OpenOSD(int X, int Y)
 void cVideoOut::CloseOSD()
 {
   osdMutex.Lock();
-  if (OsdPAlphaY)
-       memset(OsdPAlphaY,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
-  if (OsdPAlphaUV)
-       memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
 
+  ClearOSD();
+  
   osd=NULL;
   OSDpresent=false;
+  Osd_changed=1;
   osdMutex.Unlock();
 }
 
@@ -366,13 +376,19 @@ void cVideoOut::CloseOSD()
  */
 void cVideoOut::ClearOSD()
 {
-  if (current_osdMode==OSDMODE_SOFTWARE) 
+  //if (current_osdMode==OSDMODE_SOFTWARE) 
   {
+    if (OsdPy)
+       memset(OsdPy,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
+    if (OsdPu)
+       memset(OsdPu,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
+    if (OsdPv)
+       memset(OsdPv,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
     if (OsdPAlphaY)
        memset(OsdPAlphaY,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
     if (OsdPAlphaUV)
        memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
-  };
+   };
 };
 
 /* ---------------------------------------------------------------------------
@@ -474,7 +490,7 @@ void cVideoOut::Draw(cBitmap *Bitmap,
     // if bitmap didn't change, return
     if (!Bitmap->Dirty(x1,y1,x2,y2) && !OSDdirty )
       return;
-
+  
 // printf("dirty area (%d,%d) (%d,%d) \n",x1,y1,x2,y2);
   
   if (OSDdirty)
@@ -595,6 +611,7 @@ void cVideoOut::ToYUV(cBitmap *Bitmap)
     if (!Bitmap->Dirty(x1,y1,x2,y2) && !OSDdirty)
       return;
     
+  Osd_changed=1;
    //printf( "----------------------------\nOSDWidth %d %d Bitmap %d %d \n",
    //     OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height()); 
    //printf("dirty area (%d,%d) (%d,%d) \n",x1,y1,x2,y2);
