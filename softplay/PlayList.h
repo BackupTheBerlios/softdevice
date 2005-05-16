@@ -6,20 +6,33 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.h,v 1.2 2005/05/09 21:40:05 wachm Exp $
+ * $Id: PlayList.h,v 1.3 2005/05/16 19:07:54 wachm Exp $
  */
 
 #ifndef __PLAYLIST_H__
 #define __PLAYLIST_H__
 
 #include "vdr/osdbase.h"
+#include "softplay.h"
 
-//#define STR_LENGTH  120
-#define STR_LENGTH  200
-#define SHORT_STR   60
 #define MAX_ITEMS   2000
 
+class cPlayListItem;
 class cPlayList;
+
+struct sIdx {
+        cPlayList *Album;
+        cPlayListItem *Item;
+        int32_t Hash;
+};
+                
+struct sItemIdx {
+        int currShuffleIdx;
+        int nIdx;
+        sIdx *Idx;
+        int nAlbum;
+        sIdx *Album;
+};      
 
 class cPlayListItem {
         friend class cPlayList;
@@ -35,7 +48,6 @@ class cPlayListItem {
 
                 void InsertSelfIntoList(cPlayListItem *Next,
                                 cPlayListItem *previous);
-                void RemoveSelfFromList();
 
                 inline char * GetName()
                 { return name; };
@@ -43,7 +55,7 @@ class cPlayListItem {
                 inline char * GetFilename()
                 { return filename; };
 
-                virtual int BuildIdx(int startIdx=0);
+                virtual void BuildIdx(sItemIdx *shuffleIdx);
                         
                 inline int GetIdx()
                 { return idx; };
@@ -103,27 +115,39 @@ class cPlayList : public cPlayListItem {
 private:
         cPlayListItem *first;
         cPlayListItem *last;
-        int currShuffleIdx;
-        int currItemIdx;
-        int minIdx;
-        int maxIdx;
-        int nItems;
-	int *shuffleIdx;
+        bool shuffleIdxOwner;
+        sItemIdx *shuffleIdx;
+        //int minIdx;
+        //int maxIdx;
+        //int nItems;
+	//int *shuffleIdx;
         
   public:
-        cPlayList(char *Filename=NULL, char *Name=NULL);
+        cPlayList(char *Filename=NULL, char *Name=NULL,
+                        sItemIdx *shuffleIdx=NULL);
         virtual ~cPlayList();
 
-        virtual int BuildIdx(int startIdx=0);
+        virtual void BuildIdx(sItemIdx *ShuffleIdx);
+        inline void BuildIdx()
+        {BuildIdx(shuffleIdx);}; 
 
         void PrepareForPlayback();
         
         virtual cPlayListItem *GetItemByIndex(int Index);
-        inline cPlayListItem *GetShuffledItemByIndex(int Index)
-        { return GetItemByIndex(shuffleIdx[Index]); };
+        inline cPlayListItem *GetShuffledItemByIndex(int Index) {   
+                if (!shuffleIdx) return NULL;
+                return shuffleIdx->Idx[Index].Item; 
+        };
+        cPlayListItem *GetItemByName(const char *name);
+        cPlayListItem *GetAlbumByName(const char *name);
+        int GetIndexByItem(const cPlayListItem *Item);
 
-        void RemoveItemFromList(cPlayListItem *Item);
+  private:
+        bool RemoveItemFromList(cPlayListItem *Item);
+  public:
+        bool RemoveItem(cPlayListItem *Item);
         void AddItemAtEnd(cPlayListItem *Item);
+	cPlayList *GetItemAlbum(cPlayListItem *Item);
         
         bool AddFile(char * Filename,char *Title = NULL);
 
@@ -134,10 +158,14 @@ private:
         bool ScanDir(char * dirname, bool recursive = true);
         bool AddDir(char * dirname,char *Title = NULL, bool recursive = true);
 
-	inline cOsdMenu *ReplayList() {return new cReplayList(this);};
 	void Shuffle();
-	void CleanShuffleIdx();
+	//void CleanShuffleIdx();
+        char *CurrFile();
         char *NextFile();
+	char *PrevFile();
+	char *NextAlbumFile();
+	char *PrevAlbumFile();
+	
 };
         
         

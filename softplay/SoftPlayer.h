@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.4 2005/05/09 21:40:05 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.5 2005/05/16 19:07:54 wachm Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -26,10 +26,13 @@ class cSoftPlayer : public cPlayer, cThread {
        bool reading;
        bool pause;
        bool forward;
+       bool new_forward;
        int speed;
+       int new_speed;
        int skip;
        int AudioIdx;
        int VideoIdx;
+       int64_t fast_STC;
        
        int pollTimeouts;
 	cSoftDevice *SoftDevice;
@@ -51,7 +54,19 @@ class cSoftPlayer : public cPlayer, cThread {
        inline void SkipSeconds(int Skip) 
        {skip=Skip;};
 
+       inline void SetSpeed(int Speed)
+       {new_speed=Speed;};
+       inline void SetForward(bool Forward)
+       {new_forward=Forward;};
+
+       inline void FastForward()
+       {new_speed=0;new_forward=true;};
+
+       inline void FastBackward()
+       {new_speed=0;new_forward=false;};
+
        void OpenFile(const char *filename);
+       void PlayFile(const char *filename);
        
        ePlayMode GetPlayMode(AVFormatContext *IC); 
        
@@ -63,11 +78,13 @@ class cSoftPlayer : public cPlayer, cThread {
        { pause=true; };
 
        inline void Play()
-       { pause=false; };
+       { pause=false; new_speed=-1;new_forward=true; };
 
        char * GetTitle(); 
        virtual bool GetIndex(int &Current, int &Total, 
         	bool SnapToIFrame = false);
+       virtual bool GetReplayMode(bool &Play, bool &Forward, int &Speed)
+       {Play=!pause;Forward=forward;Speed=speed;return true;};
        int GetDuration(); 
        int GetCurrPos();
  };
@@ -86,6 +103,7 @@ class cSoftControl: public cControl {
 
       bool shouldStop;
       cPlayList *playList;
+      int32_t currTitleHash;
   public:
      cSoftControl( const char * filename );
      cSoftControl( cPlayList *PlayList );

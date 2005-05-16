@@ -6,8 +6,9 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.2 2005/05/09 21:40:05 wachm Exp $
+ * $Id: PlayList.c,v 1.3 2005/05/16 19:07:54 wachm Exp $
  */
+#include "softplay.h"
 #include "PlayList.h"
 #include <string.h>
 #include <dirent.h>
@@ -37,7 +38,6 @@ cPlayListItem::cPlayListItem(char *Filename, char *Name) {
 };
 
 cPlayListItem::~cPlayListItem() {
-        RemoveSelfFromList();
 };
 
 void cPlayListItem::InsertSelfIntoList(cPlayListItem *Next,
@@ -50,19 +50,9 @@ void cPlayListItem::InsertSelfIntoList(cPlayListItem *Next,
                 previous->next=this;
 };
 
-void cPlayListItem::RemoveSelfFromList() {
-        LISTDEB("RemoveSelfFromList next %p previous %p \n",next,previous);
-        if (next) 
-                next->previous=previous;
-        if (previous) 
-                previous->next=next;
-        next=NULL;
-        previous=NULL;
-};
 
-int cPlayListItem::BuildIdx(int startIdx) {
-        idx=startIdx;
-        return startIdx+1;
+void cPlayListItem::BuildIdx(sItemIdx *ShuffleIdx) {
+        idx=ShuffleIdx->nIdx;
 };
 
 // ----cEditList------------------------------------------------------------
@@ -75,7 +65,7 @@ cEditList::cEditList(cPlayList * List) : cOsdMenu(List->ListName) {
                    osUnknown),false);
                 Item=Item->GetNext();
         };
-        SetHelp("Replay","Add Files","Delete","Stop");
+        SetHelp(NULL,"(Add Files)","Delete","Stop");
         lastActivity=time(NULL);
 };
 
@@ -87,39 +77,45 @@ eOSState cEditList::ProcessKey(eKeys Key) {
         if (state != osUnknown ) 
                 return state;
 
-        switch (state) {
-                cPlayList *Item;
-                default: switch (Key) {
-                                 case kOk:
-                                         LISTDEB("Current %d GetItem %p\n",Current(),playList->GetItem(Current()));
-                                         Item=dynamic_cast<cPlayList*>
-                                                 (playList->GetItem(Current()));
-                                         LISTDEB("Item %p\n",Item);
-                                         
-                                         if (Item) {
-                                                 cEditList *Menu=new cEditList(Item);
-                                                 return AddSubMenu(Menu);
-                                         };
-                                         state = osContinue;
-                                         break;
-                                 case kRed:
-                                         state= osBack;
-                                         break;
-                                 case kBack:
-                                         state= osBack;
-                                         break;
-				 case kYellow:
-				 	 LISTDEB("Del current\n");
-					 Del(Current());
-					 playList->RemoveItemFromList(
-					 	playList->GetItem(Current()));
-					 Display();
-					 state=osContinue;
-					 break;
+        cPlayList *List;
+        cPlayListItem *Item;
+        switch (Key) {
+                case kOk:
+                        LISTDEB("Current %d GetItem %p\n",Current(),playList->GetItem(Current()));
+                        Item=playList->GetItem(Current());
+                        List=dynamic_cast<cPlayList*>(Item);
+                        LISTDEB("Item %p\n",Item);
 
-                                 default:    
-                                         break;
-                         }
+                        if (List) {
+                                cEditList *Menu=new cEditList(List);
+                                return AddSubMenu(Menu);
+                        }  else {
+                                // skip to current track
+                                playList->shuffleIdx->currShuffleIdx = 
+                                        playList->GetIndexByItem(Item);
+                                state = PLAY_CURR_FILE;
+                        };
+                        break;
+                case kBack:
+                        state= osBack;
+                        break;
+                 case kBlue:
+                        state= osEnd;
+                        break;
+                 case kYellow:
+                        LISTDEB("Del current %d (idx: %d): %s\n",
+                                        Current(),playList->GetItem(Current())->GetIdx(),
+                                        playList->GetItem(Current())->GetName() );
+                        playList->RemoveItem(
+                                        playList->GetItem(Current()));
+                        printf("Remove finished\n");
+                        Del(Current());
+                        Display();
+                        state=osContinue;
+                        break;
+
+                default:    
+                        break;
         }
         return state;
 }
@@ -127,9 +123,9 @@ eOSState cEditList::ProcessKey(eKeys Key) {
 // ----cReplayList------------------------------------------------------------
 cReplayList::cReplayList(cPlayList * List) : cOsdMenu(List->ListName) {
         playList=List;
-        SetHelp("Edit","Save","???","Stop");
-        SetCurrent(Get(playList->currShuffleIdx));
+        SetHelp(NULL,"(Add)","Delete","Stop");
         RebuildList();
+        SetCurrent(Get(playList->shuffleIdx->currShuffleIdx));
         lastActivity=time(NULL);
 };
 
@@ -137,10 +133,12 @@ cReplayList::~cReplayList() {
 };
 
 void cReplayList::RebuildList() {
-        LISTDEB("RebuildList\n");
+        int nItems=playList->GetNoItemsRecursive();
+        LISTDEB("RebuildList nItems %d nIdx %d \n",
+                        nItems,playList->shuffleIdx->nIdx);
 
         cPlayListItem * Item;
-        for (int i = 0 ; i<playList->GetNoItemsRecursive(); i++) {
+        for (int i = 0 ; i<nItems; i++) {
 		Item=playList->GetShuffledItemByIndex(i);
                 if (!Item) {
                         printf("Error getting all files for list index %d shuffleIdx %d\n",
@@ -148,8 +146,8 @@ void cReplayList::RebuildList() {
                         continue;
                 };
                 
-		LISTDEB("Add item %d shuffleIdx %d: %s\n",
-                                i,playList->shuffleIdx[i],Item->GetName());
+		LISTDEB("Add item %d (%p)  %s\n",
+                                i,Item,Item->GetName());
                 Add(new cOsdItem(Item->GetName(),
                    osUnknown),false);
         };
@@ -160,6 +158,7 @@ void cReplayList::UpdateStatus() {
         int current;
         int total;
         char Status[60];
+        char Name[60];
         
         if (!cControl::Control() || 
                         !cControl::Control()->GetIndex(current,total))
@@ -168,19 +167,20 @@ void cReplayList::UpdateStatus() {
         snprintf(Status,60,"Time %02d:%02d:%02d/%02d:%02d:%02d Title %d/%d",
                         current/3600,current/60%60,current%60,
                         total/3600,total/60%60,total%60,
-                        playList->currShuffleIdx+1,playList->nItems);
+                        playList->shuffleIdx->currShuffleIdx+1,playList->shuffleIdx->nIdx);
         SetStatus(Status);
 
-        if (displayedCurrIdx != playList->currShuffleIdx){
+        if (displayedCurrIdx != playList->shuffleIdx->currShuffleIdx){
                 cPlayListItem *Item=playList->GetShuffledItemByIndex(
-                                playList->currShuffleIdx);
+                                playList->shuffleIdx->currShuffleIdx);
                 if (Item) {
-                        snprintf(Status,60,"%s: %30s",playList->ListName,
-                                                Item->GetName());
+                        PrintCutDownString(Name,Item->GetName(),30);
+                        snprintf(Status,60,"%s: %s",playList->ListName,
+                                                Name);
                         SetTitle(Status);
                         Display();
-                        displayedCurrIdx=playList->currShuffleIdx;
-                } else printf("Didn't get currShuffleIdx %d!\n",playList->currShuffleIdx);
+                        displayedCurrIdx=playList->shuffleIdx->currShuffleIdx;
+                } else printf("Didn't get currShuffleIdx %d!\n",playList->shuffleIdx->currShuffleIdx);
         };
 };
 
@@ -193,38 +193,54 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
                 return state;
 
         if ( lastListItemCount != playList->GetNoItemsRecursive() ) {
-                playList->CleanShuffleIdx();
+                //playList->CleanShuffleIdx();
                 Clear();
                 RebuildList();
+                Display();
         };
         
-        if (Current() != playList->currShuffleIdx && 
+        if (Current() != playList->shuffleIdx->currShuffleIdx && 
                         time(NULL) - lastActivity > 120 ) {
                 LISTDEB("SetCurrent current title %d  time %d lastActivity %d\n",
-                                playList->currShuffleIdx,time(NULL),lastActivity);
-                SetCurrent(Get(playList->currShuffleIdx));
+                                playList->shuffleIdx->currShuffleIdx,time(NULL),lastActivity);
+                SetCurrent(Get(playList->shuffleIdx->currShuffleIdx));
                 Display();
         };
 
-        switch (state) {
-                default: switch (Key) {
-                                 case kOk:
-                                         // skip to current track
-                                         playList->currShuffleIdx = Current()-1;
-                                         state = osUser3;
-                                         // want to have automatic track change
-                                         lastActivity=time(NULL)-300;
-                                         break;
-                                 case kRed:
-                                         state= AddSubMenu(new cEditList(playList));
-                                         break;
-                                 case kBack:
-                                         state= osBack;
-                                         break;
+        cPlayListItem *Item;
+        switch (Key) {
+                case kOk:
+                        // skip to current track
+                        playList->shuffleIdx->currShuffleIdx = Current();
+                        state = PLAY_CURR_FILE;
+                        // want to have automatic track change
+                        lastActivity=time(NULL)-300;
+                        break;
+                case kBack:
+                        state= osBack;
+                        break;
+                case kBlue:
+                        state= osEnd;
+                        break;
+                case kYellow:
+                        Item=playList->GetShuffledItemByIndex(Current());
+                        if (!Item) {
+                                printf("No current Item %d!\n",Current());
+                                break;
+                        };
+                        LISTDEB("Del current %d (idx: %d): %s\n",
+                                        Current(),Item->GetIdx(),
+                                        Item->GetName() );
+                        playList->RemoveItem(Item);
+			//playList->CleanShuffleIdx();
+			lastListItemCount = playList->GetNoItemsRecursive();
+                        Del(Current());
+                        Display();
+                        state=osContinue;
+                        break;
 
-                                 default:    
-                                         break;
-                         }
+                default:    
+                        break;
         }
         if (!HasSubMenu())
                 UpdateStatus();
@@ -233,31 +249,110 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
 
 
 // -----cPlayList------------------------------------------------------------
-cPlayList::cPlayList(char *Filename, char *Name) 
+cPlayList::cPlayList(char *Filename, char *Name,sItemIdx *ShuffleIdx) 
                       : cPlayListItem(Filename,Name) {
-        currItemIdx=-1;
-        currShuffleIdx=-1;
-        minIdx=0;
-        maxIdx=0;
         first=NULL;
         last=NULL;
         
         strncpy(ListName,"Playlist 1",STR_LENGTH);
         ListName[STR_LENGTH-1]=0;
-	shuffleIdx=NULL;
+        if (!ShuffleIdx) {
+	        shuffleIdx=new sItemIdx;
+                shuffleIdx->currShuffleIdx=-1;
+                shuffleIdx->nIdx=0;
+                shuffleIdx->Idx=new sIdx[MAX_ITEMS];
+                memset(shuffleIdx->Idx,0,sizeof(shuffleIdx->Idx));
+                shuffleIdx->nAlbum=0;
+                shuffleIdx->Album=new sIdx[MAX_ITEMS/10];
+                memset(shuffleIdx->Album,0,sizeof(shuffleIdx->Album));
+                shuffleIdxOwner=true;
+        } else {
+                shuffleIdxOwner=false;
+                shuffleIdx=ShuffleIdx;
+        };
 };
 
 cPlayList::~cPlayList() {
+        while (first)
+                RemoveItem(first);
+        if (shuffleIdxOwner) {
+                delete shuffleIdx->Idx;
+                delete shuffleIdx;
+                shuffleIdx=NULL;
+        };     
 };
 
-void cPlayList::RemoveItemFromList(cPlayListItem *Item) {
+bool cPlayList::RemoveItem(cPlayListItem *Item) {
+        cPlayList *playList=dynamic_cast <cPlayList*>(Item);
+        if (playList) {
+                for (int i=0; i<shuffleIdx->nAlbum; i++) 
+                        if (shuffleIdx->Album[i].Item==Item) {
+                                shuffleIdx->Album[i].Album->
+                                        RemoveItemFromList(Item);
+                                memmove(&shuffleIdx->Album[i],
+                                                &shuffleIdx->Album[i+1],
+                                                sizeof(shuffleIdx->Album[i])*
+                                                (shuffleIdx->nAlbum-i));
+                                shuffleIdx->nAlbum--;
+                                return true;
+                        };
+
+        } else {
+                for (int i=0; i<shuffleIdx->nIdx; i++) 
+                        if (shuffleIdx->Idx[i].Item==Item) {
+                                shuffleIdx->Idx[i].Album->
+                                        RemoveItemFromList(Item);
+                                memmove(&shuffleIdx->Idx[i],
+                                                &shuffleIdx->Idx[i+1],
+                                                sizeof(shuffleIdx->Idx[i])*
+                                                (shuffleIdx->nIdx-i));
+                                shuffleIdx->nIdx--;
+                                if (i<shuffleIdx->currShuffleIdx)
+                                        shuffleIdx->currShuffleIdx--;
+                                return true;
+                        };
+        };
+        return true;
+};
+
+bool cPlayList::RemoveItemFromList(cPlayListItem *Item) {
         LISTDEB("RemoveItemFromList %p, first %p last %p\n",Item,first,last);
+	
+        // is it the first or the last item?
         if (first && Item == first)
                 first = first->next;
-        if (last && Item == last)
+        if (last && Item == last) 
                 last = last->previous;
-        Item->RemoveSelfFromList();
+	// remove from list
+        if (Item->next) 
+                Item->next->previous=Item->previous;
+        if (Item->previous) 
+                Item->previous->next=Item->next;
+        Item->previous=NULL;
+        Item->next=NULL;
         delete Item;
+	return true;
+};
+
+cPlayList *cPlayList::GetItemAlbum(cPlayListItem *Item) {
+        LISTDEB("GetItemAlbum %p, first %p last %p\n",Item,first,last);
+	cPlayListItem *listItem=first;
+	cPlayList *List=NULL;
+        cPlayList *Ret=NULL;
+	// find Item in list or in sublist
+	while (listItem && listItem!=Item) {
+		// if listItem is a list ask list if it owns item 
+                if ( (List=dynamic_cast <cPlayList*>(listItem)) 
+			&& (Ret=List->GetItemAlbum(Item)) )
+			// return sublist if it owns Item
+			return Ret;
+                listItem=listItem->GetNext();
+	};
+	// item is in this list
+	if (listItem == Item)
+		return this;
+	
+        return NULL;
 };
 
 void cPlayList::AddItemAtEnd(cPlayListItem *Item) {
@@ -270,30 +365,42 @@ void cPlayList::AddItemAtEnd(cPlayListItem *Item) {
                 Item->next = NULL;
                 last = Item;
         };
+        if ( dynamic_cast <cPlayList*>(Item) ) {
+                shuffleIdx->Album[shuffleIdx->nAlbum].Album=this;
+                shuffleIdx->Album[shuffleIdx->nAlbum].Item=Item;
+                shuffleIdx->Album[shuffleIdx->nAlbum].Hash=
+                        SimpleHash(Item->GetFilename());
+                printf("Hash %x Filename %s\n",shuffleIdx->Album[shuffleIdx->nAlbum].Hash,Item->GetFilename());
+                shuffleIdx->nAlbum++;
+        } else {
+                shuffleIdx->Idx[shuffleIdx->nIdx].Album=this;
+                shuffleIdx->Idx[shuffleIdx->nIdx].Item=Item;
+                shuffleIdx->Idx[shuffleIdx->nIdx].Hash=
+                        SimpleHash(Item->GetFilename());
+                printf("Hash %x Filename %s\n",shuffleIdx->Idx[shuffleIdx->nIdx].Hash,Item->GetFilename());
+                shuffleIdx->nIdx++;
+        }
 };                    
 
-int cPlayList::BuildIdx(int startIdx) {
+void cPlayList::BuildIdx(sItemIdx *ShuffleIdx) {
+        shuffleIdx=ShuffleIdx;
 	cPlayListItem *currItem=NULL;
-	if (currItemIdx!=-1) {
+	if (shuffleIdx->currShuffleIdx!=-1) {
 		// while playback rember current item, if this has been
 		// deleted find the next not deleted item
-		while ( ! (currItem=GetItemByIndex(shuffleIdx[currShuffleIdx]) ) && 
-				currShuffleIdx<nItems)
-			currShuffleIdx++;
+		while ( ! (currItem=GetShuffledItemByIndex(shuffleIdx->currShuffleIdx) ) && 
+				shuffleIdx->currShuffleIdx<shuffleIdx->nIdx)
+			shuffleIdx->currShuffleIdx++;
 	};
 			
         cPlayListItem *Item=first;
-        minIdx=startIdx;
-        LISTDEB("BuildIdx startIdx %d\n",startIdx);
 
         while (Item) {
                 LISTDEB("Item %p Item->GetNext() %p \n",Item,Item->GetNext());
-                startIdx=Item->BuildIdx(startIdx);
+                Item->BuildIdx(shuffleIdx);
                 Item=Item->GetNext();
         };
-        nItems=startIdx-minIdx;
-        LISTDEB("BuildIdx maxIdx %d nItems %d\n",startIdx,nItems);
-	
+/*	
 	if (currItem) {
 		// FIXME if currItem has been deleted do I have to subtract one?
 		currItemIdx=Item->GetIdx();
@@ -303,22 +410,43 @@ int cPlayList::BuildIdx(int startIdx) {
 				break;
 			};
 	};
-        return maxIdx=startIdx;
+        */
 };
 
 cPlayListItem *cPlayList::GetItemByIndex(int Index) {
-        if ( minIdx > Index)
-                return NULL;
-        if ( Index > maxIdx)
-                return NULL;
         
-        cPlayListItem *Item=first;
-        cPlayListItem *found;
-        while (Item) {
-                if ( (found=Item->GetItemByIndex(Index)) )
-                        return found;
-                Item=Item->GetNext();
-        };
+        for (int i=0; i<shuffleIdx->nIdx;i++) 
+                if ( shuffleIdx->Idx[i].Item 
+                        && Index==shuffleIdx->Idx[i].Item->GetIdx() )
+                        return shuffleIdx->Idx[i].Item;
+        return NULL;
+};
+
+cPlayListItem *cPlayList::GetItemByName(const char *name) {
+	int32_t hash=SimpleHash(name);
+        
+        for (int i=0; i<shuffleIdx->nIdx;i++) 
+                if ( hash==shuffleIdx->Idx[i].Hash && shuffleIdx->Idx[i].Item
+                        && strcmp(name,shuffleIdx->Idx[i].Item->GetFilename()) ==0)
+                        return shuffleIdx->Idx[i].Item;
+        return NULL;
+};
+
+int cPlayList::GetIndexByItem(const cPlayListItem *Item) {
+        for (int i=0; i<shuffleIdx->nIdx;i++) 
+                if ( Item==shuffleIdx->Idx[i].Item )
+                        return i;
+        return -1;
+};
+
+cPlayListItem *cPlayList::GetAlbumByName(const char *name) {
+	int32_t hash=SimpleHash(name);
+        
+        for (int i=0; i<shuffleIdx->nAlbum;i++) 
+                if ( hash==shuffleIdx->Album[i].Hash && shuffleIdx->Album[i].Item
+                        && strcmp(name,shuffleIdx->Album[i].Item->GetFilename())==0)
+
+                        return shuffleIdx->Album[i].Item;
         return NULL;
 };
 
@@ -327,20 +455,16 @@ bool cPlayList::AddFile(char * filename, char *title) {
         cPlayListItem *Item= new cPlayListRegular(filename,title);
         LISTDEB("Item created %p\n",Item);
         AddItemAtEnd(Item);
-        maxIdx=Item->BuildIdx(maxIdx);
-        nItems=maxIdx-minIdx;
         LISTDEB("Item added first %p last %p\n",first,last);
         
         return true;
 };
 
 bool cPlayList::AddDir(char * dirname, char * title, bool recursive) {
-        LISTDEB("AddDir %s\n",filename);
-        cPlayList *Item= new cPlayList(filename,title);
+        LISTDEB("AddDir %s\n",dirname);
+        cPlayList *Item= new cPlayList(dirname,title,shuffleIdx);
         Item->ScanDir(dirname,recursive);
         AddItemAtEnd(Item);
-        maxIdx=Item->BuildIdx(maxIdx); 
-        nItems=maxIdx-minIdx;
 
         return true;
 };
@@ -392,17 +516,94 @@ bool cPlayList::ScanDir(char * dirname, bool recursive) {
 };
 
 char * cPlayList::NextFile() {
-        LISTDEB("NextFile currItemIdx: %d nItems %d currShuffleIdx %d\n",
-                        currItemIdx,nItems,currShuffleIdx);
-    	cPlayListItem *Item=NULL;
+        LISTDEB("NextFile currShuffleIdx %d\n",
+                        shuffleIdx->currShuffleIdx);
         do {
-		currItemIdx=shuffleIdx[++currShuffleIdx];
-        } while ( !(Item=GetItemByIndex(currItemIdx))  && currShuffleIdx<nItems );
+		++shuffleIdx->currShuffleIdx;
+        } while ( shuffleIdx->currShuffleIdx<shuffleIdx->nIdx 
+                        && !shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item );
 	
-        LISTDEB("NextFile currItemIdx: %d currShuffleIdx %d\n",currItemIdx,currShuffleIdx);
+        LISTDEB("NextFile currShuffleIdx %d\n",shuffleIdx->currShuffleIdx);
 
-	if (Item)
-		return Item->GetFilename();
+        if ( shuffleIdx->currShuffleIdx > shuffleIdx->nIdx )
+                shuffleIdx->currShuffleIdx=shuffleIdx->nIdx;
+
+	if ( shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item )
+		return shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item->GetFilename();
+	return NULL;
+};
+
+char * cPlayList::PrevFile() {
+        LISTDEB("PrevFile currShuffleIdx %d\n",
+                        shuffleIdx->currShuffleIdx);
+        do {
+		--shuffleIdx->currShuffleIdx;
+        } while ( shuffleIdx->currShuffleIdx > 0
+                        &&!shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item );
+	
+        LISTDEB("PrevFile currShuffleIdx %d\n",shuffleIdx->currShuffleIdx);
+ 
+        if ( shuffleIdx->currShuffleIdx < 0 )
+                shuffleIdx->currShuffleIdx=0;
+
+	if ( shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item)
+		return shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item->GetFilename();
+	return NULL;
+};
+
+char * cPlayList::NextAlbumFile() {
+        cPlayList *currAlbum=shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Album;
+        LISTDEB("NextAlbumFile currShuIdx %d currAlbum %p\n",
+                        shuffleIdx->currShuffleIdx,currAlbum);
+        do {
+		++shuffleIdx->currShuffleIdx;
+        } while ( shuffleIdx->currShuffleIdx<shuffleIdx->nIdx 
+                        && ( !shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item 
+                    || currAlbum==shuffleIdx->Idx[
+                    shuffleIdx->currShuffleIdx].Album ) );
+	
+        LISTDEB("NextAlbumFile currShuffleIdx %d \n",
+                        shuffleIdx->currShuffleIdx);
+        
+        if ( shuffleIdx->currShuffleIdx > shuffleIdx->nIdx )
+                shuffleIdx->currShuffleIdx=shuffleIdx->nIdx;
+        
+	if (shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item)
+		return shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item->GetFilename();
+	return NULL;
+};
+
+char * cPlayList::PrevAlbumFile() {
+        LISTDEB("PrevAlbumFile currShuffleIdx %d\n",
+                        shuffleIdx->currShuffleIdx);
+        cPlayList *currAlbum=shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Album;
+        do {
+	        --shuffleIdx->currShuffleIdx;
+        } while ( shuffleIdx->currShuffleIdx > 0  
+                  && ( !shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item 
+                    || currAlbum==shuffleIdx->Idx[
+                    shuffleIdx->currShuffleIdx].Album ) );
+	
+        LISTDEB("PrevFile currShuffleIdx %d\n",shuffleIdx->currShuffleIdx);
+
+        if (shuffleIdx->currShuffleIdx < 0 )
+                shuffleIdx->currShuffleIdx=0;
+        
+	if (shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item)
+		return shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item->GetFilename();
+	return NULL;
+};
+
+char * cPlayList::CurrFile() {
+        LISTDEB("CurrFile shuffleIdx->currShuffleIdx %d\n",
+                        shuffleIdx->currShuffleIdx);
+	while (!shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item
+                        && shuffleIdx->currShuffleIdx<shuffleIdx->nIdx )
+                shuffleIdx->currShuffleIdx++;
+        LISTDEB("CurrFile currShuffleIdx %d\n",shuffleIdx->currShuffleIdx);
+
+	if (shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item)
+		return shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item->GetFilename();
 	return NULL;
 };
 
@@ -442,38 +643,40 @@ int cPlayList::GetNoItemsRecursive() {
   
 void cPlayList::PrepareForPlayback() {
 	LISTDEB("PrepareForPlayback\n");
-        currItemIdx=-1;
-	currShuffleIdx=-1;
+	shuffleIdx->currShuffleIdx=-1;
 
         BuildIdx();
-	if (!shuffleIdx)
-		shuffleIdx= new int[MAX_ITEMS];
-        for (int i=0; i<MAX_ITEMS ; i++) {
-                shuffleIdx[i]=i;
-        };
-        Shuffle();
+        //Shuffle();
 };
 
 void cPlayList::Shuffle() {
-        LISTDEB("Shuffle playlist nItems %d currShuffleIdx %d\n",nItems,currShuffleIdx);
+        LISTDEB("Shuffle playlist nIdx %d currShuffleIdx %d\n",
+                        shuffleIdx->nIdx,shuffleIdx->currShuffleIdx);
 
-        int index=0;
-        for (int i=0; i<2*nItems ; i++) {
+        sIdx index;
+        for (int i=0; i<2*shuffleIdx->nIdx ; i++) {
 		//FIXME - I guess the ranges are not completly correct
-                long int xchange1=( random()*(nItems-currShuffleIdx)/RAND_MAX)
-			+currShuffleIdx;
-                long int xchange2=( random()*(nItems-currShuffleIdx)/RAND_MAX)
-			+currShuffleIdx;
-		LISTDEB("Shuffle %d - %d \n",xchange1,xchange2);
-                index=shuffleIdx[xchange1];
-                shuffleIdx[xchange1]=shuffleIdx[xchange2];
-                shuffleIdx[xchange2]=index;
+                int xchange1=(int)( (float)(random())*(float)(shuffleIdx->nIdx-1-shuffleIdx->currShuffleIdx)/(float)(RAND_MAX))
+			+shuffleIdx->currShuffleIdx+1;
+                int xchange2=(int)( (float)(random())*(float)(shuffleIdx->nIdx-1-shuffleIdx->currShuffleIdx)/(float)(RAND_MAX))
+			+shuffleIdx->currShuffleIdx+1;
+                if (xchange1 >=shuffleIdx->nIdx)
+                        printf("Martin, depp!! %d\n",xchange1);
+                if (xchange2 >=shuffleIdx->nIdx)
+                        printf("Martin, depp!! %d\n",xchange2);
+                
+		LISTDEB("Shuffle %4d(%4d) - %4d(%4d) \n",
+                   xchange1,shuffleIdx[xchange1],xchange2,shuffleIdx[xchange2]);
+                index=shuffleIdx->Idx[xchange1];
+                shuffleIdx->Idx[xchange1]=shuffleIdx->Idx[xchange2];
+                shuffleIdx->Idx[xchange2]=index;
         };
-
+/*
 	for (int i=0; i<nItems ; i++) 
-		LISTDEB("shuffleIdx[%d]: %d\n",i,shuffleIdx[i]);       
+		LISTDEB("shuffleIdx[%d]: %d\n",i,shuffleIdx->Idx[i]);       
+*/
 };
-
+/*
 void cPlayList::CleanShuffleIdx() {
         // remove deleted files from shuffleIdx
         int fillIndex=0;
@@ -487,4 +690,4 @@ void cPlayList::CleanShuffleIdx() {
         for (int i=newNItems; i<MAX_ITEMS; i++)
                 shuffleIdx[i]=maxIdx+i-newNItems;
         nItems=newNItems;
-};
+};*/

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.4 2005/05/09 21:40:05 wachm Exp $
+ * $Id: softplay.c,v 1.5 2005/05/16 19:07:54 wachm Exp $
  */
 
 
@@ -32,26 +32,48 @@ private:
   } * Entries;
   int nEntries;
   int keySelNo;
-      
+  cPlayList *editList;
+  void PrintItemName(char *Name, const struct DirEntry &Entry,int i);
+  eOSState SelectEntry(int No, bool play);
+  
 public:
   void PrepareDirectory(char * path);
-  cMenuDirectory(void);
+  cMenuDirectory(char * path, cPlayList *EditList=NULL);
   virtual ~cMenuDirectory();
   virtual eOSState ProcessKey(eKeys Key);
 };
 
-cMenuDirectory::cMenuDirectory(void) : cOsdMenu("Files") 
+cMenuDirectory::cMenuDirectory(char * path, cPlayList *EditList) 
+        : cOsdMenu("Files",4,2,8) 
 {
   Entries=NULL;
   nEntries=0;
   keySelNo=0;
-  SetHelp(NULL,"Play","Add To List","Play List");
+  SetHelp(NULL,"Play","Toggle List","Play List");
+  editList=EditList;
+  PrepareDirectory(path);
 };
 
 cMenuDirectory::~cMenuDirectory()
 {
   delete Entries;
   nEntries=0;
+};
+
+void cMenuDirectory::PrintItemName(char *Name, const struct DirEntry &Entry,int i) {
+        char inPlayList=' ';
+        if (Entry.type == DT_DIR) {  
+                if (editList && editList->GetAlbumByName(Entry.name))
+                        inPlayList='P';
+
+                snprintf(Name,60,"%4d\t%c\t[%s]",
+                                i+1,inPlayList,Entry.title);
+        } else {  
+                if (editList && editList->GetItemByName(Entry.name))
+                        inPlayList='P';
+                snprintf(Name,60,"%4d\t%c\t%s",
+                                i+1,inPlayList,Entry.title);
+        };
 };
 
 void cMenuDirectory::PrepareDirectory(char *path) 
@@ -67,11 +89,12 @@ void cMenuDirectory::PrepareDirectory(char *path)
 	nEntries=0;
   };
 
-  strncpy(start_path,path,NAME_LENGTH-1);
-  start_path[NAME_LENGTH]=0;
+  strncpy(start_path,path,NAME_LENGTH);
+  start_path[NAME_LENGTH-1]=0;
 
   //FIXME find a clever way to cut down the directory name
-  snprintf(Title,60,"Files: %s",start_path);
+  PrintCutDownString(Name,&start_path[Softplay->MediaPathLen()],30);
+  snprintf(Title,60,"Files: %s",Name);
   SetTitle(Title);
 
   n = scandir(path, &namelist, 0, alphasort);
@@ -102,11 +125,9 @@ void cMenuDirectory::PrepareDirectory(char *path)
                   };
           };
 	  
-	  // add to menu using original names (symlinks!!)
-	  if (Entries[i].type == DT_DIR)  
-	    snprintf(Name,60," %4d [%s]",i+1,namelist[i]->d_name);
-	  else  snprintf(Name,60," %4d %s",i+1,namelist[i]->d_name);
-	  
+	  // add to menu using original names
+          PrintItemName(Name, Entries[i],i);
+
 	  Add(new cOsdItem(strdup(Name),osUnknown),false);
 	  printf("Name %s type %d \n",Entries[i].name,Entries[i].type);
 
@@ -115,8 +136,51 @@ void cMenuDirectory::PrepareDirectory(char *path)
   free(namelist);
 };
 
+eOSState cMenuDirectory::SelectEntry(int No, bool play) {
+        if (No>nEntries)
+                return osContinue;
+
+        if ( Entries[No].type == DT_REG && play ) { 
+                cControl::Launch(new cSoftControl(Entries[No].name));
+                return osEnd;
+        };
+
+        cPlayListItem *Item;
+        cPlayList *PlayList=Softplay->GetCurrList();
+        if (!PlayList || play ) {
+                editList = PlayList = new cPlayList;
+                Softplay->SetTmpCurrList(PlayList);
+        };
+        if (Entries[No].type == DT_DIR) {
+                Item=PlayList->GetAlbumByName(Entries[No].name);
+                printf("Item %p\n",Item);
+                if (!Item)
+                        PlayList->AddDir(Entries[No].name,
+                                        Entries[No].title,true);
+                else PlayList->RemoveItem(Item);
+        } else if (Entries[No].type == DT_REG){
+                Item=PlayList->GetItemByName(Entries[No].name);
+                if (!Item)
+                        PlayList->AddFile(Entries[No].name,
+                                        Entries[No].title);
+                else PlayList->RemoveItem(Item);
+        };
+        if (play) {
+               cControl::Launch(new cSoftControl(PlayList));
+               return osEnd;
+        };
+                       
+        char str[60];
+        PrintItemName(str,Entries[No],No);
+        Get(Current())->SetText(str,true);
+        DisplayCurrent(true);
+
+        return osContinue;
+};
+
 eOSState cMenuDirectory::ProcessKey(eKeys Key) {
 	eOSState state = cOsdMenu::ProcessKey(Key);
+        cPlayListItem *Item;
 	int No=0;
 
 	if (state != osUnknown) 
@@ -144,54 +208,23 @@ eOSState cMenuDirectory::ProcessKey(eKeys Key) {
 				cControl::Launch(new cSoftControl(Entries[No].name));
 				return osEnd;
 			} else if ( Entries[No].type == DT_DIR ) { 
-				cMenuDirectory *Menu=new cMenuDirectory;
-				Menu->PrepareDirectory(Entries[No].name);
-				return AddSubMenu(Menu);
-			};
+				return AddSubMenu(
+                                        new cMenuDirectory(Entries[No].name,
+                                            Softplay->GetCurrList()));
+			};      
 			break;
 		case kGreen:
-			sscanf(Get(Current())->Text(),"%d ",&No);
-			No--;
-			if (No>nEntries)
-				break;
-			if ( Entries[No].type == DT_REG ) { 
-				cControl::Launch(new cSoftControl(Entries[No].name));
-				return osEnd;
-			} else if ( Entries[No].type == DT_DIR ) {
-				printf("create playlist %s\n",Entries[No].name);
-				cPlayList *Playlist=new cPlayList;
-				Playlist->AddDir(Entries[No].name,
-					Entries[No].title,true);
-                                Softplay->SetTmpCurrList(Playlist);
-				cControl::Launch(
-				  	new cSoftControl(Playlist));
-				return osEnd;
-			};
-			break;
+			state=SelectEntry(Current(),true);
+                        break;
                 case kYellow: 
-                        sscanf(Get(Current())->Text(),"%d ",&No);
-                        No--;
-                        if (No>nEntries)
-                                break;
-                        {
-                                cPlayList *PlayList=Softplay->GetCurrList();
-                                if (!PlayList) {
-                                        PlayList = new cPlayList;
-                                        Softplay->SetTmpCurrList(PlayList);
-                                };
-                                if (Entries[No].type == DT_DIR)
-                                        PlayList->AddDir(Entries[No].name,
-						Entries[No].title,true);
-                                else if (Entries[No].type == DT_REG)
-                                        PlayList->AddFile(Entries[No].name,
-                                                        Entries[No].title);
-                                break;
-                        };
+                        state=SelectEntry(Current(),false);
+                        break;
                 case kBlue:
                         {
                                 cPlayList *PlayList=Softplay->GetCurrList();
-                                cControl::Launch(
-				  	new cSoftControl(PlayList));
+				if (PlayList)
+					cControl::Launch(
+						new cSoftControl(PlayList));
 				return osEnd;
                                 break;
                         };
@@ -220,36 +253,36 @@ cMainMenu::cMainMenu(cPlayList **CurrList,cSoftPlay::sPlayLists **Lists)
         : cOsdMenu("SoftPlay")  {
         currList=CurrList;
         lists=Lists;
+        SetHelp(NULL,NULL,NULL,"Play List");
 };
   
 cMainMenu::~cMainMenu() {
 };
 
 void cMainMenu::PrepareMenu() {
-        Add(new cOsdItem("Play Files",osUser1),false);
+        Add(new cOsdItem("Play Files",PLAY_FILES),false);
         if ( *currList )
-          Add(new cOsdItem("current playlist",osUser2),false);
+          Add(new cOsdItem("current playlist",CURR_PLAYLIST),false);
 }
 
 eOSState cMainMenu::ProcessKey(eKeys Key) {
-  cOsdMenu *Menu;
   eOSState state = cOsdMenu::ProcessKey(Key);
   
   switch (state) {
-    case osUser1:  
-            Menu=new cMenuDirectory;
-            ((cMenuDirectory*)Menu)->PrepareDirectory(Softplay->MediaPath());
-            return AddSubMenu(Menu);
+    case PLAY_FILES:  
+            return AddSubMenu(new cMenuDirectory(Softplay->MediaPath(),
+                                    Softplay->GetCurrList()));
             break;
 
-    case osUser2: return AddSubMenu((*currList)->ReplayList());
+    case CURR_PLAYLIST: return AddSubMenu(new cEditList(*currList));
             break;
-    case osUser3: cControl::Launch(
-				  new cSoftControl(*currList));
-                  return osEnd;
-                  break;
 
     default: switch (Key) {
+                     case kBlue:
+                             if (*currList) {
+                              cControl::Launch(new cSoftControl(*currList));
+                              return osEnd;
+                             };
                default:      break;
                }
     }
@@ -306,6 +339,7 @@ bool cSoftPlay::ProcessArgs(int argc, char *argv[])
 		if (argc>0) {
 			strncpy(start_path,argv[i],60);
 			start_path[59]=0;
+                        start_path_len=strlen(start_path)+1;
 			argc--;
 			i++;
 		};
@@ -330,9 +364,7 @@ cOsdObject *cSoftPlay::MainMenuAction(void)
 {
         // not playing a list and no playlists available
         if ( !currList && !Lists ) {
-                cMenuDirectory *Menu=new cMenuDirectory;
-                Menu->PrepareDirectory(start_path);
-                return Menu;
+                return new cMenuDirectory(start_path,Softplay->GetCurrList());
         };
         cMainMenu *Menu=new cMainMenu(&currList,&Lists);
         Menu->PrepareMenu();
@@ -358,3 +390,43 @@ void cSoftPlay::SetTmpCurrList(cPlayList *List) {
 };
 
 VDRPLUGINCREATOR(cSoftPlay); // Don't touch this!
+
+//------------------------------------------------------------------------
+const int32_t Divisor=0xfda9743d;
+//const int32_t Divisor=0xfda97431;
+
+int32_t SimpleHash( char const* str) {
+        // just used to fast identify strings. 
+        // I guess this can be made much better.
+        //printf("String: %s",str);
+        int result=0;
+        do {
+                result=((result<<8)+*str) % Divisor;
+        } while ( *(++str) );
+        //printf(" Hash: 0x%x\n",result);
+        return result;
+};
+
+void PrintCutDownString(char *str,char *orig,int len) {
+#define STARTCPY 4 
+// length of the copy at the beginning
+        int Pos=STARTCPY;
+        int origlen=strlen(orig);
+        if (origlen<len) {
+                strcpy(str,orig);
+                printf("just copy str: %s\n",str);
+                return;
+        };
+        if (len<15) {
+                printf("CutDownString len %d is too small!\n",len);
+                return;
+        };
+        strncpy(str,orig,Pos);
+        str[Pos++]='.';
+        str[Pos++]='.';
+        str[Pos++]='.';
+        strncpy(&str[Pos],&orig[origlen-len+1+STARTCPY+3],len-STARTCPY-3);
+        str[len-1]=0;
+        printf("before end copy %s\n",str);
+};
+                
