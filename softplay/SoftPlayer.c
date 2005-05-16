@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.5 2005/05/16 19:07:54 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.6 2005/05/16 22:05:51 wachm Exp $
  */
 
 #include "SoftPlayer.h"
@@ -148,7 +148,13 @@ void cSoftPlayer::Action() {
                         if (!forward)
                                 step=-step;
                         fast_STC+=step;
+#if LIBAVFORMAT_BUILD > 4616
+			av_seek_frame(ic,-1,fast_STC,
+			   AVSEEK_FLAG_BACKWARD);
+#else
 			av_seek_frame(ic,-1,fast_STC);
+#endif
+                      
                         PKTDBG("fast_STC %lld diff %lld forward %d step %d\n",
                                fast_STC,PTS-lastPTS,forward,step);
                 };
