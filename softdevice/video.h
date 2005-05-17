@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.11 2005/05/16 15:53:13 wachm Exp $
+ * $Id: video.h,v 1.12 2005/05/17 19:58:06 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -117,6 +117,9 @@ public:
 
     virtual void Suspend(void) { return;};
     virtual bool Resume(void) { return true;};
+    inline void FreezeMode(bool freeze)
+    {freezeMode=freeze;};
+    bool freezeMode;
 
     virtual void Action(void);
     // osd control thread. Refreshes the osd on dimension changes and

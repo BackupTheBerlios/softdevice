@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.34 2005/05/16 15:54:48 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.35 2005/05/17 19:58:06 wachm Exp $
  */
 
 #include <math.h>
@@ -409,6 +409,18 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
 
   picture=avcodec_alloc_frame();
 }
+
+void cVideoStreamDecoder::Play(void)
+{
+  cStreamDecoder::Play();
+  videoOut->FreezeMode(freezeMode);
+};
+
+void cVideoStreamDecoder::Freeze(void)
+{
+  cStreamDecoder::Freeze();
+  videoOut->FreezeMode(freezeMode);
+};
 
 void cVideoStreamDecoder::Stop(void)
 {

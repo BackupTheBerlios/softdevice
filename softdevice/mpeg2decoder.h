@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.22 2005/05/16 15:54:48 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.23 2005/05/17 19:58:06 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -98,10 +98,10 @@ public:
 // Output device handler
 class cStreamDecoder : public cThread {
 private:
-    bool freezeMode;
     cPacketQueue PacketQueue;
 
 protected:
+    bool freezeMode;
     int64_t           pts;
     int               frame;
 
@@ -209,6 +209,8 @@ class cVideoStreamDecoder : public cStreamDecoder {
        cClock *clock, int Trickspeed);
     ~cVideoStreamDecoder();
 
+    virtual void      Freeze(void);
+    virtual void      Play(void);
     virtual void Stop();
     virtual int DecodePacket(AVPacket *pkt);
     virtual void TrickSpeed(int Speed);

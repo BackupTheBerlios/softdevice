@@ -1,4 +1,6 @@
 Changelog
+2005-05-17:
+    - bugfix: don't blank screen in pause mode
 2005-05-16:
     - blank screen after some time with no signal
 2005-05-15:

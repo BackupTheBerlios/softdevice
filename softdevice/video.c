@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.17 2005/05/16 15:53:12 wachm Exp $
+ * $Id: video.c,v 1.18 2005/05/17 19:58:06 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -24,6 +24,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   sxoff = syoff = lxoff = lyoff = 0;
   PixelMask=NULL;
   this->setupStore=setupStore;
+  freezeMode=false;
   //start osd thread
   active=true;
   Start();
@@ -70,8 +71,10 @@ void cVideoOut::Action()
     int newOsdHeight;
     bool changeMode=false;
     int newOsdMode=0;
-    
+   
     OsdRefreshCounter++;
+    if (freezeMode && OsdRefreshCounter > 10 )
+    	OsdRefreshCounter=3;
     
     changeMode=(current_osdMode != setupStore->osdMode);
     newOsdMode=setupStore->osdMode;
@@ -85,6 +88,12 @@ void cVideoOut::Action()
 			    OSD_FULL_WIDTH, OSD_FULL_WIDTH/2); 
 	    Osd_changed=0;
 	    osdMutex.Unlock();
+    }
+
+    // freeze mode and osd changed, change osd mode
+    if ( Osd_changed && freezeMode && OsdRefreshCounter >  2 ) {
+        changeMode= (current_osdMode != OSDMODE_PSEUDO);
+        newOsdMode=OSDMODE_PSEUDO;
     }
     
     GetOSDDimension(newOsdWidth,newOsdHeight);
