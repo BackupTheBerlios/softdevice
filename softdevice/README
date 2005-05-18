@@ -65,12 +65,18 @@ recommened resolution: 768x576
 16bit with Framebuffer output
 32bit with DFB/Vidix output
 
-Start vdr with -P" softdevice -vo [your prefered output method]:"
+Start vdr with -P "softdevice -vo [your prefered output method]:"
 Example:
-- vdr -P" softdevice -vo xv:" for X11/Xv
-- vdr -P" softdevice -vo dfb:" for DirectFB
+- vdr -P "softdevice -vo xv:" for X11/Xv
+- vdr -P "softdevice -vo dfb:" for DirectFB
 
-To get a full list of options try "vdr -h" 
+
+If you compiled softdevice with option USE_SUBPLUGINS (the default from
+Makefile) and you start vdr with option -L PATH or --lib=PATH , you'll have to
+specify that pathname to softdevice too via option -L PATH.
+
+
+To get a full list of options try "vdr -h"
 
 Set the PrimaryDVB value to the last device if you own a FF-Card.
 
