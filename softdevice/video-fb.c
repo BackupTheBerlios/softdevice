@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.8 2005/03/03 20:22:17 lucke Exp $
+ * $Id: video-fb.c,v 1.9 2005/05/20 21:36:04 wachm Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -123,11 +123,13 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
       mmx_unpack=mmx_unpack_15rgb;
       printf("[video-fb] Using mmx_unpack_15rgb\n");
     };
-      
+
+    int OsdYres=Yres>OSD_FULL_HEIGHT?Yres:OSD_FULL_HEIGHT;
 #if VDRVERSNUM < 10307
-    PixelMask = (unsigned char *)malloc(Xres*Yres/8 ); // where the Video window should be transparent
+    int OsdXres=Xres>OSD_FULL_WIDTH?Xres:OSD_FULL_WIDTH;
+    PixelMask = (unsigned char *)malloc(OsdXres*OsdYres/8 ); // where the Video window should be transparent
 #else
-    PixelMask = (unsigned char *)malloc(Yres*line_len / ((Bpp+7) / 8) / 8); // where the Video window should be transparent
+    PixelMask = (unsigned char *)malloc(OsdYres*line_len / ((Bpp+7) / 8) / 8); // where the Video window should be transparent
 #endif
 
     OSDpresent=false;
