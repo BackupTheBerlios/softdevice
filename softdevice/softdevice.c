@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.30 2005/04/10 21:37:39 lucke Exp $
+ * $Id: softdevice.c,v 1.31 2005/05/20 21:51:37 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -285,6 +285,10 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       {
         esyslog("[softdevice] could not load (%s)[%s] exiting\n",
                 "SubPluginCreator", err);
+        esyslog("[softdevice] Did you use the -L option?\n");
+        fprintf(stderr,"[softdevice] could not load (%s)[%s] exiting\n",
+                "SubPluginCreator", err);
+        fprintf(stderr,"[softdevice] Did you use the -L option?\n");
         exit(1);
       }
       if (videoOut->Initialize () &&
@@ -497,7 +501,7 @@ void cSoftDevice::StillPicture(const uchar *Data, int Length)
 
 bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
 {
-  // fprintf(stderr,"[softdevice] Poll TimeoutMs: %d ....\n",TimeoutMs);
+   //fprintf(stderr,"[softdevice] Poll TimeoutMs: %d ....\n",TimeoutMs);
 
   if ( decoder->BufferFill() > 90 ) {
      //fprintf(stderr,"[softdevice] Buffer filled, TimeoutMs %d, fill %d\n",
@@ -542,6 +546,7 @@ void cSoftDevice::PlayAudio(const uchar *Data, int Length)
  */
 int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
+  //fprintf(stderr,"PlayAudio...\n");
   if (! packetMode)
     return decoder->Decode(Data, Length);
 
@@ -719,7 +724,9 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               fprintf (stderr,
                        "[ProcessArgs] xv: start up fullscreen\n");
               vo_argv += 4;
-            } else {
+            } else {  
+                    fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+                    esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
               break;
             }
           }
@@ -752,7 +759,11 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #else
           fprintf(stderr,"[softdevice] vidix support not compiled in\n");
 #endif
-        }
+        } else {
+                fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+                esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+        };
+
 
       }
     } else if (!strcmp (argv[i], "-ao")) {
@@ -769,14 +780,21 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           ao_argv += 6;
           setupStore.aoArgs = ao_argv;
           aoutMethod = AOUT_DUMMY;
-        }
+        }     else {
+                fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+                esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+        };
+
       }
     } else if (!strcmp (argv[i], "-L")) {
       ++i; --argc;
       if (argc > 0) {
         pluginPath = argv[i];
       }
-    }
+    } else {
+            fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+            esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+    };
     ++i;
     --argc;
   }

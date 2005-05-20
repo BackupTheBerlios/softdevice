@@ -1,7 +1,14 @@
 Changelog
+2005-05-20:
+    - fix possible segfault in fb-mode when resolution is smaller than
+      OSD default size
+    - fix pplib deinterlacing
+    - check libavcodec build of library against header
+    - some more error messages 
 2005-05-18:
     - fix for aspect ratio calculation if sample_aspect_ratio.num == 0
     - README update for use of -L DIR usage
+>>>>>>> 1.67
 2005-05-17:
     - bugfix: don't blank screen in pause mode
 2005-05-16:
