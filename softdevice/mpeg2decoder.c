@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.35 2005/05/17 19:58:06 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.36 2005/05/20 21:38:47 wachm Exp $
  */
 
 #include <math.h>
@@ -23,7 +23,7 @@
 #define MPGDEB(out...)
 #endif
 
-#define CMDDEB(out...) {printf("CMD[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+//#define CMDDEB(out...) {printf("CMD[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef CMDDEB
 #define CMDDEB(out...)
@@ -473,6 +473,12 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 	 lastDuration=pkt->duration;
 	 if (lastDuration)
 	 	default_frametime=lastDuration/1000;
+         /*{
+	 	if (context->time_base.num)
+	 		default_frametime=lastDuration*context->time_base.num*
+                                        1000/context->time_base.den;
+		else default_frametime=lastDuration;
+	 };*/
 		
     };
 
@@ -827,28 +833,22 @@ void cVideoStreamDecoder::ppLibavcodec(void)
      * processor-independent optimations:
        PP_CPU_CAPS_MMX, PP_CPU_CAPS_MMX2, PP_CPU_CAPS_3DNOW
      */
-    ppcontext = pp_get_context(context->width, context->height, 0);
+    ppcontext = pp_get_context(context->width, context->height,
+        PP_CPU_CAPS_MMX|PP_CPU_CAPS_MMX2);
   }
 
   deintWork = setupStore.deintMethod;
-#if FB_SUPPORT
-  if (currentDeintMethod > 2)
-#else
-  if (currentDeintMethod > 1)
-#endif
+  if (currentDeintMethod != deintWork || ppmode == NULL)
   {
-    if (currentDeintMethod != deintWork || ppmode == NULL)
-    {
 
-      if (ppmode)
-      {
-        pp_free_mode (ppmode);
-        ppmode = NULL;
-      }
-    
-      ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
-      currentDeintMethod = deintWork;
-    }
+	  if (ppmode)
+	  {
+		  pp_free_mode (ppmode);
+		  ppmode = NULL;
+	  }
+
+	  ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
+	  currentDeintMethod = deintWork;
   }
 
   if (ppmode == NULL || ppcontext == NULL)
@@ -930,6 +930,12 @@ static int seek_RingBuffer(void *opaque, offset_t offset, int whence) {
 //----------------------------   MPEG Decoder
 cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
 {
+  if ( avcodec_build() != LIBAVCODEC_BUILD ) {
+     fprintf(stderr,"Fatal Error! Libavcodec library build(%d) doesn't match avcodec.h build(%d)!!!\n",avcodec_build(),LIBAVCODEC_BUILD);
+     fprintf(stderr,"Check your ffmpeg installation / the pathes in the Makefile!!!\n");
+     exit(-1);
+  };
+
   avcodec_init();
   avcodec_register_all();
  
