@@ -8,7 +8,6 @@ Changelog
 2005-05-18:
     - fix for aspect ratio calculation if sample_aspect_ratio.num == 0
     - README update for use of -L DIR usage
->>>>>>> 1.67
 2005-05-17:
     - bugfix: don't blank screen in pause mode
 2005-05-16:
