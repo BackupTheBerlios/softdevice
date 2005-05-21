@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.12 2005/05/17 19:58:06 wachm Exp $
+ * $Id: video.h,v 1.13 2005/05/21 14:20:03 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -130,7 +130,6 @@ public:
     // sets a pointer to the current osd. For refreshing of the osd 
 
     uint8_t *PixelMask;
-#if VDRVERSNUM >= 10307
     int Osd_changed;
     uint8_t *OsdPy;
     uint8_t *OsdPu; 
@@ -148,14 +147,16 @@ public:
     // should be setted to null everytime OSD is shown 
     // (software alpha blending mode).  
 
+    virtual void ClearOSD();
+    // clear the OSD buffer
+
+#if VDRVERSNUM >= 10307
     virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight)
     // called whenever OSD is to be displayed
     // every video-out should implement a method which desired osd dimension
     // for scaling, if -1,-1 is returned no scaling is done.
     { OsdWidth=-1;OsdHeight=-1;};
 
-    virtual void ClearOSD();
-    // clear the OSD buffer
     
     virtual void Refresh(cBitmap *Bitmap) { return; };
     

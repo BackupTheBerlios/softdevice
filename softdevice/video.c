@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.19 2005/05/18 21:49:33 lucke Exp $
+ * $Id: video.c,v 1.20 2005/05/21 14:20:03 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -367,6 +367,25 @@ void cVideoOut::OSDCommit()
   osdMutex.Unlock();
 }
 
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::ClearOSD()
+{
+  //if (current_osdMode==OSDMODE_SOFTWARE) 
+  {
+    if (OsdPy)
+       memset(OsdPy,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
+    if (OsdPu)
+       memset(OsdPu,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
+    if (OsdPv)
+       memset(OsdPv,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
+    if (OsdPAlphaY)
+       memset(OsdPAlphaY,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
+    if (OsdPAlphaUV)
+       memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
+   };
+};
+
 #if VDRVERSNUM >= 10307
 
 void cVideoOut::OpenOSD(int X, int Y)
@@ -388,24 +407,6 @@ void cVideoOut::CloseOSD()
   osdMutex.Unlock();
 }
 
-/* ---------------------------------------------------------------------------
- */
-void cVideoOut::ClearOSD()
-{
-  //if (current_osdMode==OSDMODE_SOFTWARE) 
-  {
-    if (OsdPy)
-       memset(OsdPy,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
-    if (OsdPu)
-       memset(OsdPu,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
-    if (OsdPv)
-       memset(OsdPv,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
-    if (OsdPAlphaY)
-       memset(OsdPAlphaY,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
-    if (OsdPAlphaUV)
-       memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
-   };
-};
 
 /* ---------------------------------------------------------------------------
  */
