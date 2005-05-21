@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.4 2005/05/21 11:19:16 wachm Exp $
+ * $Id: PlayList.c,v 1.5 2005/05/21 15:35:01 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -200,6 +200,7 @@ void cReplayList::RebuildList() {
                    osUnknown),false);
         };
         lastListItemCount = playList->GetNoItemsRecursive();
+	playList->shuffleIdx->reshuffled = false;
 };
 
 void cReplayList::UpdateStatus() {
@@ -240,8 +241,8 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
         if (state != osUnknown ) 
                 return state;
 
-        if ( lastListItemCount != playList->GetNoItemsRecursive() ) {
-                //playList->CleanShuffleIdx();
+        if ( lastListItemCount != playList->GetNoItemsRecursive()
+	     || playList->shuffleIdx->reshuffled ) {
                 Clear();
                 RebuildList();
                 Display();
@@ -575,6 +576,7 @@ char * cPlayList::NextFile() {
 		++shuffleIdx->currShuffleIdx;
                 if ( options.autoRepeat && 
                      shuffleIdx->currShuffleIdx >= shuffleIdx->nIdx ) {
+                        shuffleIdx->currShuffleIdx=-1;
                         if (options.shuffle)
                                 Shuffle();
                         shuffleIdx->currShuffleIdx=0;
@@ -621,6 +623,7 @@ char * cPlayList::NextAlbumFile() {
 		++shuffleIdx->currShuffleIdx;
                 if ( options.autoRepeat && 
                      shuffleIdx->currShuffleIdx >= shuffleIdx->nIdx ) {
+                        shuffleIdx->currShuffleIdx=-1;
                         if (options.shuffle)
                                 Shuffle();
                         shuffleIdx->currShuffleIdx=0;
@@ -742,6 +745,7 @@ void cPlayList::Shuffle() {
                 shuffleIdx->Idx[xchange1]=shuffleIdx->Idx[xchange2];
                 shuffleIdx->Idx[xchange2]=index;
         };
+	shuffleIdx->reshuffled=true;
 /*
 	for (int i=0; i<nItems ; i++) 
 		LISTDEB("shuffleIdx[%d]: %d\n",i,shuffleIdx->Idx[i]);       
