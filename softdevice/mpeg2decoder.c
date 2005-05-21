@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.36 2005/05/20 21:38:47 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.37 2005/05/21 11:05:59 wachm Exp $
  */
 
 #include <math.h>
@@ -185,7 +185,8 @@ void cStreamDecoder::Clear(void)
 {
   CMDDEB("cStreamDecoder clear\n");
   mutex.Lock();
-  avcodec_flush_buffers(context);
+  if (codec)
+          avcodec_flush_buffers(context);
   PacketQueue.Clear();
   mutex.Unlock();
   CMDDEB("cStreamDecoder clear finished\n");
@@ -471,15 +472,16 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
          lastPTS=pkt->pts;
 	 lastDuration=pkt->duration;
-	 if (lastDuration)
-	 	default_frametime=lastDuration/1000;
-         /*{
-	 	if (context->time_base.num)
-	 		default_frametime=lastDuration*context->time_base.num*
-                                        1000/context->time_base.den;
-		else default_frametime=lastDuration;
-	 };*/
-		
+         
+         if (lastDuration) {
+#if LIBAVCODEC_BUILD > 4753
+                 default_frametime=context->time_base.num*
+                         1000/context->time_base.den;
+#else
+                 default_frametime=lastDuration/1000;		
+#endif
+                 MPGDEB("Set default_frametime to %d\n",default_frametime);
+         };
     };
 
     if (!got_picture)
