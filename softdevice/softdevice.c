@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.31 2005/05/20 21:51:37 wachm Exp $
+ * $Id: softdevice.c,v 1.32 2005/05/21 11:04:44 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -681,6 +681,10 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
   fprintf (stderr, "[softdevice] processing args\n");
   while (argc > 0) {
     fprintf (stderr, "[softdevice]   argv [%d] = %s\n", i, argv [i]);
+    if ( !strcmp(argv[i], "softdevice") ) {
+        i++;
+        argc--;
+    };
     if (!strcmp (argv[i], "-vo")) {
       ++i;
       --argc;
