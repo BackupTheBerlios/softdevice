@@ -30,6 +30,13 @@ where /path/to/media/files is the path to the top level directory of
 the files you'd like to playback. I recommend to use symlinks to compose
 this directory from different file systems.
 
+Requirements
+=============
+
+- ffmpeg 0.4.9-pre1 or later
+- softdevice-0.1.1 or later
+- vdr-1.3.22 or later
+
  MANUAL
 =======
 
