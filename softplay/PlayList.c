@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.3 2005/05/16 19:07:54 wachm Exp $
+ * $Id: PlayList.c,v 1.4 2005/05/21 11:19:16 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -22,6 +22,51 @@
 #ifndef LISTDEB
 #define LISTDEB(out...)
 #endif
+
+// ---cPlOptionsMenu-------------------------------------------------------
+
+
+cPlOptionsMenu::cPlOptionsMenu(cPlayList *PlayList)
+        : cOsdMenu("Options",33) {
+        playList=PlayList;
+        playList->GetOptions(playListOptions);
+        Add(new cMenuEditBoolItem("Shuffle Mode",
+                               &playListOptions.shuffle, tr("no"), tr("yes")));
+        Add(new cMenuEditBoolItem("Auto Repeat",
+                               &playListOptions.autoRepeat, tr("no"), tr("yes")));
+};                                   
+
+cPlOptionsMenu::cPlOptionsMenu(sPlayListOptions *Options)
+        : cOsdMenu("Options",33) {
+        playList=NULL;
+        playListOptions=*Options;
+        options=Options;
+        Add(new cMenuEditBoolItem("Shuffle Mode",
+                               &playListOptions.shuffle, tr("no"), tr("yes")));
+        Add(new cMenuEditBoolItem("Auto Repeat",
+                               &playListOptions.autoRepeat, tr("no"), tr("yes")));
+};          
+
+cPlOptionsMenu::~cPlOptionsMenu() {
+};
+
+eOSState cPlOptionsMenu::ProcessKey(eKeys Key)
+{
+  eOSState state = cOsdMenu::ProcessKey(Key);
+                                                                                
+  if (state == osUnknown) {
+     switch (Key) {
+       case kOk: if (playList)
+                         playList->SetOptions(playListOptions);
+                 else *options=playListOptions;
+                 state = osBack;
+                 break;
+       default: break;
+       }
+     }
+  return state;
+}
+                                                                                
 
 // ---cPlayListItem--------------------------------------------------------
 cPlayListItem::cPlayListItem(char *Filename, char *Name) {
@@ -65,7 +110,7 @@ cEditList::cEditList(cPlayList * List) : cOsdMenu(List->ListName) {
                    osUnknown),false);
                 Item=Item->GetNext();
         };
-        SetHelp(NULL,"(Add Files)","Delete","Stop");
+        SetHelp("Options","(Add Files)","Delete","Stop");
         lastActivity=time(NULL);
 };
 
@@ -99,10 +144,13 @@ eOSState cEditList::ProcessKey(eKeys Key) {
                 case kBack:
                         state= osBack;
                         break;
-                 case kBlue:
+                case kBlue:
                         state= osEnd;
                         break;
-                 case kYellow:
+                case kRed:
+                        return AddSubMenu(new cPlOptionsMenu(playList));
+                        break;
+                case kYellow:
                         LISTDEB("Del current %d (idx: %d): %s\n",
                                         Current(),playList->GetItem(Current())->GetIdx(),
                                         playList->GetItem(Current())->GetName() );
@@ -123,7 +171,7 @@ eOSState cEditList::ProcessKey(eKeys Key) {
 // ----cReplayList------------------------------------------------------------
 cReplayList::cReplayList(cPlayList * List) : cOsdMenu(List->ListName) {
         playList=List;
-        SetHelp(NULL,"(Add)","Delete","Stop");
+        SetHelp("Options","(Add)","Delete","Stop");
         RebuildList();
         SetCurrent(Get(playList->shuffleIdx->currShuffleIdx));
         lastActivity=time(NULL);
@@ -222,6 +270,9 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
                 case kBlue:
                         state= osEnd;
                         break;
+                case kRed:
+                        return AddSubMenu(new cPlOptionsMenu(playList));
+                        break;
                 case kYellow:
                         Item=playList->GetShuffledItemByIndex(Current());
                         if (!Item) {
@@ -253,6 +304,8 @@ cPlayList::cPlayList(char *Filename, char *Name,sItemIdx *ShuffleIdx)
                       : cPlayListItem(Filename,Name) {
         first=NULL;
         last=NULL;
+        options.shuffle=false;
+        options.autoRepeat=false;
         
         strncpy(ListName,"Playlist 1",STR_LENGTH);
         ListName[STR_LENGTH-1]=0;
@@ -520,6 +573,12 @@ char * cPlayList::NextFile() {
                         shuffleIdx->currShuffleIdx);
         do {
 		++shuffleIdx->currShuffleIdx;
+                if ( options.autoRepeat && 
+                     shuffleIdx->currShuffleIdx >= shuffleIdx->nIdx ) {
+                        if (options.shuffle)
+                                Shuffle();
+                        shuffleIdx->currShuffleIdx=0;
+                };
         } while ( shuffleIdx->currShuffleIdx<shuffleIdx->nIdx 
                         && !shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item );
 	
@@ -538,6 +597,9 @@ char * cPlayList::PrevFile() {
                         shuffleIdx->currShuffleIdx);
         do {
 		--shuffleIdx->currShuffleIdx;
+                if (options.autoRepeat && shuffleIdx->currShuffleIdx<0)
+                        shuffleIdx->currShuffleIdx=shuffleIdx->nIdx-1;
+
         } while ( shuffleIdx->currShuffleIdx > 0
                         &&!shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item );
 	
@@ -557,6 +619,12 @@ char * cPlayList::NextAlbumFile() {
                         shuffleIdx->currShuffleIdx,currAlbum);
         do {
 		++shuffleIdx->currShuffleIdx;
+                if ( options.autoRepeat && 
+                     shuffleIdx->currShuffleIdx >= shuffleIdx->nIdx ) {
+                        if (options.shuffle)
+                                Shuffle();
+                        shuffleIdx->currShuffleIdx=0;
+                };
         } while ( shuffleIdx->currShuffleIdx<shuffleIdx->nIdx 
                         && ( !shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item 
                     || currAlbum==shuffleIdx->Idx[
@@ -579,6 +647,8 @@ char * cPlayList::PrevAlbumFile() {
         cPlayList *currAlbum=shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Album;
         do {
 	        --shuffleIdx->currShuffleIdx;
+                if (options.autoRepeat && shuffleIdx->currShuffleIdx<0)
+                        shuffleIdx->currShuffleIdx=shuffleIdx->nIdx-1;
         } while ( shuffleIdx->currShuffleIdx > 0  
                   && ( !shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item 
                     || currAlbum==shuffleIdx->Idx[
@@ -646,7 +716,8 @@ void cPlayList::PrepareForPlayback() {
 	shuffleIdx->currShuffleIdx=-1;
 
         BuildIdx();
-        //Shuffle();
+        if (options.shuffle)
+                Shuffle();
 };
 
 void cPlayList::Shuffle() {
@@ -676,18 +747,13 @@ void cPlayList::Shuffle() {
 		LISTDEB("shuffleIdx[%d]: %d\n",i,shuffleIdx->Idx[i]);       
 */
 };
-/*
-void cPlayList::CleanShuffleIdx() {
-        // remove deleted files from shuffleIdx
-        int fillIndex=0;
-        int newNItems=GetNoItemsRecursive();
-        
-        for (int i=0; i<nItems; i++) 
-                if ( GetItemByIndex(shuffleIdx[i]) )
-                        shuffleIdx[fillIndex++]=shuffleIdx[i];
-        
-        // for future adds
-        for (int i=newNItems; i<MAX_ITEMS; i++)
-                shuffleIdx[i]=maxIdx+i-newNItems;
-        nItems=newNItems;
-};*/
+
+void cPlayList::SetOptions( sPlayListOptions &Options) {
+
+        if (Options.shuffle != options.shuffle 
+                        && Options.shuffle)
+                Shuffle();
+
+        options=Options;
+};
+

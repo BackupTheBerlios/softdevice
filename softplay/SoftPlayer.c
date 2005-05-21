@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.7 2005/05/16 22:24:16 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.8 2005/05/21 11:19:16 wachm Exp $
  */
 
 #include "SoftPlayer.h"
@@ -72,8 +72,8 @@ void cSoftPlayer::Action() {
 	new_speed=-1;
         AudioIdx=-1;
         VideoIdx=-1;
-
-	if (!ic) {
+	
+        if (!ic) {
 	   printf("ic is null!!\n");
 	   running= false;
 	   reading= false;
@@ -133,11 +133,11 @@ void cSoftPlayer::Action() {
                         cPlayer::DeviceClear();
                       //  if (new_speed!=-1) 
                         //        av_seek_frame(ic,-1,SoftDevice->GetSTC()/9*100);
-                        /*
-                        if (new_speed != -1)
-                                cPlayer::DeviceTrickSpeed(2);
-                        else cPlayer::DeviceTrickSpeed(1);
-*/
+                        
+//                        if (new_speed != -1)
+//                                cPlayer::DeviceTrickSpeed(2);
+//                        else cPlayer::DeviceTrickSpeed(1);
+
                         fast_STC=SoftDevice->GetSTC()/9*100;
                         forward = new_forward;
                         speed = new_speed;
@@ -179,20 +179,31 @@ void cSoftPlayer::Action() {
                         VideoIdx=pkt.stream_index;
                 // skip packets which do not belong to the current streams
                 if ( pkt.stream_index != VideoIdx &&
-                     pkt.stream_index != AudioIdx )
+                     pkt.stream_index != AudioIdx ) {
+			printf("Drop Packet PTS: %lld\n",pkt.pts);
                         continue;
-
-                if ( pkt.pts!=AV_NOPTS_VALUE && PTS==pkt.pts )
-                        continue;
+		};
+			
 		lastPTS=PTS;
                 PTS=pkt.pts;
+#if LIBAVFORMAT_BUILD > 4623
+		AVRational time_base;
+                time_base=ic->streams[pkt.stream_index]->time_base;
+		if ( pkt.pts != (int64_t) AV_NOPTS_VALUE ) {
+			pkt.pts=av_rescale(pkt.pts, AV_TIME_BASE* (int64_t)time_base.num, time_base.den)/100 ;
+                };
+
+                //printf("PTS: %lld new %lld num %d den %d\n",PTS,pkt.pts,
+                //                time_base.num,time_base.den);
+#else
 		if ( pkt.pts != (int64_t) AV_NOPTS_VALUE )
 			pkt.pts/=100;
+#endif
 		//pkt.pts*=1000/AV_TIME_BASE;
 
 		if (pause) {
 			DeviceFreeze();
-			while (pause)
+			while (pause && running)
 		   		usleep(10000);
 			DevicePlay();
 		};
@@ -281,7 +292,7 @@ char *cSoftPlayer::GetTitle()  {
 
 bool cSoftPlayer::GetIndex(int &Current, int &Total, bool SnapToIFrame ) {
 	if (ic) {
-		Current=(int) SoftDevice->GetSTC()/(9*10000);
+		Current=(int) SoftDevice->GetSTC()/(9*10000)-ic->start_time/AV_TIME_BASE;
 		Total=ic->duration/AV_TIME_BASE;
                 return true;
         } else {
@@ -300,7 +311,7 @@ int cSoftPlayer::GetDuration() {
 
 int cSoftPlayer::GetCurrPos() { 
         if (SoftDevice) 
-                return SoftDevice->GetSTC()/(9*10000); 
+                return SoftDevice->GetSTC()/(9*10000)-ic->start_time/AV_TIME_BASE; 
         else return 0;
 };
 
@@ -445,93 +456,93 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
         };
 
 
-	if(state==osUnknown) {
-		state = osContinue;
+	if(state!=osUnknown) 
+		return state;
 
-		switch (Key) {
-			// Positioning:
-			case k8:   
-                                if (Softplay->currList) {
-                                        Hide();
-                                        OsdActive=OsdPrivMenu;
-                                        privateMenu=new cReplayList(Softplay->currList);
-                                        privateMenu->Display();
-                                        return osContinue;
-                                };
-                                break;
-			case k5:   
-                                if (Softplay->currList) {
-                                        Hide();
-                                        OsdActive=OsdPrivMenu;
-                                        privateMenu=new cEditList(Softplay->currList);
-                                        privateMenu->Display();
-                                        return osContinue;
-                                };
-                                break;
-			case kGreen|k_Repeat:
-                        case kGreen:   
-                                if ( SoftPlayer->GetDuration() > 300 )
-                                        SoftPlayer->SkipSeconds(-60); 
-                                else SoftPlayer->SkipSeconds(-15);
-                                break;
-			case kYellow|k_Repeat:
-			case kYellow: 
-                                if ( SoftPlayer->GetDuration() > 300 )
-                                        SoftPlayer->SkipSeconds( 60);
-                                else SoftPlayer->SkipSeconds( 15);
-                                break;
-			case kBlue:    
-                                SoftPlayer->Stop(); 
-			        shouldStop=true;  
-                                return osEnd;
-                                break;
-			case kPause: SoftPlayer->TogglePause(); break;
-			case kUp:
-			case kPlay:
-			              SoftPlayer->Play();  break;
-			case kDown:
-			              SoftPlayer->Pause();  break;
-                        case kRight:
-			              //SoftPlayer->FastForward();  
-                                      break;
-                        case kLeft:
-			              //SoftPlayer->FastBackward();  
-                                      break;
-			case kOk: if (OsdActive==OsdProgress)
-					Hide();
-				  else ShowProgress(); 
-				  break;
-                        case k9: if (playList) {
-                                         char * nextFile=playList->NextFile();
-                                         if (nextFile)
-                                               SoftPlayer->PlayFile(nextFile);
-                                 };
-                                 break;
-                        case k7: if (playList) {
-                                         char * prevFile=playList->PrevFile();
-                                         printf("play PrevFile %p\n",prevFile);
-                                         if (prevFile)
-                                               SoftPlayer->PlayFile(prevFile);
-                                 };
-                                 break;
-                        case k6: if (playList) {
-                                         char * nextFile=playList->NextAlbumFile();
-                                         if (nextFile)
-                                               SoftPlayer->PlayFile(nextFile);
-                                 };
-                                 break;
-                        case k4: if (playList) {
-                                         char * prevFile=playList->PrevAlbumFile();
-                                         if (prevFile)
-                                               SoftPlayer->PlayFile(prevFile);
-                                 };
-                                 break;
-                                  
-			default:
-			   break;
-		};
+	state = osContinue;
+	switch (Key) {
+		// Positioning:
+		case k8:   
+			if (Softplay->currList) {
+				Hide();
+				OsdActive=OsdPrivMenu;
+				privateMenu=new cReplayList(Softplay->currList);
+				privateMenu->Display();
+				return osContinue;
+			};
+			break;
+		case k5:   
+			if (Softplay->currList) {
+				Hide();
+				OsdActive=OsdPrivMenu;
+				privateMenu=new cEditList(Softplay->currList);
+				privateMenu->Display();
+				return osContinue;
+			};
+			break;
+		case kGreen|k_Repeat:
+		case kGreen:   
+			if ( SoftPlayer->GetDuration() > 300 )
+				SoftPlayer->SkipSeconds(-60); 
+			else SoftPlayer->SkipSeconds(-15);
+			break;
+		case kYellow|k_Repeat:
+		case kYellow: 
+			if ( SoftPlayer->GetDuration() > 300 )
+				SoftPlayer->SkipSeconds( 60);
+			else SoftPlayer->SkipSeconds( 15);
+			break;
+		case kBlue:    
+			SoftPlayer->Stop(); 
+			shouldStop=true;  
+			return osEnd;
+			break;
+		case kPause: SoftPlayer->TogglePause(); break;
+		case kUp:
+		case kPlay:
+			     SoftPlayer->Play();  break;
+		case kDown:
+			     SoftPlayer->Pause();  break;
+		case kRight:
+			     //SoftPlayer->FastForward();  
+			     break;
+		case kLeft:
+			     //SoftPlayer->FastBackward();  
+			     break;
+		case kOk: if (OsdActive==OsdProgress)
+				  Hide();
+			else ShowProgress(); 
+			break;
+		case k9: if (playList) {
+				 char * nextFile=playList->NextFile();
+				 if (nextFile)
+					 SoftPlayer->PlayFile(nextFile);
+			 };
+			 break;
+		case k7: if (playList) {
+				 char * prevFile=playList->PrevFile();
+				 printf("play PrevFile %p\n",prevFile);
+				 if (prevFile)
+					 SoftPlayer->PlayFile(prevFile);
+			 };
+			 break;
+		case k6: if (playList) {
+				 char * nextFile=playList->NextAlbumFile();
+				 if (nextFile)
+					 SoftPlayer->PlayFile(nextFile);
+			 };
+			 break;
+		case k4: if (playList) {
+				 char * prevFile=playList->PrevAlbumFile();
+				 if (prevFile)
+					 SoftPlayer->PlayFile(prevFile);
+			 };
+			 break;
+
+		default:
+			 break;
 	};
-	return osContinue;
+	return state;
 };
 
 

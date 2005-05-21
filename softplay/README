@@ -1,7 +1,6 @@
 This is a "plugin" for the Video Disk Recorder (VDR) with Softdevice.
 
-Written by:                  The Softdevice Team
-                             Stefan Lucke, Torgeir Vemo and Martin Wache
+Written by:                  Martin Wache
 
 Project's homepage:          http://softdevice.berlios.de
 
@@ -21,8 +20,66 @@ a special playback mode which supports other video/audio codecs than mpeg2 and
 sends the video/audio packets directly to the softdevice.
 
 Please note that this is a very early release, for me it works without any
-troubles for .avi and for .mp3 files. Other file formats may or may not work.
+troubles for almost all Video and Audio file formats (depending on your ffmpeg
+vestion *.avi,*.mov,*.mpg, *.mp3, *.wav, *.ogg and many more).
 
 Start with :
 ./vdr -Psoftdevice -P"softplay --media-path /path/to/media/files"
 
+where /path/to/media/files is the path to the top level directory of
+the files you'd like to playback. I recommend to use symlinks to compose
+this directory from different file systems.
+
+ MANUAL
+=======
+
+There are two playback modes: single file playback and playlist mode.
+
+During single file playback you can use the keys almost like you are used to
+from vdr recording playback. Green/Yellow skip forward/backward in the stream,
+the blue button stops the replay. Up/down start/pause the playback and right/left will toggle fast forward/backward (doesn't work yet :-( ) .
+
+In playlist mode you can additionally use the following keys to change
+titles/albums (they are similar to vdr cutting and dvd-plugin navigation
+keys):
+
+        (4)       (5)        (6)
+       Prev.    Playlist     Next
+       Album   Album View    Album
+
+       (7)        (8)        (9)
+       Prev.   Playlist      Next
+       Title   Title View    Title
+
+
+The Files Menu
+==============
+
+In the file selection menu you select files for single file playback, compose
+playlist or play whole directories. To skip to a certain file you can enter the
+corresponding number using the remote, to play a file/directory press the green
+button.
+If you select a directoy to be played a new playlist containing all files
+(including the subdirectories) will be created and the playback of this list
+will start.
+To add/remove a file or directory to the current playlist use the yellow
+button, files included in the current playlist will be marked with 'P'. To
+start the playback of the current playlist press the blue button.
+
+
+TODO
+----
+- fix all the remaining bugs ;-)
+- fast forward / backward
+- selection of audio tracks for videos
+- playlist saving
+- .m3u support
+- read ID 3 tags for playlists
+- get playtime of playlists
+
+
+Many Thanks to
+--------------
+- Nicolas Huillard and Stefan Lucke for the suggestions and the discussion
+  about the user interface
+- all who contributed to ffmpeg, a really great video/library library

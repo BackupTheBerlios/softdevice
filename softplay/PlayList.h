@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.h,v 1.3 2005/05/16 19:07:54 wachm Exp $
+ * $Id: PlayList.h,v 1.4 2005/05/21 11:19:16 wachm Exp $
  */
 
 #ifndef __PLAYLIST_H__
@@ -107,6 +107,11 @@ class cReplayList: public cOsdMenu {
         void UpdateStatus();
 };
 
+struct sPlayListOptions {
+	int shuffle;
+	int autoRepeat;
+};
+
 class cPlayList : public cPlayListItem {
 	friend class cEditList;
 	friend class cReplayList;
@@ -117,11 +122,8 @@ private:
         cPlayListItem *last;
         bool shuffleIdxOwner;
         sItemIdx *shuffleIdx;
-        //int minIdx;
-        //int maxIdx;
-        //int nItems;
-	//int *shuffleIdx;
-        
+       
+        sPlayListOptions options;
   public:
         cPlayList(char *Filename=NULL, char *Name=NULL,
                         sItemIdx *shuffleIdx=NULL);
@@ -132,6 +134,9 @@ private:
         {BuildIdx(shuffleIdx);}; 
 
         void PrepareForPlayback();
+	void SetOptions(sPlayListOptions &Options);
+	void GetOptions(sPlayListOptions &Options)
+	{ Options=options; };
         
         virtual cPlayListItem *GetItemByIndex(int Index);
         inline cPlayListItem *GetShuffledItemByIndex(int Index) {   
@@ -159,13 +164,25 @@ private:
         bool AddDir(char * dirname,char *Title = NULL, bool recursive = true);
 
 	void Shuffle();
-	//void CleanShuffleIdx();
+
         char *CurrFile();
         char *NextFile();
 	char *PrevFile();
 	char *NextAlbumFile();
 	char *PrevAlbumFile();
 	
+};
+
+class cPlOptionsMenu : public cOsdMenu {
+        protected:
+                sPlayListOptions playListOptions;
+                sPlayListOptions *options;
+                cPlayList *playList;
+        public:
+                cPlOptionsMenu(cPlayList *PlayList);
+                cPlOptionsMenu(sPlayListOptions *Options);
+                ~cPlOptionsMenu();
+                eOSState ProcessKey(eKeys Key);
 };
         
         
