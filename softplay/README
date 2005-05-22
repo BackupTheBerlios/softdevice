@@ -34,8 +34,17 @@ Requirements
 =============
 
 - ffmpeg 0.4.9-pre1 or later
-- softdevice-0.1.1 or later
-- vdr-1.3.22 or later
+- softdevice-0.1.1 or later (recommended is softdevice-0.1.2)
+- vdr-1.3.22 or later (others may work, I use 1.3.22)
+
+Installation
+=============
+
+Install and compile ffmpeg and the softdevice. Copy the source of the this
+plugin into the directory PLUGINS/src/ and adjust the path to your ffmpeg 
+installation in the softplay makefile. Softplay expects the source of
+the softdevice your are useing in PLUGINS/src/softdevice.
+As usual do a "make plugins" in the vdr directory to compile the plugin. 
 
  MANUAL
 =======
@@ -80,13 +89,23 @@ TODO
 - fast forward / backward
 - selection of audio tracks for videos
 - playlist saving
-- .m3u support
+- add .m3u-playlist support
 - read ID 3 tags for playlists
 - get playtime of playlists
 
+Problems
+--------
+
+Probably quite a lot ;-)
+
+Discussions and development of this plugin takes place on the softdevice 
+mailling list softdevice-devel at berlios dot de. So in case you experience
+problems (or even crashes) with this plugin you will get help there.
 
 Many Thanks to
 --------------
 - Nicolas Huillard and Stefan Lucke for the suggestions and the discussion
   about the user interface
-- all who contributed to ffmpeg, a really great video/library library
+- all who contributed to ffmpeg, a really great video/audio library
+
+Martin Wache
