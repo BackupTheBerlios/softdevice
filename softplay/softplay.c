@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.5 2005/05/16 19:07:54 wachm Exp $
+ * $Id: softplay.c,v 1.6 2005/05/22 10:14:59 wachm Exp $
  */
 
 
@@ -15,10 +15,15 @@
 
 #define NAME_LENGTH 200
 
-static const char *VERSION        = "0.0.1";
+static const char *VERSION        = "0.0.2";
 static const char *DESCRIPTION    = "SoftPlay play media files with the softdevice";
 static const char *MAINMENUENTRY  = "SoftPlay";
 
+//#define PLUGDEB(out...)     {printf("PLUGDEB: ");printf(out...);}
+
+#ifndef PLUGDEB
+#define PLUGDEB(out...)
+#endif
 
 // --- cMenuDirectory -------------------------------------------
 
@@ -103,34 +108,43 @@ void cMenuDirectory::PrepareDirectory(char *path)
 	  return;
   };
   Entries=new DirEntry[n];
-  nEntries=n;
+  nEntries=0;;
   
   for (int i=0; i<n; i++) {
-  	  // fill Entries array and resolve symlinks
-	  snprintf(Entries[i].name,NAME_LENGTH,"%s/%s",
-	            start_path,namelist[i]->d_name);
-	  Entries[i].name[NAME_LENGTH-1]=0;
-          strncpy(Entries[i].title,namelist[i]->d_name,NAME_LENGTH);
-          Entries[i].title[NAME_LENGTH-1]=0;
+	  if ( !strcmp("..",namelist[i]->d_name) ||
+			  !strcmp(".",namelist[i]->d_name) ) {
+		  PLUGDEB("ignore %s\n",namelist[i]->d_name);
+		  continue;
+	  };
 
-	  Entries[i].type=namelist[i]->d_type;
+	  // fill Entries array and resolve symlinks
+	  snprintf(Entries[nEntries].name,NAME_LENGTH,"%s/%s",
+	            start_path,namelist[i]->d_name);
+	  Entries[nEntries].name[NAME_LENGTH-1]=0;
+          strncpy(Entries[nEntries].title,namelist[i]->d_name,NAME_LENGTH);
+          Entries[nEntries].title[NAME_LENGTH-1]=0;
+
+	  Entries[nEntries].type=namelist[i]->d_type;
           // check type (non ext2/3 and symlinks)
-          if ( Entries[i].type == 0 || Entries[i].type == DT_LNK ) {
+          if ( Entries[nEntries].type == 0 || 
+                          Entries[nEntries].type == DT_LNK ) {
                   struct stat stbuf;
-                  if ( !stat(Entries[i].name,&stbuf) ) {
+                  if ( !stat(Entries[nEntries].name,&stbuf) ) {
                           if ( S_ISDIR(stbuf.st_mode) ) 
-                                  Entries[i].type = DT_DIR;
+                                  Entries[nEntries].type = DT_DIR;
                           else if ( S_ISREG(stbuf.st_mode) )
-                                  Entries[i].type = DT_REG;
+                                  Entries[nEntries].type = DT_REG;
                   };
           };
 	  
 	  // add to menu using original names
-          PrintItemName(Name, Entries[i],i);
+          PrintItemName(Name, Entries[nEntries],nEntries);
 
 	  Add(new cOsdItem(strdup(Name),osUnknown),false);
-	  printf("Name %s type %d \n",Entries[i].name,Entries[i].type);
+	  PLUGDEB("Name %s type %d \n",Entries[nEntries].name
+                          ,Entries[nEntries].type);
 
+          nEntries++;
           free(namelist[i]);	  
   }
   free(namelist);
@@ -153,7 +167,7 @@ eOSState cMenuDirectory::SelectEntry(int No, bool play) {
         };
         if (Entries[No].type == DT_DIR) {
                 Item=PlayList->GetAlbumByName(Entries[No].name);
-                printf("Item %p\n",Item);
+                PLUGDEB("Item %p\n",Item);
                 if (!Item)
                         PlayList->AddDir(Entries[No].name,
                                         Entries[No].title,true);
@@ -196,7 +210,7 @@ eOSState cMenuDirectory::ProcessKey(eKeys Key) {
                                 };
                                 SetCurrent(Get(keySelNo-1));
                                 Display();
-                                printf("key %d keySelNo %d\n",(Key-k0),keySelNo);
+                                PLUGDEB("key %d keySelNo %d\n",(Key-k0),keySelNo);
                                 break;
                         }
 		case kOk: 
@@ -398,6 +412,7 @@ const int32_t Divisor=0xfda9743d;
 int32_t SimpleHash( char const* str) {
         // just used to fast identify strings. 
         // I guess this can be made much better.
+        // FIXME buggy?
         //printf("String: %s",str);
         int result=0;
         do {
@@ -414,11 +429,11 @@ void PrintCutDownString(char *str,char *orig,int len) {
         int origlen=strlen(orig);
         if (origlen<len) {
                 strcpy(str,orig);
-                printf("just copy str: %s\n",str);
+                PLUGDEB("just copy str: %s\n",str);
                 return;
         };
         if (len<15) {
-                printf("CutDownString len %d is too small!\n",len);
+                PLUGDEB("CutDownString len %d is too small!\n",len);
                 return;
         };
         strncpy(str,orig,Pos);
@@ -427,6 +442,6 @@ void PrintCutDownString(char *str,char *orig,int len) {
         str[Pos++]='.';
         strncpy(&str[Pos],&orig[origlen-len+1+STARTCPY+3],len-STARTCPY-3);
         str[len-1]=0;
-        printf("before end copy %s\n",str);
+        PLUGDEB("before end copy %s\n",str);
 };
                 
