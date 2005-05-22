@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.5 2005/05/21 15:35:01 wachm Exp $
+ * $Id: PlayList.c,v 1.6 2005/05/22 10:14:16 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -17,7 +17,7 @@
 
 #include "vdr/player.h"
 
-#define LISTDEB(out...) {printf("LISTDEB: ");printf(out);}
+//#define LISTDEB(out...) {printf("LISTDEB: ");printf(out);}
 
 #ifndef LISTDEB
 #define LISTDEB(out...)
@@ -156,7 +156,7 @@ eOSState cEditList::ProcessKey(eKeys Key) {
                                         playList->GetItem(Current())->GetName() );
                         playList->RemoveItem(
                                         playList->GetItem(Current()));
-                        printf("Remove finished\n");
+                        LISTDEB("Remove finished\n");
                         Del(Current());
                         Display();
                         state=osContinue;
@@ -173,8 +173,6 @@ cReplayList::cReplayList(cPlayList * List) : cOsdMenu(List->ListName) {
         playList=List;
         SetHelp("Options","(Add)","Delete","Stop");
         RebuildList();
-        SetCurrent(Get(playList->shuffleIdx->currShuffleIdx));
-        lastActivity=time(NULL);
 };
 
 cReplayList::~cReplayList() {
@@ -201,6 +199,8 @@ void cReplayList::RebuildList() {
         };
         lastListItemCount = playList->GetNoItemsRecursive();
 	playList->shuffleIdx->reshuffled = false;
+        SetCurrent(Get(playList->shuffleIdx->currShuffleIdx));
+        lastActivity=time(NULL)-600;
 };
 
 void cReplayList::UpdateStatus() {
@@ -424,14 +424,14 @@ void cPlayList::AddItemAtEnd(cPlayListItem *Item) {
                 shuffleIdx->Album[shuffleIdx->nAlbum].Item=Item;
                 shuffleIdx->Album[shuffleIdx->nAlbum].Hash=
                         SimpleHash(Item->GetFilename());
-                printf("Hash %x Filename %s\n",shuffleIdx->Album[shuffleIdx->nAlbum].Hash,Item->GetFilename());
+                LISTDEB("Hash %x Filename %s\n",shuffleIdx->Album[shuffleIdx->nAlbum].Hash,Item->GetFilename());
                 shuffleIdx->nAlbum++;
         } else {
                 shuffleIdx->Idx[shuffleIdx->nIdx].Album=this;
                 shuffleIdx->Idx[shuffleIdx->nIdx].Item=Item;
                 shuffleIdx->Idx[shuffleIdx->nIdx].Hash=
                         SimpleHash(Item->GetFilename());
-                printf("Hash %x Filename %s\n",shuffleIdx->Idx[shuffleIdx->nIdx].Hash,Item->GetFilename());
+                LISTDEB("Hash %x Filename %s\n",shuffleIdx->Idx[shuffleIdx->nIdx].Hash,Item->GetFilename());
                 shuffleIdx->nIdx++;
         }
 };                    
@@ -735,9 +735,9 @@ void cPlayList::Shuffle() {
                 int xchange2=(int)( (float)(random())*(float)(shuffleIdx->nIdx-1-shuffleIdx->currShuffleIdx)/(float)(RAND_MAX))
 			+shuffleIdx->currShuffleIdx+1;
                 if (xchange1 >=shuffleIdx->nIdx)
-                        printf("Martin, depp!! %d\n",xchange1);
+                        LISTDEB("Martin, depp!! %d\n",xchange1);
                 if (xchange2 >=shuffleIdx->nIdx)
-                        printf("Martin, depp!! %d\n",xchange2);
+                        LISTDEB("Martin, depp!! %d\n",xchange2);
                 
 		LISTDEB("Shuffle %4d(%4d) - %4d(%4d) \n",
                    xchange1,shuffleIdx[xchange1],xchange2,shuffleIdx[xchange2]);

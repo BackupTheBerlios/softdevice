@@ -6,13 +6,13 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.8 2005/05/21 11:19:16 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.9 2005/05/22 10:16:25 wachm Exp $
  */
 
 #include "SoftPlayer.h"
 #include "softplay.h"
 
-#define PLDBG(out...) { printf("PLDBG: ");printf(out);}
+//#define PLDBG(out...) { printf("PLDBG: ");printf(out);}
 //#define PKTDBG(out...) {printf("PKTDBG: ");printf(out);}
 
 #ifndef PLDBG
@@ -293,7 +293,8 @@ char *cSoftPlayer::GetTitle()  {
 bool cSoftPlayer::GetIndex(int &Current, int &Total, bool SnapToIFrame ) {
 	if (ic) {
 		Current=(int) SoftDevice->GetSTC()/(9*10000)-ic->start_time/AV_TIME_BASE;
-		Total=ic->duration/AV_TIME_BASE;
+		Total=(ic->duration)/AV_TIME_BASE;
+		//printf("duration %lld start_time %lld\n",ic->duration,ic->start_time);
                 return true;
         } else {
                 Current=0;
@@ -304,9 +305,10 @@ bool cSoftPlayer::GetIndex(int &Current, int &Total, bool SnapToIFrame ) {
 };
         
 int cSoftPlayer::GetDuration() { 
-        if (ic) 
-                return ic->duration/AV_TIME_BASE; 
-        else return 0; 
+        if (ic) {
+		//printf("duration %lld start_time %lld\n",ic->duration,ic->start_time);		
+                return (ic->duration)/AV_TIME_BASE; 
+	} else return 0; 
 };
 
 int cSoftPlayer::GetCurrPos() { 
