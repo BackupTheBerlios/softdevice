@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.17 2005/05/15 09:53:24 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.18 2005/05/29 19:50:44 lucke Exp $
  */
 
 #include "video.h"
@@ -82,24 +82,13 @@ char *osdMode [] = {
 /* ----------------------------------------------------------------------------
  */
 char *videoAspectNames [] = {
-        "Monitor",
-        "TV  4:3 PAL",
-        "TV 16:9 PAL",
-        "5:4 as 4:3",
-        "test 2",
+        "Default",
+        "5:4",
+        "4:3",
+        "16:9",
+        "16:10",
         NULL
      };
-struct sVideoAspectsValues {
-  int   width,
-        height;
-} videoAspectValues [] = {
-  { 768, 576},
-  { 720, 576},
-  { 540, 576},
-  { 800, 576},
-  {1280, 1024},
-  {768,576}
-};
 
 /* ----------------------------------------------------------------------------
  */
@@ -264,14 +253,6 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
 
 /* ---------------------------------------------------------------------------
  */
-void cSetupStore::getScreenDimension(int &w, int &h)
-{
-  w = videoAspectValues [screenPixelAspect]. width;
-  h = videoAspectValues [screenPixelAspect]. height;
-}
-
-/* ---------------------------------------------------------------------------
- */
 char *cSetupStore::getPPValue(void)
 {
   if (strcmp(deint_str[deintMethod], "linblend") == 0) return "lb:a";
@@ -383,9 +364,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                            &data->avOffset,
                            MINAVOFFSET, MAXAVOFFSET));
 
-  Add(new cMenuEditStraItem(tr("Pixel Aspect"),
+  Add(new cMenuEditStraItem(tr("Screen Aspect"),
                             &data->screenPixelAspect,
-                            //2,
                             5,
                             videoAspectNames));
 

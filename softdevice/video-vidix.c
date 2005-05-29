@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.7 2005/05/16 15:53:12 wachm Exp $
+ * $Id: video-vidix.c,v 1.8 2005/05/29 19:50:44 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -28,7 +28,9 @@ uint64_t startTime;
 cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
                   : cVideoOut(setupStore)
 {
-    int err;
+    int     err;
+    double  displayRatio;
+
     if ((fbdev = open(FBDEV, O_RDWR)) == -1) {
         esyslog("[cVidixVideoOut] Can't open framebuffer exiting\n");
         exit(1);
@@ -106,6 +108,9 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
      */
     fwidth = lwidth = dwidth = swidth = Xres;
     fheight = lheight = dheight = sheight = Yres;
+
+    displayRatio = (double) Xres / (double) Yres;
+    SetParValues(displayRatio, displayRatio);
 
     printf("cVidixVideoOut: xres = %d yres= %d \n", fb_vinfo.xres, fb_vinfo.yres);
     printf("cVidixVideoOut: line length = %d \n", fb_line_len);

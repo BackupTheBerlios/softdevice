@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.13 2005/05/21 14:20:03 wachm Exp $
+ * $Id: video.h,v 1.14 2005/05/29 19:50:44 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -24,6 +24,8 @@
 
 #define OSD_FULL_WIDTH    736
 #define OSD_FULL_HEIGHT   576
+
+#define MAX_PAR 5
 
 // MMX - 3Dnow! defines
 
@@ -91,6 +93,7 @@ protected:
             currentPixelFormat,
             aspect_changed,
             current_afd;
+    double  parValues[MAX_PAR];
 
     cSetupStore *setupStore;
                 
@@ -109,6 +112,7 @@ public:
     virtual void Sync(cSyncTimer *syncTimer, int *delay);
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
     virtual void Pause(void) {return;};
+    virtual void SetParValues(double displayAspect, double displayRatio);
     virtual void CheckAspect(int new_afd, float new_asp);
     virtual void CheckAspectDimensions (AVFrame *picture, AVCodecContext *context);
     virtual bool Initialize(void) {return 1;};

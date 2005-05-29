@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.23 2005/05/16 15:53:12 wachm Exp $
+ * $Id: video-xv.c,v 1.24 2005/05/29 19:50:44 lucke Exp $
  */
 
 #include <unistd.h>
@@ -626,6 +626,7 @@ bool cXvVideoOut::Initialize (void)
     XGCValues           values;
     XTextProperty       x_wname, x_iname;
     struct timeval      current_time;
+    double              displayAspect, displayRatio;
 
   dsyslog("[XvVideoOut]: patch version (%s)", PATCH_VERSION);
 
@@ -656,6 +657,19 @@ bool cXvVideoOut::Initialize (void)
   XStringListToTextProperty(&w_name, 1 ,&x_wname);
   XStringListToTextProperty(&i_name, 1 ,&x_iname);
 
+  /* --------------------------------------------------------------------------
+   * set PAR values
+   */
+  displayAspect = (double) DisplayWidthMM(dpy, scn_id) /
+                    (double) DisplayHeightMM(dpy, scn_id);
+  displayRatio  = (double) DisplayWidth(dpy, scn_id) /
+                    (double) DisplayHeight(dpy, scn_id);
+
+  SetParValues(displayAspect, displayRatio);
+
+  fprintf(stderr,
+          "[XvVideoOut]: displayAspect = %f, displayRatio = %f, PAR = %f\n",
+          displayAspect, displayRatio, parValues[0]);
 
   if (scale_size) {
     lwidth  = (int)(((double)lwidth  * (double)scale_size)/100.0);

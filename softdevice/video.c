@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.20 2005/05/21 14:20:03 wachm Exp $
+ * $Id: video.c,v 1.21 2005/05/29 19:50:44 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -25,6 +25,10 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   PixelMask=NULL;
   this->setupStore=setupStore;
   freezeMode=false;
+
+  for (int i = 0; i < MAX_PAR; ++i)
+    parValues [i] = 1.0;
+
   //start osd thread
   active=true;
   Start();
@@ -133,11 +137,21 @@ void cVideoOut::Action()
 
 /* ---------------------------------------------------------------------------
  */
+void cVideoOut::SetParValues(double displayAspect, double displayRatio)
+{
+  parValues [0] = displayAspect / displayRatio;
+  parValues [1] = ( 5.0 /  4.0) / displayRatio;
+  parValues [2] = ( 4.0 /  3.0) / displayRatio;
+  parValues [3] = (16.0 /  9.0) / displayRatio;
+  parValues [4] = (16.0 / 10.0) / displayRatio;
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cVideoOut::CheckAspect(int new_afd, float new_asp)
 {
-    int           new_aspect,
-                  screenWidth, screenHeight;
-    double        d_asp, afd_asp;
+    int           new_aspect;
+    double        d_asp, afd_asp, p_asp;
 
   /* -------------------------------------------------------------------------
    * check if there are some aspect ratio constraints
@@ -171,7 +185,6 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
     return;
   }
 
-  setupStore->getScreenDimension (screenWidth, screenHeight);
   aspect_changed = 1;
 
   d_asp = (double) dwidth / (double) dheight;
@@ -204,27 +217,26 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
   /* --------------------------------------------------------------------------
    * handle screen aspect support now
    */
-  afd_asp *= ((double) screenWidth / (double) screenHeight) * (3.0 / 4.0);
+  p_asp = parValues [screenPixelAspect];
 
-  if (d_asp > afd_asp) {
+  if ((d_asp * p_asp) > afd_asp) {
     /* ------------------------------------------------------------------------
      * display aspect is wider than frame aspect
      * so we have to pillar-box
      */
     lheight = dheight;
-    lwidth = (int) (0.5 + ((double) dheight * afd_asp));
-    lxoff = (dwidth - lwidth) / 2;
-    lyoff = 0;
+    lwidth = (int) (0.5 + ((double) dheight * afd_asp / p_asp));
   } else {
     /* ------------------------------------------------------------------------
      * display aspect is taller or equal than frame aspect
      * so we have to letter-box
      */
     lwidth = dwidth;
-    lheight = (int) (0.5 + ((double) dwidth / afd_asp));
-    lyoff = (dheight - lheight) / 2;
-    lxoff = 0;
+    lheight = (int) (0.5 + ((double) dwidth * p_asp / afd_asp));
   }
+
+  lxoff = (dwidth - lwidth) / 2;
+  lyoff = (dheight - lheight) / 2;
 
   dsyslog("[VideoOut]: %dx%d [%d,%d %dx%d] -> %dx%d [%d,%d %dx%d]",
           fwidth, fheight, sxoff, syoff, swidth, sheight,

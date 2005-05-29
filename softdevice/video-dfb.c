@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.26 2005/05/16 15:53:12 wachm Exp $
+ * $Id: video-dfb.c,v 1.27 2005/05/29 19:50:44 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -378,6 +378,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   if (scrSurface)
   {
       DFBSurfacePixelFormat fmt;
+      double                displayRatio;
 
     scrSurface->GetSize(&Xres,&Yres);
     fprintf (stderr,
@@ -385,6 +386,9 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
              Xres, Yres);
     lwidth  = dwidth  = Xres;
     lheight = dheight = Yres;
+
+    displayRatio = (double) Xres / (double) Yres;
+    SetParValues(displayRatio, displayRatio);
 
     fmt = scrSurface->GetPixelFormat();
     fprintf (stderr,

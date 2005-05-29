@@ -1,5 +1,6 @@
 Changelog
 2005-05-29:
+    - changed screen aspect ratio selection (based on suggestion by Nicolas Huillard)
     - fix some segfaults on bad signal
     - fix possible segfault when called without arguments 
       (thanks to Marko Mäkelä)

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.3 2005/03/19 22:01:21 lucke Exp $
+ * $Id: i18n.c,v 1.4 2005/05/29 19:50:44 lucke Exp $
  */
 
 #include "i18n.h"
@@ -170,8 +170,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Pixel Aspect",       //  1
-    "Seitenverhältnis",   //  2
+  { "Screen Aspect",       //  1
+    "Bildschirmformat",   //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -264,6 +264,29 @@ const tI18nPhrase Phrases[] = {
   },
   { "off",          //  1
     "aus",          //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "AC3 Mode",          //  1
+    "AC3 Modus",          //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
