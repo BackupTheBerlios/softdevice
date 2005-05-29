@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.c,v 1.2 2005/05/01 10:15:48 lucke Exp $
+ * $Id: sync-timer.c,v 1.3 2005/05/29 10:13:59 wachm Exp $
  */
 
 #include <math.h>
@@ -57,14 +57,11 @@ int32_t cRelTimer::GetRelTime()
 
 /* --- cSigTimer --------------------------------------------------------------
  */
-void cSigTimer::Sleep( int timeoutUS )
+int cSigTimer::Sleep( int timeoutUS )
 {
-  if (got_signal) {
-    got_signal=false;
-    return;
-  };
+  got_signal=false;
   if ( timeoutUS < 0 )
-    return;
+    return GetRelTime();
 
   struct timeval tv;
   gettimeofday(&tv,NULL);
@@ -81,6 +78,7 @@ void cSigTimer::Sleep( int timeoutUS )
 
   got_signal = false;
   pthread_mutex_unlock(&mutex);
+  return GetRelTime();
 }
 
 /* ----------------------------------------------------------------------------
@@ -136,27 +134,35 @@ cSyncTimer::~cSyncTimer()
   if (rtcFd>=0)
     close(rtcFd);
 }
-
+/* ----------------------------------------------------------------------------
+ */
+void cSyncTimer::Signal()
+{
+  if ( syncMode==emSigTimer ) 
+    cSigTimer::Signal();
+  else got_signal=true;
+};
 /* ----------------------------------------------------------------------------
  */
 void cSyncTimer::Sleep(int *timeoutUS)
 {
+  got_signal=false;
   switch(syncMode)
   {
     case emUsleepTimer: // usleep timer mode
-      while (*timeoutUS > 2200)
+      while (*timeoutUS > 2200 && !got_signal)
       {
         usleep (2200);
         *timeoutUS -= GetRelTime ();
       }
       break;
     case emRtcTimer: // rtc timer mode
-      while (*timeoutUS > 15000)
+      while (*timeoutUS > 15000 && !got_signal)
       {
         usleep (10000);
         *timeoutUS -= GetRelTime();
       }
-      while (*timeoutUS > 1200)
+      while (*timeoutUS > 1200 && !got_signal)
       {
           uint32_t  ts;
 
@@ -170,7 +176,7 @@ void cSyncTimer::Sleep(int *timeoutUS)
       }
       break;
     case emSigTimer: // signal timer mode
-      cSigTimer::Sleep(*timeoutUS);
+      *timeoutUS -= cSigTimer::Sleep(*timeoutUS);
       break;
   }
 }

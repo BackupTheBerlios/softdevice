@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.23 2005/05/17 19:58:06 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.24 2005/05/29 10:13:59 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -21,9 +21,22 @@
 #include <vdr/plugin.h>
 #include <vdr/ringbuffer.h>
 
-#define DEFAULT_FRAMETIME 40   // for PAL
-#define DVB_BUF_SIZE   (64*1024)  // same value as in dvbplayer.c
-// 100 packet and 96*1024 works quite well...
+#define DEFAULT_FRAMETIME 400   // for PAL in 0.1ms
+#define MIN_BUF_SIZE  (16*1024) 
+
+// this combination gives good results when seeking
+#define DVB_BUF_SIZE   (32*1024)  
+#define PACKET_BUF_SIZE 150
+
+// this combination is save 
+//#define DVB_BUF_SIZE   (64*1024)  
+//#define PACKET_BUF_SIZE 300
+
+// this combination works for HDTV 
+//#define DVB_BUF_SIZE   (64*1024)  
+//#define PACKET_BUF_SIZE 2000
+
+
 #define NO_STREAM    -1
 #define DONT_PLAY  -100
 
@@ -32,55 +45,75 @@ class cVideoStreamDecoder;
 
 // -----------------cClock --------------------------------------------
 class cClock {
-    static cAudioStreamDecoder *audioClock;
-    static cVideoStreamDecoder *videoClock;
+private:
+    
+    static int64_t audioOffset;
+    static int64_t audioPTS;
+    static int64_t videoOffset;
+    static int64_t videoPTS;
 
-    static bool waitForSync;
 public:
-    cClock() {audioClock=NULL;videoClock=NULL;};
+    cClock() {audioOffset=0;videoOffset=0;};
     virtual ~cClock() {};
-    
-    static void SetAudioClock(cAudioStreamDecoder *AudioClock)
-    {audioClock=AudioClock;};
-    
-    static void SetVideoClock(cVideoStreamDecoder *VideoClock)
-    {videoClock=VideoClock;};
-    
-    uint64_t GetPTS();
-    
-    static bool ReadyForPlay()
-    { return (waitForSync ? (audioClock && videoClock) : 1 ); };
 
-    void SetWaitForSync(bool WaitForSync)
-    { waitForSync=WaitForSync; };
+    static int64_t GetTime()
+    {  
+      struct timeval tv;
+      struct timezone tz;
+      gettimeofday(&tv,&tz);
+      return tv.tv_sec*10000+tv.tv_usec/100;
+    };
+    
+    static inline void AdjustAudioPTS(int64_t aPTS) {
+      if (aPTS) 
+        audioOffset=aPTS-GetTime();
+      else audioOffset=0;
+      audioPTS=aPTS;
+    };
+     
+    static inline void AdjustVideoPTS(int64_t vPTS) {
+      if (vPTS)
+        videoOffset=vPTS-GetTime();
+      else videoOffset=0;
+      videoPTS=vPTS;
+    };
+   
+    int64_t GetPTS();
 };	
 
 // -----------------cPacketQueue -----------------------------------------
 class cPacketQueue {
     // Only one thread may read, and only one thread may write!!!
-public:
-   const static int MaxPackets=500;
 private:
-    AVPacket queue[MaxPackets];
+    int MaxPackets;
+    AVPacket *queue;
     int FirstPacket,LastPacket;
 
     inline int Next(int Packet) 
     { return (Packet+1)%MaxPackets; };
+
+    cSigTimer EnablePut;
+    cSigTimer EnableGet;
     
 public:
-    cPacketQueue();
-    ~cPacketQueue() {};
+    cPacketQueue(int maxPackets=150);
+    ~cPacketQueue();
 
     int PutPacket(const AVPacket &Packet);
 
+    inline void EnablePutSignal()
+    { EnablePut.Signal();};
+    
     AVPacket * GetReadPacket();
     void FreeReadPacket(AVPacket *Packet);
 
     void Clear();
     inline int Available()
-    { return (LastPacket+MaxPackets - FirstPacket)%MaxPackets; }; 
+    { return (LastPacket+MaxPackets - FirstPacket)%MaxPackets; };
+    inline int GetMaxPackets()
+    { return MaxPackets;};
 };
- 
+
 //--------------------------cSoftRingBufferLinear --------------------------
 // wrapper class to access protected methods
 class cSoftRingBufferLinear : public cRingBufferLinear {
@@ -101,6 +134,7 @@ private:
     cPacketQueue PacketQueue;
 
 protected:
+    cSyncTimer         *syncTimer;
     bool freezeMode;
     int64_t           pts;
     int               frame;
@@ -186,9 +220,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
     cVideoOut           *videoOut;
 
     // A-V syncing stuff
-    bool               syncOnAudio;
     int                hurry_up; 
-    cSyncTimer         *syncTimer;
     int                offset;
     int                delay;
     int                trickspeed;
@@ -282,8 +314,7 @@ public:
     { AudioIdx=playAudio?NO_STREAM:DONT_PLAY;
       VideoIdx=playVideo?NO_STREAM:DONT_PLAY;}
 
-    inline void SetAudioMode(int AudioMode) 
-    { audioMode=AudioMode; if (aout) aout->SetAudioMode(audioMode); };
+    void SetAudioMode(int AudioMode); 
     inline int GetAudioMode()
     { return audioMode; };
     

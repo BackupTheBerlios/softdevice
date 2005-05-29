@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.h,v 1.1 2005/05/01 09:32:13 lucke Exp $
+ * $Id: sync-timer.h,v 1.2 2005/05/29 10:13:59 wachm Exp $
  */
 #ifndef SYNCTIMER_H
 #define SYNCTIMER_H
@@ -35,6 +35,7 @@ class cSigTimer : public cRelTimer {
    private:
      pthread_mutex_t mutex;
      pthread_cond_t cond;
+   protected:
      bool got_signal;
 
    public:
@@ -50,9 +51,9 @@ class cSigTimer : public cRelTimer {
         pthread_mutex_destroy(&mutex);
       };
 
-      void Sleep( int timeoutUS );
+      int Sleep( int timeoutUS );
 
-      void Signal(void);
+      virtual void Signal(void);
 };
 
 enum eSyncMode { emUsleepTimer, emRtcTimer, emSigTimer };
@@ -66,6 +67,8 @@ class cSyncTimer : public cSigTimer {
   public:
     cSyncTimer(eSyncMode mode);
     virtual ~cSyncTimer();
+    
+    virtual void Signal(void);      
 
     virtual void Sleep(int *timeoutUS);
 };

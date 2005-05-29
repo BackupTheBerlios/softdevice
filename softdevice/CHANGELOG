@@ -1,4 +1,11 @@
 Changelog
+2005-05-29:
+    - fix some segfaults on bad signal
+    - fix possible segfault when called without arguments 
+      (thanks to Marko Mäkelä)
+    - buffering is now complety signal triggered
+    - made buffersizes variable 
+=======
 2005-05-22: softdevice-0.1.2
 2005-05-20:
     - fix possible segfault in fb-mode when resolution is smaller than

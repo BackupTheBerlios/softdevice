@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.37 2005/05/21 11:05:59 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.38 2005/05/29 10:13:59 wachm Exp $
  */
 
 #include <math.h>
@@ -23,7 +23,7 @@
 #define MPGDEB(out...)
 #endif
 
-//#define CMDDEB(out...) {printf("CMD[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+#define CMDDEB(out...) {printf("CMD[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef CMDDEB
 #define CMDDEB(out...)
@@ -39,13 +39,31 @@
 //#define AV_STATS
 //------------------------------------cPacketBuffer------------------------
 
-cPacketQueue::cPacketQueue() {
+cPacketQueue::cPacketQueue(int maxPackets) {
+  MaxPackets=maxPackets;
   FirstPacket=LastPacket=0;
+  queue=new AVPacket[MaxPackets];
   memset(queue,0,sizeof(queue));
 };
 
+cPacketQueue::~cPacketQueue() {
+  Clear();
+  delete queue;
+};
+
 int cPacketQueue::PutPacket(const AVPacket &Packet) {
-  if (FirstPacket != Next(LastPacket)) {
+  if (Available()>MaxPackets*2/3) {
+      BUFDEB("PacketQueue.EnableGet.Signal\n");
+      EnableGet.Signal();
+  };
+  
+  if (FirstPacket == Next(LastPacket) ) {
+        BUFDEB("PacketQueue.EnablePut.Sleep start\n");
+        EnablePut.Sleep(50000);
+        BUFDEB("PacketQueue.EnablePut.Sleep stop\n");
+  };
+  
+  if (FirstPacket != Next(LastPacket) ) {
     queue[LastPacket]=Packet;
     LastPacket=Next(LastPacket);
 //    printf("PutPacket %x FirstPacket %d LastPacket %d\n",
@@ -57,9 +75,21 @@ int cPacketQueue::PutPacket(const AVPacket &Packet) {
 AVPacket * cPacketQueue::GetReadPacket() {
 //  printf("GetReadPacket %x FirstPacket %d LastPacket %d\n",
 //    queue,FirstPacket,LastPacket);
-  if (FirstPacket!=LastPacket)
+  if (Available()==0)  {
+      BUFDEB("PacketQueue.EnablePut.Signal pid: %d\n",getpid());
+      EnablePut.Signal();
+  };
+  
+  if (FirstPacket==LastPacket) {
+       BUFDEB("PacketQueue.EnableGet.Sleep start pid: %d\n",getpid());
+       EnableGet.Sleep(10000);  
+       BUFDEB("PacketQueue.EnableGet.Sleep stop pid: %d \n",getpid());
+  };
+  
+  if ( FirstPacket != LastPacket )
     return &queue[FirstPacket];
-  else return NULL;
+
+  return NULL;
 };
 
 void cPacketQueue::FreeReadPacket(AVPacket *Packet) {
@@ -80,37 +110,49 @@ void cPacketQueue::Clear() {
 
 //-------------------cClock ------------------------------------------
 
-cAudioStreamDecoder *cClock::audioClock=NULL;
-cVideoStreamDecoder *cClock::videoClock=NULL;
-bool                 cClock::waitForSync=false;
+int64_t cClock::audioOffset=0;
+int64_t cClock::audioPTS=0;
+int64_t cClock::videoOffset=0;
+int64_t cClock::videoPTS=0;
 
-uint64_t  cClock::GetPTS() {
-  if (audioClock)
-     return audioClock->GetPTS();
+int64_t  cClock::GetPTS() {
+  //MPGDEB("audioOffset %lld time %lld\n",audioOffset,GetTime());
+  if ( audioOffset )
+     return GetTime()+audioOffset;
+  else if ( videoOffset )
+     return GetTime()+videoOffset;
   else return 0;
 };
 
 // --- cStreamDecoder ---------------------------------------------------------
 
 cStreamDecoder::cStreamDecoder(AVCodecContext *Context)
+        : PacketQueue(150)
 {
   context=Context;
-  context->error_resilience=1;
-  CMDDEB("Neuer StreamDecoder Pid: %d type %d\n",getpid(),context->codec_type );
+  if (context)
+        context->error_resilience=1;
+  CMDDEB("Neuer StreamDecoder Pid: %d context %p type %d\n",
+        getpid(),context,context->codec_type );
   pts=0;
   frame=0;
   initCodec();
+  syncTimer=NULL;
 
+//  Context->debug |=FF_DEBUG_STARTCODE;
   active=true;
   Start(); // starte thread
 }
 
 cStreamDecoder::~cStreamDecoder()
 {
+  CMDDEB("~cStreamDecoder: context %p\n",context );
   active=false;
   Cancel(3);
-  if (codec) 
+  if (codec && context)  
     avcodec_close(context);
+  else fprintf(stderr,"Error not closing context %p, codec %p\n",context,codec);
+  
   PacketQueue.Clear();
 }
 
@@ -136,11 +178,13 @@ void cStreamDecoder::Action()
 
     mutex.Lock();
     if ( (pkt=PacketQueue.GetReadPacket())!= 0 ) {
-      //printf("got packet pid: %d type %d \n",getpid(),context->codec_type);
-       if (codec) 
+       BUFDEB("got packet PTS: %lld pid: %d type %d \n",
+         pkt->pts,getpid(),context->codec_type);
+       if (codec && context) 
          DecodePacket(pkt);
        av_free_packet(pkt);
        PacketQueue.FreeReadPacket(pkt);
+       BUFDEB("finished packet pid: %d type %d \n",getpid(),context->codec_type);
        mutex.Unlock();
     } else {
       mutex.Unlock();
@@ -167,6 +211,8 @@ void cStreamDecoder::Action()
 void cStreamDecoder::Play(void)
 {
   freezeMode=false;
+  if (syncTimer)
+    syncTimer->Signal();
 };
 
 void cStreamDecoder::Freeze(void)
@@ -177,27 +223,37 @@ void cStreamDecoder::Freeze(void)
 
 void cStreamDecoder::Stop(void) 
 {
+  if (syncTimer)
+    syncTimer->Signal();
+  mutex.Lock();
+  PacketQueue.Clear();
+  mutex.Unlock();
+  PacketQueue.EnablePutSignal();
   active=false;
   Cancel(3);
 }
 
 void cStreamDecoder::Clear(void)
 {
-  CMDDEB("cStreamDecoder clear\n");
+  CMDDEB("cStreamDecoder clear type: %d\n",context->codec_type);
   mutex.Lock();
-  if (codec)
-          avcodec_flush_buffers(context);
+  if (codec && context)
+    avcodec_flush_buffers(context);
   PacketQueue.Clear();
   mutex.Unlock();
-  CMDDEB("cStreamDecoder clear finished\n");
+  CMDDEB("cStreamDecoder clear finished type: %d\n",context->codec_type);
 }
 
 bool cStreamDecoder::initCodec(void)
 {
+  int ret;
+  if (!context)
+    return false;
+
   codec = avcodec_find_decoder(context->codec_id);
   if (!codec)
   {
-    printf("[mpegdecoder] Error! Codec %d not supported by libavcodec found\n",
+    printf("[mpegdecoder] Error! Codec %d not supported by libavcodec\n",
       context->codec_id);
     return false;
   }
@@ -206,20 +262,23 @@ bool cStreamDecoder::initCodec(void)
   if(codec->capabilities&CODEC_CAP_TRUNCATED)
     context->flags|= CODEC_FLAG_TRUNCATED; 
   
-  if (avcodec_open(context, codec) < 0)
+  if ( (ret=avcodec_open(context, codec)) < 0)
   {
-    printf("[mpegdecoder] Fatal error! Could not open codec %d\n",
-      context->codec_id);
+    printf("[mpegdecoder] Error! Could not open codec %d Error: %d\n",
+      context->codec_id,ret);
+    codec=NULL;
     return false;
   }
-  printf("[mpegdecoder] open codec %d successfull\n",
-      context->codec_id);
-  MPGDEB("Codec %d initialized.\n");
+  MPGDEB("Codec %d initialized.\n",context->codec_id);
   return true;
 };
 
 void cStreamDecoder::resetCodec(void)
 {
+  if (!context || !codec) {
+    fprintf(stderr,"Error: not reseting codec context %p codec %p\n",context,codec);
+    return;
+  };
   printf("[mpegdecoder] resetting codec\n");
   avcodec_close(context);
   initCodec();
@@ -227,7 +286,7 @@ void cStreamDecoder::resetCodec(void)
 
 int cStreamDecoder::BufferFill()
 {
-  return ( PacketQueue.Available() ) *100/PacketQueue.MaxPackets ;
+  return ( PacketQueue.Available() ) *100/PacketQueue.GetMaxPackets();
 }
 
 // --- AUDIO ------------------------------------------------------------------
@@ -239,7 +298,6 @@ cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
   audioMode=AudioMode;
   audiosamples=(uint8_t *)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
   
-  audioBuffer=new cSoftRingBufferLinear(48*2*2*200*20,2*1024);
   audioOutContext.period_size=2*1024;
   audioOutContext.samplerate=44100;
   audioOutContext.channels=2;
@@ -249,10 +307,8 @@ cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
  */
 uint64_t cAudioStreamDecoder::GetPTS()
 {
+  MPGDEB("pts %lld aDelay: %d ",pts,audioOut->GetDelay());
   uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset*10;
-  if (audioBuffer && audioOutContext.channels)
-     PTS-=(audioBuffer->Available()*10000 /
-       (audioOutContext.samplerate*2*audioOutContext.channels));
  return PTS;
 };
 
@@ -298,8 +354,10 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     }
   }
   while ( size > 0 ) {
+    BUFDEB("start decode audio\n");
     len=avcodec_decode_audio(context, (short *)audiosamples,
                  &audio_size, data, size);
+    BUFDEB("end decode audio\n");
     if (len < 0) {
       printf("[mpegdecoder] Error while decoding audio frame %d\n", frame);
       resetCodec();
@@ -315,25 +373,25 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     if (audio_size == 0)
       continue;
 
-    if (!frame)
-    {
-      //first frame - wait for ready for play
-      cClock::SetAudioClock(this);
-      int count=0;
-      while ( !cClock::ReadyForPlay() && count < 10 ) {
-         usleep(10000);
-         MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
-	 count++;
-      };
+    if ( audio_size > AVCODEC_MAX_AUDIO_FRAME_SIZE ) {
+        fprintf(stderr,"Error audio_size greater than MAX_AUDIO_FRAME_SIZE!\n");
+        continue;
     };
+    
     audioOutContext.channels=context->channels;
     audioOutContext.samplerate=context->sample_rate;
+    
+    if (audioMode && audioOutContext.channels==2) {
+      // respect mono left/right only channels
+      if (audioMode==1)
+        OnlyLeft(audiosamples,audio_size);
+      else OnlyRight(audiosamples,audio_size);
+    };
+    
     audioOut->SetParams(audioOutContext);
-    //audioOut->SetParams(context->channels,context->sample_rate);
-    //audioOut->Write(audiosamples,audio_size);
-    audioBuffer->Put(audiosamples,audio_size);
-    // adjust PTS according to audio_size, sampel_rate and no. of channels
-    pts += (audio_size*10000/(context->sample_rate*2*context->channels));
+    audioOut->Write(audiosamples,audio_size);
+    // adjust PTS according to audio_size, sampel_rate and no. of channels  
+    pts += (audio_size*10000/(context->sample_rate*2*context->channels)); 
 
     if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
       MPGDEB("audio pts %lld pkt->PTS : %lld pts - valid PTS: %lld \n",
@@ -341,45 +399,30 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       pts = pkt->pts;
       pkt->pts=AV_NOPTS_VALUE;
     }
+    uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset*10;
+
+    MPGDEB("audio pts offset %lld\n",cClock::GetTime()-PTS);
+    cClock::AdjustAudioPTS(PTS);
     frame++;
   }
 
-  while ( (unsigned) audioBuffer->Available() >= audioOutContext.period_size )
-  {
-    uint8_t *samples=audioBuffer->Get(audio_size);
-    if (!samples)
-        break;
-    if ( (unsigned) audio_size  > audioOutContext.period_size )
-      audio_size=audioOutContext.period_size;
-
-    if (audioMode && audioOutContext.channels==2) {
-      // respect mono left/right only channels
-      if (audioMode==1)
-          OnlyLeft(samples,audio_size);
-      else OnlyRight(samples,audio_size);
-    };
-    audioOut->Write(samples,audio_size);
-    audioBuffer->Del(audio_size);
-  };
   MPGDEB("a_delay %d at end of decode\n",audioOut->GetDelay());
 
   return len;
 }
 
-
 cAudioStreamDecoder::~cAudioStreamDecoder()
 {
-  cClock::SetAudioClock(NULL);
+  cClock::AdjustAudioPTS(0);
   Cancel(3);
   free(audiosamples);
-  delete audioBuffer;
 }
 
 // --- VIDEO ------------------------------------------------------------------
 
 cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
                                          cVideoOut *VideoOut, cClock *Clock,
-					 int Trickspeed)
+                                         int Trickspeed)
                                          : cStreamDecoder(Context)
 {
   width = height = -1;
@@ -397,7 +440,6 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   clock = Clock;
 
   // init A-V syncing variables
-  syncOnAudio=1;
   offset=0;
   delay=0;
   hurry_up=0;
@@ -406,7 +448,6 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
 
   default_frametime = DEFAULT_FRAMETIME;
   trickspeed = Trickspeed;
-  syncOnAudio = ( Trickspeed == 1);
 
   picture=avcodec_alloc_frame();
 }
@@ -443,7 +484,16 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   int size=pkt->size;
   //MPGDEB("got video packet\n");
   while ( size > 0 ) {
+    if ( context->width  > 2048 || context->height  > 2048 ) {
+      fprintf(stderr,"Invalid width (%d) or height (%d), most likely a broken stream\n",
+          context->width,context->height);
+      return len;
+    };
+
+    BUFDEB("start decode video stream %d data: %p size: %d \n",
+        pkt->stream_index,data,size);
     len = avcodec_decode_video(context, picture, &got_picture,data, size);
+    BUFDEB("end decode video\n");
     if (len < 0) {
       printf("[mpegdecoder] Error while decoding video frame %d\n", frame);
       resetCodec();
@@ -471,14 +521,14 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     
     if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
          lastPTS=pkt->pts;
-	 lastDuration=pkt->duration;
+         lastDuration=pkt->duration;
          
          if (lastDuration) {
 #if LIBAVCODEC_BUILD > 4753
                  default_frametime=context->time_base.num*
-                         1000/context->time_base.den;
+                         10000/context->time_base.den;
 #else
-                 default_frametime=lastDuration/1000;		
+                 default_frametime=lastDuration/100;
 #endif
                  MPGDEB("Set default_frametime to %d\n",default_frametime);
          };
@@ -487,18 +537,6 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     if (!got_picture)
       continue;
 
-    if (!frame)
-    {
-      //first frame - wait for ready for play 
-      cClock::SetVideoClock(this);
-      int count=0;
-      while ( !cClock::ReadyForPlay() && count < 10) {
-        MPGDEB("audioStreamDecoder waiting for ReadyForPlay...\n");
-        usleep(10000);
-        count++;
-      };
-    };
-      
     // postproc stuff....
     if (setupStore.mirror == 1)
       Mirror();
@@ -525,25 +563,11 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       ppLibavcodec();
 #endif //PP_LIBAVCODEC
 
-  width  = context->width;
-  height = context->height;
-  /*
-     if ( abs(AudioStream->GetPTS() - pts)  > 10000 ) 
-     {
-  //hmm, pts is completly wrong... just sync to audio
-  pts=AudioStream->GetPTS();
-  offset=0;
-  MPGDEB("pts = AudioPTS\n");
-  };
-   */
-/*   if (picture->pts)
-   {
-     MPGDEB("got pts from picture: old pts: %lld pict pts: %lld\n",pts,picture->pts/100);
-     pts = picture->pts/100;
-   } else {*/
-     // find decoded pictures pts value
-     int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
-     while ( picture->coded_picture_number !=
+    width  = context->width;
+    height = context->height;
+    // find decoded pictures pts value
+    int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
+    while ( picture->coded_picture_number !=
                 pts_values[findPTS].coded_frame_no && 
                 findPTS != lastPTSidx) 
          findPTS=(findPTS+1)%NO_PTS_VALUES;
@@ -554,8 +578,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
           pts,pts_values[findPTS].pts,(int) pts - pts_values[findPTS].pts,
           picture->coded_picture_number,findPTS);
           pts = pts_values[findPTS].pts;
-      };
-   //}
+     };
   
   // prepare picture for display
   videoOut->CheckAspectDimensions(picture,context);
@@ -568,43 +591,45 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     videoOut->Sync(syncTimer, &delay);
     // display picture
     videoOut->YUV(picture->data[0], picture->data[1],picture->data[2],
-                  context->width,context->height,
-                  picture->linesize[0],picture->linesize[1]);
+        context->width,context->height,
+        picture->linesize[0],picture->linesize[1]);
   }
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
   // the A-V syncing code is partly based on MPlayer...
   uint64_t aPTS = clock->GetPTS();
+  // update video pts
+  cClock::AdjustVideoPTS(pts);
 
-  if ( syncOnAudio && aPTS )
+  if ( aPTS )
     offset = aPTS - pts ;
   else offset = 0;
 
   // this few lines does the whole syncing
   int pts_corr;
 
-  // calculate pts correction. Max. correction is 1/10 frametime.
-  pts_corr = offset * 10;
-  if (pts_corr > frametime()*100*2 )
-    pts_corr = frametime()*100*2;
-  else if (pts_corr < -frametime()*100*2)
-    pts_corr =-frametime()*100*2;
+  // calculate pts correction. Correct 1/10 of offset at a time 
+  pts_corr = offset/10;
+  
+  //Max. correction is 2/10 frametime.
+  if (pts_corr > 2*frametime() / 10 )
+    pts_corr = 2*frametime() / 10;
+  else if (pts_corr < -2*frametime() / 10 )
+    pts_corr = -2*frametime() / 10;
 
   // calculate delay
-  delay += ( frametime() *1000 - pts_corr ) ;
+  delay += ( frametime() - pts_corr  ) * 100;
   // update video pts 
-  pts += frametime()*10;
-  // so that pts - delay/1000 is always the current PTS
+  pts += frametime();
  
-  if (delay > 2*frametime()*1000)
-    delay = 2*frametime()*1000;
-  else if (delay < -2*frametime()*1000)
-    delay = -2*frametime()*1000;    
+  if (delay > 2*frametime()*100)
+    delay = 2*frametime()*100;
+  else if (delay < frametime()*80)
+    delay = frametime()*80;    
 
-
-  if (offset >  8*frametime()*10)
+  if (offset >  8*frametime())
      hurry_up=1;
-  else if ( (offset < 2*frametime()*10) && (hurry_up > 0) )
+  else if ( (offset < 2*frametime()) && (hurry_up > 0) )
      hurry_up=0;
 
 #if 1
@@ -656,7 +681,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 void cVideoStreamDecoder::TrickSpeed(int Speed)
 {
   trickspeed = Speed;
-  syncOnAudio = ( Speed == 1);
+  syncTimer->Signal();
 }
 
 
@@ -843,14 +868,13 @@ void cVideoStreamDecoder::ppLibavcodec(void)
   if (currentDeintMethod != deintWork || ppmode == NULL)
   {
 
-	  if (ppmode)
-	  {
-		  pp_free_mode (ppmode);
-		  ppmode = NULL;
-	  }
+    if (ppmode)  {
+      pp_free_mode (ppmode);
+      ppmode = NULL;
+    }
 
-	  ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
-	  currentDeintMethod = deintWork;
+    ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
+    currentDeintMethod = deintWork;
   }
 
   if (ppmode == NULL || ppcontext == NULL)
@@ -909,7 +933,7 @@ void cVideoStreamDecoder::ppLibavcodec(void)
 
 cVideoStreamDecoder::~cVideoStreamDecoder()
 {
-  cClock::SetVideoClock(NULL);
+  cClock::AdjustVideoPTS(0);
   delete(syncTimer);
   free(picture);
 }
@@ -965,21 +989,27 @@ cMpeg2Decoder::~cMpeg2Decoder()
 }
 
 int cMpeg2Decoder::read_packet(uint8_t *buf, int buf_size) {
-//    printf("Del %d\n",LastSize);
+   BUFDEB("read_packet Del %d\n",LastSize);
     StreamBuffer->Del(LastSize);
-    EnablePutSignal.Signal();
-start:
     int size=StreamBuffer->Available(); 
+    if ( size < buf_size ) {
+      BUFDEB("read_packet Available()%d < buf_size EnablePut.Signal\n",size);
+      EnablePutSignal.Signal();
+    };
+start:
     int count=0;
+    size=StreamBuffer->Available(); 
     while ( size < buf_size && ThreadActive 
            && count <  1  ) {
+      BUFDEB("read_packet EnableGet.Sleep start\n");
+      EnableGetSignal.Sleep(50000);
+      BUFDEB("read_packet EnableGet.Sleep end\n");
       size = StreamBuffer->Available();
       if (size>188) {
         //try to get more data...
         count++;
       };
-     EnableGetSignal.Sleep(50000);
-    };
+   };
     
     // signal eof if thread should end...
     if (!ThreadActive && size == 0) 
@@ -1026,7 +1056,7 @@ void cMpeg2Decoder::initStream() {
        printf("Failed to open input stream.Error %d\n",err);
    };
 
-   init_put_byte(&ic->pb, NULL, 32*1024, 0, this,
+   init_put_byte(&ic->pb, NULL,MIN_BUF_SIZE, 0, this,
        read_packet_RingBuffer,NULL,seek_RingBuffer);
    CMDDEB("init put byte finished\n");
 };
@@ -1051,7 +1081,7 @@ void cMpeg2Decoder::Action()
         BUFDEB("av_read_frame start\n");
         ret = av_read_packet(ic, &pkt);
         if (ret < 0) {
-            BUFDEB("cMpeg2Decoder Stream Error!!!!!!!!!!!!!!!!!!\n");
+            BUFDEB("cMpeg2Decoder Stream Error!\n");
             usleep(10000);
             continue;
         }
@@ -1095,8 +1125,19 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
 {
   BUFDEB("QueuePacket AudioIdx: %d VideoIdx %d pkt.stream_index: %d\n",
     AudioIdx,VideoIdx,pkt.stream_index);
+
+  if (!ic) {
+        fprintf(stderr,"Error: ic is null!\n");
+        av_free_packet(&pkt);
+        return;
+  };
+  if ( pkt.stream_index >= ic->nb_streams ) {
+         fprintf(stderr,"Error: stream index larger than nb_streams\n");
+        av_free_packet(&pkt);
+        return;
+  }; 
   // check if there are new streams
-  if (AudioIdx != DONT_PLAY &&
+  if (AudioIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
       ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO && 
       AudioIdx != pkt.stream_index) {
    
@@ -1111,7 +1152,7 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     aout = new cAudioStreamDecoder(&ic->streams[pkt.stream_index]->codec,
                  audioOut, audioMode );
   } else 
-  if (VideoIdx != DONT_PLAY &&
+  if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
       ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO && 
       VideoIdx!=pkt.stream_index) {
   
@@ -1120,7 +1161,7 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     VideoIdx=pkt.stream_index;
     if (vout) {
       vout->Stop();
-      delete aout;
+      delete vout;
       vout = NULL;
     };
     vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec, 
@@ -1131,14 +1172,14 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
   if ( pkt.stream_index == VideoIdx && vout ) {
     BUFDEB("QueuePacket video stream\n");
     while ( vout->PutPacket(pkt) == -1 && ThreadActive ) {
+      // PutPacket sleeps is necessary
       //printf("Video Buffer full\n");
-      usleep(50000);
     };
   } else if ( pkt.stream_index == AudioIdx && aout ) {
     BUFDEB("QueuePacket audio stream\n");
     while ( aout->PutPacket(pkt) == -1 && ThreadActive ) {
+      // PutPacket sleeps is necessary
       //printf("Audio Buffer full\n");
-      usleep(50000);
     };
   } else {
     //printf("Unknown packet or vout or aout not init!!\n");
@@ -1159,7 +1200,6 @@ void cMpeg2Decoder::Start(bool GetMutex)
     
   StreamBuffer->Clear();
   initStream();
-  clock.SetWaitForSync(curPlayMode==PmAudioVideo);
   ThreadActive=true;
   freezeMode=false;
   AudioIdx=NO_STREAM;
@@ -1219,7 +1259,6 @@ void cMpeg2Decoder::Play(void)
 void cMpeg2Decoder::SetPlayMode(softPlayMode playMode)
 {
   curPlayMode=playMode;
-  clock.SetWaitForSync(curPlayMode==PmAudioVideo);
   switch (curPlayMode) {
     case PmAudioVideo: 
       CMDDEB("SetPlayMode PmAudioVideo\n");
@@ -1262,7 +1301,6 @@ void cMpeg2Decoder::Stop(bool GetMutex)
   // can't stop properly in freeze mode
   //  Freeze();
   freezeMode=false;
-  clock.SetWaitForSync(false);
   if (running)
   {
     running=false;
@@ -1297,8 +1335,6 @@ int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
   //Clear();
   mutex.Lock();
   CMDDEB("StillPicture \n");
-  // we have only video, so no syncing should be done
-  clock.SetWaitForSync(false); 
   // XXX hack to ingore audio junk sent by vdr in the still picture
   AudioIdx=DONT_PLAY;
   for (int i=0; 4>i;i++) {
@@ -1333,9 +1369,6 @@ void cMpeg2Decoder::Clear(void)
 void cMpeg2Decoder::TrickSpeed(int trickSpeed)
 {
   CMDDEB("TrickSpeed %d\n",Speed);
-  if ( Speed!=1 )
-    clock.SetWaitForSync(false);
-  else clock.SetWaitForSync(curPlayMode==PmAudioVideo);
   Speed=trickSpeed;
   // XXX hack to ingore audio junk sent by vdr in the
   if (trickSpeed!=1) {
@@ -1353,11 +1386,19 @@ void cMpeg2Decoder::TrickSpeed(int trickSpeed)
       vout->TrickSpeed(Speed);
   };
 }
+void cMpeg2Decoder::SetAudioMode(int AudioMode)  { 
+  CMDDEB("SetAudioMode %d\n",AudioMode);
+  audioMode=AudioMode; 
+  if (aout) 
+    aout->SetAudioMode(audioMode); 
+};
 
 /* ----------------------------------------------------------------------------
  */
 int64_t cMpeg2Decoder::GetSTC(void) {
   if (running) {
+    return clock.GetPTS()*9;
+
     if (vout)
       return vout->GetPTS()*9;
     if (aout)
@@ -1371,12 +1412,16 @@ int cMpeg2Decoder::BufferFill()
   if (freezeMode)
     return 100;
   int fill=0;
+  int fill2=0;
+  BUFDEB("buffer fill\n");
   if (running && vout )
     fill= vout->BufferFill();
+    BUFDEB("vout buffer fill: %d\n",fill);
   if (running && aout )
-    if (aout->BufferFill()>fill)
-       fill=aout->BufferFill();
+    if ( (fill2=aout->BufferFill()) >fill)
+       fill=fill2;
     
+    BUFDEB("aout buffer fill: %d\n",fill2);
   return fill;
 }
 
@@ -1402,19 +1447,23 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
     return 0;
 
   //MPGDEB("Decode: StreamBuffer: %d plus %d\n",StreamBuffer->Available(),Length);
-  EnablePutSignal.Sleep(-100);//clear got_signal
   mutex.Lock();
   int P;
   int Size=Length;
   while ( (P = StreamBuffer->Put(Data, Size)) != Size ) {
     Data+=P;
     Size-=P;
+    BUFDEB("Decode EnableGet.Signal(), EnablePut.Sleep start\n");
     EnableGetSignal.Signal();
     EnablePutSignal.Sleep(50000);
+    BUFDEB("Decode EnablePut.Sleep end\n");
   }
-  EnableGetSignal.Signal();
   mutex.Unlock();
-  BUFDEB("Deocde finished\n");
+  if (StreamBuffer->Available()>MIN_BUF_SIZE) {
+      BUFDEB("Decode Available >MIN_BUF_SIZE EnableGetSignal.Signal \n");
+      EnableGetSignal.Signal();
+  };
+  BUFDEB("Decode finished\n");
   
   return Length;
 }
