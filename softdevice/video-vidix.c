@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.8 2005/05/29 19:50:44 lucke Exp $
+ * $Id: video-vidix.c,v 1.9 2005/06/05 20:58:12 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -106,8 +106,11 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
      * default settings: source, destination and logical widht/height
      * are set to our well known dimensions.
      */
-    fwidth = lwidth = dwidth = swidth = Xres;
-    fheight = lheight = dheight = sheight = Yres;
+    fwidth = lwidth = dwidth = Xres;
+    fheight = lheight = dheight = Yres;
+
+    swidth = 720;
+    sheight = 576;
 
     displayRatio = (double) Xres / (double) Yres;
     SetParValues(displayRatio, displayRatio);
@@ -123,14 +126,6 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
        exit(1);
      }
 
-    osd = (uint8_t *) malloc(fb_line_len * Yres);
-
-    if ( osd == NULL ) {
-       esyslog("[cVidixVideoOut] Can't alloc osd memory exiting\n");
-       exit(1);
-    }
-
-    memset(osd, 0, fb_line_len * Yres );
     memset(fb,  0, fb_line_len * Yres );
 
 
@@ -138,9 +133,6 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
 
     printf("cVidixVideoOut: vidix version: %i\n", vidix_version);
 
-
-//    printf("cVidixVideoOut: looking for driver: %s in %s\n", VIDIX_DRIVER, VIDIX_DIR);
-//    vidix_handler = vdlOpen(VIDIX_DIR, VIDIX_DRIVER, TYPE_OUTPUT, 1);
     vidix_handler = vdlOpen(VIDIX_DIR, NULL, TYPE_OUTPUT, 1);
 
     if( !vidix_handler )
@@ -172,7 +164,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     vdlQueryFourcc(vidix_handler, &vidix_fourcc);
     if (vdlQueryFourcc(vidix_handler, &vidix_fourcc))
     {
-      if (!matchPixelFormat())
+      if (!MatchPixelFormat())
       {
         esyslog("[cVidixVideoOut]: no matching pixel format found exiting\n");
         exit(1);
@@ -186,35 +178,24 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     vidix_play.blend_factor = 0;
     vidix_play.src.x        = 0;
     vidix_play.src.y        = 0;
-    vidix_play.src.pitch.y  = 0;
-    vidix_play.src.pitch.u  = 0;
-    vidix_play.src.pitch.v  = 0;
+    vidix_play.src.w  = swidth;
+    vidix_play.src.h  = sheight;
+    vidix_play.src.pitch.y  = swidth;
+    vidix_play.src.pitch.u  = swidth/2;
+    vidix_play.src.pitch.v  = swidth/2;
     vidix_play.dest.x       = 0;
     vidix_play.dest.y       = 0;
     vidix_play.dest.w       = Xres;
     vidix_play.dest.h       = Yres;
     vidix_play.num_frames   = 2;
-    //vidix_play.num_frames   = 1;
 
     printf("cVidixVideoOut: fourcc.flags:  0x%0x\n",vidix_fourcc.flags);
-    if( vidix_fourcc.flags & VID_CAP_COLORKEY )
-    {
-       printf("cVidixVideoOut: set colorkey\n");
-       vdlGetGrKeys(vidix_handler, &gr_key);
-
-       gr_key.key_op = KEYS_PUT;
-
-       gr_key.ckey.op = CKEY_TRUE;
-       //gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 32;
-       gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0;
-
-       vdlSetGrKeys(vidix_handler, &gr_key);
-    }
+    AllocLayer();
 }
 
 /* ----------------------------------------------------------------------------
  */
-bool cVidixVideoOut::matchPixelFormat()
+bool cVidixVideoOut::MatchPixelFormat()
 {
   for (int i = 0; i < 3; ++i)
   {
@@ -235,6 +216,92 @@ bool cVidixVideoOut::matchPixelFormat()
 
 /* ----------------------------------------------------------------------------
  */
+void cVidixVideoOut::AllocLayer(void)
+{
+    int       err;
+    uint8_t   *dst;
+    uint32_t  apitch;
+
+  if (currentPixelFormat == 2)
+    vidix_play.src.pitch.y *= 2;
+
+  if ((err = vdlPlaybackOff(vidix_handler)) != 0)
+  {
+    esyslog("[cVidixVideoOut] Can't stop playback: %s exiting\n",
+            strerror(err));
+    exit(1);
+  }
+
+  if ((err = vdlConfigPlayback(vidix_handler, &vidix_play)) != 0)
+  {
+    esyslog("[cVidixVideoOut] Can't configure playback: %s exiting\n",
+            strerror(err));
+    exit(1);
+  }
+
+  if ((err = vdlPlaybackOn(vidix_handler)) != 0)
+  {
+    esyslog("[cVidixVideoOut] Can't start playback: %s exiting\n",
+            strerror(err));
+    exit(1);
+  }
+
+  if (vidix_fourcc.flags & VID_CAP_COLORKEY)
+  {
+    printf("cVidixVideoOut: set colorkey\n");
+    vdlGetGrKeys(vidix_handler, &gr_key);
+
+    gr_key.key_op = KEYS_PUT;
+
+    gr_key.ckey.op = CKEY_TRUE;
+    gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0;
+
+    vdlSetGrKeys(vidix_handler, &gr_key);
+  }
+
+  next_frame = 0;
+
+  apitch     = vidix_play.dest.pitch.y-1;
+  dstrides.y = (swidth + apitch) & ~apitch;
+
+  apitch     = vidix_play.dest.pitch.v-1;
+  dstrides.v = (swidth + apitch) & ~apitch;
+
+  apitch     = vidix_play.dest.pitch.u-1;
+  dstrides.u = (swidth + apitch) & ~apitch;
+
+  // clear every frame
+  for (uint8_t i = 0; i < vidix_play.num_frames; i++)
+  {
+    dst = (uint8_t *) vidix_play.dga_addr + vidix_play.offsets[i] +
+                      vidix_play.offset.y;
+    if (currentPixelFormat == 2)
+    {
+        int *ldst = (int *) dst;
+
+      for (unsigned int j = 0; j < dstrides.y * sheight/2; j++)
+      {
+        *ldst++ = 0x80008000;
+      }
+    }
+    else
+    {
+      memset(dst, 0x00, dstrides.y * sheight);
+
+      dst = (uint8_t *) vidix_play.dga_addr + vidix_play.offsets[i] +
+                        vidix_play.offset.u;
+      memset(dst, 0x80, (dstrides.u/2) * (sheight/2));
+
+      dst = (uint8_t *) vidix_play.dga_addr + vidix_play.offsets[i] +
+                        vidix_play.offset.v;
+      memset(dst, 0x80, (dstrides.v/2) * (sheight/2));
+    }
+  }
+
+}
+
+/* ----------------------------------------------------------------------------
+ */
 void cVidixVideoOut::Pause(void)
 {
 }
@@ -243,13 +310,10 @@ void cVidixVideoOut::Pause(void)
  */
 void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride)
 {
-    int err;
     uint8_t *dst;
-    uint32_t apitch;
     int hi, wi;
     START;
     TIMINGS("start...\n");
-    
     if (aspect_changed || currentPixelFormat != setupStore->pixelFormat)
     {
        printf("cVidixVideoOut: Video changed format to %dx%d\n", Width, Height);
@@ -282,7 +346,7 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
          currentPixelFormat = setupStore->pixelFormat;
          if (vdlQueryFourcc(vidix_handler, &vidix_fourcc))
          {
-          if (!matchPixelFormat())
+          if (!MatchPixelFormat())
           {
             esyslog("[cVidixVideoOut]: no matching pixel format found exiting\n");
             exit(1);
@@ -304,65 +368,7 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
        vidix_play.src.pitch.u=UVstride;
        vidix_play.src.pitch.v=UVstride;
 
-       if (currentPixelFormat == 2)
-         vidix_play.src.pitch.y *= 2;
-
-       if((err = vdlPlaybackOff(vidix_handler)) != 0) {
-           esyslog("[cVidixVideoOut] Can't stop playback: %s exiting\n",
-                   strerror(err));
-           exit(1);
-       }
-
-       if((err = vdlConfigPlayback(vidix_handler, &vidix_play)) != 0) {
-           esyslog("[cVidixVideoOut] Can't configure playback: %s exiting\n",
-                   strerror(err));
-           exit(1);
-       }
-
-       if((err = vdlPlaybackOn(vidix_handler)) != 0) {
-           esyslog("[cVidixVideoOut] Can't start playback: %s exiting\n",
-                   strerror(err));
-           exit(1);
-       }
-
-       if( vidix_fourcc.flags & VID_CAP_COLORKEY )
-       {
-         printf("cVidixVideoOut: set colorkey\n");
-         vdlGetGrKeys(vidix_handler, &gr_key);
-
-         gr_key.key_op = KEYS_PUT;
-
-         gr_key.ckey.op = CKEY_TRUE;
-         //gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0xff;
-         gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0;
-
-         vdlSetGrKeys(vidix_handler, &gr_key);
-       }
-
-       next_frame = 0;
-
-       apitch     = vidix_play.dest.pitch.y-1;
-       dstrides.y = (swidth + apitch) & ~apitch;
-
-       apitch     = vidix_play.dest.pitch.v-1;
-       dstrides.v = (swidth + apitch) & ~apitch;
-
-       apitch     = vidix_play.dest.pitch.u-1;
-       dstrides.u = (swidth + apitch) & ~apitch;
-
-       // clear every frame
-       for (uint8_t i = 0; i < vidix_play.num_frames; i++)
-       {
-           dst = (uint8_t *) vidix_play.dga_addr + vidix_play.offsets[i] + vidix_play.offset.y;
-           memset(dst, 0x00, dstrides.y * Height);
-
-           dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[i] + vidix_play.offset.u;
-           memset(dst, 0x80, (dstrides.u/2) * (Height/2));
-
-           dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[i] + vidix_play.offset.v;
-           memset(dst, 0x80, (dstrides.v/2) * (Height/2));
-       }
-
+       AllocLayer();
 #if 0
        printf("cVidixVideoOut : num_frames=%d \n", vidix_play.num_frames);
        printf("cVidixVideoOut : frame_size=%d\n",  vidix_play.frame_size);
@@ -389,10 +395,11 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
     Pv += (UVstride * syoff/2);
     Pu += (UVstride * syoff/2);
 
+    OsdRefreshCounter=0;
+
     if (currentPixelFormat == 0 || currentPixelFormat == 1)
     {
 #if VDRVERSNUM >= 10307
-      OsdRefreshCounter=0;
       if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
         for(hi=0; hi < sheight; hi++){
           AlphaBlend(dst,OsdPy+hi*OSD_FULL_WIDTH,
@@ -629,7 +636,6 @@ cVidixVideoOut::~cVidixVideoOut()
        }
     }
 
-    if (osd) free(osd);
     if (fbdev) close(fbdev);
 }
 

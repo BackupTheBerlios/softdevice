@@ -1,4 +1,7 @@
 Changelog
+2005-06-05:
+    - compile by default with "-g"
+    - fix vidix segfault
 2005-05-29:
     - changed screen aspect ratio selection (based on suggestion by Nicolas Huillard)
     - fix some segfaults on bad signal

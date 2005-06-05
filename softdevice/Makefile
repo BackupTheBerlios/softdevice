@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.12 2005/05/01 10:24:02 lucke Exp $
+# $Id: Makefile,v 1.13 2005/06/05 20:58:12 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -122,7 +122,7 @@ DEFINES	   += -DUSE_MMX2
 ### normally you shoudn't have to touch something below this line
 
 CXX      ?= g++
-CXXFLAGS ?= -O2 -Wall -Woverloaded-virtual -L$(LIBAVCODEC)
+CXXFLAGS ?= -O2 -g -Wall -Woverloaded-virtual -L$(LIBAVCODEC)
 
 ### The directory environment:
 

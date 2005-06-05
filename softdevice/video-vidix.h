@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.3 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-vidix.h,v 1.4 2005/06/05 20:58:12 lucke Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -17,7 +17,6 @@
 
 class cVidixVideoOut : public cVideoOut {
 private:
-    uint8_t * osd;
     uint8_t * fb;
 
     int fbdev;
@@ -56,7 +55,8 @@ public:
   virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
   virtual void Pause(void);
 
-  bool matchPixelFormat(void);
+  bool MatchPixelFormat(void);
+  void AllocLayer(void);
 };
 
 #endif // VIDEO_VIDIX_H

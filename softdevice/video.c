@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.21 2005/05/29 19:50:44 lucke Exp $
+ * $Id: video.c,v 1.22 2005/06/05 20:58:12 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -23,6 +23,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
 #endif
   sxoff = syoff = lxoff = lyoff = 0;
   PixelMask=NULL;
+  OsdRefreshCounter=0;
   this->setupStore=setupStore;
   freezeMode=false;
 
@@ -32,7 +33,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   //start osd thread
   active=true;
   Start();
-};
+}
 
 cVideoOut::~cVideoOut()
 {
@@ -61,10 +62,10 @@ void cVideoOut::init_OsdBuffers()
        OsdPAlphaUV=(uint8_t*)malloc(Ysize/4+8);
        memset(OsdPAlphaUV,0,Ysize/4);
     }
-}; 
+}
 
 /*----------------------------------------------------------------------------*/
-void cVideoOut::Action() 
+void cVideoOut::Action()
 {
   init_OsdBuffers();
   ClearOSD();
@@ -75,23 +76,24 @@ void cVideoOut::Action()
     int newOsdHeight;
     bool changeMode=false;
     int newOsdMode=0;
-   
+
     OsdRefreshCounter++;
     if (freezeMode && OsdRefreshCounter > 10 )
     	OsdRefreshCounter=3;
-    
+
     changeMode=(current_osdMode != setupStore->osdMode);
     newOsdMode=setupStore->osdMode;
     // if software osd has not been shown for some time or
-    // no signal 
-    if ( OsdRefreshCounter > 80 ||
-         (setupStore->osdMode == OSDMODE_SOFTWARE &&
-	  OsdRefreshCounter>10 && Osd_changed ) ) {
-	    osdMutex.Lock();
-	    YUV(OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight, 
-			    OSD_FULL_WIDTH, OSD_FULL_WIDTH/2); 
-	    Osd_changed=0;
-	    osdMutex.Unlock();
+    // no signal
+    if (OsdRefreshCounter > 80 ||
+        (setupStore->osdMode == OSDMODE_SOFTWARE &&
+         OsdRefreshCounter>10 && Osd_changed))
+    {
+      osdMutex.Lock();
+      YUV(OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight,
+          OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
+      Osd_changed=0;
+      osdMutex.Unlock();
     }
 
     // freeze mode and osd changed, change osd mode
@@ -113,7 +115,7 @@ void cVideoOut::Action()
       if (newOsdHeight > OSD_FULL_HEIGHT)
         newOsdHeight=OSD_FULL_HEIGHT;
     }
-    if (OSDpresent && osd 
+    if (OSDpresent && osd
        && ( OsdWidth!=newOsdWidth  || OsdHeight!=newOsdHeight  || 
            changeMode )
         )
@@ -513,7 +515,7 @@ void cVideoOut::Draw(cBitmap *Bitmap,
     int           x1,x2,y1,y2;
     uint8_t       *PixelMaskPtr;
 
-    
+
 //  printf( "Draw: OSDWidth %d %d Bitmap %d %d \n",
 //   OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height()); 
     // if bitmap didn't change, return
