@@ -1,0 +1,5 @@
+.dependencies
+.#*.c.*
+.#*.h.*
+config.mak
+config.h
