@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.15 2005/05/01 08:07:43 lucke Exp $
+ * $Id: audio.c,v 1.16 2005/06/06 20:46:40 wachm Exp $
  */
 
 #include <unistd.h>
@@ -91,7 +91,7 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
     while (paused) usleep(1000); // block
     err = snd_pcm_mmap_writei(handle,Data, size);
     if (err == -EAGAIN || (err >= 0 && (size_t)err < size)) {
-      snd_pcm_wait(handle, 10000);
+      snd_pcm_wait(handle, 1000);
     } else if (err == -EPIPE) {
       Xrun();
       dsyslog("[softdevice-audio]: xrun");
@@ -106,6 +106,7 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
               snd_strerror(err));
       exit(EXIT_FAILURE);
     }
+    Data += err * 2 * currContext.channels;
     size -=err;
   }
 }
