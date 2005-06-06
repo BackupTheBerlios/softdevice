@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.38 2005/05/29 10:13:59 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.39 2005/06/06 20:52:42 wachm Exp $
  */
 
 #include <math.h>
@@ -946,7 +946,11 @@ static int read_packet_RingBuffer(void *opaque, uint8_t *buf, int buf_size) {
      return -1;
 };
      
+#if LIBAVFORMAT_BUILD >4625
+static offset_t seek_RingBuffer(void *opaque, offset_t offset, int whence) {
+#else
 static int seek_RingBuffer(void *opaque, offset_t offset, int whence) {
+#endif
      cMpeg2Decoder *Dec=(cMpeg2Decoder *)(opaque);
      if (Dec) 
        return Dec->seek(offset, whence);

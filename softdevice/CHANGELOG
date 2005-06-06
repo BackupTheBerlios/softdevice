@@ -1,5 +1,7 @@
 Changelog
 2005-06-06:
+    - fixed latest cvs compile issue
+    - applied fix for noisy audio on some soundcards (by Antonio O.)
     - applied GetDeviceDescription() patch for video-dfb.c (by Lucian Muresan)
 2005-06-05:
     - compile by default with "-g"
@@ -11,7 +13,6 @@ Changelog
       (thanks to Marko Mäkelä)
     - buffering is now complety signal triggered
     - made buffersizes variable 
-=======
 2005-05-22: softdevice-0.1.2
 2005-05-20:
     - fix possible segfault in fb-mode when resolution is smaller than
