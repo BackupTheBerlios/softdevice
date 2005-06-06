@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.27 2005/05/29 19:50:44 lucke Exp $
+ * $Id: video-dfb.c,v 1.28 2005/06/06 06:26:01 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -156,12 +156,14 @@ static DFBEnumerationResult EnumCallBack(unsigned int id,
  */
 static void reportCardInfo (IDirectFB *dfb)
 {
-#if 0
-    DFBCardCapabilities           caps;
+#if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
+  DFBCardCapabilities caps;
 
   dfb->GetCardCapabilities(&caps);
-
-  fprintf(stderr,"[dfb] RAM: %d bytes\n",caps.video_memory);
+#else
+  DFBGraphicsDeviceDescription caps;
+  dfb->GetDeviceDescription(&caps);
+#endif
 
   fprintf(stderr,"[dfb] Accellerated Functions: ");
   if (caps.acceleration_mask == DFXL_NONE) fprintf(stderr,"none ");
@@ -196,7 +198,6 @@ static void reportCardInfo (IDirectFB *dfb)
   if (caps.blitting_flags & DSBLIT_DEMULTIPLY ) fprintf(stderr,"Demultiply ");
   if (caps.blitting_flags & DSBLIT_DEINTERLACE ) fprintf(stderr,"Deinterlace ");
   fprintf(stderr,"\n");
-#endif
 }
 
 /* ---------------------------------------------------------------------------

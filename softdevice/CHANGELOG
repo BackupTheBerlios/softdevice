@@ -1,4 +1,6 @@
 Changelog
+2005-06-06:
+    - applied GetDeviceDescription() patch for video-dfb.c (by Lucian Muresan)
 2005-06-05:
     - compile by default with "-g"
     - fix vidix segfault
