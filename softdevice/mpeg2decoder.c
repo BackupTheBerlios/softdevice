@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.39 2005/06/06 20:52:42 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.40 2005/06/07 21:17:10 lucke Exp $
  */
 
 #include <math.h>
@@ -127,7 +127,7 @@ int64_t  cClock::GetPTS() {
 // --- cStreamDecoder ---------------------------------------------------------
 
 cStreamDecoder::cStreamDecoder(AVCodecContext *Context)
-        : PacketQueue(150)
+        : PacketQueue(PACKET_BUF_SIZE)
 {
   context=Context;
   if (context)

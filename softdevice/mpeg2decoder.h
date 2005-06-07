@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.24 2005/05/29 10:13:59 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.25 2005/06/07 21:17:10 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -96,7 +96,7 @@ private:
     cSigTimer EnableGet;
     
 public:
-    cPacketQueue(int maxPackets=150);
+    cPacketQueue(int maxPackets=PACKET_BUF_SIZE);
     ~cPacketQueue();
 
     int PutPacket(const AVPacket &Packet);
