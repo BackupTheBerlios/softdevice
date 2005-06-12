@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.25 2005/06/07 21:17:10 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.26 2005/06/12 20:45:20 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -211,6 +211,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
 
     int                 width, height;
     int                 currentDeintMethod, currentMirrorMode;
+    int                 currentppMethod, currentppQuality;
     uchar               *pic_buf_lavc, *pic_buf_pp, *pic_buf_mirror;
 #ifdef PP_LIBAVCODEC
     pp_mode_t           *ppmode;

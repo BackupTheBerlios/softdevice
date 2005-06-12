@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.24 2005/05/29 19:50:44 lucke Exp $
+ * $Id: video-xv.c,v 1.25 2005/06/12 20:45:20 wachm Exp $
  */
 
 #include <unistd.h>
@@ -975,6 +975,7 @@ bool cXvVideoOut::Reconfigure(int format)
   pixels [0] = outbuffer;
   pixels [1] = outbuffer + xvWidth * xvHeight;
   pixels [2] = pixels [1] + xvWidth * xvHeight / 4;
+  
   rc = XShmAttach(dpy, &shminfo);
   dsyslog("[XvVideoOut]: XShmAttach    rc = %d %s",
           rc,(rc == 1) ? "(should be OK)":"(thats NOT OK!)");
@@ -1301,12 +1302,13 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   else 
 #endif
  {
+
           for (int i = 0; i < fheight; i++)
-             memcpy (pixels [0] + i * xvWidth, Py + i * Ystride, fwidth);
+             fast_memcpy(pixels [0] + i * xvWidth, Py + i * Ystride, fwidth);
           for (int i = 0; i < fheight / 2; i++)
-             memcpy (pixels [1] + i * xvWidth / 2, Pv + i * UVstride, fwidth / 2);
+             fast_memcpy (pixels [1] + i * xvWidth / 2, Pv + i * UVstride, fwidth / 2);
           for (int i = 0; i < fheight / 2; i++)
-             memcpy (pixels [2] + i * xvWidth / 2, Pu + i * UVstride, fwidth / 2);
+             fast_memcpy (pixels [2] + i * xvWidth / 2, Pu + i * UVstride, fwidth / 2);
 
           pthread_mutex_lock(&xv_mutex);
           XvShmPutImage(dpy, port,

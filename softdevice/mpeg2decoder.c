@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.40 2005/06/07 21:17:10 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.41 2005/06/12 20:45:20 wachm Exp $
  */
 
 #include <math.h>
@@ -35,6 +35,9 @@
 #define BUFDEB(out...)
 #endif
 
+// 0: save buffers, 1: good seeking, 2: HDTV buffers
+int dvb_buf_size[] = {64*1024,32*1024,64*1024};
+int packet_buf_size[] = {300,150,2000};
 
 //#define AV_STATS
 //------------------------------------cPacketBuffer------------------------
@@ -127,7 +130,7 @@ int64_t  cClock::GetPTS() {
 // --- cStreamDecoder ---------------------------------------------------------
 
 cStreamDecoder::cStreamDecoder(AVCodecContext *Context)
-        : PacketQueue(PACKET_BUF_SIZE)
+        : PacketQueue(packet_buf_size[setupStore.bufferMode])
 {
   context=Context;
   if (context)
@@ -370,7 +373,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
        frame,pkt->size,len, audio_size, audioOut->GetDelay());
 
     // no new frame decoded, continue
-    if (audio_size == 0)
+    if (audio_size <= 0)
       continue;
 
     if ( audio_size > AVCODEC_MAX_AUDIO_FRAME_SIZE ) {
@@ -429,6 +432,8 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   pic_buf_lavc = pic_buf_mirror = pic_buf_pp = NULL;
   currentMirrorMode  = setupStore.mirror;
   currentDeintMethod = setupStore.deintMethod;
+  currentppMethod = setupStore.ppMethod;
+  currentppQuality = setupStore.ppQuality;
 
   memset(pts_values,-1,sizeof(pts_values));
   lastPTSidx=lastPTS=0;
@@ -543,22 +548,13 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     else if (pic_buf_mirror)
       pic_buf_mirror = freePicBuf(pic_buf_mirror);
 
-    if (setupStore.deintMethod == 0
-#ifdef FB_SUPPORT
-        || setupStore.deintMethod == 2
-#endif
-       )
-    {
-      pic_buf_lavc = freePicBuf(pic_buf_lavc);
-      pic_buf_pp = freePicBuf(pic_buf_pp);
-    }
-    else if (setupStore.deintMethod == 1)
+    if (setupStore.deintMethod == 1)
       deintLibavcodec();
 #ifdef PP_LIBAVCODEC
 #ifdef FB_SUPPORT
-    else if (setupStore.deintMethod > 2)
+    if (setupStore.deintMethod > 2 || setupStore.ppMethod!=0 )
 #else
-    else if (setupStore.deintMethod > 1)
+    if (setupStore.deintMethod > 1 || setupStore.ppMethod!=0 )
 #endif //FB_SUPPORT
       ppLibavcodec();
 #endif //PP_LIBAVCODEC
@@ -865,16 +861,29 @@ void cVideoStreamDecoder::ppLibavcodec(void)
   }
 
   deintWork = setupStore.deintMethod;
-  if (currentDeintMethod != deintWork || ppmode == NULL)
+  if (currentDeintMethod != deintWork || ppmode == NULL 
+      || currentppMethod != setupStore.ppMethod 
+      || currentppQuality != setupStore.ppQuality )
   {
 
     if (ppmode)  {
       pp_free_mode (ppmode);
       ppmode = NULL;
     }
-
-    ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
+    char mode[60]="";
+    if (setupStore.getPPdeintValue() && setupStore.getPPValue())
+      sprintf(mode,"%s,%s",setupStore.getPPdeintValue(),setupStore.getPPValue());
+   else if (setupStore.getPPdeintValue() )
+      sprintf(mode,"%s",setupStore.getPPdeintValue());
+   else if (setupStore.getPPValue() )
+      sprintf(mode,"%s",setupStore.getPPValue());
+     
+    ppmode = pp_get_mode_by_name_and_quality(mode, 
+            setupStore.ppQuality);
+    //ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
     currentDeintMethod = deintWork;
+    currentppMethod = setupStore.ppMethod;
+    currentppQuality = setupStore.ppQuality;
   }
 
   if (ppmode == NULL || ppcontext == NULL)
@@ -936,6 +945,11 @@ cVideoStreamDecoder::~cVideoStreamDecoder()
   cClock::AdjustVideoPTS(0);
   delete(syncTimer);
   free(picture);
+  if (pic_buf_lavc)
+     pic_buf_lavc = freePicBuf(pic_buf_lavc);
+  if (pic_buf_pp)
+     pic_buf_pp = freePicBuf(pic_buf_pp);
+
 }
 
 // --------------libavformat interface stuff ---------------------------------
@@ -945,7 +959,7 @@ static int read_packet_RingBuffer(void *opaque, uint8_t *buf, int buf_size) {
        return Dec->read_packet(buf,buf_size);
      return -1;
 };
-     
+    
 #if LIBAVFORMAT_BUILD >4625
 static offset_t seek_RingBuffer(void *opaque, offset_t offset, int whence) {
 #else
@@ -974,7 +988,7 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
   aout=NULL;
   vout=NULL;
   
-  StreamBuffer=new cSoftRingBufferLinear(DVB_BUF_SIZE,0);
+  StreamBuffer=NULL;
   
   running=false;
   decoding=false;
@@ -1060,7 +1074,7 @@ void cMpeg2Decoder::initStream() {
        printf("Failed to open input stream.Error %d\n",err);
    };
 
-   init_put_byte(&ic->pb, NULL,MIN_BUF_SIZE, 0, this,
+   init_put_byte(&ic->pb, NULL,dvb_buf_size[setupStore.bufferMode]/2, 0, this,
        read_packet_RingBuffer,NULL,seek_RingBuffer);
    CMDDEB("init put byte finished\n");
 };
@@ -1201,9 +1215,15 @@ void cMpeg2Decoder::Start(bool GetMutex)
  
   if (GetMutex)
     mutex.Lock();
-    
+   
+  if (StreamBuffer) {
+  	delete StreamBuffer;
+	StreamBuffer=NULL;
+  };
+  StreamBuffer=new cSoftRingBufferLinear(dvb_buf_size[setupStore.bufferMode],0);
   StreamBuffer->Clear();
   initStream();
+
   ThreadActive=true;
   freezeMode=false;
   AudioIdx=NO_STREAM;
@@ -1327,6 +1347,11 @@ void cMpeg2Decoder::Stop(bool GetMutex)
     vout=NULL;
     av_close_input_file(ic);
   }
+  if (StreamBuffer) {
+     delete StreamBuffer;
+     StreamBuffer=NULL;
+  };
+
   CMDDEB("Stop finished\n");
   if (GetMutex)
     mutex.Unlock();

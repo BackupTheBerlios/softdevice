@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.3 2005/03/03 18:16:26 lucke Exp $
+ * $Id: utils.c,v 1.4 2005/06/12 20:45:20 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -315,3 +315,202 @@ uint64_t getTimeMilis(void) {
     gettimeofday(&tv,NULL);
     return (int64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
+
+/* taken from MPlayer's aclib */
+
+#define MIN_LEN 0x40
+#define PREFETCH "prefetchnta"
+#define EMMS     "emms"
+#define MOVNTQ "movntq"
+#define MMREG_SIZE 64
+#define BLOCK_SIZE 4096
+#define REG_a "eax"
+#define CONFUSION_FACTOR 0
+
+/* for small memory blocks (<256 bytes) this version is faster */
+#define small_memcpy(to,from,n)\
+{\
+register unsigned long int dummy;\
+__asm__ __volatile__(\
+	"rep; movsb"\
+	:"=&D"(to), "=&S"(from), "=&c"(dummy)\
+/* It's most portable way to notify compiler */\
+/* that edi, esi and ecx are clobbered in asm block. */\
+/* Thanks to A'rpi for hint!!! */\
+        :"0" (to), "1" (from),"2" (n)\
+	: "memory");\
+}
+
+ void * fast_memcpy(void * to, const void * from, size_t len)
+{
+	void *retval;
+	size_t i;
+	retval = to;
+#ifdef USE_MMX2
+        /* PREFETCH has effect even for MOVSB instruction ;) */
+	__asm__ __volatile__ (
+	        PREFETCH" (%0)\n"
+	        PREFETCH" 64(%0)\n"
+	        PREFETCH" 128(%0)\n"
+        	PREFETCH" 192(%0)\n"
+        	PREFETCH" 256(%0)\n"
+		: : "r" (from) );
+#endif
+        if(len >= MIN_LEN)
+	{
+	  register unsigned long int delta;
+          /* Align destinition to MMREG_SIZE -boundary */
+          delta = ((unsigned long int)to)&(MMREG_SIZE-1);
+          if(delta)
+	  {
+	    delta=MMREG_SIZE-delta;
+	    len -= delta;
+	    small_memcpy(to, from, delta);
+	  }
+	  i = len >> 6; /* len/64 */
+	  len&=63;
+        /*
+           This algorithm is top effective when the code consequently
+           reads and writes blocks which have size of cache line.
+           Size of cache line is processor-dependent.
+           It will, however, be a minimum of 32 bytes on any processors.
+           It would be better to have a number of instructions which
+           perform reading and writing to be multiple to a number of
+           processor's decoders, but it's not always possible.
+        */
+
+	// Align destination at BLOCK_SIZE boundary
+	for(; ((int)to & (BLOCK_SIZE-1)) && i>0; i--)
+	{
+		__asm__ __volatile__ (
+#ifdef USE_MMX2
+        	PREFETCH" 320(%0)\n"
+#endif
+		"movq (%0), %%mm0\n"
+		"movq 8(%0), %%mm1\n"
+		"movq 16(%0), %%mm2\n"
+		"movq 24(%0), %%mm3\n"
+		"movq 32(%0), %%mm4\n"
+		"movq 40(%0), %%mm5\n"
+		"movq 48(%0), %%mm6\n"
+		"movq 56(%0), %%mm7\n"
+		MOVNTQ" %%mm0, (%1)\n"
+		MOVNTQ" %%mm1, 8(%1)\n"
+		MOVNTQ" %%mm2, 16(%1)\n"
+		MOVNTQ" %%mm3, 24(%1)\n"
+		MOVNTQ" %%mm4, 32(%1)\n"
+		MOVNTQ" %%mm5, 40(%1)\n"
+		MOVNTQ" %%mm6, 48(%1)\n"
+		MOVNTQ" %%mm7, 56(%1)\n"
+		:: "r" (from), "r" (to) : "memory");
+		((const unsigned char *)from)+=64;
+		((unsigned char *)to)+=64;
+	}
+
+//	printf(" %d %d\n", (int)from&1023, (int)to&1023);
+	// Pure Assembly cuz gcc is a bit unpredictable ;)
+	if(i>=BLOCK_SIZE/64)
+		asm volatile(
+			"xor %%"REG_a", %%"REG_a"	\n\t"
+			".balign 16		\n\t"
+			"1:			\n\t"
+				"movl (%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 32(%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 64(%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 96(%0, %%"REG_a"), %%ebx 	\n\t"
+				"add $128, %%"REG_a"		\n\t"
+				"cmp %3, %%"REG_a"		\n\t"
+				" jb 1b				\n\t"
+
+			"xor %%"REG_a", %%"REG_a"	\n\t"
+
+				".balign 16		\n\t"
+				"2:			\n\t"
+				"movq (%0, %%"REG_a"), %%mm0\n"
+				"movq 8(%0, %%"REG_a"), %%mm1\n"
+				"movq 16(%0, %%"REG_a"), %%mm2\n"
+				"movq 24(%0, %%"REG_a"), %%mm3\n"
+				"movq 32(%0, %%"REG_a"), %%mm4\n"
+				"movq 40(%0, %%"REG_a"), %%mm5\n"
+				"movq 48(%0, %%"REG_a"), %%mm6\n"
+				"movq 56(%0, %%"REG_a"), %%mm7\n"
+				MOVNTQ" %%mm0, (%1, %%"REG_a")\n"
+				MOVNTQ" %%mm1, 8(%1, %%"REG_a")\n"
+				MOVNTQ" %%mm2, 16(%1, %%"REG_a")\n"
+				MOVNTQ" %%mm3, 24(%1, %%"REG_a")\n"
+				MOVNTQ" %%mm4, 32(%1, %%"REG_a")\n"
+				MOVNTQ" %%mm5, 40(%1, %%"REG_a")\n"
+				MOVNTQ" %%mm6, 48(%1, %%"REG_a")\n"
+				MOVNTQ" %%mm7, 56(%1, %%"REG_a")\n"
+				"add $64, %%"REG_a"		\n\t"
+				"cmp %3, %%"REG_a"		\n\t"
+				"jb 2b				\n\t"
+
+#if CONFUSION_FACTOR > 0
+	// a few percent speedup on out of order executing CPUs
+			"mov %5, %%"REG_a"		\n\t"
+				"2:			\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"dec %%"REG_a"		\n\t"
+				" jnz 2b		\n\t"
+#endif
+
+			"xor %%"REG_a", %%"REG_a"	\n\t"
+			"add %3, %0		\n\t"
+			"add %3, %1		\n\t"
+			"sub %4, %2		\n\t"
+			"cmp %4, %2		\n\t"
+			" jae 1b		\n\t"
+				: "+r" (from), "+r" (to), "+r" (i)
+				: "r" ((long)BLOCK_SIZE), "i" (BLOCK_SIZE/64), "i" ((long)CONFUSION_FACTOR)
+				: "%"REG_a, "%ebx"
+		);
+
+	for(; i>0; i--)
+	{
+		__asm__ __volatile__ (
+#ifdef USE_MMX2
+        	PREFETCH" 320(%0)\n"
+#endif
+		"movq (%0), %%mm0\n"
+		"movq 8(%0), %%mm1\n"
+		"movq 16(%0), %%mm2\n"
+		"movq 24(%0), %%mm3\n"
+		"movq 32(%0), %%mm4\n"
+		"movq 40(%0), %%mm5\n"
+		"movq 48(%0), %%mm6\n"
+		"movq 56(%0), %%mm7\n"
+		MOVNTQ" %%mm0, (%1)\n"
+		MOVNTQ" %%mm1, 8(%1)\n"
+		MOVNTQ" %%mm2, 16(%1)\n"
+		MOVNTQ" %%mm3, 24(%1)\n"
+		MOVNTQ" %%mm4, 32(%1)\n"
+		MOVNTQ" %%mm5, 40(%1)\n"
+		MOVNTQ" %%mm6, 48(%1)\n"
+		MOVNTQ" %%mm7, 56(%1)\n"
+		:: "r" (from), "r" (to) : "memory");
+		((const unsigned char *)from)+=64;
+		((unsigned char *)to)+=64;
+	}
+
+#ifdef USE_MMX2
+                /* since movntq is weakly-ordered, a "sfence"
+		 * is needed to become ordered again. */
+		__asm__ __volatile__ ("sfence":::"memory");
+#endif
+#ifdef USE_MMX
+		/* enables to use FPU */
+		__asm__ __volatile__ (EMMS:::"memory");
+#endif
+	}
+	/*
+	 *	Now do the tail of the block
+	 */
+	if(len) small_memcpy(to, from, len);
+	return retval;
+}
+
+

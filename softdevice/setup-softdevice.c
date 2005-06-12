@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.18 2005/05/29 19:50:44 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.19 2005/06/12 20:45:20 wachm Exp $
  */
 
 #include "video.h"
@@ -43,6 +43,17 @@ char *deint_str [] = {
 #endif //PP_LIBAVCODEC
         NULL
      };
+
+/*-----------------------------------------------------------------------------
+*/
+#ifdef PP_LIBAVCODEC
+char *pp_str[]={
+        "none",
+        "fast",
+        "default",
+	NULL
+	};
+#endif //PP_LIBAVCODEC
 
 /* ----------------------------------------------------------------------------
  * allow changing of output pixfmt
@@ -87,6 +98,14 @@ char *videoAspectNames [] = {
         "4:3",
         "16:9",
         "16:10",
+        NULL
+     };
+/* ----------------------------------------------------------------------------
+ */
+char *bufferModes [] = {
+        "save",
+        "good seeking",
+        "HDTV",
         NULL
      };
 
@@ -138,11 +157,14 @@ cSetupStore::cSetupStore ()
   cropMode      = 0;
   cropModeToggleKey = 0;
   deintMethod   = 0;
+  ppMethod   = 0;
+  ppQuality   = 0;
   syncOnFrames  = 0;
   avOffset      = 0;
   shouldSuspend = 0;
   ac3Mode       = 0;
   useMGAtv      = 0;
+  bufferMode    = 0;
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
    * for non square pixel mode should be set via osd to 720/576
@@ -177,7 +199,21 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
             "[setup-softdevice] deinterlace method set to %d %s\n",
             deintMethod,
             deint_str [deintMethod]);
-  } else if(!strcasecmp(Name,"CropMode")) {
+  }
+#ifdef PP_LIBAVCODEC
+  else if (!strcasecmp(Name,"Postprocess Method")) {
+            ppMethod=atoi(Value); 
+            ppMethod=clamp(0,ppMethod,2);
+  }  else if (!strcasecmp(Name,"Postprocess Quality")) {
+            ppQuality=atoi(Value); 
+            ppQuality=clamp(0,ppQuality,6);
+  }
+#endif
+  else if(!strcasecmp(Name,"bufferMode")) {
+        bufferMode=atoi(Value);
+	bufferMode=clamp(0,bufferMode,2);
+  }
+  else if(!strcasecmp(Name,"CropMode")) {
     cropMode = atoi(Value);
     cropMode = clamp (0, cropMode, CROPMODEMAX);
     fprintf (stderr, "[setup-softdevice] cropping mode set to %d (%s)\n",
@@ -253,14 +289,24 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
 
 /* ---------------------------------------------------------------------------
  */
+char *cSetupStore::getPPdeintValue(void)
+{
+  if (strcmp(deint_str[deintMethod], "linblend") == 0) return "lb";
+  else if (strcmp(deint_str[deintMethod], "linipol") == 0) return "li";
+  else if (strcmp(deint_str[deintMethod], "cubicipol") == 0) return "ci";
+  else if (strcmp(deint_str[deintMethod], "median") == 0) return "md";
+  else if (strcmp(deint_str[deintMethod], "ffmpeg") == 0) return "fd";
+  else return NULL;
+}
+/* ---------------------------------------------------------------------------
+ */
+
 char *cSetupStore::getPPValue(void)
 {
-  if (strcmp(deint_str[deintMethod], "linblend") == 0) return "lb:a";
-  else if (strcmp(deint_str[deintMethod], "linipol") == 0) return "li:a";
-  else if (strcmp(deint_str[deintMethod], "cubicipol") == 0) return "ci:a";
-  else if (strcmp(deint_str[deintMethod], "median") == 0) return "md:a";
-  else if (strcmp(deint_str[deintMethod], "ffmpeg") == 0) return "fd:a";
-  else return "unknown";
+  if (strcmp(pp_str[ppMethod], "none") == 0) return "";
+  else if (strcmp(pp_str[ppMethod], "fast") == 0) return "fa";
+  else if (strcmp(pp_str[ppMethod], "default") == 0) return "de";
+  else return NULL;
 }
 
 /* ---------------------------------------------------------------------------
@@ -348,7 +394,16 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 #endif //PP_LIBAVCODEC
                               deint_str));
   }
-
+  
+#ifdef PP_LIBAVCODEC
+  Add(new cMenuEditStraItem(tr("Postprocessing Method"),
+                              &data->ppMethod,3,pp_str));
+  Add(new cMenuEditIntItem(tr("Postprocessing Quality"),
+                              &data->ppQuality,0,6));
+#endif
+  Add(new cMenuEditStraItem(tr("Buffer Mode"),
+                              &data->bufferMode,3,bufferModes));
+  
   if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
   {
     Add(new cMenuEditStraItem(tr("Pixel Format"),
@@ -431,6 +486,8 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("CropMode",           setupStore.cropMode);
   SetupStore ("CropModeToggleKey",     setupStore.cropModeToggleKey);
   SetupStore ("Deinterlace Method", setupStore.deintMethod);
+  SetupStore ("Postprocess Method", setupStore.ppMethod);
+  SetupStore ("Postprocess Quality", setupStore.ppQuality);
   SetupStore ("PixelFormat",        setupStore.pixelFormat);
   SetupStore ("Picture mirroring",  setupStore.mirror);
   SetupStore ("avOffset",           setupStore.avOffset);
@@ -440,4 +497,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Suspend",            setupStore.shouldSuspend);
   SetupStore ("OSDalphablend",      setupStore.osdMode);
   SetupStore ("AC3Mode",            setupStore.ac3Mode);
+  SetupStore ("bufferMode",            setupStore.bufferMode);
 }

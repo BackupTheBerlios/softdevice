@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.13 2005/05/29 19:50:44 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.14 2005/06/12 20:45:20 wachm Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -22,6 +22,7 @@ class cSetupStore {
   public:
                   cSetupStore ();
     bool          SetupParse(const char *Name, const char *Value);
+    char          *getPPdeintValue(void);
     char          *getPPValue(void);
     void          CropModeNext(void);
 
@@ -35,6 +36,8 @@ class cSetupStore {
     int   cropMode;
     int   cropModeToggleKey;
     int   deintMethod;
+    int   ppMethod;
+    int   ppQuality;
     int   mirror;
     int   syncOnFrames;
     int   avOffset;
@@ -43,6 +46,7 @@ class cSetupStore {
     int   shouldSuspend;
     int   osdMode;
     int   ac3Mode;
+    int   bufferMode;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
     char  alsaSPDIFDevice [ALSA_DEVICE_NAME_LENGTH];
     char  *voArgs;

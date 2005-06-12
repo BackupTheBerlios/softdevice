@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.3 2005/03/03 18:16:26 lucke Exp $
+ * $Id: utils.h,v 1.4 2005/06/12 20:45:20 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -37,5 +37,6 @@ void mmx_unpack_24rgb (uint8_t * image, int lines, int stride);
 extern void (*mmx_unpack)(uint8_t * image, int lines, int stride);
 
 
+void * fast_memcpy(void * to, const void * from, size_t len);
 #endif
 
