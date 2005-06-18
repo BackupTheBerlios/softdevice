@@ -1,4 +1,6 @@
 Changelog
+2005-06-18:
+    - provide error message on stderr when Xv plugin cannot connect to X server.
 2005-06-12:
     - no new audio frame has been decoded when audio_size <= 0 
        (reported by Antonio O.)

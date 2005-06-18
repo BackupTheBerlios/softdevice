@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.25 2005/06/12 20:45:20 wachm Exp $
+ * $Id: video-xv.c,v 1.26 2005/06/18 21:54:27 iampivot Exp $
  */
 
 #include <unistd.h>
@@ -631,6 +631,7 @@ bool cXvVideoOut::Initialize (void)
   dsyslog("[XvVideoOut]: patch version (%s)", PATCH_VERSION);
 
   if(!(dpy = XOpenDisplay(NULL))) {
+	fprintf(stderr, "[XvVideoOut]: Could not connect to X-server");
     dsyslog("[XvVideoOut]: Could not connect to X-server");
     return false;
   } /* if */
