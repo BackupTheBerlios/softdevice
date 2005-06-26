@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.4 2005/06/12 20:45:20 wachm Exp $
+ * $Id: utils.c,v 1.5 2005/06/26 20:12:40 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -403,8 +403,8 @@ __asm__ __volatile__(\
 		MOVNTQ" %%mm6, 48(%1)\n"
 		MOVNTQ" %%mm7, 56(%1)\n"
 		:: "r" (from), "r" (to) : "memory");
-		((const unsigned char *)from)+=64;
-		((unsigned char *)to)+=64;
+		from=((const unsigned char *)from)+64;
+		to=((unsigned char *)to)+64;
 	}
 
 //	printf(" %d %d\n", (int)from&1023, (int)to&1023);
@@ -492,8 +492,8 @@ __asm__ __volatile__(\
 		MOVNTQ" %%mm6, 48(%1)\n"
 		MOVNTQ" %%mm7, 56(%1)\n"
 		:: "r" (from), "r" (to) : "memory");
-		((const unsigned char *)from)+=64;
-		((unsigned char *)to)+=64;
+		from=((const unsigned char *)from)+64;
+		to=((unsigned char *)to)+64;
 	}
 
 #ifdef USE_MMX2
