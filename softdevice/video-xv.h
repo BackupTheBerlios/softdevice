@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.7 2005/03/10 21:05:56 lucke Exp $
+ * $Id: video-xv.h,v 1.8 2005/06/28 18:07:33 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -100,6 +100,7 @@ private:
                     net_wm_STATE_ABOVE,
                     net_wm_STATE;
   int               initialized,
+                    toggleInProgress,
                     xv_initialized,
                     osd_refresh_counter,
                     osd_skip_counter,

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.26 2005/06/18 21:54:27 iampivot Exp $
+ * $Id: video-xv.c,v 1.27 2005/06/28 18:07:33 lucke Exp $
  */
 
 #include <unistd.h>
@@ -427,6 +427,16 @@ void cXvVideoOut::ProcessEvents ()
                       16.0 / 9.0 : 4.0 / 3.0;
         current_aspect = -1;
         CheckAspect (current_afd, old_aspect);
+
+        if (toggleInProgress &&
+            ((fullScreen &&
+               dwidth == DisplayWidth(dpy,DefaultScreen(dpy)) &&
+               dheight == DisplayHeight(dpy,DefaultScreen(dpy))) ||
+              (!fullScreen &&
+               dwidth == old_dwidth &&
+               dheight == old_dheight))) {
+          toggleInProgress = 0;
+        }
         break;
       case KeyPress:
         if(cursor_visible == False) {
@@ -444,7 +454,10 @@ void cXvVideoOut::ProcessEvents ()
           case XK_Meta_R: case XK_Alt_L: case XK_Alt_R:
             break;
           case 'f':
-            toggleFullScreen();
+            if (!toggleInProgress) {
+              toggleFullScreen();
+              toggleInProgress++;
+            }
             break;
           case 'b':
             if (xv_initialized)
@@ -582,6 +595,7 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
   OSDpresent = false;
   OSDpseudo_alpha = true;
   initialized = 0;
+  toggleInProgress = 0;
   /* -------------------------------------------------------------------------
    * could be specified by argv ! TODO
    */
@@ -605,8 +619,8 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
    * default settings: source, destination and logical widht/height
    * are set to our well known dimensions.
    */
-  fwidth = lwidth = dwidth = swidth = width;
-  fheight = lheight = dheight = sheight = height;
+  fwidth = lwidth = old_dwidth = dwidth = swidth = width;
+  fheight = lheight = old_dheight = dheight = sheight = height;
 
   if (current_aspect == DV_FORMAT_NORMAL) {
     lwidth = dwidth = XV_DEST_WIDTH_4_3;
