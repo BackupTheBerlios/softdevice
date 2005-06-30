@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.14 2005/05/29 19:50:44 lucke Exp $
+ * $Id: video.h,v 1.15 2005/06/30 21:20:55 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -92,7 +92,8 @@ protected:
             current_aspect,
             currentPixelFormat,
             aspect_changed,
-            current_afd;
+            current_afd,
+            displayTimeUS;
     double  parValues[MAX_PAR];
 
     cSetupStore *setupStore;

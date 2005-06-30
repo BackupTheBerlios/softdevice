@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.29 2005/06/06 18:34:00 lucke Exp $
+ * $Id: video-dfb.c,v 1.30 2005/06/30 21:20:55 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -489,10 +489,31 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
     fprintf(stderr,"[dfb] Using this layer for Video out: %s\n", desc.name);
 
   }
-  
+
+  GetDisplayFrameTime();
   /* create an event buffer with all devices attached */
   events = dfb->CreateInputEventBuffer(DICAPS_ALL,
                                        (setupStore->useMGAtv) ? DFB_TRUE : DFB_FALSE);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::GetDisplayFrameTime (void)
+{
+  if (videoLayer)
+  {
+      struct timeval  tv1, tv2;
+      int             t1, t2;
+
+    videoLayer->GetScreen()->WaitForSync();
+    gettimeofday(&tv1,NULL);
+    videoLayer->GetScreen()->WaitForSync();
+    gettimeofday(&tv2,NULL);
+    t1 = (tv1.tv_sec & 1) * 1000000 + tv1.tv_usec;
+    t2 = (tv2.tv_sec & 1) * 1000000 + tv2.tv_usec;
+    fprintf (stderr,"[dfb] Display frame time is %dµs\n", t2 - t1);
+    //displayTimeUS = t2 - t1;
+  }
 }
 
 /* ---------------------------------------------------------------------------

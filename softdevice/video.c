@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.22 2005/06/05 20:58:12 lucke Exp $
+ * $Id: video.c,v 1.23 2005/06/30 21:20:55 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -24,6 +24,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   sxoff = syoff = lxoff = lyoff = 0;
   PixelMask=NULL;
   OsdRefreshCounter=0;
+  displayTimeUS = 0;
   this->setupStore=setupStore;
   freezeMode=false;
 
