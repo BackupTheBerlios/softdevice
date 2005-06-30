@@ -2,6 +2,7 @@ Changelog
 2005-06-30:
     - changed delay clamping low limit and printout "+" if we drop frames
     - dfb: report current frame duration
+    - dfb: activated device specific delay handling
 2005-06-28:
     - fix for loosing window dimensions upon switching from fullscreen mode to windowed mode
 2005-06-26:
