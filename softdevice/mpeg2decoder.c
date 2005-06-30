@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.41 2005/06/12 20:45:20 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.42 2005/06/30 19:40:46 lucke Exp $
  */
 
 #include <math.h>
@@ -589,7 +589,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     videoOut->YUV(picture->data[0], picture->data[1],picture->data[2],
         context->width,context->height,
         picture->linesize[0],picture->linesize[1]);
-  }
+  } else fprintf(stderr,"+");
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
   // the A-V syncing code is partly based on MPlayer...
@@ -620,8 +620,8 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
  
   if (delay > 2*frametime()*100)
     delay = 2*frametime()*100;
-  else if (delay < frametime()*80)
-    delay = frametime()*80;    
+  else if (delay < -frametime()*100)
+    delay = -frametime()*100;
 
   if (offset >  8*frametime())
      hurry_up=1;
