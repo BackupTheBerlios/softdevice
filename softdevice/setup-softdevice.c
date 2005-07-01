@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.19 2005/06/12 20:45:20 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.20 2005/07/01 19:22:36 lucke Exp $
  */
 
 #include "video.h"
@@ -45,15 +45,13 @@ char *deint_str [] = {
      };
 
 /*-----------------------------------------------------------------------------
-*/
-#ifdef PP_LIBAVCODEC
+ */
 char *pp_str[]={
         "none",
         "fast",
         "default",
-	NULL
-	};
-#endif //PP_LIBAVCODEC
+        NULL
+      };
 
 /* ----------------------------------------------------------------------------
  * allow changing of output pixfmt
