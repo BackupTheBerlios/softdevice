@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.26 2005/06/12 20:45:20 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.27 2005/07/03 15:58:31 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -156,6 +156,8 @@ public:
     virtual void      Freeze(void);
     virtual void      Play(void);
     virtual void      Stop();
+    virtual void      Deactivate()
+    { active = false; };
     virtual void      TrickSpeed(int Speed) {return;};
     virtual int       BufferFill(void);
     bool              initCodec(void);

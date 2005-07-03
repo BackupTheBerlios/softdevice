@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.42 2005/06/30 19:40:46 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.43 2005/07/03 15:58:30 wachm Exp $
  */
 
 #include <math.h>
@@ -1100,7 +1100,8 @@ void cMpeg2Decoder::Action()
         ret = av_read_packet(ic, &pkt);
         if (ret < 0) {
             BUFDEB("cMpeg2Decoder Stream Error!\n");
-            usleep(10000);
+            if (ThreadActive)
+		    usleep(10000);
             continue;
         }
         PacketCount++;
@@ -1203,7 +1204,7 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     //printf("Unknown packet or vout or aout not init!!\n");
     av_free_packet(&pkt);
   }
-
+ BUFDEB("QueuePacket finished...\n");
 };
 
 void cMpeg2Decoder::Start(bool GetMutex)
@@ -1330,15 +1331,21 @@ void cMpeg2Decoder::Stop(bool GetMutex)
     running=false;
     
     ThreadActive=false;
+    // prepare aout and vout for a stop
+    if (vout)
+       vout->Deactivate();
+    if (aout)
+       aout->Deactivate();
+    
     StreamBuffer->Clear();
     EnableGetSignal.Signal();
     Cancel(4);
-   
+    CMDDEB("stopping video\n"); 
     if (vout) {
       vout->Stop();
       delete(vout);
     }
-
+    CMDDEB("stopping audio\n");
     if (aout) {
       aout->Stop();
       delete(aout);
