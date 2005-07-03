@@ -1,4 +1,7 @@
 Changelog
+2005-07-03:
+    - fix fullscreen mode for 64-bit architectures
+    - improve response time for 60-sec skips
 2005-06-30:
     - changed delay clamping low limit and printout "+" if we drop frames
     - dfb: report current frame duration

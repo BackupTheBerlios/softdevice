@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.27 2005/06/28 18:07:33 lucke Exp $
+ * $Id: video-xv.c,v 1.28 2005/07/03 15:59:50 wachm Exp $
  */
 
 #include <unistd.h>
@@ -292,6 +292,7 @@ void cXvVideoOut::toggleFullScreen(void)
 
   if (fullScreen)
   {
+    // window -> fullscreen
       XWindowAttributes winAttr;
       Window            dummyWin;
 
@@ -321,6 +322,7 @@ void cXvVideoOut::toggleFullScreen(void)
   }
   else
   {
+    // fullscreen -> window
     x = old_x;
     y = old_y;
     w = old_dwidth;
@@ -338,7 +340,7 @@ void cXvVideoOut::toggleFullScreen(void)
 
   if ((wmAtom = XInternAtom (dpy, "_MOTIF_WM_HINTS", False)))
   {
-      int         mwmHints [5];
+    long  mwmHints [5];
 
     mwmHints [0] = 2;
     mwmHints [2] = (fullScreen) ? 0 : 1;
