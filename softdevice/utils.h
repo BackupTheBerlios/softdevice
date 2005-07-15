@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.4 2005/06/12 20:45:20 wachm Exp $
+ * $Id: utils.h,v 1.5 2005/07/15 20:42:16 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -19,10 +19,17 @@
 #define movntq(src,dest) do { movq_r2m (src, dest); } while (0);
 #endif
 
-/*    else			\
-	movq_r2m (src, dest);	\
-} while (0)
-*/
+void yv12_to_yuy2( const uint8_t *ysrc,
+                   const uint8_t *usrc,
+                   const uint8_t *vsrc,
+                   uint8_t *dst,
+                   int width,
+                   int height,
+                   int lumStride,
+                   int chromStride,
+                   int dstStride
+                 );
+
 void yuv_to_rgb (uint8_t * image, uint8_t * py,
                  uint8_t * pu, uint8_t * pv,
                  int width, int height,

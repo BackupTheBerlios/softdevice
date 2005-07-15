@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.43 2005/07/03 15:58:30 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.44 2005/07/15 20:42:16 lucke Exp $
  */
 
 #include <math.h>
@@ -1057,7 +1057,7 @@ start:
 };
 
 int cMpeg2Decoder::seek(offset_t offset, int whence) {
-   printf("unimplemented: seek offset %lld whence %d\n",offset,whence);
+   printf("unimplemented: seek offset %lld whence %d\n", (long long int)offset, whence);
    return -EINVAL;
 };
 

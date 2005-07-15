@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.9 2005/06/05 20:58:12 lucke Exp $
+ * $Id: video-vidix.c,v 1.10 2005/07/15 20:42:16 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -133,7 +133,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
 
     printf("cVidixVideoOut: vidix version: %i\n", vidix_version);
 
-    vidix_handler = vdlOpen(VIDIX_DIR, NULL, TYPE_OUTPUT, 1);
+    vidix_handler = vdlOpen(VIDIX_DIR, NULL, TYPE_OUTPUT, 0);
 
     if( !vidix_handler )
     {
@@ -161,7 +161,6 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     currentPixelFormat = setupStore->pixelFormat;
     screenPixelAspect = -1;
 
-    vdlQueryFourcc(vidix_handler, &vidix_fourcc);
     if (vdlQueryFourcc(vidix_handler, &vidix_fourcc))
     {
       if (!MatchPixelFormat())
@@ -312,10 +311,15 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
 {
     uint8_t *dst;
     int hi, wi;
+    
     START;
     TIMINGS("start...\n");
-    if (aspect_changed || currentPixelFormat != setupStore->pixelFormat)
+    if (aspect_changed || currentPixelFormat != setupStore->pixelFormat ||
+        cutTop != setupStore->cropTopLines || cutBottom != setupStore->cropBottomLines )
     {
+       cutTop    = setupStore->cropTopLines;
+       cutBottom = setupStore->cropBottomLines;
+    
        printf("cVidixVideoOut: Video changed format to %dx%d\n", Width, Height);
 
        if((Xres > Width || Yres > Height) &&
@@ -400,20 +404,44 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
     if (currentPixelFormat == 0 || currentPixelFormat == 1)
     {
 #if VDRVERSNUM >= 10307
-      if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
+	if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE)
+	{
         for(hi=0; hi < sheight; hi++){
-          AlphaBlend(dst,OsdPy+hi*OSD_FULL_WIDTH,
-              Py + sxoff,
-              OsdPAlphaY+hi*OSD_FULL_WIDTH,swidth);
+		AlphaBlend(dst, OsdPy+hi*OSD_FULL_WIDTH, Py + sxoff, OsdPAlphaY+hi*OSD_FULL_WIDTH, swidth);
           Py  += Ystride;
           dst += dstrides.y;
+	    }
+	    
+	    // Plane U
+	    dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.u;
+	    for(hi=0; hi < sheight/2; hi++){
+		    AlphaBlend(dst,OsdPu+hi*OSD_FULL_WIDTH/2, Pu + sxoff/2, OsdPAlphaUV+hi*OSD_FULL_WIDTH/2,swidth/2);
+		    Pu  += UVstride;
+		    dst += dstrides.y / 2;
+	    }
 
+	    // Plane V
+	    dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
+	    for(hi=0; hi < sheight/2; hi++) {
+		    AlphaBlend(dst, OsdPv+hi*OSD_FULL_WIDTH/2, Pv + sxoff/2, OsdPAlphaUV+hi*OSD_FULL_WIDTH/2, swidth/2);
+		    Pv  += UVstride;
+		    dst += dstrides.v / 2;
         }
-        EMMS;
       } else
 #endif
+	{	
+	    int chromaWidth  = swidth >> 1;
+	    int chromaOffset = sxoff >> 1;
 
-        for(hi=0; hi < sheight; hi++){
+	    Py += Ystride  * cutTop * 2;
+	    Pv += UVstride * cutTop;
+	    Pu += UVstride * cutTop;
+
+	    dst += dstrides.y * cutTop * 2;
+
+
+	    for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++)
+	    {
           memcpy(dst, Py+sxoff, swidth);
           Py  += Ystride;
           dst += dstrides.y;
@@ -423,116 +451,57 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
 
       if (vidix_play.flags & VID_PLAY_INTERLEAVED_UV)
       {
-        dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
+		int dstStride = dstrides.v << 1;
+		dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v + dstStride * cutTop;
 
-        for(hi = 0; hi < sheight/2; hi++) {
-          for(wi = 0; wi < swidth/2; wi++) {
-            dst[2*wi+0] = Pu[wi+sxoff/2];
-            dst[2*wi+1] = Pv[wi+sxoff/2];
+		for(hi = cutTop; hi < sheight/2; hi++)
+		{
+		    uint16_t *idst = (uint16_t *) dst;
+		    uint8_t  *usrc = Pu + chromaOffset, *vsrc = Pv + chromaOffset;
+
+		    for(wi = 0; wi < chromaWidth; wi++)
+		    {
+			*idst++ = ( usrc[0] << 8 ) + vsrc[0];
+			usrc++;
+			vsrc++;
           }
 
-          dst += dstrides.y;
+		    dst += dstStride;
           Pu += UVstride;
           Pv += UVstride;
         }
+
       } else {
 
+		int dstStride;
+		
         // Plane U
-        dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.u;
+		dstStride = dstrides.u >> 1;		
+		dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.u + dstStride * cutTop;
 
-#if VDRVERSNUM >= 10307
-        if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
-          for(hi=0; hi < sheight/2; hi++){
-            AlphaBlend(dst,OsdPu+hi*OSD_FULL_WIDTH/2,
-               Pu + sxoff/2,
-               OsdPAlphaUV+hi*OSD_FULL_WIDTH/2,swidth/2);
+		for(hi=cutTop; hi < sheight/2 - cutBottom; hi++)
+		{
+    		    memcpy(dst, Pu+chromaOffset, chromaWidth);
             Pu  += UVstride;
-            dst += dstrides.y / 2;
+		    dst += dstStride;
           }
 
           // Plane V
-          dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
-          for(hi=0; hi < sheight/2; hi++) {
-            AlphaBlend(dst, OsdPv+hi*OSD_FULL_WIDTH/2,
-                   Pv + sxoff/2,
-                   OsdPAlphaUV+hi*OSD_FULL_WIDTH/2, swidth/2);
-            Pv  += UVstride;
-            dst += dstrides.v / 2;
-          }
+		dstStride = dstrides.v >> 1;
+		dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v + dstStride * cutTop;
 
-          EMMS;
-        } else
-#endif
+		for(hi=cutTop; hi < sheight/2 - cutBottom; hi++)
         {
-          for(hi=0; hi < sheight/2; hi++) {
-            memcpy(dst, Pu+sxoff/2, swidth/2);
-            Pu   += UVstride;
-            dst += dstrides.u / 2;
+    		    memcpy(dst, Pv+chromaOffset, chromaWidth);
+            Pv   += UVstride;
+		    dst += dstStride;
           }
 
-          // Plane V
-          dst = (uint8_t *)vidix_play.dga_addr + vidix_play.offsets[next_frame] + vidix_play.offset.v;
-          for(hi=0; hi < sheight/2; hi++) {
-            memcpy(dst, Pv+sxoff/2, swidth/2);
-            Pv   += UVstride;
-            dst += dstrides.v / 2;
-          }
         }
       }
     } else if (currentPixelFormat == 2) {
 
-#ifndef USE_MMX
-
-      /* reference implementation */
-      //int p = vidix_play.src.pitch.y - Width*2;
-      for (int i=0; i<Height; i++) {
-        for (int j =0; j < Width/2; j++) {
-          *dst = *(Py + (j*2) + i * Ystride);
-          dst +=1;
-          *dst = *(Pu + j + (i/2) * UVstride);
-          dst +=1;
-          *dst = *(Py + (j*2)+1 + i * Ystride);
-          dst +=1;
-          *dst = *(Pv + j + (i/2) * UVstride);
-          dst +=1;
-        }
-        //dst +=p;
-      }
-#else
-      /* deltas */
-      for (int i=0; i<Height; i++) {
-          uint8_t *pu, *pv, *py, *srfc;
-
-        pu = Pu;
-        pv = Pv;
-        py = Py;
-        srfc = dst;
-        for (int j =0; j < Width/8; j++) {
-          movd_m2r(*pu, mm1);       // mm1 = 00 00 00 00 U3 U2 U1 U0
-          movd_m2r(*pv, mm2);       // mm2 = 00 00 00 00 V3 V2 V1 V0
-          movq_m2r(*py, mm0);       // mm0 = Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0
-          punpcklbw_r2r(mm2, mm1);  // mm1 = V3 U3 V2 U2 V1 U1 V0 U0
-          movq_r2r(mm0,mm3);        // mm3 = Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0
-          movq_r2r(mm1,mm4);        // mm4 = V3 U3 V2 U2 V1 U1 V0 U0
-          punpcklbw_r2r(mm1, mm0);  // mm0 = V1 Y3 U1 Y2 V0 Y1 U0 Y0
-          punpckhbw_r2r(mm4, mm3);  // mm3 = V3 Y7 U3 Y6 V2 Y5 U2 Y4
-
-          movntq(mm0,*srfc);        // Am Meisten brauchen die Speicherzugriffe
-          srfc+=8;
-          py+=8;
-          pu+=4;
-          pv+=4;
-          movntq(mm3,*srfc);      // wenn movntq nicht geht, dann movq verwenden
-          srfc+=8;
-        }
-        Py += Ystride;;
-        if (i % 2 == 1) {
-          Pu += UVstride;
-          Pv += UVstride;
-        }
-        dst += Width*2;
-      }
-#endif
+	yv12_to_yuy2(Py, Pu, Pv, dst, Width, Height, Ystride, UVstride, dstrides.y*2);
     }
 
     TIMINGS("After UV\n");

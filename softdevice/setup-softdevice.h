@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.14 2005/06/12 20:45:20 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.15 2005/07/15 20:42:16 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -21,6 +21,7 @@
 class cSetupStore {
   public:
                   cSetupStore ();
+    virtual       ~cSetupStore () {};
     bool          SetupParse(const char *Name, const char *Value);
     char          *getPPdeintValue(void);
     char          *getPPValue(void);
@@ -35,6 +36,8 @@ class cSetupStore {
     int   pixelFormat;
     int   cropMode;
     int   cropModeToggleKey;
+    int   cropTopLines;
+    int   cropBottomLines;
     int   deintMethod;
     int   ppMethod;
     int   ppQuality;

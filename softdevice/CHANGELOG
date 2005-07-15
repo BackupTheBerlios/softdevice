@@ -1,4 +1,19 @@
 Changelog
+2005-07-15:
+    - by Vadim Catana:
+      - fixed a couple of compiler warnings for gcc4 on x86-64
+      - the video-vidix.c and video-dfb.c both contain code
+        that converts pictures from YV12 format to YUY2. I moved
+        this common code to a function in utils.c .
+      - Some channels display white dots at the top and bottom of
+        the screen due to WSS data encoded in the picture.
+        This problem has been mentioned on vdr, linux-dvb and
+        dxr3 mailinglists a few times. I added two new items in
+        the softdevice menu that allow to cut off a number of lines
+        from top and bottom of the picture. It is implemented now
+        only for -vo vidix and dfb with i420/YV12 format and hardware
+        alpha blending.
+    - by Malcolm Caldwell: fix for vdr segfaulting
 2005-07-03:
     - fix fullscreen mode for 64-bit architectures
     - improve response time for 60-sec skips

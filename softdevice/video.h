@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.15 2005/06/30 21:20:55 lucke Exp $
+ * $Id: video.h,v 1.16 2005/07/15 20:42:16 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -91,6 +91,7 @@ protected:
             display_aspect,
             current_aspect,
             currentPixelFormat,
+            cutTop, cutBottom,
             aspect_changed,
             current_afd,
             displayTimeUS;

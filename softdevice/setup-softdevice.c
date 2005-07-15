@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.20 2005/07/01 19:22:36 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.21 2005/07/15 20:42:16 lucke Exp $
  */
 
 #include "video.h"
@@ -59,7 +59,7 @@ char *pp_str[]={
 char *pix_fmt [] = {
         "I420",
         "YV12",
-        "YUV2",
+        "YUY2",
         NULL
      };
 
@@ -154,6 +154,8 @@ cSetupStore::cSetupStore ()
   outputMethod  = 0;
   cropMode      = 0;
   cropModeToggleKey = 0;
+  cropTopLines      = 0;
+  cropBottomLines   = 0;
   deintMethod   = 0;
   ppMethod   = 0;
   ppQuality   = 0;
@@ -224,6 +226,16 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
              "[setup-softdevice] cropping mode toggle key set to %d (%s)\n",
              cropModeToggleKey,
              userKeyUsage [cropModeToggleKey]);
+  } else if(!strcasecmp(Name,"CropTopLines")) {
+    cropTopLines = atoi(Value);
+    cropTopLines = clamp (0, cropTopLines, 100);
+    fprintf(stderr,"[setup-softdevice] Cropping %d lines from top\n",
+            cropTopLines);
+  } else if(!strcasecmp(Name,"CropBottomLines")) {
+    cropBottomLines = atoi(Value);
+    cropBottomLines = clamp (0, cropBottomLines, 100);
+    fprintf(stderr,"[setup-softdevice] Cropping %d lines from bottom\n",
+            cropBottomLines);
   } else if (!strcasecmp(Name,"PixelFormat")) {
     pixelFormat = atoi(Value);
     pixelFormat = clamp (0, pixelFormat, 2);
@@ -370,6 +382,16 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             10,
                             userKeyUsage));
 
+  Add(new cMenuEditIntItem(tr("Crop lines from top"),
+                            &data->cropTopLines,
+                            0,
+                            100));
+
+  Add(new cMenuEditIntItem(tr("Crop lines from bottom"),
+                            &data->cropBottomLines,
+                            0,
+                            100));
+
   if (data->outputMethod == VOUT_FB)
   {
     Add(new cMenuEditStraItem(tr("Deinterlace Method"),
@@ -483,6 +505,8 @@ void cMenuSetupSoftdevice::Store(void)
   //SetupStore ("Xv-MaxArea",         setupStore.xvMaxArea);
   SetupStore ("CropMode",           setupStore.cropMode);
   SetupStore ("CropModeToggleKey",     setupStore.cropModeToggleKey);
+  SetupStore ("CropTopLines",        setupStore.cropTopLines);
+  SetupStore ("CropBottomLines",     setupStore.cropBottomLines);  
   SetupStore ("Deinterlace Method", setupStore.deintMethod);
   SetupStore ("Postprocess Method", setupStore.ppMethod);
   SetupStore ("Postprocess Quality", setupStore.ppQuality);
