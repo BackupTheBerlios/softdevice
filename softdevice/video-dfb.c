@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.32 2005/07/15 20:42:16 lucke Exp $
+ * $Id: video-dfb.c,v 1.33 2005/07/16 12:52:04 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -14,7 +14,21 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define HAVE_SetSourceLocation 0
+#ifdef HAVE_CONFIG
+# include "config.h"
+#else
+# define HAVE_SetSourceLocation 0
+# if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
+#   define GraphicsDeviceDescription 0
+# else
+#   define GraphicsDeviceDescription 1
+# endif
+# if (DIRECTFB_MAJOR_VERSION > 0 || ((DIRECTFB_MINOR_VERSION == 9) && DIRECTFB_MICRO_VERSION > 22))
+#   define HAVE_DSCAPS_DOUBLE 1
+# else
+#   define HAVE_DSCAPS_DOUBLE 0
+# endif
+#endif
 
 //#define COLORKEY 17,8,79
 #define COLORKEY 0,0,0
@@ -156,14 +170,14 @@ static DFBEnumerationResult EnumCallBack(unsigned int id,
  */
 static void reportCardInfo (IDirectFB *dfb)
 {
-#if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
-    DFBCardCapabilities           caps;
-
-  dfb->GetCardCapabilities(&caps);
-#else
+#if HAVE_GraphicsDeviceDescription
     DFBGraphicsDeviceDescription  caps;
 
   dfb->GetDeviceDescription(&caps);
+#else
+    DFBCardCapabilities           caps;
+
+  dfb->GetCardCapabilities(&caps);
 #endif
 
   fprintf(stderr,"[dfb] RAM: %d bytes\n",caps.video_memory);
@@ -635,7 +649,7 @@ void cDFBVideoOut::SetParams()
                                                       DLCONF_OPTIONS);
       dlc.options       = DLOP_FIELD_PARITY;
 
-#if (DIRECTFB_MAJOR_VERSION > 0 || ((DIRECTFB_MINOR_VERSION == 9) && DIRECTFB_MICRO_VERSION > 22))
+#if HAVE_DSCAPS_DOUBLE
       dlc.flags = (DFBDisplayLayerConfigFlags)
                       ((int) dlc.flags | DLCONF_SURFACE_CAPS);
       dlc.surface_caps  = DSCAPS_DOUBLE;
@@ -799,6 +813,26 @@ void cDFBVideoOut::SetParams()
         }
 
         videoSurface=dfb->CreateSurface(vidDsc);
+        /* --------------------------------------------------------------------
+         * Here is probably a bug in DirectFB, as Clear() does _not_ work
+         * the same, as manual wipe out YUY2 surface. I tried Clear() on my
+         * tests, but it did not solve the problem. That happens with my
+         * Matrox G550.
+         * videoSurface->Clear(0,0,0,0);
+         * The workaround code assumes that in case of stretchBlit, pixelformat
+         * YUY2 is used.
+         */
+        {
+            int     *dst, i, j;
+            int     pitch;
+
+          videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
+          for(i = 0; i < vidDsc.height; ++i, dst += pitch/4)
+            for (j = 0; j < vidDsc.width / 2; ++j)
+              dst [j] = 0x80008000;
+          videoSurface->Unlock();
+        }
+
       }
       reportSurfaceCapabilities ("videoSurface", videoSurface);
 

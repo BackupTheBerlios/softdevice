@@ -1,4 +1,7 @@
 Changelog
+2005-07-16:
+    - fix for cropBottom in dfb with YUY2 pixelformat
+    - some preparations for configure in video-dfb.c
 2005-07-15:
     - by Vadim Catana:
       - fixed a couple of compiler warnings for gcc4 on x86-64
