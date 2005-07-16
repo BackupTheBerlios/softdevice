@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.6 2005/07/15 20:42:16 lucke Exp $
+ * $Id: utils.c,v 1.7 2005/07/16 22:33:08 lucke Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -19,6 +19,12 @@
 
 #include "utils.h"
 #include "setup-softdevice.h"
+
+#ifdef HAVE_CONFIG
+# include "config.h"
+#else
+# define  HAVE_BROKEN_GCC_CPP  0
+#endif
 
 void yv12_to_yuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
                   uint8_t *dst, int width, int height,
@@ -546,7 +552,11 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 			" jae 1b		\n\t"
 				: "+r" (from), "+r" (to), "+r" (i)
 				: "r" ((long)BLOCK_SIZE), "i" (BLOCK_SIZE/64), "i" ((long)CONFUSION_FACTOR)
+#if HAVE_BROKEN_GCC_CPP
+				: "%eax", "%ebx"
+#else
 				: "%"REG_a, "%ebx"
+#endif
 		);
 
 	for(; i>0; i--)
