@@ -1,6 +1,8 @@
 Changelog
 2005-07-17:
     - crop Top/Bottom for xv-out
+    - introduce colour space conversion (by Malcom Caldwell)
+    - make filters work with YUV422 color space
 2005-07-16:
     - fix for cropBottom in dfb with YUY2 pixelformat
     - some preparations for configure in video-dfb.c

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.44 2005/07/15 20:42:16 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.45 2005/07/17 09:10:38 wachm Exp $
  */
 
 #include <math.h>
@@ -429,7 +429,8 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
                                          : cStreamDecoder(Context)
 {
   width = height = -1;
-  pic_buf_lavc = pic_buf_mirror = pic_buf_pp = NULL;
+  pix_fmt = PIX_FMT_NB;
+  pic_buf_lavc = pic_buf_mirror = pic_buf_pp = pic_buf_convert = NULL;
   currentMirrorMode  = setupStore.mirror;
   currentDeintMethod = setupStore.deintMethod;
   currentppMethod = setupStore.ppMethod;
@@ -545,8 +546,6 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     // postproc stuff....
     if (setupStore.mirror == 1)
       Mirror();
-    else if (pic_buf_mirror)
-      pic_buf_mirror = freePicBuf(pic_buf_mirror);
 
     if (setupStore.deintMethod == 1)
       deintLibavcodec();
@@ -559,8 +558,15 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       ppLibavcodec();
 #endif //PP_LIBAVCODEC
 
+    // do format conversions if necessary
+    if (context->pix_fmt!=PIX_FMT_YUV420P) 
+      libavcodec_img_convert();
+
     width  = context->width;
     height = context->height;
+    pix_fmt = context->pix_fmt;
+
+   
     // find decoded pictures pts value
     int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
     while ( picture->coded_picture_number !=
@@ -680,26 +686,23 @@ void cVideoStreamDecoder::TrickSpeed(int Speed)
   syncTimer->Signal();
 }
 
-
 //------------------------------------ postproc stuff -------------------------
-uchar *cVideoStreamDecoder::allocatePicBuf(uchar *pic_buf)
+uchar *cVideoStreamDecoder::allocatePicBuf(uchar *pic_buf, PixelFormat pix_fmt)
 {
   // (re)allocate picture buffer for deinterlaced/mirrored picture
   if (pic_buf == NULL)
     fprintf(stderr,
-            "[softdevice] allocating picture buffer for resolution %dx%d\n",
-            context->width, context->height);
+            "[softdevice] allocating picture buffer for resolution %dx%d "
+	    "format %d\n",
+            context->width, context->height, pix_fmt);
   else
     fprintf(stderr,
-            "[softdevice] resolution changed to %dx%d - "
+            "[softdevice] resolution changed to %dx%d, format %d - "
             "reallocating picture buffer\n",
-            context->width, context->height);
+            context->width, context->height, pix_fmt);
 
-  pic_buf = (uchar *)realloc(pic_buf,
-                             context->width *
-                              context->height *
-                                sizeof(uchar) *
-                                  3 / 2);
+  pic_buf = (uchar *) realloc(pic_buf,
+      avpicture_get_size(pix_fmt, context->width, context->height));
 
   return pic_buf;
 }
@@ -719,54 +722,70 @@ void cVideoStreamDecoder::deintLibavcodec(void)
 {
   if (pic_buf_lavc == NULL ||
       context->width != width ||
-      context->height != height)
-    pic_buf_lavc = allocatePicBuf(pic_buf_lavc);
+      context->height != height ||
+      context->pix_fmt != pix_fmt)
+    pic_buf_lavc = allocatePicBuf(pic_buf_lavc,context->pix_fmt);
 
-  if (pic_buf_lavc)
-  {
-    avpic_dest.data[0] = pic_buf_lavc;
-    avpic_dest.data[1] = avpic_dest.data[0] + context->width * context->height;
-    avpic_dest.data[2] = avpic_dest.data[1] + context->width * context->height / 4;
-
-    avpic_dest.linesize[0] = context->width;
-    avpic_dest.linesize[1] = context->width / 2;
-    avpic_dest.linesize[2] = context->width / 2;
-
-    avpic_src.data[0]     = picture->data[0];
-    avpic_src.data[1]     = picture->data[1];
-    avpic_src.data[2]     = picture->data[2];
-
-    avpic_src.linesize[0] = picture->linesize[0];
-    avpic_src.linesize[1] = picture->linesize[1];
-    avpic_src.linesize[2] = picture->linesize[2];
-
-    if (avpicture_deinterlace(&avpic_dest, &avpic_src, context->pix_fmt,
-                              context->width, context->height) < 0)
-    {
-      fprintf(stderr,
-              "[softdevice] error, libavcodec deinterlacer failure\n"
-              "[softdevice] switching deinterlacing off !\n");
-      setupStore.deintMethod = 0;
-    }
-    else
-    {
-      picture->data[0]     = avpic_dest.data[0];
-      picture->data[1]     = avpic_dest.data[1];
-      picture->data[2]     = avpic_dest.data[2];
-
-      picture->linesize[0] = avpic_dest.linesize[0];
-      picture->linesize[1] = avpic_dest.linesize[1];
-      picture->linesize[2] = avpic_dest.linesize[2];
-    }
-
-  }
-  else
-  {
+  if ( !pic_buf_lavc ) {
     fprintf(stderr,
             "[softdevice] no picture buffer is allocated for deinterlacing !\n"
             "[softdevice] switching deinterlacing off !\n");
     setupStore.deintMethod = 0;
+    return;
   }
+  
+  avpicture_fill(&avpic_dest,pic_buf_lavc,
+                    context->pix_fmt,context->width ,context->height);
+
+  memcpy(avpic_src.data,picture->data,sizeof(avpic_src.data));
+  memcpy(avpic_src.linesize,picture->linesize,sizeof(avpic_src.linesize));
+
+  if (avpicture_deinterlace(&avpic_dest, &avpic_src, context->pix_fmt,
+                              context->width, context->height) < 0) 
+  {
+    fprintf(stderr,
+            "[softdevice] error, libavcodec deinterlacer failure\n"
+            "[softdevice] switching deinterlacing off !\n");
+    setupStore.deintMethod = 0;
+    return;
+  } 
+    
+  memcpy(picture->data,avpic_dest.data,sizeof(picture->data));
+  memcpy(picture->linesize,avpic_dest.linesize,sizeof(picture->data));
+}
+
+void cVideoStreamDecoder::libavcodec_img_convert(void)
+{
+  if (pic_buf_convert == NULL ||
+      context->width != width ||
+      context->height != height) {
+    pic_buf_convert = allocatePicBuf(pic_buf_convert,PIX_FMT_YUV420P);
+    fprintf(stderr,"allocated convert buf\n");
+  }
+
+  if ( !pic_buf_convert ) {
+     fprintf(stderr,
+            "[softdevice] no picture buffer is allocated for img_convert !\n"
+            "[softdevice] switching img_convert off !\n");
+     return;
+  }
+ 
+  avpicture_fill(&avpic_dest,pic_buf_convert,
+                    PIX_FMT_YUV420P,context->width ,context->height);
+
+  memcpy(avpic_src.data,picture->data,sizeof(avpic_src.data));
+  memcpy(avpic_src.linesize,picture->linesize,sizeof(avpic_src.linesize));
+  
+  if (img_convert(&avpic_dest,PIX_FMT_YUV420P,
+		  &avpic_src, context->pix_fmt,
+                              context->width, context->height) < 0) {
+     fprintf(stderr,
+              "[softdevice] error, libavcodec img_convert failure\n");
+     return;
+  } 
+
+  memcpy(picture->data,avpic_dest.data,sizeof(picture->data));
+  memcpy(picture->linesize,avpic_dest.linesize,sizeof(picture->data));
 }
 
 void cVideoStreamDecoder::Mirror(void)
@@ -776,61 +795,62 @@ void cVideoStreamDecoder::Mirror(void)
 
   if (pic_buf_mirror == NULL ||
       context->width != width ||
-      context->height != height)
-    pic_buf_mirror = allocatePicBuf(pic_buf_mirror);
+      context->height != height ||
+      context->pix_fmt != pix_fmt)
+    pic_buf_mirror = allocatePicBuf(pic_buf_mirror,context->pix_fmt);
 
-  if (pic_buf_mirror)
-  {
-    avpic_dest.data[0] = pic_buf_mirror;
-    avpic_dest.data[1] = avpic_dest.data[0] + context->width * context->height;
-    avpic_dest.data[2] = avpic_dest.data[1] + context->width * context->height / 4;
-
-    // mirror luminance
-    ptr_src1  = picture->data[0];
-    ptr_dest1 = avpic_dest.data[0];
-
-    for (int h = 0; h < context->height; h++)
-    {
-      for (int w = context->width; w > 0; w--)
-      {
-        *ptr_dest1 = ptr_src1[h * picture->linesize[0] + w - 1];
-        ptr_dest1++;
-      }
-    }
-
-    // mirror chrominance
-    ptr_src1  = picture->data[1];
-    ptr_src2  = picture->data[2];
-    ptr_dest1 = avpic_dest.data[1];
-    ptr_dest2 = avpic_dest.data[2];
-
-    for (int h = 0; h < context->height / 2; h++)
-    {
-      for (int w = context->width / 2; w > 0; w--)
-      {
-        *ptr_dest1 = ptr_src1[h * picture->linesize[0] / 2 + w - 1];
-        *ptr_dest2 = ptr_src2[h * picture->linesize[0] / 2 + w - 1];
-        ptr_dest1++;
-        ptr_dest2++;
-      }
-    }
-
-    picture->data[0]     = avpic_dest.data[0];
-    picture->data[1]     = avpic_dest.data[1];
-    picture->data[2]     = avpic_dest.data[2];
-
-    picture->linesize[0] = context->width;
-    picture->linesize[1] = context->width / 2;
-    picture->linesize[2] = context->width / 2;
-
-  }
-  else
-  {
+  if ( !pic_buf_mirror ) {
     fprintf(stderr,
             "[softdevice] no picture buffer is allocated for mirroring !\n"
             "[softdevice] switching mirroring off !\n");
     setupStore.mirror = 0;
+    return;
   }
+
+  avpicture_fill(&avpic_dest,pic_buf_mirror,
+      context->pix_fmt,context->width ,context->height);
+
+  // mirror luminance
+  ptr_src1  = picture->data[0];
+  ptr_dest1 = avpic_dest.data[0];
+
+  for (int h = 0; h < context->height; h++)
+  {
+    for (int w = context->width; w > 0; w--)
+    {
+      *ptr_dest1 = ptr_src1[h * picture->linesize[0] + w - 1];
+      ptr_dest1++;
+    }
+  }
+
+  // mirror chrominance
+  ptr_src1  = picture->data[1];
+  ptr_src2  = picture->data[2];
+  ptr_dest1 = avpic_dest.data[1];
+  ptr_dest2 = avpic_dest.data[2];
+
+  int h_shift;
+  int v_shift;
+  avcodec_get_chroma_sub_sample(context->pix_fmt,&h_shift,&v_shift);
+
+  for (int h = 0; h < context->height >> v_shift ; h++)
+  {
+    for (int w = context->width >> h_shift; w > 0; w--)
+    {
+      *ptr_dest1 = ptr_src1[h * picture->linesize[1] + w - 1];
+      *ptr_dest2 = ptr_src2[h * picture->linesize[2] + w - 1];
+      ptr_dest1++;
+      ptr_dest2++;
+    }
+  }
+
+  picture->data[0]     = avpic_dest.data[0];
+  picture->data[1]     = avpic_dest.data[1];
+  picture->data[2]     = avpic_dest.data[2];
+
+  picture->linesize[0] = context->width;
+  picture->linesize[1] = context->width >> h_shift ;
+  picture->linesize[2] = context->width >> h_shift ;
 }
 
 #ifdef PP_LIBAVCODEC
@@ -840,13 +860,15 @@ void cVideoStreamDecoder::ppLibavcodec(void)
 
   if (pic_buf_pp == NULL ||
       context->width != width ||
-      context->height != height)
-    pic_buf_pp = allocatePicBuf(pic_buf_pp);
+      context->height != height ||
+      context->pix_fmt != pix_fmt)
+    pic_buf_pp = allocatePicBuf(pic_buf_pp,context->pix_fmt);
 
   if (ppcontext == NULL ||
       context->width != width ||
-      context->height != height)
-  {
+      context->height != height||
+      context->pix_fmt != pix_fmt) {
+          // reallocate ppcontext if format or size of picture changed
     if (ppcontext)
     {
       pp_free_context(ppcontext);
@@ -856,15 +878,28 @@ void cVideoStreamDecoder::ppLibavcodec(void)
      * processor-independent optimations:
        PP_CPU_CAPS_MMX, PP_CPU_CAPS_MMX2, PP_CPU_CAPS_3DNOW
      */
-    ppcontext = pp_get_context(context->width, context->height,
-        PP_CPU_CAPS_MMX|PP_CPU_CAPS_MMX2);
+    int flags=0;
+#ifdef USE_MMX
+    flags|=PP_CPU_CAPS_MMX;
+#endif
+#ifdef USE_MMX2
+    flags|=PP_CPU_CAPS_MMX2;
+#endif
+    if (context->pix_fmt == PIX_FMT_YUV420P)
+      flags|=PP_FORMAT_420;
+    else if (context->pix_fmt == PIX_FMT_YUV422P)
+      flags|=PP_FORMAT_422;
+    else if (context->pix_fmt == PIX_FMT_YUV444P)
+      flags|=PP_FORMAT_444;
+
+    ppcontext = pp_get_context(context->width, context->height,flags);
   }
 
   deintWork = setupStore.deintMethod;
   if (currentDeintMethod != deintWork || ppmode == NULL 
       || currentppMethod != setupStore.ppMethod 
-      || currentppQuality != setupStore.ppQuality )
-  {
+      || currentppQuality != setupStore.ppQuality ) {
+    // reallocate ppmode if method or quality changed
 
     if (ppmode)  {
       pp_free_mode (ppmode);
@@ -872,72 +907,58 @@ void cVideoStreamDecoder::ppLibavcodec(void)
     }
     char mode[60]="";
     if (setupStore.getPPdeintValue() && setupStore.getPPValue())
-      sprintf(mode,"%s,%s",setupStore.getPPdeintValue(),setupStore.getPPValue());
-   else if (setupStore.getPPdeintValue() )
+      sprintf(mode,"%s,%s",setupStore.getPPdeintValue(),
+          setupStore.getPPValue());
+    else if (setupStore.getPPdeintValue() )
       sprintf(mode,"%s",setupStore.getPPdeintValue());
-   else if (setupStore.getPPValue() )
+    else if (setupStore.getPPValue() )
       sprintf(mode,"%s",setupStore.getPPValue());
-     
-    ppmode = pp_get_mode_by_name_and_quality(mode, 
-            setupStore.ppQuality);
-    //ppmode = pp_get_mode_by_name_and_quality(setupStore.getPPValue(), 6);
+
+    ppmode = pp_get_mode_by_name_and_quality(mode, setupStore.ppQuality);
+    
     currentDeintMethod = deintWork;
     currentppMethod = setupStore.ppMethod;
     currentppQuality = setupStore.ppQuality;
   }
 
-  if (ppmode == NULL || ppcontext == NULL)
-  {
+  if (ppmode == NULL || ppcontext == NULL) {
     fprintf(stderr,
             "[softdevice] pp-filter %s couldn't be initialized,\n"
             "[softdevice] switching postprocessing off !\n",
             setupStore.getPPValue());
     setupStore.deintMethod = 0;
+    return;
   }
-  else
-  {
-    if (pic_buf_pp)
-    {
-      avpic_dest.data[0] = pic_buf_pp;
-      avpic_dest.data[1] = avpic_dest.data[0] +
-                            context->width * context->height;
-      avpic_dest.data[2] = avpic_dest.data[1] +
-                            context->width * context->height / 4;
 
-      avpic_dest.linesize[0] = context->width;
-      avpic_dest.linesize[1] = context->width / 2;
-      avpic_dest.linesize[2] = context->width / 2;
-
-      pp_postprocess(picture->data,
-                     picture->linesize,
-                     (uchar **)&avpic_dest.data,
-                     (int *)&avpic_dest.linesize,
-                     context->width,
-                     context->height,
-                     picture->qscale_table,
-                     picture->qstride,
-                     ppmode,
-                     ppcontext,
-                     picture->pict_type);
-
-      picture->data[0]     = avpic_dest.data[0];
-      picture->data[1]     = avpic_dest.data[1];
-      picture->data[2]     = avpic_dest.data[2];
-
-      picture->linesize[0] = avpic_dest.linesize[0];
-      picture->linesize[1] = avpic_dest.linesize[1];
-      picture->linesize[2] = avpic_dest.linesize[2];
-    }
-    else
-    {
-      fprintf(stderr,
-              "[softdevice] no picture buffer is allocated for postprocessing !\n"
-              "[softdevice] switching postprocessing off !\n");
-      setupStore.deintMethod = 0;
-    }
+  
+  if ( !pic_buf_pp ) {
+    fprintf(stderr,
+            "[softdevice] no picture buffer is allocated for postprocessing !\n"
+            "[softdevice] switching postprocessing off !\n");
+    setupStore.deintMethod = 0;
+    return;
   }
+ 
+  avpicture_fill(&avpic_dest,pic_buf_pp,
+                    context->pix_fmt,context->width ,context->height);
+
+  pp_postprocess(picture->data,
+      picture->linesize,
+      (uchar **)&avpic_dest.data,
+      (int *)&avpic_dest.linesize,
+      context->width,
+      context->height,
+      picture->qscale_table,
+      picture->qstride,
+      ppmode,
+      ppcontext,
+      picture->pict_type);
+
+  memcpy(picture->data,avpic_dest.data,sizeof(picture->data));
+  memcpy(picture->linesize,avpic_dest.linesize,sizeof(picture->data));
 }
 #endif //PP_LIBAVCODEC
+
 //----------------------------- end of postproc stuff ----------------------
 
 cVideoStreamDecoder::~cVideoStreamDecoder()
@@ -949,6 +970,10 @@ cVideoStreamDecoder::~cVideoStreamDecoder()
      pic_buf_lavc = freePicBuf(pic_buf_lavc);
   if (pic_buf_pp)
      pic_buf_pp = freePicBuf(pic_buf_pp);
+  if (pic_buf_convert)
+     pic_buf_convert = freePicBuf(pic_buf_convert);
+  if (pic_buf_mirror)
+     pic_buf_mirror = freePicBuf(pic_buf_mirror);
 
 }
 

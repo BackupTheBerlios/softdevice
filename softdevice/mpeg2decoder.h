@@ -3,13 +3,13 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.27 2005/07/03 15:58:31 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.28 2005/07/17 09:10:38 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
 #include <avcodec.h>
 #ifdef PP_LIBAVCODEC
-  #include <postproc/postprocess.h>
+  #include <postprocess.h>
 #endif //PP_LIBAVCODEC
 
 #include "sync-timer.h"
@@ -212,9 +212,10 @@ class cVideoStreamDecoder : public cStreamDecoder {
     AVPicture           avpic_src, avpic_dest;
 
     int                 width, height;
+    PixelFormat         pix_fmt;
     int                 currentDeintMethod, currentMirrorMode;
     int                 currentppMethod, currentppQuality;
-    uchar               *pic_buf_lavc, *pic_buf_pp, *pic_buf_mirror;
+    uchar               *pic_buf_lavc, *pic_buf_pp, *pic_buf_mirror, *pic_buf_convert;
 #ifdef PP_LIBAVCODEC
     pp_mode_t           *ppmode;
     pp_context_t        *ppcontext;
@@ -231,8 +232,9 @@ class cVideoStreamDecoder : public cStreamDecoder {
     inline int frametime() 
     {return trickspeed*default_frametime;};
 
-    uchar   *allocatePicBuf(uchar *pic_buf);
+    uchar   *allocatePicBuf(uchar *pic_buf, PixelFormat pix_fmt);
     void    deintLibavcodec(void);
+    void    libavcodec_img_convert(void);
     uchar   *freePicBuf(uchar *pic_buf);
 #ifdef PP_LIBAVCODEC
     void    ppLibavcodec(void);
