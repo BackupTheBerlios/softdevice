@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.28 2005/07/03 15:59:50 wachm Exp $
+ * $Id: video-xv.c,v 1.29 2005/07/17 07:39:50 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1263,10 +1263,17 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   if (!initialized || !xv_initialized)
     return;
 
-  if (aspect_changed)
+  if (aspect_changed ||
+      cutTop != setupStore->cropTopLines ||
+      cutBottom != setupStore->cropBottomLines)
   {
     XClearArea (dpy, win, 0, 0, 0, 0, True);
     aspect_changed = 0;
+    cutTop = setupStore->cropTopLines;
+    cutBottom = setupStore->cropBottomLines;
+    memset (pixels [0], 0, xvWidth*xvHeight);
+    memset (pixels [1], 128, xvWidth*xvHeight/4);
+    memset (pixels [2], 128, xvWidth*xvHeight/4);
   }
 
 #if VDRVERSNUM >= 10307
@@ -1281,21 +1288,21 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 
   // if (0) {
   if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
-        for (int i = 0; i < fheight; i++)
+        for (int i = cutTop * 2; i < fheight - cutBottom * 2; i++)
         {
           AlphaBlend(pixels[0]+i*xvWidth,OsdPy+i*OSD_FULL_WIDTH,
             Py + i * Ystride,
             OsdPAlphaY+i*OSD_FULL_WIDTH,fwidth);
         }
- 
-        for (int i = 0; i < fheight / 2; i++)
+
+        for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
         {
           AlphaBlend(pixels[1]+i*xvWidth/2,
             OsdPv+i*OSD_FULL_WIDTH/2,Pv+ i * UVstride,
             OsdPAlphaUV+i*OSD_FULL_WIDTH/2,fwidth/2);
         }
 
-        for (int i = 0; i < fheight / 2; i++)
+        for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
         {
           AlphaBlend(pixels[2]+i*xvWidth/2,
             OsdPu+i*OSD_FULL_WIDTH/2,Pu+i*UVstride,
@@ -1320,11 +1327,11 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 #endif
  {
 
-          for (int i = 0; i < fheight; i++)
+          for (int i = cutTop * 2; i < fheight - cutBottom * 2; i++)
              fast_memcpy(pixels [0] + i * xvWidth, Py + i * Ystride, fwidth);
-          for (int i = 0; i < fheight / 2; i++)
+          for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
              fast_memcpy (pixels [1] + i * xvWidth / 2, Pv + i * UVstride, fwidth / 2);
-          for (int i = 0; i < fheight / 2; i++)
+          for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
              fast_memcpy (pixels [2] + i * xvWidth / 2, Pu + i * UVstride, fwidth / 2);
 
           pthread_mutex_lock(&xv_mutex);
