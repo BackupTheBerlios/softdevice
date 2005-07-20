@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.16 2005/07/20 18:58:52 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.17 2005/07/20 19:13:36 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -48,6 +48,7 @@ class cSetupStore {
     int   avOffset;
     int   screenPixelAspect;
     int   useMGAtv;
+    int   useStretchBlit;
     int   shouldSuspend;
     int   osdMode;
     int   ac3Mode;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.22 2005/07/20 18:58:52 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.23 2005/07/20 19:13:36 lucke Exp $
  */
 
 #include "video.h"
@@ -166,6 +166,7 @@ cSetupStore::cSetupStore ()
   shouldSuspend = 0;
   ac3Mode       = 0;
   useMGAtv      = 0;
+  useStretchBlit = 0;
   bufferMode    = 0;
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
@@ -213,7 +214,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
 #endif
   else if(!strcasecmp(Name,"bufferMode")) {
         bufferMode=atoi(Value);
-	bufferMode=clamp(0,bufferMode,2);
+        bufferMode=clamp(0,bufferMode,2);
   }
   else if(!strcasecmp(Name,"CropMode")) {
     cropMode = atoi(Value);
@@ -278,6 +279,10 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     fprintf(stderr,"[softdevice] picture mirroring set to %d (%s)\n",
             mirror,
             mirror ? "on" : "off");
+  } else if(!strcasecmp(Name, "UseStretchBlit")) {
+    useStretchBlit = clamp (0, atoi(Value), 1);
+    fprintf(stderr,"[softdevice] UseStretchBlitset to %s\n",
+            useStretchBlit ? "on" : "off");
   } else if (!strcasecmp(Name, "SyncAllFrames")) {
     syncOnFrames = atoi(Value);
     syncOnFrames = clamp (0, syncOnFrames, 1);
@@ -459,6 +464,12 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                               pix_fmt));
   }
 
+  if (data->outputMethod == VOUT_DFB)
+  {
+    Add(new cMenuEditBoolItem(tr("Use StretchBlit"),
+                              &data->useStretchBlit, tr("off"), tr("on")));
+  }
+
   Add(new cMenuEditBoolItem(tr("Picture mirroring"),
                             &data->mirror, tr("off"), tr("on")));
 
@@ -540,6 +551,7 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Postprocess Method", setupStore.ppMethod);
   SetupStore ("Postprocess Quality", setupStore.ppQuality);
   SetupStore ("PixelFormat",        setupStore.pixelFormat);
+  SetupStore ("UseStretchBlit",     setupStore.useStretchBlit);
   SetupStore ("Picture mirroring",  setupStore.mirror);
   SetupStore ("avOffset",           setupStore.avOffset);
   SetupStore ("AlsaDevice",         setupStore.alsaDevice);

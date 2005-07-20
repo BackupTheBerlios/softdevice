@@ -1,5 +1,6 @@
 Changelog
 2005-07-17:
+    - stretchBlit mode for dfb-out is selectable via OSD
     - cropLeft/Right for xv-out
     - exclude cropTop/Bottom OSD from fb-out
     - adjusted vidix-out call of yv12_to_yuy2() to dfb-out

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.33 2005/07/16 12:52:04 lucke Exp $
+ * $Id: video-dfb.c,v 1.34 2005/07/20 19:13:36 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -301,6 +301,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   if (setupStore->useMGAtv) {
     layerInfo = &layerList [CRTC2_LAYER_NEW];
     currentPixelFormat = setupStore->pixelFormat = 2;
+    setupStore->useStretchBlit = 1;
+
     if (!setupStore->screenPixelAspect)
       setupStore->screenPixelAspect = 1;
   }
@@ -440,14 +442,25 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
     useStretchBlit = false;
     OSDpseudo_alpha = true;
     if (setupStore->pixelFormat == 0)
+    {
       vidDsc.pixelformat = DSPF_I420;
+      setupStore->useStretchBlit = 0;
+      useStretchBlit = setupStore->useStretchBlit;
+    }
     else if (setupStore->pixelFormat == 1)
+    {
       vidDsc.pixelformat = DSPF_YV12;
+      setupStore->useStretchBlit = 0;
+      useStretchBlit = setupStore->useStretchBlit;
+    }
     else if (setupStore->pixelFormat == 2)
     {
       vidDsc.pixelformat = DSPF_YUY2;
-      useStretchBlit = true;
-      OSDpseudo_alpha = false;
+      if (setupStore->useStretchBlit)
+      {
+        useStretchBlit = true;
+        OSDpseudo_alpha = false;
+      }
     }
 
     osdSurface   = dfb->CreateSurface (osdDsc);
@@ -598,7 +611,8 @@ void cDFBVideoOut::SetParams()
     if ( ! videoSurface || aspect_changed ||
         currentPixelFormat != setupStore->pixelFormat ||
         cutTop != setupStore->cropTopLines ||
-        cutBottom != setupStore->cropBottomLines )
+        cutBottom != setupStore->cropBottomLines ||
+        useStretchBlit != setupStore->useStretchBlit )
     {
 
       cutTop    = setupStore->cropTopLines;
@@ -612,14 +626,25 @@ void cDFBVideoOut::SetParams()
       useStretchBlit = false;
       OSDpseudo_alpha = (isVIAUnichrome) ? false: true;
       if (setupStore->pixelFormat == 0)
+      {
         dlc.pixelformat = DSPF_I420;
+        setupStore->useStretchBlit = 0;
+        useStretchBlit = setupStore->useStretchBlit;
+      }
       else if (setupStore->pixelFormat == 1)
+      {
         dlc.pixelformat = DSPF_YV12;
+        setupStore->useStretchBlit = 0;
+        useStretchBlit = setupStore->useStretchBlit;
+      }
       else if (setupStore->pixelFormat == 2)
       {
         dlc.pixelformat = DSPF_YUY2;
-        useStretchBlit = true;
-        OSDpseudo_alpha = false;
+        if (setupStore->useStretchBlit)
+        {
+          useStretchBlit = true;
+          OSDpseudo_alpha = false;
+        }
       }
 
 #if HAVE_SetSourceLocation
