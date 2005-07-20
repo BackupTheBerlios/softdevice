@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.30 2005/07/20 18:58:52 lucke Exp $
+ * $Id: video-xv.c,v 1.31 2005/07/20 20:24:10 lucke Exp $
  */
 
 #include <unistd.h>
@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "2005-03-10"
+#define PATCH_VERSION "2005-07-20"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;

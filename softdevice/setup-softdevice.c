@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.23 2005/07/20 19:13:36 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.24 2005/07/20 20:24:10 lucke Exp $
  */
 
 #include "video.h"
@@ -412,7 +412,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                              100));
   }                            
 
-  if (data->outputMethod == VOUT_XV)
+  if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_DFB)
   {
     Add(new cMenuEditIntItem(tr("Crop columns from left"),
                              &data->cropLeftCols,

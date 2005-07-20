@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.34 2005/07/20 19:13:36 lucke Exp $
+ * $Id: video-dfb.c,v 1.35 2005/07/20 20:24:10 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -612,11 +612,15 @@ void cDFBVideoOut::SetParams()
         currentPixelFormat != setupStore->pixelFormat ||
         cutTop != setupStore->cropTopLines ||
         cutBottom != setupStore->cropBottomLines ||
+        cutLeft != setupStore->cropLeftCols ||
+        cutRight != setupStore->cropRightCols ||
         useStretchBlit != setupStore->useStretchBlit )
     {
 
       cutTop    = setupStore->cropTopLines;
       cutBottom = setupStore->cropBottomLines;
+      cutLeft   = setupStore->cropLeftCols;
+      cutRight  = setupStore->cropRightCols;
 
       fprintf(stderr,
               "[dfb] (re)configuring Videolayer to %d x %d (%dx%d)\n",
@@ -1071,14 +1075,14 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   if (pixelformat == DSPF_I420 || pixelformat == DSPF_YV12)
   {
 #if HAVE_SetSourceLocation
-    Py += Ystride  * cutTop * 2;
-    Pv += UVstride * cutTop;
-    Pu += UVstride * cutTop;
+    Py += Ystride  * cutTop * 2 + cutLeft * 2;
+    Pv += UVstride * cutTop + cutLeft;
+    Pu += UVstride * cutTop + cutLeft;
 
     dst += pitch * cutTop * 2;
 
     for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
-      memcpy(dst, Py, Width);
+      memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
       Py  += Ystride;
       dst += pitch;
     }
@@ -1086,7 +1090,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
     for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-      memcpy(dst, Pu, Width/2);
+      memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
       Pu  += UVstride;
       dst += pitch / 2;
     }
@@ -1094,7 +1098,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
     for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-      memcpy(dst, Pv, Width/2);
+      memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
       Pv  += UVstride;
       dst += pitch / 2;
     }
@@ -1106,7 +1110,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     dst += pitch * cutTop * 2;
 
     for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
-      memcpy(dst, Py+sxoff, swidth);
+      memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
       Py  += Ystride;
       dst += pitch;
     }
@@ -1114,7 +1118,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
     for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-      memcpy(dst, Pu+sxoff/2, swidth/2);
+      memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
       Pu  += UVstride;
       dst += pitch / 2;
     }
@@ -1122,18 +1126,19 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
     for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-      memcpy(dst, Pv+sxoff/2, swidth/2);
+      memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
       Pv  += UVstride;
       dst += pitch / 2;
     }
 #endif
   } else if (pixelformat == DSPF_YUY2) {
 
-    yv12_to_yuy2(Py + Ystride  * cutTop * 2,
-                 Pu + UVstride * cutTop,
-                 Pv + UVstride * cutTop,
-                 dst + pitch * cutTop * 2,
-                 Width, Height - 2 * (cutTop + cutBottom),
+    yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                 Pu + UVstride * cutTop + cutLeft,
+                 Pv + UVstride * cutTop + cutLeft,
+                 dst + pitch * cutTop * 2 + cutLeft * 4,
+                 Width - 2 * (cutLeft + cutRight),
+                 Height - 2 * (cutTop + cutBottom),
                  Ystride, UVstride, pitch);
   }
 

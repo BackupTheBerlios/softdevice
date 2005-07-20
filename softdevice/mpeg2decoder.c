@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.45 2005/07/17 09:10:38 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.46 2005/07/20 20:24:10 lucke Exp $
  */
 
 #include <math.h>
@@ -1384,6 +1384,7 @@ void cMpeg2Decoder::Stop(bool GetMutex)
      StreamBuffer=NULL;
   };
 
+  Speed = 1;
   CMDDEB("Stop finished\n");
   if (GetMutex)
     mutex.Unlock();
