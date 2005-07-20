@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.15 2005/07/15 20:42:16 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.16 2005/07/20 18:58:52 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -38,6 +38,8 @@ class cSetupStore {
     int   cropModeToggleKey;
     int   cropTopLines;
     int   cropBottomLines;
+    int   cropLeftCols;
+    int   cropRightCols;
     int   deintMethod;
     int   ppMethod;
     int   ppQuality;

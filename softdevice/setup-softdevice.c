@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.21 2005/07/15 20:42:16 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.22 2005/07/20 18:58:52 lucke Exp $
  */
 
 #include "video.h"
@@ -156,6 +156,8 @@ cSetupStore::cSetupStore ()
   cropModeToggleKey = 0;
   cropTopLines      = 0;
   cropBottomLines   = 0;
+  cropLeftCols      = 0;
+  cropRightCols     = 0;
   deintMethod   = 0;
   ppMethod   = 0;
   ppQuality   = 0;
@@ -236,6 +238,16 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     cropBottomLines = clamp (0, cropBottomLines, 100);
     fprintf(stderr,"[setup-softdevice] Cropping %d lines from bottom\n",
             cropBottomLines);
+  } else if(!strcasecmp(Name,"CropLeftCols")) {
+    cropLeftCols = atoi(Value);
+    cropLeftCols = clamp (0, cropLeftCols, 100);
+    fprintf(stderr,"[setup-softdevice] Cropping %d columns from left\n",
+            cropLeftCols);
+  } else if(!strcasecmp(Name,"CropRightCols")) {
+    cropRightCols = atoi(Value);
+    cropRightCols = clamp (0, cropRightCols, 100);
+    fprintf(stderr,"[setup-softdevice] Cropping %d columns from right\n",
+            cropRightCols);
   } else if (!strcasecmp(Name,"PixelFormat")) {
     pixelFormat = atoi(Value);
     pixelFormat = clamp (0, pixelFormat, 2);
@@ -382,15 +394,30 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             10,
                             userKeyUsage));
 
-  Add(new cMenuEditIntItem(tr("Crop lines from top"),
-                            &data->cropTopLines,
-                            0,
-                            100));
+  if (data->outputMethod != VOUT_FB)
+  {
+    Add(new cMenuEditIntItem(tr("Crop lines from top"),
+                             &data->cropTopLines,
+                             0,
+                             100));
 
-  Add(new cMenuEditIntItem(tr("Crop lines from bottom"),
-                            &data->cropBottomLines,
-                            0,
-                            100));
+    Add(new cMenuEditIntItem(tr("Crop lines from bottom"),
+                             &data->cropBottomLines,
+                             0,
+                             100));
+  }                            
+
+  if (data->outputMethod == VOUT_XV)
+  {
+    Add(new cMenuEditIntItem(tr("Crop columns from left"),
+                             &data->cropLeftCols,
+                             0,
+                             100));
+    Add(new cMenuEditIntItem(tr("Crop columns from right"),
+                             &data->cropRightCols,
+                             0,
+                             100));
+  }
 
   if (data->outputMethod == VOUT_FB)
   {
@@ -506,7 +533,9 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("CropMode",           setupStore.cropMode);
   SetupStore ("CropModeToggleKey",     setupStore.cropModeToggleKey);
   SetupStore ("CropTopLines",        setupStore.cropTopLines);
-  SetupStore ("CropBottomLines",     setupStore.cropBottomLines);  
+  SetupStore ("CropBottomLines",     setupStore.cropBottomLines);
+  SetupStore ("CropLeftCols",        setupStore.cropLeftCols);
+  SetupStore ("CropRightCols",       setupStore.cropRightCols);
   SetupStore ("Deinterlace Method", setupStore.deintMethod);
   SetupStore ("Postprocess Method", setupStore.ppMethod);
   SetupStore ("Postprocess Quality", setupStore.ppQuality);

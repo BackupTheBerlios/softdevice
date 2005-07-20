@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.25 2005/07/15 20:42:16 lucke Exp $
+ * $Id: video.c,v 1.26 2005/07/20 18:58:52 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -22,7 +22,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   OsdHeight=OSD_FULL_HEIGHT;
 #endif
   sxoff = syoff = lxoff = lyoff = 0;
-  cutTop = cutBottom = 0;
+  cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
   PixelMask=NULL;
   OsdRefreshCounter=0;

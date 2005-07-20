@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.29 2005/07/17 07:39:50 lucke Exp $
+ * $Id: video-xv.c,v 1.30 2005/07/20 18:58:52 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1265,12 +1265,16 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 
   if (aspect_changed ||
       cutTop != setupStore->cropTopLines ||
-      cutBottom != setupStore->cropBottomLines)
+      cutBottom != setupStore->cropBottomLines ||
+      cutLeft != setupStore->cropLeftCols ||
+      cutRight != setupStore->cropRightCols)
   {
     XClearArea (dpy, win, 0, 0, 0, 0, True);
     aspect_changed = 0;
     cutTop = setupStore->cropTopLines;
     cutBottom = setupStore->cropBottomLines;
+    cutLeft = setupStore->cropLeftCols;
+    cutRight = setupStore->cropRightCols;
     memset (pixels [0], 0, xvWidth*xvHeight);
     memset (pixels [1], 128, xvWidth*xvHeight/4);
     memset (pixels [2], 128, xvWidth*xvHeight/4);
@@ -1290,23 +1294,29 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
         for (int i = cutTop * 2; i < fheight - cutBottom * 2; i++)
         {
-          AlphaBlend(pixels[0]+i*xvWidth,OsdPy+i*OSD_FULL_WIDTH,
-            Py + i * Ystride,
-            OsdPAlphaY+i*OSD_FULL_WIDTH,fwidth);
+          AlphaBlend(pixels[0]+i*xvWidth+2*cutLeft,
+                     OsdPy+i*OSD_FULL_WIDTH+2*cutLeft,
+                     Py + i * Ystride+2*cutLeft,
+                     OsdPAlphaY+i*OSD_FULL_WIDTH+2*cutLeft,
+                     fwidth-2*(cutLeft+cutRight));
         }
 
         for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
         {
-          AlphaBlend(pixels[1]+i*xvWidth/2,
-            OsdPv+i*OSD_FULL_WIDTH/2,Pv+ i * UVstride,
-            OsdPAlphaUV+i*OSD_FULL_WIDTH/2,fwidth/2);
+          AlphaBlend(pixels[1]+i*xvWidth/2+cutLeft,
+                     OsdPv+i*OSD_FULL_WIDTH/2+cutLeft,
+                     Pv+ i * UVstride+cutLeft,
+                     OsdPAlphaUV+i*OSD_FULL_WIDTH/2+cutLeft,
+                     fwidth/2-(cutLeft+cutRight));
         }
 
         for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
         {
-          AlphaBlend(pixels[2]+i*xvWidth/2,
-            OsdPu+i*OSD_FULL_WIDTH/2,Pu+i*UVstride,
-            OsdPAlphaUV+i*OSD_FULL_WIDTH/2,fwidth/2);
+          AlphaBlend(pixels[2]+i*xvWidth/2+cutLeft,
+                     OsdPu+i*OSD_FULL_WIDTH/2+cutLeft,
+                     Pu+i*UVstride+cutLeft,
+                     OsdPAlphaUV+i*OSD_FULL_WIDTH/2+cutLeft,
+                     fwidth/2-(cutLeft+cutRight));
         }
 #ifdef USE_MMX
      EMMS;
@@ -1328,11 +1338,17 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
  {
 
           for (int i = cutTop * 2; i < fheight - cutBottom * 2; i++)
-             fast_memcpy(pixels [0] + i * xvWidth, Py + i * Ystride, fwidth);
+             fast_memcpy(pixels [0] + i * xvWidth + 2 * cutLeft,
+                         Py + i * Ystride + 2 * cutLeft,
+                         fwidth - 2 * (cutLeft + cutRight));
           for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
-             fast_memcpy (pixels [1] + i * xvWidth / 2, Pv + i * UVstride, fwidth / 2);
+             fast_memcpy (pixels [1] + i * xvWidth / 2 + cutLeft,
+                          Pv + i * UVstride + cutLeft,
+                          fwidth / 2 - (cutLeft + cutRight));
           for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
-             fast_memcpy (pixels [2] + i * xvWidth / 2, Pu + i * UVstride, fwidth / 2);
+             fast_memcpy (pixels [2] + i * xvWidth / 2 + cutLeft,
+                          Pu + i * UVstride + cutLeft,
+                          fwidth / 2 - (cutLeft + cutRight));
 
           pthread_mutex_lock(&xv_mutex);
           XvShmPutImage(dpy, port,
