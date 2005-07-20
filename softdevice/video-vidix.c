@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.10 2005/07/15 20:42:16 lucke Exp $
+ * $Id: video-vidix.c,v 1.11 2005/07/20 18:45:47 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -500,8 +500,12 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int H
         }
       }
     } else if (currentPixelFormat == 2) {
-
-	yv12_to_yuy2(Py, Pu, Pv, dst, Width, Height, Ystride, UVstride, dstrides.y*2);
+      yv12_to_yuy2(Py + Ystride  * cutTop * 2,
+                   Pu + UVstride * cutTop,
+                   Pv + UVstride * cutTop,
+                   dst + dstrides.y*2 * cutTop * 2,
+                   Width, Height - 2 * (cutTop + cutBottom),
+                   Ystride, UVstride, dstrides.y*2);
     }
 
     TIMINGS("After UV\n");
