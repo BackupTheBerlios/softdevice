@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.46 2005/07/20 20:24:10 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.47 2005/07/22 17:55:06 lucke Exp $
  */
 
 #include <math.h>
@@ -536,6 +536,13 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 #else
                  default_frametime=lastDuration/100;
 #endif
+                 if (!default_frametime) {
+                  /* ----------------------------------------------------------
+                   * we should have another/better guess.
+                   */
+                  //fprintf (stderr, " --- setting default frametime !! ---\n");
+                  default_frametime = DEFAULT_FRAMETIME;
+                 }
                  MPGDEB("Set default_frametime to %d\n",default_frametime);
          };
     };
@@ -610,9 +617,9 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   // this few lines does the whole syncing
   int pts_corr;
 
-  // calculate pts correction. Correct 1/10 of offset at a time 
+  // calculate pts correction. Correct 1/10 of offset at a time
   pts_corr = offset/10;
-  
+
   //Max. correction is 2/10 frametime.
   if (pts_corr > 2*frametime() / 10 )
     pts_corr = 2*frametime() / 10;
@@ -1208,7 +1215,7 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
       delete vout;
       vout = NULL;
     };
-    vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec, 
+    vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec,
                    videoOut, &clock, Speed );
   };
   

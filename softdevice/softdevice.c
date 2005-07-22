@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.35 2005/07/22 08:24:56 lucke Exp $
+ * $Id: softdevice.c,v 1.36 2005/07/22 17:55:06 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -11,9 +11,7 @@
 #include <getopt.h>
 #include <stdlib.h>
 
-#ifdef USE_SUBPLUGINS
 #include <dlfcn.h>
-#endif
 
 #if VDRVERSNUM >= 10307
 #include <vdr/osd.h>
