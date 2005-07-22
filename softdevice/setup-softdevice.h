@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.17 2005/07/20 19:13:36 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.18 2005/07/22 08:24:56 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -13,6 +13,7 @@
 #define VOUT_FB       2
 #define VOUT_DFB      3
 #define VOUT_VIDIX    4
+#define VOUT_DUMMY    5
 
 #define ALSA_DEVICE_NAME_LENGTH  64
 

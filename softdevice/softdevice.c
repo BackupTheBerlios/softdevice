@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.34 2005/05/29 10:13:59 wachm Exp $
+ * $Id: softdevice.c,v 1.35 2005/07/22 08:24:56 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -221,6 +221,8 @@ void cSoftOsd::CloseWindow(cWindow *Window) {
 
 #endif
 
+/* ----------------------------------------------------------------------------
+ */
 cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 {
 #if VDRVERSNUM >= 10307
@@ -232,85 +234,34 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
             FFMPEG_VERSION, LIBAVCODEC_BUILD);
     setupStore.outputMethod = method;
 #ifdef USE_SUBPLUGINS
-  {
-      char  *subPluginFileName = NULL;
-      char  *outMethodName  = NULL;
-      int   reconfigureArg  = 0;
     switch (method) {
-    case VOUT_XV:
+      case VOUT_XV:
 #ifdef XV_SUPPORT
-      outMethodName = "xv";
-      reconfigureArg = FOURCC_YV12;
+        LoadSubPlugin ("xv", FOURCC_YV12, pluginPath);
 #endif
-      break;
-    case VOUT_FB:
+        break;
+      case VOUT_FB:
 #ifdef FB_SUPPORT
-      outMethodName = "fb";
+        LoadSubPlugin ("fb", 0, pluginPath);
 #endif
-      break;
-    case VOUT_DFB:
+        break;
+      case VOUT_DFB:
 #ifdef DFB_SUPPORT
-      outMethodName = "dfb";
+        LoadSubPlugin ("dfb", 0, pluginPath);
 #endif
-      break;
-    case VOUT_VIDIX:
+        break;
+      case VOUT_VIDIX:
 #ifdef VIDIX_SUPPORT
-      outMethodName = "vidix";
+        LoadSubPlugin ("vidix", 0, pluginPath);
 #endif
-      break;
-    default:
-      break;
-    }
-
-    asprintf (&subPluginFileName,
-              "%s/%s%s.so.%s",
-              pluginPath,
-              "libvdr-softdevice-",
-              outMethodName,
-              VDRVERSION);
-    void *handle = dlopen (subPluginFileName, RTLD_NOW);
-    char *err = dlerror();
-    if (!err)
-    {
-        void  *(*creator)(cSetupStore *store);
-
-      creator = (void *(*)(cSetupStore *))dlsym(handle,
-                                                "SubPluginCreator");
-      err = dlerror();
-      if (!err)
-      {
-        videoOut = (cVideoOut *) creator (&setupStore);
-      }
-      else
-      {
-        esyslog("[softdevice] could not load (%s)[%s] exiting\n",
-                "SubPluginCreator", err);
-        esyslog("[softdevice] Did you use the -L option?\n");
-        fprintf(stderr,"[softdevice] could not load (%s)[%s] exiting\n",
-                "SubPluginCreator", err);
-        fprintf(stderr,"[softdevice] Did you use the -L option?\n");
+        break;
+      case VOUT_DUMMY:
+        videoOut=new cDummyVideoOut(&setupStore);
+        break;
+      default:
+        esyslog("[softdevice] NO video out specified exiting\n");
         exit(1);
-      }
-      if (videoOut->Initialize () &&
-          videoOut->Reconfigure (reconfigureArg))
-      {
-          printf("Subplugin successfully opend\n");
-          dsyslog("[softdevice] videoOut OK !\n");
-      }
-      else
-      {
-        esyslog("[softdevice] videoOut failure exiting\n");
-        exit (1);
-      }
-
-    }
-    else
-    {
-      esyslog("[softdevice] could not load (%s)[%s] exiting\n",
-              subPluginFileName, err);
-      exit(1);
-    }
-
+        break;
     }
 #else
     switch (method) {
@@ -341,7 +292,12 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         videoOut=new cVidixVideoOut(&setupStore);
 #endif
         break;
+      case VOUT_DUMMY:
+        videoOut=new cDummyVideoOut(&setupStore);
+        break;
       default:
+        esyslog("[softdevice] NO video out specified exiting\n");
+        exit(1);
         break;
     }
 #endif
@@ -365,6 +321,62 @@ cSoftDevice::~cSoftDevice()
     delete(decoder);
     delete(audioOut);
     delete(videoOut);
+}
+
+/* ----------------------------------------------------------------------------
+ */
+void cSoftDevice::LoadSubPlugin(char *outMethodName,
+                                int reconfigureArg,
+                                char *pluginPath)
+{
+    char  *subPluginFileName = NULL;
+
+  asprintf (&subPluginFileName,
+            "%s/%s%s.so.%s",
+            pluginPath,
+            "libvdr-softdevice-",
+            outMethodName,
+            VDRVERSION);
+  void *handle = dlopen (subPluginFileName, RTLD_NOW);
+  char *err = dlerror();
+  if (!err)
+  {
+      void  *(*creator)(cSetupStore *store);
+
+    creator = (void *(*)(cSetupStore *))dlsym(handle, "SubPluginCreator");
+    err = dlerror();
+    if (!err)
+    {
+      videoOut = (cVideoOut *) creator (&setupStore);
+    }
+    else
+    {
+      esyslog("[softdevice] could not load (%s)[%s] exiting\n",
+              "SubPluginCreator", err);
+      esyslog("[softdevice] Did you use the -L option?\n");
+      fprintf(stderr,"[softdevice] could not load (%s)[%s] exiting\n",
+              "SubPluginCreator", err);
+      fprintf(stderr,"[softdevice] Did you use the -L option?\n");
+      exit(1);
+    }
+    if (videoOut->Initialize () && videoOut->Reconfigure (reconfigureArg))
+    {
+      fprintf(stderr,"[softdevice] Subplugin successfully opend\n");
+      dsyslog("[softdevice] videoOut OK !\n");
+    }
+    else
+    {
+      esyslog("[softdevice] videoOut failure exiting\n");
+      exit (1);
+    }
+
+  }
+  else
+  {
+    esyslog("[softdevice] could not load (%s)[%s] exiting\n",
+            subPluginFileName, err);
+    exit(1);
+  }
 }
 
 int64_t cSoftDevice::GetSTC(void) {
@@ -669,6 +681,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 #ifdef VIDIX_SUPPORT
   "  -vo vidix:               enable output via vidix driver\n"
 #endif
+  "  -vo dummy:               enable output to dummy device\n"
   "  -L <plugin_path_name>    search path for loading subplugins\n"
   "\n";
 }
@@ -764,6 +777,11 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #else
           fprintf(stderr,"[softdevice] vidix support not compiled in\n");
 #endif
+        } else if (!strncmp (vo_argv, "dummy:", 6)) {
+          vo_argv += 6;
+          setupStore.voArgs = vo_argv;
+          voutMethod = VOUT_DUMMY;
+          fprintf(stderr,"[softdevice] using dummy video out\n");
         } else {
                 fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
                 esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);

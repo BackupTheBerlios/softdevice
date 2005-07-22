@@ -1,5 +1,8 @@
 Changelog
-2005-07-17:
+2005-07-22:
+    - include patch from Claas Hilbrecht for "-vo dummy:"
+    - some code reorg for subpluging loader
+2005-07-20:
     - fix for live view at trick speed
     - stretchBlit mode for dfb-out is selectable via OSD
     - cropLeft/Right for xv-out and dfb-out

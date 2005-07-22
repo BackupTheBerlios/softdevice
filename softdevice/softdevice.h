@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.4 2005/04/02 12:19:06 wachm Exp $
+ * $Id: softdevice.h,v 1.5 2005/07/22 08:24:56 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -66,6 +66,7 @@ public:
   void ClearPacketQueue() 
   { if (decoder) decoder->ClearPacketQueue(); };
 
+  void LoadSubPlugin(char *outMethodName, int reconfigureArg, char *pluginPath);
 
   virtual bool HasDecoder(void) const;
   virtual bool CanReplay(void) const;
@@ -95,6 +96,7 @@ public:
 
 private:
   cSpuDecoder *spuDecoder;
+
 public:
   virtual cSpuDecoder *GetSpuDecoder(void);
 
