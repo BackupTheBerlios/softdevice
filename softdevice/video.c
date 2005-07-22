@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.26 2005/07/20 18:58:52 lucke Exp $
+ * $Id: video.c,v 1.27 2005/07/22 21:18:41 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -29,6 +29,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   displayTimeUS = 0;
   this->setupStore=setupStore;
   freezeMode=false;
+  old_picture = NULL;
 
   for (int i = 0; i < MAX_PAR; ++i)
     parValues [i] = 1.0;
@@ -81,9 +82,10 @@ void cVideoOut::Action()
     int newOsdMode=0;
 
     OsdRefreshCounter++;
+#if 0
     if (freezeMode && OsdRefreshCounter > 10 )
-    	OsdRefreshCounter=3;
-
+      OsdRefreshCounter=3;
+#endif
     changeMode=(current_osdMode != setupStore->osdMode);
     newOsdMode=setupStore->osdMode;
     // if software osd has not been shown for some time or
@@ -93,18 +95,27 @@ void cVideoOut::Action()
          OsdRefreshCounter>10 && Osd_changed))
     {
       osdMutex.Lock();
-      YUV(OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight,
-          OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
+      if (old_picture)
+      {
+        YUV(old_picture->data[0], old_picture->data[1], old_picture->data[2],
+            old_width,old_height,
+            old_picture->linesize[0],old_picture->linesize[1]);
+      }
+      else
+      {
+        YUV(OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight,
+            OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
+      }
       Osd_changed=0;
       osdMutex.Unlock();
     }
-
+#if 0
     // freeze mode and osd changed, change osd mode
     if ( Osd_changed && freezeMode && OsdRefreshCounter >  2 ) {
         changeMode= (current_osdMode != OSDMODE_PSEUDO);
         newOsdMode=OSDMODE_PSEUDO;
     }
-    
+#endif
     GetOSDDimension(newOsdWidth,newOsdHeight);
     if ( newOsdWidth==-1 || newOsdHeight==-1 )
     {
@@ -138,6 +149,26 @@ void cVideoOut::Action()
     usleep(50000);
   }
 #endif
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::InvalidateOldPicture(void)
+{
+  osdMutex.Lock();
+  old_picture = NULL;
+  osdMutex.Unlock();
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::SetOldPicture(AVFrame *picture, int width, int height)
+{
+  osdMutex.Lock();
+  old_picture = picture;
+  old_width = width;
+  old_height = height;
+  osdMutex.Unlock();
 }
 
 /* ---------------------------------------------------------------------------

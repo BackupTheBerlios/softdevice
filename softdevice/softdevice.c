@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.36 2005/07/22 17:55:06 lucke Exp $
+ * $Id: softdevice.c,v 1.37 2005/07/22 21:18:41 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -473,8 +473,8 @@ void cSoftDevice::Clear(void)
       
     if ( !packetMode ) {
       cDevice::Clear();
-      decoder->Clear();
-    } else decoder->ClearPacketQueue();
+    }
+    decoder->ClearPacketQueue();
 }
 void cSoftDevice::Play(void)
 {

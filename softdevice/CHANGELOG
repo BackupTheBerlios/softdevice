@@ -1,7 +1,8 @@
 Changelog
 2005-07-22:
+    - changed pause OSD handling in software drawing mode
     - work around for some *.avi files where frametime is zero
-    - fix previously intoduced compile fail without -DUSE_SUBPLUGINS
+    - fix previously introduced compile fail without -DUSE_SUBPLUGINS
     - include patch from Claas Hilbrecht for "-vo dummy:"
     - some code reorg for subpluging loader
 2005-07-20:

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.47 2005/07/22 17:55:06 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.48 2005/07/22 21:18:41 lucke Exp $
  */
 
 #include <math.h>
@@ -224,7 +224,7 @@ void cStreamDecoder::Freeze(void)
   freezeMode=true;
 };
 
-void cStreamDecoder::Stop(void) 
+void cStreamDecoder::Stop(void)
 {
   if (syncTimer)
     syncTimer->Signal();
@@ -591,7 +591,8 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   
   // prepare picture for display
   videoOut->CheckAspectDimensions(picture,context);
-  
+  videoOut->SetOldPicture(picture,context->width,context->height);
+
   if (!hurry_up || frame % 2 ) {
     // sleep ....
     delay-=syncTimer->GetRelTime();
@@ -971,6 +972,7 @@ void cVideoStreamDecoder::ppLibavcodec(void)
 cVideoStreamDecoder::~cVideoStreamDecoder()
 {
   cClock::AdjustVideoPTS(0);
+  videoOut->InvalidateOldPicture();
   delete(syncTimer);
   free(picture);
   if (pic_buf_lavc)
@@ -1349,7 +1351,7 @@ void cMpeg2Decoder::Freeze(void)
       vout->Freeze();
   };
 };
-  
+
 void cMpeg2Decoder::Stop(bool GetMutex)
 {
   if (GetMutex)

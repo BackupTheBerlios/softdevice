@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.17 2005/07/20 18:58:52 lucke Exp $
+ * $Id: video.h,v 1.18 2005/07/22 21:18:41 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -98,8 +98,11 @@ protected:
             displayTimeUS;
     double  parValues[MAX_PAR];
 
+    AVFrame *old_picture;
+    int     old_width, old_height;
+
     cSetupStore *setupStore;
-                
+
     cOsd *osd;
     bool active;
     bool OSDdirty;
@@ -135,6 +138,9 @@ public:
 
     void SetOsd(cOsd * Osd) {osd=Osd;};
     // sets a pointer to the current osd. For refreshing of the osd 
+
+    virtual void InvalidateOldPicture(void);
+    virtual void SetOldPicture(AVFrame *picture, int width, int height);
 
     uint8_t *PixelMask;
     int Osd_changed;
