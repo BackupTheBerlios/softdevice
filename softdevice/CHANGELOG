@@ -1,4 +1,8 @@
 Changelog
+2005-07-23:
+    - vidix-out:
+      - some cosmetic cleanups
+      - force OSD mode pseudo when YUY2 pixelformat is choosen
 2005-07-22:
     - changed pause OSD handling in software drawing mode
     - work around for some *.avi files where frametime is zero

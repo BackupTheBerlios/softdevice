@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.4 2005/06/05 20:58:12 lucke Exp $
+ * $Id: video-vidix.h,v 1.5 2005/07/23 20:14:32 lucke Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -37,6 +37,8 @@ private:
     vidix_yuv_t        dstrides;
     vidix_grkey_t      gr_key;
     uint8_t            next_frame;
+
+    void SetParams(int Ystride, int UVstride);
 
 public:
   cVidixVideoOut(cSetupStore *setupStore);
