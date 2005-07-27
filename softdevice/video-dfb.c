@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.35 2005/07/20 20:24:10 lucke Exp $
+ * $Id: video-dfb.c,v 1.36 2005/07/27 20:57:00 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -19,9 +19,9 @@
 #else
 # define HAVE_SetSourceLocation 0
 # if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
-#   define GraphicsDeviceDescription 0
+#   define HAVE_GraphicsDeviceDescription 0
 # else
-#   define GraphicsDeviceDescription 1
+#   define HAVE_GraphicsDeviceDescription 1
 # endif
 # if (DIRECTFB_MAJOR_VERSION > 0 || ((DIRECTFB_MINOR_VERSION == 9) && DIRECTFB_MICRO_VERSION > 22))
 #   define HAVE_DSCAPS_DOUBLE 1

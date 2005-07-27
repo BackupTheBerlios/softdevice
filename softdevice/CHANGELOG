@@ -1,4 +1,10 @@
 Changelog
+2005-07-27:
+    - compile fix for newer ffmpeg versions (> 2005-07-17 22:24:35) by Antonio
+    - fix for video-dfb.c change from 2005-07-16 by Rolf Ahrenberg
+    - more OSD entries translateable by Rolf Ahrenberg
+    - more finnish translations by Rolf Ahrenberg
+    - limit cropping amount to 50 each
 2005-07-24:
     - finnish translations by Rolf Ahrenberg
 2005-07-23:

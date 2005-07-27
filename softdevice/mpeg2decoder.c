@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.48 2005/07/22 21:18:41 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.49 2005/07/27 20:57:00 lucke Exp $
  */
 
 #include <math.h>
@@ -1191,9 +1191,13 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
   }; 
   // check if there are new streams
   if (AudioIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
-      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO && 
+#if LIBAVFORMAT_BUILD > 4628
+      ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_AUDIO &&
+#else
+      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO &&
+#endif
       AudioIdx != pkt.stream_index) {
-   
+
     CMDDEB("new Audio stream index.. old %d new %d\n",
       AudioIdx,pkt.stream_index);
     AudioIdx = pkt.stream_index;
@@ -1202,13 +1206,21 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
       delete aout;
       aout=NULL;
     };
+#if LIBAVFORMAT_BUILD > 4628
+    aout = new cAudioStreamDecoder(ic->streams[pkt.stream_index]->codec,
+#else
     aout = new cAudioStreamDecoder(&ic->streams[pkt.stream_index]->codec,
+#endif
                  audioOut, audioMode );
-  } else 
+  } else
   if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
-      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO && 
+#if LIBAVFORMAT_BUILD > 4628
+      ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO &&
+#else
+      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO &&
+#endif
       VideoIdx!=pkt.stream_index) {
-  
+
     CMDDEB("new Video stream index.. old %d new %d\n",
       VideoIdx,pkt.stream_index);
     VideoIdx=pkt.stream_index;
@@ -1217,7 +1229,11 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
       delete vout;
       vout = NULL;
     };
+#if LIBAVFORMAT_BUILD > 4628
+    vout = new cVideoStreamDecoder(ic->streams[pkt.stream_index]->codec,
+#else
     vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec,
+#endif
                    videoOut, &clock, Speed );
   };
   

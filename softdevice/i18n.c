@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.5 2005/07/24 20:16:38 lucke Exp $
+ * $Id: i18n.c,v 1.6 2005/07/27 20:57:00 lucke Exp $
  */
 
 #include "i18n.h"
@@ -86,7 +86,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Kuvan leikkaus",   //  9
+    "Kuvan rajaustapa", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -316,7 +316,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "AC3-tapa",     //  9
+    "AC3-äänet",    //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -339,7 +339,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Puskurointi",  //  9
+    "Puskurointitapa", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -362,7 +362,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Näppäin kuvan leikkaukselle", //  9
+    "Näppäin kuvan rajaukselle", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -385,7 +385,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Leikkaa kuvaa ylhäältä", //  9
+    "Rajaa kuvaa ylhäältä", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -408,7 +408,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Leikkaa kuvaa alhaalta", //  9
+    "Rajaa kuvaa alhaalta", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -431,7 +431,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Leikkaa kuvaa vasemmalta", //  9
+    "Rajaa kuvaa vasemmalta", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -454,7 +454,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Leikkaa kuvaa oikealta", //  9
+    "Rajaa kuvaa oikealta", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -477,7 +477,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Kuvan jälkikäsittely", //  9                                                                                                      
+    "Kuvan jälkikäsittely", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -524,6 +524,282 @@ const tI18nPhrase Phrases[] = {
     "",             //  7 TODO
     "",             //  8 TODO
     "Käytä StretchBlit-metodia", //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "none",         //  1
+    "keine",        //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "ei",           //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "fast",         //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "nopea",        //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "default",      //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "oletus",       //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "playing",      //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "päällä",       //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "suspended",    //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "keskeytetty",  //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "pseudo",       //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "näennäinen",   //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "software",     //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "ohjelmallinen",//  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "save",         //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "tallennus",    //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "good seeking", //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "nopea haku",   //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "HDTV",         //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "HDTV",         //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "16:9 wide",    //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "16:9 laaja",   //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "4:3 normal",   //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "4:3 normaali", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO

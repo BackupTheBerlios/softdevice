@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.24 2005/07/20 20:24:10 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.25 2005/07/27 20:57:00 lucke Exp $
  */
 
 #include "video.h"
@@ -13,125 +13,83 @@
 #define MINAVOFFSET (-250)
 #define MAXAVOFFSET (250)
 
+#define MAX_CROP_LINES  50
+#define MAX_CROP_COLS   50
+
 /* ----------------------------------------------------------------------------
  * index to this array correspond to AFD values
  */
-char *crop_str [] = {
-        "none",
-        "4:3",
-        "16:9",
-        "14:9",
-        NULL
-     };
-#define CROPMODEMAX 3
-#define CROPMODES (CROPMODEMAX+1)
+#define SETUP_CROPMODES 5
+const char *crop_str[SETUP_CROPMODES];
 
 /* ---------------------------------------------------------------------------
  */
-char *deint_str [] = {
-        "none",
-        "lavc",
+#define SETUP_DEINTMODES 9
+const char *deint_str[SETUP_DEINTMODES] = {
+        "none",      // translated in cMenuSetupSoftdevice::cMenuSetupSoftdevice()
+        "lavc",      // no need to translate
 #ifdef FB_SUPPORT
-        "FB-intern",
+        "FB-intern", // no need to translate
 #endif        
 #ifdef PP_LIBAVCODEC
-        "linblend",
-        "linipol",
-        "cubicipol",
-        "median",
-        "ffmpeg",
+        "linblend",  // no need to translate
+        "linipol",   // no need to translate
+        "cubicipol", // no need to translate
+        "median",    // no need to translate
+        "ffmpeg",    // no need to translate
 #endif //PP_LIBAVCODEC
         NULL
      };
 
 /*-----------------------------------------------------------------------------
  */
-char *pp_str[]={
-        "none",
-        "fast",
-        "default",
-        NULL
-      };
+#ifdef PP_LIBAVCODEC
+#define SETUP_PPMODES 4
+const char *pp_str[SETUP_PPMODES];
+#endif //PP_LIBAVCODEC
 
 /* ----------------------------------------------------------------------------
  * allow changing of output pixfmt
  */
-char *pix_fmt [] = {
-        "I420",
-        "YV12",
-        "YUY2",
-        NULL
-     };
+#define SETUP_PIXFMT 4
+const char *pix_fmt[SETUP_PIXFMT];
 
 /* ----------------------------------------------------------------------------
  * give some readable values for aspect ratio selection instead fo 0, 1 values
  */
-char *xv_startup_aspect [] = {
-        "16:9 wide",
-        "4:3 normal",
-        NULL
-     };
+#define SETUP_XVSTARTUPASPECT 3
+const char *xv_startup_aspect[SETUP_XVSTARTUPASPECT];
 
-/* ----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
  */
-char *suspendVideo [] = {
-        "playing",
-        "suspended",
-        NULL
-     };
+#define SETUP_SUSPENDVIDEO 3
+const char *suspendVideo[SETUP_SUSPENDVIDEO];
 
-/* ----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
  */
-char *osdMode [] = {
-        "pseudo",
-        "software",
-        NULL
-     };
+#define SETUP_OSDMODES 3
+const char *osdMode[SETUP_OSDMODES];
 
-/* ----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
  */
-char *videoAspectNames [] = {
-        "Default",
-        "5:4",
-        "4:3",
-        "16:9",
-        "16:10",
-        NULL
-     };
-/* ----------------------------------------------------------------------------
- */
-char *bufferModes [] = {
-        "save",
-        "good seeking",
-        "HDTV",
-        NULL
-     };
+#define SETUP_VIDEOASPECTNAMES 6
+const char *videoAspectNames[SETUP_VIDEOASPECTNAMES];
 
-/* ----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
  */
-char *ac3ModeNames [] = {
-        "Stereo (2CH)",
-        "5.1 S/P-DIF",
-        "5.1 Analog (4CH)",
-        "5.1 Analog (6CH)",
-        NULL
-     };
+#define SETUP_BUFFERMODES 4
+const char *bufferModes[SETUP_BUFFERMODES];
 
-/* ----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
  */
-char *userKeyUsage [] = {
-        "none",
-        "User1",
-        "User2",
-        "User3",
-        "User4",
-        "User5",
-        "User6",
-        "User7",
-        "User8",
-        "User9",
-        NULL
-     };
+#define SETUP_AC3MODENAMES 5
+const char *ac3ModeNames[SETUP_AC3MODENAMES];
+
+/*-----------------------------------------------------------------------------
+ */
+#define SETUP_USERKEYS 11
+const char *userKeyUsage[SETUP_USERKEYS];
+
 /* ----------------------------------------------------------------------------
  */
 static inline int clamp (int min, int val, int max)
@@ -218,7 +176,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   }
   else if(!strcasecmp(Name,"CropMode")) {
     cropMode = atoi(Value);
-    cropMode = clamp (0, cropMode, CROPMODEMAX);
+    cropMode = clamp (0, cropMode, (SETUP_CROPMODES-1));
     fprintf (stderr, "[setup-softdevice] cropping mode set to %d (%s)\n",
              cropMode,
              crop_str [cropMode]);
@@ -231,22 +189,22 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
              userKeyUsage [cropModeToggleKey]);
   } else if(!strcasecmp(Name,"CropTopLines")) {
     cropTopLines = atoi(Value);
-    cropTopLines = clamp (0, cropTopLines, 100);
+    cropTopLines = clamp (0, cropTopLines, MAX_CROP_LINES);
     fprintf(stderr,"[setup-softdevice] Cropping %d lines from top\n",
             cropTopLines);
   } else if(!strcasecmp(Name,"CropBottomLines")) {
     cropBottomLines = atoi(Value);
-    cropBottomLines = clamp (0, cropBottomLines, 100);
+    cropBottomLines = clamp (0, cropBottomLines, MAX_CROP_LINES);
     fprintf(stderr,"[setup-softdevice] Cropping %d lines from bottom\n",
             cropBottomLines);
   } else if(!strcasecmp(Name,"CropLeftCols")) {
     cropLeftCols = atoi(Value);
-    cropLeftCols = clamp (0, cropLeftCols, 100);
+    cropLeftCols = clamp (0, cropLeftCols, MAX_CROP_COLS);
     fprintf(stderr,"[setup-softdevice] Cropping %d columns from left\n",
             cropLeftCols);
   } else if(!strcasecmp(Name,"CropRightCols")) {
     cropRightCols = atoi(Value);
-    cropRightCols = clamp (0, cropRightCols, 100);
+    cropRightCols = clamp (0, cropRightCols, MAX_CROP_COLS);
     fprintf(stderr,"[setup-softdevice] Cropping %d columns from right\n",
             cropRightCols);
   } else if (!strcasecmp(Name,"PixelFormat")) {
@@ -325,14 +283,14 @@ char *cSetupStore::getPPdeintValue(void)
   else if (strcmp(deint_str[deintMethod], "ffmpeg") == 0) return "fd";
   else return NULL;
 }
+
 /* ---------------------------------------------------------------------------
  */
-
 char *cSetupStore::getPPValue(void)
 {
-  if (strcmp(pp_str[ppMethod], "none") == 0) return "";
-  else if (strcmp(pp_str[ppMethod], "fast") == 0) return "fa";
-  else if (strcmp(pp_str[ppMethod], "default") == 0) return "de";
+  if (strcmp(pp_str[ppMethod], tr("none")) == 0) return "";
+  else if (strcmp(pp_str[ppMethod], tr("fast")) == 0) return "fa";
+  else if (strcmp(pp_str[ppMethod], tr("default")) == 0) return "de";
   else return NULL;
 }
 
@@ -340,7 +298,7 @@ char *cSetupStore::getPPValue(void)
  */
 void cSetupStore::CropModeNext(void)
 {
-  cropMode = (cropMode == CROPMODEMAX) ? 0 : cropMode + 1;
+  cropMode = (cropMode == (SETUP_CROPMODES-1)) ? 0 : cropMode + 1;
 }
 
 /* ---------------------------------------------------------------------------
@@ -364,8 +322,7 @@ bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64 key)
   return false;
 }
 
-/* ---------------------------------------------------------------------------
- */
+/* --------------------------------------------------------------------------- */
 cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 {
   if (plugin)
@@ -376,9 +333,12 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 
   if (data->outputMethod == VOUT_XV)
   {
+    xv_startup_aspect[0] = tr("16:9 wide");
+    xv_startup_aspect[1] = tr("4:3 normal");
+    xv_startup_aspect[2] = NULL;
     Add(new cMenuEditStraItem(tr("Xv startup aspect"),
                              &data->xvAspect,
-                             2,
+                             (SETUP_XVSTARTUPASPECT-1),
                              xv_startup_aspect));
 
     /* ------------------------------------------------------------------------
@@ -389,14 +349,30 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
     //                         &data->xvMaxArea, tr("no"), tr("yes")));
   }
 
+  crop_str[0] = tr("none");
+  crop_str[1] = "4:3";  // no need to translate
+  crop_str[2] = "16:9"; // no need to translate
+  crop_str[3] = "14:9"; // no need to translate
+  crop_str[4] = NULL;
   Add(new cMenuEditStraItem(tr("CropMode"),
                             &data->cropMode,
-                            CROPMODES,
+                            (SETUP_CROPMODES-1),
                             crop_str));
 
+  userKeyUsage[0] = tr("none");
+  userKeyUsage[1] = "User1"; // no need to translate
+  userKeyUsage[2] = "User2"; // no need to translate
+  userKeyUsage[3] = "User3"; // no need to translate
+  userKeyUsage[4] = "User4"; // no need to translate
+  userKeyUsage[5] = "User5"; // no need to translate
+  userKeyUsage[6] = "User6"; // no need to translate
+  userKeyUsage[7] = "User7"; // no need to translate
+  userKeyUsage[8] = "User8"; // no need to translate
+  userKeyUsage[9] = "User9"; // no need to translate
+  userKeyUsage[10] = NULL;
   Add(new cMenuEditStraItem(tr("CropModeToggleKey"),
                             &data->cropModeToggleKey,
-                            10,
+                            (SETUP_USERKEYS-1),
                             userKeyUsage));
 
   if (data->outputMethod != VOUT_FB)
@@ -404,26 +380,27 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
     Add(new cMenuEditIntItem(tr("Crop lines from top"),
                              &data->cropTopLines,
                              0,
-                             100));
+                             MAX_CROP_LINES));
 
     Add(new cMenuEditIntItem(tr("Crop lines from bottom"),
                              &data->cropBottomLines,
                              0,
-                             100));
-  }                            
+                             MAX_CROP_LINES));
+  }
 
   if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_DFB)
   {
     Add(new cMenuEditIntItem(tr("Crop columns from left"),
                              &data->cropLeftCols,
                              0,
-                             100));
+                             MAX_CROP_COLS));
     Add(new cMenuEditIntItem(tr("Crop columns from right"),
                              &data->cropRightCols,
                              0,
-                             100));
+                             MAX_CROP_COLS));
   }
 
+  deint_str[0] = tr("none");
   if (data->outputMethod == VOUT_FB)
   {
     Add(new cMenuEditStraItem(tr("Deinterlace Method"),
@@ -448,19 +425,32 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   }
   
 #ifdef PP_LIBAVCODEC
+  pp_str[0] = tr("none");
+  pp_str[1] = tr("fast");
+  pp_str[2] = tr("default");
+  pp_str[3] = NULL;
   Add(new cMenuEditStraItem(tr("Postprocessing Method"),
-                              &data->ppMethod,3,pp_str));
+                              &data->ppMethod,(SETUP_PPMODES-1),pp_str));
   Add(new cMenuEditIntItem(tr("Postprocessing Quality"),
                               &data->ppQuality,0,6));
 #endif
+
+  bufferModes[0] = tr("save");
+  bufferModes[1] = tr("good seeking");
+  bufferModes[2] = tr("HDTV");
+  bufferModes[3] = NULL;
   Add(new cMenuEditStraItem(tr("Buffer Mode"),
-                              &data->bufferMode,3,bufferModes));
+                              &data->bufferMode,(SETUP_BUFFERMODES-1),bufferModes));
   
   if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
   {
+    pix_fmt[0] = "I420"; // no need to translate
+    pix_fmt[1] = "YV12"; // no need to translate
+    pix_fmt[2] = "YUY2"; // no need to translate
+    pix_fmt[3] = NULL;
     Add(new cMenuEditStraItem(tr("Pixel Format"),
                               &data->pixelFormat,
-                              3,
+                              (SETUP_PIXFMT-1),
                               pix_fmt));
   }
 
@@ -477,23 +467,41 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                            &data->avOffset,
                            MINAVOFFSET, MAXAVOFFSET));
 
+  videoAspectNames[0] = tr("default");
+  videoAspectNames[1] = "5:4";   // no need to translate
+  videoAspectNames[2] = "4:3";   // no need to translate
+  videoAspectNames[3] = "16:9";  // no need to translate
+  videoAspectNames[4] = "16:10"; // no need to translate
+  videoAspectNames[5] = NULL;
   Add(new cMenuEditStraItem(tr("Screen Aspect"),
                             &data->screenPixelAspect,
-                            5,
+                            (SETUP_VIDEOASPECTNAMES-1),
                             videoAspectNames));
 
+  suspendVideo[0] = tr("playing");
+  suspendVideo[1] = tr("suspended");
+  suspendVideo[2] = NULL;
   Add(new cMenuEditStraItem(tr("Playback"),
                             &data->shouldSuspend,
-                            2,
+                            (SETUP_SUSPENDVIDEO-1),
                             suspendVideo));
+
+  osdMode[0] = tr("pseudo");
+  osdMode[1] = tr("software");
+  osdMode[2] = NULL;
   Add(new cMenuEditStraItem(tr("OSD alpha blending"),
                             &data->osdMode,
-                            2,
+                            (SETUP_OSDMODES-1),
                             osdMode));
 
+  ac3ModeNames[0] = "Stereo (2CH)";     // no need to translate?
+  ac3ModeNames[1] = "5.1 S/P-DIF";      // no need to translate?
+  ac3ModeNames[2] = "5.1 Analog (4CH)"; // no need to translate?
+  ac3ModeNames[3] = "5.1 Analog (6CH)"; // no need to translate?
+  ac3ModeNames[4] = NULL;
   Add(new cMenuEditStraItem(tr("AC3 Mode"),
                             &data->ac3Mode,
-                            4,
+                            (SETUP_AC3MODENAMES-1),
                             ac3ModeNames));
 }
 
