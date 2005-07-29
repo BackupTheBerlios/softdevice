@@ -1,4 +1,7 @@
 Changelog
+2005-07-29:
+    - some small changes on finnish translations by Rolf Ahrenberg
+    - fix for segfaults in setup-softdevice.c by previous change
 2005-07-27:
     - compile fix for newer ffmpeg versions (> 2005-07-17 22:24:35) by Antonio
     - fix for video-dfb.c change from 2005-07-16 by Rolf Ahrenberg

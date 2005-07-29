@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.25 2005/07/27 20:57:00 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.26 2005/07/29 20:45:40 lucke Exp $
  */
 
 #include "video.h"
@@ -43,10 +43,8 @@ const char *deint_str[SETUP_DEINTMODES] = {
 
 /*-----------------------------------------------------------------------------
  */
-#ifdef PP_LIBAVCODEC
 #define SETUP_PPMODES 4
 const char *pp_str[SETUP_PPMODES];
-#endif //PP_LIBAVCODEC
 
 /* ----------------------------------------------------------------------------
  * allow changing of output pixfmt
@@ -68,7 +66,7 @@ const char *suspendVideo[SETUP_SUSPENDVIDEO];
 /*-----------------------------------------------------------------------------
  */
 #define SETUP_OSDMODES 3
-const char *osdMode[SETUP_OSDMODES];
+const char *osdModeNames[SETUP_OSDMODES];
 
 /*-----------------------------------------------------------------------------
  */
@@ -135,6 +133,66 @@ cSetupStore::cSetupStore ()
   strcpy (alsaDevice, "");
   strcpy (alsaSPDIFDevice, "hw:0,2");
   voArgs = aoArgs = NULL;
+
+  xv_startup_aspect[0] = tr("16:9 wide");
+  xv_startup_aspect[1] = tr("4:3 normal");
+  xv_startup_aspect[2] = NULL;
+
+  deint_str[0] = tr("none");
+
+  pp_str[0] = tr("none");
+  pp_str[1] = tr("fast");
+  pp_str[2] = tr("default");
+  pp_str[3] = NULL;
+
+  bufferModes[0] = tr("save");
+  bufferModes[1] = tr("good seeking");
+  bufferModes[2] = tr("HDTV");
+  bufferModes[3] = NULL;
+
+  pix_fmt[0] = "I420"; // no need to translate
+  pix_fmt[1] = "YV12"; // no need to translate
+  pix_fmt[2] = "YUY2"; // no need to translate
+  pix_fmt[3] = NULL;
+
+  crop_str[0] = tr("none");
+  crop_str[1] = "4:3";  // no need to translate
+  crop_str[2] = "16:9"; // no need to translate
+  crop_str[3] = "14:9"; // no need to translate
+  crop_str[4] = NULL;
+
+  userKeyUsage[0] = tr("none");
+  userKeyUsage[1] = "User1"; // no need to translate
+  userKeyUsage[2] = "User2"; // no need to translate
+  userKeyUsage[3] = "User3"; // no need to translate
+  userKeyUsage[4] = "User4"; // no need to translate
+  userKeyUsage[5] = "User5"; // no need to translate
+  userKeyUsage[6] = "User6"; // no need to translate
+  userKeyUsage[7] = "User7"; // no need to translate
+  userKeyUsage[8] = "User8"; // no need to translate
+  userKeyUsage[9] = "User9"; // no need to translate
+  userKeyUsage[10] = NULL;
+
+  videoAspectNames[0] = tr("default");
+  videoAspectNames[1] = "5:4";   // no need to translate
+  videoAspectNames[2] = "4:3";   // no need to translate
+  videoAspectNames[3] = "16:9";  // no need to translate
+  videoAspectNames[4] = "16:10"; // no need to translate
+  videoAspectNames[5] = NULL;
+
+  suspendVideo[0] = tr("playing");
+  suspendVideo[1] = tr("suspended");
+  suspendVideo[2] = NULL;
+
+  osdModeNames[0] = tr("pseudo");
+  osdModeNames[1] = tr("software");
+  osdModeNames[2] = NULL;
+
+  ac3ModeNames[0] = "Stereo (2CH)";     // no need to translate?
+  ac3ModeNames[1] = "5.1 S/P-DIF";      // no need to translate?
+  ac3ModeNames[2] = "5.1 Analog (4CH)"; // no need to translate?
+  ac3ModeNames[3] = "5.1 Analog (6CH)"; // no need to translate?
+  ac3ModeNames[4] = NULL;
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
@@ -335,7 +393,6 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   {
     xv_startup_aspect[0] = tr("16:9 wide");
     xv_startup_aspect[1] = tr("4:3 normal");
-    xv_startup_aspect[2] = NULL;
     Add(new cMenuEditStraItem(tr("Xv startup aspect"),
                              &data->xvAspect,
                              (SETUP_XVSTARTUPASPECT-1),
@@ -350,26 +407,12 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   }
 
   crop_str[0] = tr("none");
-  crop_str[1] = "4:3";  // no need to translate
-  crop_str[2] = "16:9"; // no need to translate
-  crop_str[3] = "14:9"; // no need to translate
-  crop_str[4] = NULL;
   Add(new cMenuEditStraItem(tr("CropMode"),
                             &data->cropMode,
                             (SETUP_CROPMODES-1),
                             crop_str));
 
   userKeyUsage[0] = tr("none");
-  userKeyUsage[1] = "User1"; // no need to translate
-  userKeyUsage[2] = "User2"; // no need to translate
-  userKeyUsage[3] = "User3"; // no need to translate
-  userKeyUsage[4] = "User4"; // no need to translate
-  userKeyUsage[5] = "User5"; // no need to translate
-  userKeyUsage[6] = "User6"; // no need to translate
-  userKeyUsage[7] = "User7"; // no need to translate
-  userKeyUsage[8] = "User8"; // no need to translate
-  userKeyUsage[9] = "User9"; // no need to translate
-  userKeyUsage[10] = NULL;
   Add(new cMenuEditStraItem(tr("CropModeToggleKey"),
                             &data->cropModeToggleKey,
                             (SETUP_USERKEYS-1),
@@ -428,7 +471,6 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   pp_str[0] = tr("none");
   pp_str[1] = tr("fast");
   pp_str[2] = tr("default");
-  pp_str[3] = NULL;
   Add(new cMenuEditStraItem(tr("Postprocessing Method"),
                               &data->ppMethod,(SETUP_PPMODES-1),pp_str));
   Add(new cMenuEditIntItem(tr("Postprocessing Quality"),
@@ -438,16 +480,11 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   bufferModes[0] = tr("save");
   bufferModes[1] = tr("good seeking");
   bufferModes[2] = tr("HDTV");
-  bufferModes[3] = NULL;
   Add(new cMenuEditStraItem(tr("Buffer Mode"),
                               &data->bufferMode,(SETUP_BUFFERMODES-1),bufferModes));
   
   if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
   {
-    pix_fmt[0] = "I420"; // no need to translate
-    pix_fmt[1] = "YV12"; // no need to translate
-    pix_fmt[2] = "YUY2"; // no need to translate
-    pix_fmt[3] = NULL;
     Add(new cMenuEditStraItem(tr("Pixel Format"),
                               &data->pixelFormat,
                               (SETUP_PIXFMT-1),
@@ -468,11 +505,6 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                            MINAVOFFSET, MAXAVOFFSET));
 
   videoAspectNames[0] = tr("default");
-  videoAspectNames[1] = "5:4";   // no need to translate
-  videoAspectNames[2] = "4:3";   // no need to translate
-  videoAspectNames[3] = "16:9";  // no need to translate
-  videoAspectNames[4] = "16:10"; // no need to translate
-  videoAspectNames[5] = NULL;
   Add(new cMenuEditStraItem(tr("Screen Aspect"),
                             &data->screenPixelAspect,
                             (SETUP_VIDEOASPECTNAMES-1),
@@ -480,25 +512,18 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 
   suspendVideo[0] = tr("playing");
   suspendVideo[1] = tr("suspended");
-  suspendVideo[2] = NULL;
   Add(new cMenuEditStraItem(tr("Playback"),
                             &data->shouldSuspend,
                             (SETUP_SUSPENDVIDEO-1),
                             suspendVideo));
 
-  osdMode[0] = tr("pseudo");
-  osdMode[1] = tr("software");
-  osdMode[2] = NULL;
+  osdModeNames[0] = tr("pseudo");
+  osdModeNames[1] = tr("software");
   Add(new cMenuEditStraItem(tr("OSD alpha blending"),
                             &data->osdMode,
                             (SETUP_OSDMODES-1),
-                            osdMode));
+                            osdModeNames));
 
-  ac3ModeNames[0] = "Stereo (2CH)";     // no need to translate?
-  ac3ModeNames[1] = "5.1 S/P-DIF";      // no need to translate?
-  ac3ModeNames[2] = "5.1 Analog (4CH)"; // no need to translate?
-  ac3ModeNames[3] = "5.1 Analog (6CH)"; // no need to translate?
-  ac3ModeNames[4] = NULL;
   Add(new cMenuEditStraItem(tr("AC3 Mode"),
                             &data->ac3Mode,
                             (SETUP_AC3MODENAMES-1),

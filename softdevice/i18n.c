@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.6 2005/07/27 20:57:00 lucke Exp $
+ * $Id: i18n.c,v 1.7 2005/07/29 20:45:40 lucke Exp $
  */
 
 #include "i18n.h"
@@ -224,7 +224,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "Toisto",       //  9
+    "Näytön ulostulo", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -615,7 +615,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "päällä",       //  9
+    "toiminnassa",  //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -638,7 +638,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "keskeytetty",  //  9
+    "pysäytetty",   //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
