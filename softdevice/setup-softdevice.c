@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.26 2005/07/29 20:45:40 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.27 2005/07/31 07:58:20 wachm Exp $
  */
 
 #include "video.h"
@@ -346,10 +346,12 @@ char *cSetupStore::getPPdeintValue(void)
  */
 char *cSetupStore::getPPValue(void)
 {
+#ifdef PP_LIBAVCODEC
   if (strcmp(pp_str[ppMethod], tr("none")) == 0) return "";
   else if (strcmp(pp_str[ppMethod], tr("fast")) == 0) return "fa";
   else if (strcmp(pp_str[ppMethod], tr("default")) == 0) return "de";
-  else return NULL;
+#endif
+  return NULL;
 }
 
 /* ---------------------------------------------------------------------------

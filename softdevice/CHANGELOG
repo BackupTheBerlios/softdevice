@@ -1,4 +1,7 @@
 Changelog
+2005-07-31:
+    - return NULL in getPPValue when compiled without postproc lib 
+      (suggested by Antonio)
 2005-07-29:
     - some small changes on finnish translations by Rolf Ahrenberg
     - fix for segfaults in setup-softdevice.c by previous change
