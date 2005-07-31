@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.49 2005/07/27 20:57:00 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.50 2005/07/31 08:38:41 wachm Exp $
  */
 
 #include <math.h>
@@ -226,24 +226,33 @@ void cStreamDecoder::Freeze(void)
 
 void cStreamDecoder::Stop(void)
 {
+  active=false;
   if (syncTimer)
     syncTimer->Signal();
   mutex.Lock();
   PacketQueue.Clear();
   mutex.Unlock();
   PacketQueue.EnablePutSignal();
-  active=false;
   Cancel(3);
 }
 
 void cStreamDecoder::Clear(void)
 {
   CMDDEB("cStreamDecoder clear type: %d\n",context->codec_type);
+
+  // stop playback bevore clear
+  bool oldfreezeMode=freezeMode;
+  Freeze();
+  
   mutex.Lock();
   if (codec && context)
     avcodec_flush_buffers(context);
   PacketQueue.Clear();
   mutex.Unlock();
+
+  // restore old freezeMode
+  freezeMode=oldfreezeMode;
+  
   CMDDEB("cStreamDecoder clear finished type: %d\n",context->codec_type);
 }
 
@@ -356,8 +365,8 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
         break;
     }
   }
-  while ( size > 0 ) {
-    BUFDEB("start decode audio\n");
+  while ( size > 0 && active ) {
+    BUFDEB("start decode audio. pkt size: %d \n",size);
     len=avcodec_decode_audio(context, (short *)audiosamples,
                  &audio_size, data, size);
     BUFDEB("end decode audio\n");
@@ -984,6 +993,17 @@ cVideoStreamDecoder::~cVideoStreamDecoder()
   if (pic_buf_mirror)
      pic_buf_mirror = freePicBuf(pic_buf_mirror);
 
+#ifdef PP_LIBAVCODEC
+  if (ppcontext) {
+     pp_free_context(ppcontext);
+     ppcontext = NULL;
+  }
+
+  if (ppmode)  {
+      pp_free_mode (ppmode);
+      ppmode = NULL;
+  }
+#endif  
 }
 
 // --------------libavformat interface stuff ---------------------------------
@@ -1379,14 +1399,8 @@ void cMpeg2Decoder::Stop(bool GetMutex)
   if (running)
   {
     running=false;
-    
     ThreadActive=false;
-    // prepare aout and vout for a stop
-    if (vout)
-       vout->Deactivate();
-    if (aout)
-       aout->Deactivate();
-    
+
     StreamBuffer->Clear();
     EnableGetSignal.Signal();
     Cancel(4);

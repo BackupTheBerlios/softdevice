@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.29 2005/07/17 11:26:08 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.30 2005/07/31 08:38:41 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -143,7 +143,8 @@ protected:
     AVCodecContext    *context;
 
     cMutex            mutex;
-    bool              active, running;
+    volatile bool     active;
+    bool              running;
     
     virtual void      Action(void);
     virtual int       DecodePacket(AVPacket *pkt) = 0;
@@ -156,8 +157,6 @@ public:
     virtual void      Freeze(void);
     virtual void      Play(void);
     virtual void      Stop();
-    virtual void      Deactivate()
-    { active = false; };
     virtual void      TrickSpeed(int Speed) {return;};
     virtual int       BufferFill(void);
     bool              initCodec(void);

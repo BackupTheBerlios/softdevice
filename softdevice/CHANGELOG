@@ -1,5 +1,7 @@
 Changelog
 2005-07-31:
+    - remove Deactivate(), instead deactive at start of Stop()
+    - stop playback in Clear() while clearing the packet buffer
     - introduce SOFTDEB, more checks agains NULL dereferences
     - call decoder->Clear in Clear
     - return NULL in getPPValue when compiled without postproc lib 
