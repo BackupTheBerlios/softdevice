@@ -1,5 +1,7 @@
 Changelog
 2005-07-31:
+    - introduce SOFTDEB, more checks agains NULL dereferences
+    - call decoder->Clear in Clear
     - return NULL in getPPValue when compiled without postproc lib 
       (suggested by Antonio)
 2005-07-29:

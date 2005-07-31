@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.37 2005/07/22 21:18:41 lucke Exp $
+ * $Id: softdevice.c,v 1.38 2005/07/31 08:21:22 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -76,6 +76,12 @@ static const char *MAINMENUENTRY  = "Softdevice";
 
 #define AOUT_ALSA   1
 #define AOUT_DUMMY  2
+
+//#define SOFTDEB(out...) {printf("softdeb[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+
+#ifndef SOFTDEB
+#define SOFTDEB(out...)
+#endif
 
 #if VDRVERSNUM >= 10307
 
@@ -378,7 +384,7 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
 }
 
 int64_t cSoftDevice::GetSTC(void) {
-  return decoder->GetSTC();
+  return (decoder?decoder->GetSTC():NULL);
 };
 
 #if VDRVERSNUM >= 10307
@@ -429,6 +435,9 @@ bool cSoftDevice::CanReplay(void) const
 
 bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
 {
+    if (!decoder)
+       return false;
+    
     packetMode=PlayMode < 0;
     PlayMode=(ePlayMode) abs(PlayMode);
     ic=NULL;
@@ -462,51 +471,56 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
 
 void cSoftDevice::TrickSpeed(int Speed)
 {
-    //fprintf(stderr,"[softdevice] Trickspeed(%d) ...\n",Speed);
-    decoder->TrickSpeed(Speed);
+    SOFTDEB("Trickspeed(%d) ...\n",Speed);
+    if (decoder)
+      decoder->TrickSpeed(Speed);
 }
 void cSoftDevice::Clear(void)
 {
-    //fprintf(stderr,"[softdevice] Clear ...\n");
+    SOFTDEB("Clear ...\n");
     if ( ! decoder )
       return;
       
     if ( !packetMode ) {
       cDevice::Clear();
-    }
-    decoder->ClearPacketQueue();
+      decoder->Clear();
+    } else decoder->ClearPacketQueue();
 }
 void cSoftDevice::Play(void)
 {
-    //fprintf(stderr,"[softdevice] Play...\n");
+    SOFTDEB("Play...\n");
     cDevice::Play();
-    decoder->TrickSpeed(1);
-    decoder->Play();
+    if (decoder) {
+      decoder->TrickSpeed(1);
+      decoder->Play();
+    };
 }
 
 void cSoftDevice::Freeze(void)
 {
-    //fprintf(stderr,"[softdevice] Freeze...\n");
+    SOFTDEB("Freeze...\n");
     cDevice::Freeze();
-    decoder->Freeze();
+    if (decoder)
+      decoder->Freeze();
 }
 
 void cSoftDevice::Mute(void)
 {
-    //fprintf(stderr,"[softdevice] Mute not implemented yet...\n");
+    SOFTDEB("Mute not implemented yet...\n");
     cDevice::Mute();
 }
 
 void cSoftDevice::SetVolumeDevice(int Volume)
 {
-  //fprintf (stderr, "[softdevice] should set volume to %d\n", Volume);
+  SOFTDEB("should set volume to %d\n", Volume);
   audioOut->SetVolume(Volume);
 }
 
 void cSoftDevice::StillPicture(const uchar *Data, int Length)
 {
-    //fprintf(stderr,"[softdevice] StillPicture...\n");
-    decoder->StillPicture((uchar *)Data,Length);
+    SOFTDEB("StillPicture...\n");
+    if (decoder)
+      decoder->StillPicture((uchar *)Data,Length);
 }
 
 bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
@@ -577,14 +591,14 @@ int cSoftDevice::PlayAudio(const uchar *Data, int Length)
  */
 void cSoftDevice::SetAudioTrackDevice(eTrackType Type)
 {
-  //fprintf (stderr, "[SetAudioTrackDevice] (%d)\n",Type);
+  SOFTDEB("SetAudioTrackDevice (%d)\n",Type);
 }
 
 /* ----------------------------------------------------------------------------
  */
 void cSoftDevice::SetDigitalAudioDevice(bool On)
 {
-  //fprintf (stderr, "[SetDigitalAudioDevice] (%s)\n",(On)? "TRUE":"FALSE");
+  SOFTDEB("SetDigitalAudioDevice (%s)\n",(On)? "TRUE":"FALSE");
 }
 
 /* ----------------------------------------------------------------------------
@@ -703,6 +717,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
       if (argc > 0) {
           char *vo_argv = argv[i];
 
+	  printf("vo_argv: %s \n",vo_argv);
         if (!strncmp (vo_argv, "xv:", 3)) {
           vo_argv += 3;
           setupStore.voArgs = vo_argv;
@@ -845,7 +860,7 @@ void cPluginSoftDevice::Housekeeping(void)
 cOsdObject *cPluginSoftDevice::MainMenuAction(void)
 {
   // Perform the action when selected from the main VDR menu.
-  fprintf (stderr, "[MainMenuAction]\n");
+  SOFTDEB("MainMenuAction\n");
   return new cMenuSetupSoftdevice(this);
 //  return NULL;
 }
