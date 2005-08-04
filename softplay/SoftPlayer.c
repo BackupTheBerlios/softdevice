@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.9 2005/05/22 10:16:25 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.10 2005/08/04 08:50:49 wachm Exp $
  */
 
 #include "SoftPlayer.h"
@@ -170,13 +170,24 @@ void cSoftPlayer::Action() {
         
                 // set audio index if not yet set
                 if ( AudioIdx== -1 &&
-                     ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO )
-                        AudioIdx=pkt.stream_index;
+#if LIBAVFORMAT_BUILD > 4628
+                     ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_AUDIO 
+#else 
+                     ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO 
+#endif
+                        )
+                     AudioIdx=pkt.stream_index;
                    
                 // set video index if not yet set
                 if ( VideoIdx== -1 &&
-                     ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO )
-                        VideoIdx=pkt.stream_index;
+#if LIBAVFORMAT_BUILD > 4628
+                     ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO 
+#else 
+                     ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO 
+#endif
+                        )
+                    VideoIdx=pkt.stream_index;
+                    
                 // skip packets which do not belong to the current streams
                 if ( pkt.stream_index != VideoIdx &&
                      pkt.stream_index != AudioIdx ) {
@@ -219,7 +230,11 @@ void cSoftPlayer::Action() {
 			nStreams=ic->nb_streams;
 			fprintf(stderr,"Streams: %d\n",nStreams);
 			for (int i=0; i <nStreams; i++ ) {
+#if LIBAVFORMAT_BUILD > 4628
+				printf("Codec %d ID: %d\n",i,ic->streams[i]->codec->codec_id);
+#else 
 				printf("Codec %d ID: %d\n",i,ic->streams[i]->codec.codec_id);
+#endif
 			};
 		};
 
@@ -245,10 +260,18 @@ ePlayMode cSoftPlayer::GetPlayMode(AVFormatContext *IC) {
 	for (i = 0; i<IC->nb_streams; i++) {
 		PLDBG("GetPlayMode stream %d codec_type %d\n",
 			i, IC->streams[i]->codec.codec_type);
+#if LIBAVFORMAT_BUILD > 4628
+		if (IC->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO)
+#else
 		if (IC->streams[i]->codec.codec_type == CODEC_TYPE_AUDIO)
+#endif
 			hasAudio=true;
-		else if (IC->streams[i]->codec.codec_type == CODEC_TYPE_VIDEO)
-			hasVideo=true;
+#if LIBAVFORMAT_BUILD > 4628                        
+		else if (IC->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO)
+#else
+                else if (IC->streams[i]->codec.codec_type == CODEC_TYPE_VIDEO)
+#endif
+                        hasVideo=true;
 	};
 
 	if ( hasVideo && hasAudio)
@@ -263,6 +286,11 @@ ePlayMode cSoftPlayer::GetPlayMode(AVFormatContext *IC) {
 
 void cSoftPlayer::OpenFile(const char *filename) {
         int ret;
+	if (!filename) {
+                printf("Filname is NULL!!\n");
+                ic=0;
+                return;
+        };
         printf("open file %s\n",filename);
         char str[60];
         if ( (ret=av_open_input_file( &ic, filename, NULL, 0, NULL)) ) {
