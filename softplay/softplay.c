@@ -3,13 +3,14 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.6 2005/05/22 10:14:59 wachm Exp $
+ * $Id: softplay.c,v 1.7 2005/08/04 15:29:32 wachm Exp $
  */
 
 
 #include "softplay.h"
 #include "SoftPlayer.h"
 #include "PlayList.h"
+#include "i18n.h"
 
 #include <dirent.h>
 
@@ -49,12 +50,12 @@ public:
 };
 
 cMenuDirectory::cMenuDirectory(char * path, cPlayList *EditList) 
-        : cOsdMenu("Files",4,2,8) 
+        : cOsdMenu(tr("Files"),4,2,8) 
 {
   Entries=NULL;
   nEntries=0;
   keySelNo=0;
-  SetHelp(NULL,"Play","Toggle List","Play List");
+  SetHelp(NULL,tr("Play"),tr("Toggle List"),tr("Play List"));
   editList=EditList;
   PrepareDirectory(path);
 };
@@ -99,7 +100,7 @@ void cMenuDirectory::PrepareDirectory(char *path)
 
   //FIXME find a clever way to cut down the directory name
   PrintCutDownString(Name,&start_path[Softplay->MediaPathLen()],30);
-  snprintf(Title,60,"Files: %s",Name);
+  snprintf(Title,60,tr("Files: %s"),Name);
   SetTitle(Title);
 
   n = scandir(path, &namelist, 0, alphasort);
@@ -264,19 +265,19 @@ class cMainMenu: public cOsdMenu {
 };
 
 cMainMenu::cMainMenu(cPlayList **CurrList,cSoftPlay::sPlayLists **Lists)
-        : cOsdMenu("SoftPlay")  {
+        : cOsdMenu(tr("SoftPlay"))  {
         currList=CurrList;
         lists=Lists;
-        SetHelp(NULL,NULL,NULL,"Play List");
+        SetHelp(NULL,NULL,NULL,tr("Play List"));
 };
   
 cMainMenu::~cMainMenu() {
 };
 
 void cMainMenu::PrepareMenu() {
-        Add(new cOsdItem("Play Files",PLAY_FILES),false);
+        Add(new cOsdItem(tr("Play Files"),PLAY_FILES),false);
         if ( *currList )
-          Add(new cOsdItem("current playlist",CURR_PLAYLIST),false);
+          Add(new cOsdItem(tr("current playlist"),CURR_PLAYLIST),false);
 }
 
 eOSState cMainMenu::ProcessKey(eKeys Key) {
@@ -328,11 +329,11 @@ const char *cSoftPlay::Version(void) {
 };      
 
 const char *cSoftPlay::Description(void) { 
-        return DESCRIPTION; 
+        return tr(DESCRIPTION); 
 };
   
 const char *cSoftPlay::MainMenuEntry(void) { 
-        return MAINMENUENTRY; 
+        return tr(MAINMENUENTRY); 
 };
 
 const char *cSoftPlay::CommandLineHelp(void)
@@ -366,6 +367,7 @@ bool cSoftPlay::ProcessArgs(int argc, char *argv[])
 bool cSoftPlay::Start(void)
 {
   // Start any background activities the plugin shall perform.
+  RegisterI18n(Phrases);
   return true;
 }
 
