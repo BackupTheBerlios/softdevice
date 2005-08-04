@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.2 2005/05/07 20:17:30 wachm Exp $
+# $Id: Makefile,v 1.3 2005/08/04 15:20:40 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -9,7 +9,9 @@
 #
 PLUGIN = softplay
 
-LIBAVCODEC=/usr/local/include/ffmpeg/
+#LIBFFMPEG=/home/martin/ffmpeg_cvs
+#LIBFFMPEG=/home/martin/vdr/ffmpeg-0.4.9-pre1
+LIBFFMPEG=/usr/local/include/ffmpeg/
 
 ### The version number of this plugin (taken from the main source file):
 
@@ -18,7 +20,7 @@ VERSION = $(shell grep 'static const char \*VERSION *=' $(PLUGIN).c | awk '{ pri
 ### The C++ compiler and options:
 
 CXX      ?= g++
-CXXFLAGS ?= -O2 -Wall -Woverloaded-virtual
+CXXFLAGS ?= -O2 -Wall -Woverloaded-virtual -L$(LIBFFMPEG) -L$(LIBFFMPEG)/libavformat -L$(LIBFFMPEG)/libavcodec -L$(LIBFFMPEG)/libavutil 
 
 ### The directory environment:
 
@@ -42,15 +44,20 @@ PACKAGE = vdr-$(ARCHIVE)
 
 ### Includes and Defines (add further entries here):
 
-INCLUDES += -I$(VDRDIR)/include -I$(DVBDIR)/include -I$(LIBAVCODEC)
+INCLUDES += -I$(VDRDIR)/include -I$(DVBDIR)/include -I$(LIBFFMPEG) -I$(LIBFFMPEG)/libavformat -I$(LIBFFMPEG)/libavcodec -I$(LIBFFMPEG)/libavutil 
 
 DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
+
 ### The object files (add further files here):
 
-OBJS = $(PLUGIN).o SoftPlayer.o PlayList.o
+OBJS = $(PLUGIN).o SoftPlayer.o PlayList.o i18n.o
 
-LIBS = -lavformat #-lvdr-softdevice -L$(VDRDIR)/PLUGINS/src/softdevice
+LIBS = -lavformat -lavcodec -lz
+
+### recent ffmpegs require -lavutil: 
+
+LIBS += $(shell $(CXX) $(CXXFLAGS) $(INCLUDES) getFFmpegLibs.c -o getFFmpegLibs ; ./getFFmpegLibs)
 
 ### Implicit rules:
 

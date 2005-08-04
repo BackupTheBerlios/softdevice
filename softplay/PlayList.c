@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.6 2005/05/22 10:14:16 wachm Exp $
+ * $Id: PlayList.c,v 1.7 2005/08/04 15:20:40 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -27,23 +27,23 @@
 
 
 cPlOptionsMenu::cPlOptionsMenu(cPlayList *PlayList)
-        : cOsdMenu("Options",33) {
+        : cOsdMenu(tr("Options"),33) {
         playList=PlayList;
         playList->GetOptions(playListOptions);
-        Add(new cMenuEditBoolItem("Shuffle Mode",
+        Add(new cMenuEditBoolItem(tr("Shuffle Mode"),
                                &playListOptions.shuffle, tr("no"), tr("yes")));
-        Add(new cMenuEditBoolItem("Auto Repeat",
+        Add(new cMenuEditBoolItem(tr("Auto Repeat"),
                                &playListOptions.autoRepeat, tr("no"), tr("yes")));
 };                                   
 
 cPlOptionsMenu::cPlOptionsMenu(sPlayListOptions *Options)
-        : cOsdMenu("Options",33) {
+        : cOsdMenu(tr("Options"),33) {
         playList=NULL;
         playListOptions=*Options;
         options=Options;
-        Add(new cMenuEditBoolItem("Shuffle Mode",
+        Add(new cMenuEditBoolItem(tr("Shuffle Mode"),
                                &playListOptions.shuffle, tr("no"), tr("yes")));
-        Add(new cMenuEditBoolItem("Auto Repeat",
+        Add(new cMenuEditBoolItem(tr("Auto Repeat"),
                                &playListOptions.autoRepeat, tr("no"), tr("yes")));
 };          
 
@@ -110,7 +110,7 @@ cEditList::cEditList(cPlayList * List) : cOsdMenu(List->ListName) {
                    osUnknown),false);
                 Item=Item->GetNext();
         };
-        SetHelp("Options","(Add Files)","Delete","Stop");
+        SetHelp(tr("Options"),tr("(Add Files)"),tr("Delete"),tr("Stop"));
         lastActivity=time(NULL);
 };
 
@@ -171,7 +171,7 @@ eOSState cEditList::ProcessKey(eKeys Key) {
 // ----cReplayList------------------------------------------------------------
 cReplayList::cReplayList(cPlayList * List) : cOsdMenu(List->ListName) {
         playList=List;
-        SetHelp("Options","(Add)","Delete","Stop");
+        SetHelp(tr("Options"),tr("(Add)"),tr("Delete"),tr("Stop"));
         RebuildList();
 };
 
@@ -308,7 +308,7 @@ cPlayList::cPlayList(char *Filename, char *Name,sItemIdx *ShuffleIdx)
         options.shuffle=false;
         options.autoRepeat=false;
         
-        strncpy(ListName,"Playlist 1",STR_LENGTH);
+        strncpy(ListName,tr("Playlist 1"),STR_LENGTH);
         ListName[STR_LENGTH-1]=0;
         if (!ShuffleIdx) {
 	        shuffleIdx=new sItemIdx;
