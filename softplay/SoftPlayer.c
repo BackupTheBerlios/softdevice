@@ -6,13 +6,13 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.10 2005/08/04 08:50:49 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.11 2005/08/08 08:39:33 wachm Exp $
  */
 
 #include "SoftPlayer.h"
 #include "softplay.h"
 
-//#define PLDBG(out...) { printf("PLDBG: ");printf(out);}
+#define PLDBG(out...) { printf("PLDBG: ");printf(out);}
 //#define PKTDBG(out...) {printf("PKTDBG: ");printf(out);}
 
 #ifndef PLDBG
@@ -258,8 +258,14 @@ ePlayMode cSoftPlayer::GetPlayMode(AVFormatContext *IC) {
         
 	PLDBG("GetPlayMode nb_streams %d\n",IC->nb_streams);
 	for (i = 0; i<IC->nb_streams; i++) {
-		PLDBG("GetPlayMode stream %d codec_type %d\n",
+#if LIBAVFORMAT_BUILD > 4628
+            PLDBG("GetPlayMode stream %d codec_type %d\n",
+			i, IC->streams[i]->codec->codec_type);
+#else
+	    PLDBG("GetPlayMode stream %d codec_type %d\n",
 			i, IC->streams[i]->codec.codec_type);
+#endif
+
 #if LIBAVFORMAT_BUILD > 4628
 		if (IC->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO)
 #else
@@ -481,8 +487,9 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
                         };
                         return osContinue;
                 };
-                        
-                return state;
+                
+		if ( state != osUnknown )
+                        return state;
         };
 
 
@@ -522,6 +529,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 				SoftPlayer->SkipSeconds( 60);
 			else SoftPlayer->SkipSeconds( 15);
 			break;
+		case kStop:
 		case kBlue:    
 			SoftPlayer->Stop(); 
 			shouldStop=true;  
@@ -547,6 +555,11 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 				 char * nextFile=playList->NextFile();
 				 if (nextFile)
 					 SoftPlayer->PlayFile(nextFile);
+                                 else {  // last file
+                                         SoftPlayer->Stop();
+                                         shouldStop=true;  
+                                         return osEnd;
+                                 };
 			 };
 			 break;
 		case k7: if (playList) {
@@ -560,7 +573,12 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 				 char * nextFile=playList->NextAlbumFile();
 				 if (nextFile)
 					 SoftPlayer->PlayFile(nextFile);
-			 };
+                                 else {  // last file
+                                         SoftPlayer->Stop();
+                                         shouldStop=true;  
+                                         return osEnd;
+                                 };
+                         };
 			 break;
 		case k4: if (playList) {
 				 char * prevFile=playList->PrevAlbumFile();
