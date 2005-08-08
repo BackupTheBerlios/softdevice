@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.50 2005/07/31 08:38:41 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.51 2005/08/08 10:25:03 wachm Exp $
  */
 
 #include <math.h>
@@ -117,13 +117,14 @@ int64_t cClock::audioOffset=0;
 int64_t cClock::audioPTS=0;
 int64_t cClock::videoOffset=0;
 int64_t cClock::videoPTS=0;
+bool cClock::freezeMode=true;
 
 int64_t  cClock::GetPTS() {
   //MPGDEB("audioOffset %lld time %lld\n",audioOffset,GetTime());
   if ( audioOffset )
-     return GetTime()+audioOffset;
+     return freezeMode ? audioPTS : GetTime()+audioOffset;
   else if ( videoOffset )
-     return GetTime()+videoOffset;
+     return freezeMode ? videoPTS : GetTime()+videoOffset;
   else return 0;
 };
 
@@ -1348,6 +1349,8 @@ void cMpeg2Decoder::Play(void)
       aout->Play();
     if (vout)
       vout->Play();
+
+    cClock::SetFreezeMode(false);
   };
 };
 
@@ -1385,6 +1388,8 @@ void cMpeg2Decoder::Freeze(void)
       aout->Freeze();
     if (vout)
       vout->Freeze();
+
+    cClock::SetFreezeMode(true);
   };
 };
 

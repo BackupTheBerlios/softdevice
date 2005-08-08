@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.30 2005/07/31 08:38:41 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.31 2005/08/08 10:25:03 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -51,9 +51,11 @@ private:
     static int64_t audioPTS;
     static int64_t videoOffset;
     static int64_t videoPTS;
+    static bool freezeMode;
 
 public:
-    cClock() {audioOffset=0;videoOffset=0;};
+    cClock() {audioOffset=0;videoOffset=0;audioPTS=0;videoPTS=0;
+        freezeMode=true;};
     virtual ~cClock() {};
 
     static int64_t GetTime()
@@ -78,6 +80,10 @@ public:
       videoPTS=vPTS;
     };
    
+    static inline void SetFreezeMode(bool FreezeMode) {
+      freezeMode=FreezeMode;
+    };
+
     int64_t GetPTS();
 };	
 
