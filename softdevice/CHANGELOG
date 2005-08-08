@@ -1,4 +1,6 @@
 Changelog
+2005-08-08:
+    - dfb-out: enclose all dfb calls by try{}catch{} by Marko Mäkelä
 2005-07-31:
     - remove Deactivate(), instead deactive at start of Stop()
     - stop playback in Clear() while clearing the packet buffer

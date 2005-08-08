@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.38 2005/07/31 08:21:22 wachm Exp $
+ * $Id: softdevice.c,v 1.39 2005/08/08 18:43:41 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -384,7 +384,7 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
 }
 
 int64_t cSoftDevice::GetSTC(void) {
-  return (decoder?decoder->GetSTC():NULL);
+  return (decoder?decoder->GetSTC():(int64_t)NULL);
 };
 
 #if VDRVERSNUM >= 10307

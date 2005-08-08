@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.36 2005/07/27 20:57:00 lucke Exp $
+ * $Id: video-dfb.c,v 1.37 2005/08/08 18:43:41 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -273,254 +273,234 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   clearBackCount = 2; // by default for double buffering;
   OSDpresent = false;
 
-  DirectFB::Init();
-  dfb = DirectFB::Create();
-  if (!setupStore->useMGAtv)
-    dfb->SetCooperativeLevel(DFSCL_FULLSCREEN);
+  try
+  {
+    DirectFB::Init();
+    dfb = DirectFB::Create();
+    if (!setupStore->useMGAtv)
+      dfb->SetCooperativeLevel(DFSCL_FULLSCREEN);
 
-  reportCardInfo (dfb);
+    reportCardInfo (dfb);
 
-  fprintf(stderr,"[dfb] Supported video Modes are: ");
-  dfb->EnumVideoModes(EnumVideoModeCallback, NULL);
-  fprintf(stderr,"\n");
+    fprintf(stderr,"[dfb] Supported video Modes are: ");
+    dfb->EnumVideoModes(EnumVideoModeCallback, NULL);
+    fprintf(stderr,"\n");
 
-  /* --------------------------------------------------------------------------
-   * Thats for dfb access during layer enumeration
-   */
-  DFBWrapper=dfb;
-  fprintf(stderr,"[dfb] Enumeratig display Layers\n");
+    /* --------------------------------------------------------------------------
+     * Thats for dfb access during layer enumeration
+     */
+    DFBWrapper=dfb;
+    fprintf(stderr,"[dfb] Enumerating display Layers\n");
 
-  osdLayer=dfb->GetDisplayLayer(DLID_PRIMARY);
-  if (!osdLayer) {
-    fprintf(stderr,"[dfb] no OSD layer exiting\n");
-    exit(1);
-  }
+    osdLayer=dfb->GetDisplayLayer(DLID_PRIMARY);
+    if (!osdLayer) {
+      fprintf(stderr,"[dfb] no OSD layer exiting\n");
+      exit(EXIT_FAILURE);
+    }
 
-  videoLayer = NULL;
-  layerInfo = &layerList [ANY_LAYER];
-  if (setupStore->useMGAtv) {
-    layerInfo = &layerList [CRTC2_LAYER_NEW];
-    currentPixelFormat = setupStore->pixelFormat = 2;
-    setupStore->useStretchBlit = 1;
+    videoLayer = NULL;
+    layerInfo = &layerList [ANY_LAYER];
+    if (setupStore->useMGAtv) {
+      layerInfo = &layerList [CRTC2_LAYER_NEW];
+      currentPixelFormat = setupStore->pixelFormat = 2;
+      setupStore->useStretchBlit = 1;
 
-    if (!setupStore->screenPixelAspect)
-      setupStore->screenPixelAspect = 1;
-  }
+      if (!setupStore->screenPixelAspect)
+        setupStore->screenPixelAspect = 1;
+    }
 
-  dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
-  videoLayer = layerInfo->layer;
-
-  if (setupStore->useMGAtv && !videoLayer) {
-    layerInfo = &layerList [CRTC2_LAYER_OLD];
-    fprintf(stderr, "[dfb] New layer name allocation failed. Trying old (dfb-0.9.20) layer name\n");
     dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
     videoLayer = layerInfo->layer;
-  }
 
-  scrDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
-                                               DSDESC_PIXELFORMAT);
-  scrDsc.caps = DSCAPS_NONE;
-  DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_FLIPPING);
-  DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_PRIMARY);
-  DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_VIDEOONLY);
-  //DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_DOUBLE);
-  scrDsc.pixelformat = DSPF_ARGB;
+    if (setupStore->useMGAtv && !videoLayer) {
+      layerInfo = &layerList [CRTC2_LAYER_OLD];
+      fprintf(stderr, "[dfb] New layer name allocation failed. Trying old (dfb-0.9.20) layer name\n");
+      dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
+      videoLayer = layerInfo->layer;
+    }
 
-  if (setupStore->useMGAtv)
-  {
+    scrDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
+                                                 DSDESC_PIXELFORMAT);
+    scrDsc.caps = DSCAPS_NONE;
+    DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_FLIPPING);
+    DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_PRIMARY);
+    DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_VIDEOONLY);
+    //DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_DOUBLE);
+    scrDsc.pixelformat = DSPF_ARGB;
+
+    if (setupStore->useMGAtv)
+    {
       DFBDisplayLayerConfig   dlc;
 
-    dlc.flags = (DFBDisplayLayerConfigFlags)
+      dlc.flags = (DFBDisplayLayerConfigFlags)
                   (DLCONF_PIXELFORMAT | DLCONF_BUFFERMODE | DLCONF_OPTIONS);
-    //dlc.buffermode = DLBM_BACKVIDEO;
-    dlc.buffermode = DLBM_TRIPLE;
-    clearBackCount = 3;             // 3 for triple, 2 for double buffering
-    dlc.pixelformat = DSPF_ARGB;
-    dlc.options = DLOP_FIELD_PARITY;
+      //dlc.buffermode = DLBM_BACKVIDEO;
+      dlc.buffermode = DLBM_TRIPLE;
+      clearBackCount = 3;             // 3 for triple, 2 for double buffering
+      dlc.pixelformat = DSPF_ARGB;
+      dlc.options = DLOP_FIELD_PARITY;
 
-    try
-    {
       osdLayer->SetCooperativeLevel(DLSCL_EXCLUSIVE);
       osdLayer->SetOpacity(0xff);
-    }
-    catch (DFBException *ex)
-    {
-      fprintf (stderr,
-               "Caught: action=%s, result=%s (could not set DLSCL_EXCLUSIVE)\n",
-               ex->GetAction(), ex->GetResult());
-    }
-
-    try
-    {
       osdLayer->SetConfiguration(dlc);
-    }
-    catch (DFBException *ex)
-    {
-      fprintf (stderr,"Caught: action=%s, result=%s\n",
-               ex->GetAction(), ex->GetResult());
-    }
-
-    try
-    {
       osdLayer->SetFieldParity(0);
-    }
-    catch (DFBException *ex)
-    {
-      fprintf (stderr,"Caught: action=%s, result=%s (could not set field parity)\n",
-               ex->GetAction(), ex->GetResult());
-    }
-    scrSurface = osdLayer->GetSurface();
-
-  }
-  else
-  {
-    scrSurface   = dfb->CreateSurface (scrDsc);
-  }
-
-  reportSurfaceCapabilities ("scrSurface", scrSurface);
-
-  if (!videoLayer)
-  {
-    fprintf(stderr,"[dfb]: could not find suitable videolayer\n");
-    exit(1);
-  }
-
-  /* --------------------------------------------------------------------------
-   * check for VIA Unichrome presence
-   */
-  desc = videoLayer->GetDescription();
-  if (!strcmp (desc.name, "VIA Unichrome Video"))
-  {
-    isVIAUnichrome = true;
-    clearAlpha = 0xff;
-  }
-
-  if (scrSurface)
-  {
-      DFBSurfacePixelFormat fmt;
-      double                displayRatio;
-
-    scrSurface->GetSize(&Xres,&Yres);
-    fprintf (stderr,
-             "[dfb] width = %d, height = %d\n",
-             Xres, Yres);
-    lwidth  = dwidth  = Xres;
-    lheight = dheight = Yres;
-
-    displayRatio = (double) Xres / (double) Yres;
-    SetParValues(displayRatio, displayRatio);
-
-    fmt = scrSurface->GetPixelFormat();
-    fprintf (stderr,
-             "[dfb] got fmt = 0x%08x bpp = %d\n",
-             fmt, DFB_BITS_PER_PIXEL(fmt));
-    Bpp = DFB_BITS_PER_PIXEL(fmt);
-
-    if (Xres > OSD_FULL_WIDTH)
-      Xres = OSD_FULL_WIDTH;
-    if (Yres > OSD_FULL_HEIGHT)
-      Yres = OSD_FULL_HEIGHT;
-
-    /* ------------------------------------------------------------------------
-     * clear screen surface at startup
-     */
-    scrSurface->Clear(0,0,0,0);
-    scrSurface->Flip();
-    scrSurface->Clear(0,0,0,0);
-
-    osdDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
-                                                 DSDESC_WIDTH |
-                                                 DSDESC_HEIGHT |
-                                                 DSDESC_PIXELFORMAT);
-    osdDsc.caps = DSCAPS_NONE;
-    DFB_ADD_SURFACE_CAPS(osdDsc.caps, DSCAPS_FLIPPING);
-    DFB_ADD_SURFACE_CAPS(osdDsc.caps, DSCAPS_VIDEOONLY);
-    osdDsc.width  = Xres;
-    osdDsc.height = Yres;
-    osdDsc.pixelformat = DSPF_ARGB;
-
-    useStretchBlit = false;
-    OSDpseudo_alpha = true;
-    if (setupStore->pixelFormat == 0)
-    {
-      vidDsc.pixelformat = DSPF_I420;
-      setupStore->useStretchBlit = 0;
-      useStretchBlit = setupStore->useStretchBlit;
-    }
-    else if (setupStore->pixelFormat == 1)
-    {
-      vidDsc.pixelformat = DSPF_YV12;
-      setupStore->useStretchBlit = 0;
-      useStretchBlit = setupStore->useStretchBlit;
-    }
-    else if (setupStore->pixelFormat == 2)
-    {
-      vidDsc.pixelformat = DSPF_YUY2;
-      if (setupStore->useStretchBlit)
-      {
-        useStretchBlit = true;
-        OSDpseudo_alpha = false;
-      }
-    }
-
-    osdSurface   = dfb->CreateSurface (osdDsc);
-    osdSurface->Clear(0,0,0,clearAlpha); //clear and
-    osdSurface->Flip(); // Flip the field
-    osdSurface->Clear(0,0,0,clearAlpha); //clear and
-
-    desc = osdLayer->GetDescription();
-    fprintf(stderr,
-            "[dfb] Using this layer for OSD: (%s - [%dx%d])\n",
-            desc.name, osdSurface->GetWidth(), osdSurface->GetHeight());
-
-    reportSurfaceCapabilities ("osdSurface", osdSurface);
-
-    vidDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
-                                                 DSDESC_WIDTH |
-                                                 DSDESC_HEIGHT |
-                                                 DSDESC_PIXELFORMAT);
-    vidDsc.caps   = DSCAPS_VIDEOONLY;
-    vidDsc.width  = fwidth;
-    vidDsc.height = fheight;
-
-
-    if (useStretchBlit)
-    {
-      videoSurface = dfb->CreateSurface (vidDsc);
-      videoSurface->Clear(0,0,0,clearAlpha); //clear and
+      scrSurface = osdLayer->GetSurface();
     }
     else
     {
-      videoSurface=videoLayer->GetSurface();
-      videoSurface->Clear(COLORKEY,clearAlpha); //clear and
-      videoSurface->Flip(); // Flip the field
-      videoSurface->Clear(COLORKEY,clearAlpha); //clear and
-      videoSurface->Flip(); // Flip the field
+      scrSurface = dfb->CreateSurface (scrDsc);
     }
 
-    reportSurfaceCapabilities ("videoSurface", videoSurface);
+    reportSurfaceCapabilities ("scrSurface", scrSurface);
 
-    if (!setupStore->useMGAtv)
+    if (!videoLayer)
     {
-      fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
-      videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
-
-      fprintf(stderr,"[dfb] Configuring CooperativeLevel for OSD\n");
-      osdLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
+      fprintf(stderr,"[dfb]: could not find suitable videolayer\n");
+      exit(EXIT_FAILURE);
     }
 
-    desc = osdLayer->GetDescription();
-    fprintf(stderr,"[dfb] Using this layer for OSD: %s\n", desc.name);
-
+    /* --------------------------------------------------------------------------
+     * check for VIA Unichrome presence
+     */
     desc = videoLayer->GetDescription();
-    fprintf(stderr,"[dfb] Using this layer for Video out: %s\n", desc.name);
+    if (!strcmp (desc.name, "VIA Unichrome Video"))
+    {
+      isVIAUnichrome = true;
+      clearAlpha = 0xff;
+    }
 
+    if (scrSurface)
+    {
+      DFBSurfacePixelFormat fmt;
+      double                displayRatio;
+
+      scrSurface->GetSize(&Xres,&Yres);
+      fprintf (stderr,
+               "[dfb] width = %d, height = %d\n",
+               Xres, Yres);
+      lwidth  = dwidth  = Xres;
+      lheight = dheight = Yres;
+
+      displayRatio = (double) Xres / (double) Yres;
+      SetParValues(displayRatio, displayRatio);
+
+      fmt = scrSurface->GetPixelFormat();
+      fprintf (stderr,
+               "[dfb] got fmt = 0x%08x bpp = %d\n",
+               fmt, DFB_BITS_PER_PIXEL(fmt));
+      Bpp = DFB_BITS_PER_PIXEL(fmt);
+
+      if (Xres > OSD_FULL_WIDTH)
+        Xres = OSD_FULL_WIDTH;
+      if (Yres > OSD_FULL_HEIGHT)
+        Yres = OSD_FULL_HEIGHT;
+
+      /* ------------------------------------------------------------------------
+       * clear screen surface at startup
+       */
+      scrSurface->Clear(0,0,0,0);
+      scrSurface->Flip();
+      scrSurface->Clear(0,0,0,0);
+
+      osdDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
+                                                   DSDESC_WIDTH |
+                                                   DSDESC_HEIGHT |
+                                                   DSDESC_PIXELFORMAT);
+      osdDsc.caps = DSCAPS_NONE;
+      DFB_ADD_SURFACE_CAPS(osdDsc.caps, DSCAPS_FLIPPING);
+      DFB_ADD_SURFACE_CAPS(osdDsc.caps, DSCAPS_VIDEOONLY);
+      osdDsc.width  = Xres;
+      osdDsc.height = Yres;
+      osdDsc.pixelformat = DSPF_ARGB;
+
+      useStretchBlit = false;
+      OSDpseudo_alpha = true;
+      if (setupStore->pixelFormat == 0)
+      {
+        vidDsc.pixelformat = DSPF_I420;
+        setupStore->useStretchBlit = useStretchBlit = false;
+      }
+      else if (setupStore->pixelFormat == 1)
+      {
+        vidDsc.pixelformat = DSPF_YV12;
+        setupStore->useStretchBlit = useStretchBlit = false;
+      }
+      else if (setupStore->pixelFormat == 2)
+      {
+        vidDsc.pixelformat = DSPF_YUY2;
+        if (setupStore->useStretchBlit)
+        {
+          useStretchBlit = true;
+          OSDpseudo_alpha = false;
+        }
+      }
+
+      osdSurface   = dfb->CreateSurface (osdDsc);
+      osdSurface->Clear(0,0,0,clearAlpha); //clear and
+      osdSurface->Flip(); // Flip the field
+      osdSurface->Clear(0,0,0,clearAlpha); //clear and
+
+      desc = osdLayer->GetDescription();
+      fprintf(stderr,
+              "[dfb] Using this layer for OSD: (%s - [%dx%d])\n",
+              desc.name, osdSurface->GetWidth(), osdSurface->GetHeight());
+
+      reportSurfaceCapabilities ("osdSurface", osdSurface);
+
+      vidDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
+                                                   DSDESC_WIDTH |
+                                                   DSDESC_HEIGHT |
+                                                   DSDESC_PIXELFORMAT);
+      vidDsc.caps   = DSCAPS_VIDEOONLY;
+      vidDsc.width  = fwidth;
+      vidDsc.height = fheight;
+
+
+      if (useStretchBlit)
+      {
+        videoSurface = dfb->CreateSurface (vidDsc);
+        videoSurface->Clear(0,0,0,clearAlpha); //clear and
+      }
+      else
+      {
+        videoSurface=videoLayer->GetSurface();
+        videoSurface->Clear(COLORKEY,clearAlpha); //clear and
+        videoSurface->Flip(); // Flip the field
+        videoSurface->Clear(COLORKEY,clearAlpha); //clear and
+        videoSurface->Flip(); // Flip the field
+      }
+
+      reportSurfaceCapabilities ("videoSurface", videoSurface);
+
+      if (!setupStore->useMGAtv)
+      {
+        fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
+        videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
+
+        fprintf(stderr,"[dfb] Configuring CooperativeLevel for OSD\n");
+        osdLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
+      }
+
+      desc = osdLayer->GetDescription();
+      fprintf(stderr,"[dfb] Using this layer for OSD: %s\n", desc.name);
+
+      desc = videoLayer->GetDescription();
+      fprintf(stderr,"[dfb] Using this layer for Video out: %s\n", desc.name);
+
+    }
+
+    GetDisplayFrameTime();
+    /* create an event buffer with all devices attached */
+    events = dfb->CreateInputEventBuffer(DICAPS_ALL,
+                                         (setupStore->useMGAtv) ? DFB_TRUE : DFB_FALSE);
   }
-
-  GetDisplayFrameTime();
-  /* create an event buffer with all devices attached */
-  events = dfb->CreateInputEventBuffer(DICAPS_ALL,
-                                       (setupStore->useMGAtv) ? DFB_TRUE : DFB_FALSE);
+  catch (DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] init EXITING:action=%s, result=%s\n",
+             ex->GetAction(), ex->GetResult());
+    delete ex;
+    exit(EXIT_FAILURE);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -532,13 +512,23 @@ void cDFBVideoOut::GetDisplayFrameTime (void)
       struct timeval  tv1, tv2;
       int             t1, t2;
 
-    videoLayer->GetScreen()->WaitForSync();
-    gettimeofday(&tv1,NULL);
-    videoLayer->GetScreen()->WaitForSync();
-    gettimeofday(&tv2,NULL);
+    try
+    {
+      videoLayer->GetScreen()->WaitForSync();
+      gettimeofday(&tv1,NULL);
+      videoLayer->GetScreen()->WaitForSync();
+      gettimeofday(&tv2,NULL);
+    }
+    catch (DFBException *ex)
+    {
+      fprintf (stderr,"[dfb] GetDisplayFrameTime: action=%s, result=%s\n",
+               ex->GetAction(), ex->GetResult());
+      delete ex;
+      tv1.tv_sec = tv2.tv_sec = tv1.tv_usec = tv2.tv_usec = 0;
+    }
     t1 = (tv1.tv_sec & 1) * 1000000 + tv1.tv_usec;
     t2 = (tv2.tv_sec & 1) * 1000000 + tv2.tv_usec;
-    fprintf (stderr,"[dfb] Display frame time is %dµs\n", t2 - t1);
+    fprintf (stderr,"[dfb] Display frame time is %d microseconds\n", t2 - t1);
     displayTimeUS = t2 - t1;
   }
 }
@@ -628,18 +618,16 @@ void cDFBVideoOut::SetParams()
       dlc.flags   = (DFBDisplayLayerConfigFlags)(DLCONF_WIDTH | DLCONF_HEIGHT | DLCONF_PIXELFORMAT | DLCONF_OPTIONS);
 
       useStretchBlit = false;
-      OSDpseudo_alpha = (isVIAUnichrome) ? false: true;
+      OSDpseudo_alpha = !isVIAUnichrome;
       if (setupStore->pixelFormat == 0)
       {
         dlc.pixelformat = DSPF_I420;
-        setupStore->useStretchBlit = 0;
-        useStretchBlit = setupStore->useStretchBlit;
+        setupStore->useStretchBlit = useStretchBlit = false;
       }
       else if (setupStore->pixelFormat == 1)
       {
         dlc.pixelformat = DSPF_YV12;
-        setupStore->useStretchBlit = 0;
-        useStretchBlit = setupStore->useStretchBlit;
+        setupStore->useStretchBlit = useStretchBlit = false;
       }
       else if (setupStore->pixelFormat == 2)
       {
@@ -748,8 +736,9 @@ void cDFBVideoOut::SetParams()
         }
         catch (DFBException *ex)
         {
-          fprintf (stderr,"Caught: action=%s, result=%s Failed: SetLevel()\n",
+          fprintf (stderr,"[dfb] SetParams: action=%s, result=%s Failed: SetLevel()\n",
                    ex->GetAction(), ex->GetResult());
+          delete ex;
         }
 
         /*
@@ -770,7 +759,7 @@ void cDFBVideoOut::SetParams()
           videoLayer->TestConfiguration(dlc, &failed);
           if (failed & DLCONF_BUFFERMODE)
           {
-            fprintf(stderr, "[dfb]: SetParms (): failed to set buffermode "
+            fprintf(stderr, "[dfb]: SetParams: failed to set buffermode "
                     "to back video, reverting to normal\n");
             dlc.buffermode = DLBM_FRONTONLY;
           }
@@ -782,24 +771,16 @@ void cDFBVideoOut::SetParams()
         try
         {
           videoLayer->SetConfiguration(dlc);
-        }
-        catch (DFBException *ex)
-        {
-          fprintf (stderr,"Caught: action=%s, result=%s\n",
-                   ex->GetAction(), ex->GetResult());
-        }
-
 #if HAVE_SetSourceLocation
-        try
-        {
           videoLayer->SetSourceRectangle (sxoff, syoff, swidth, sheight);
+#endif
         }
         catch (DFBException *ex)
         {
-          fprintf (stderr,"Caught: action=%s, result=%s\n",
+          fprintf (stderr,"[dfb] SetParams: action=%s, result=%s\n",
                    ex->GetAction(), ex->GetResult());
+          delete ex;
         }
-#endif
 
         if (desc.caps & DLCAPS_SCREEN_LOCATION)
         {
@@ -807,61 +788,90 @@ void cDFBVideoOut::SetParams()
            * workaround for a bug in DirectFB: force SetScreenLocation to be
            * executed always.
            */
-          videoLayer->SetScreenLocation(0.0,0.0,0.5,0.5);
-          videoLayer->SetScreenLocation((float) lxoff / (float) dwidth,
-                                        (float) lyoff / (float) dheight,
-                                        (float) lwidth / (float) dwidth,
-                                        (float) lheight / (float) dheight);
+          try
+          {
+            videoLayer->SetScreenLocation(0.0,0.0,0.5,0.5);
+            videoLayer->SetScreenLocation((float) lxoff / (float) dwidth,
+                                          (float) lyoff / (float) dheight,
+                                          (float) lwidth / (float) dwidth,
+                                          (float) lheight / (float) dheight);
+          }
+          catch (DFBException *ex)
+          {
+            fprintf (stderr, "[dfb] SetParams: action=%s, result=%s\n",
+                     ex->GetAction(), ex->GetResult());
+            delete ex;
+          }
         }
         else
         {
           fprintf(stderr,"Can't configure ScreenLocation. Hope it is Fullscreen\n");
         }
+
         /* --------------------------------------------------------------------
          * set colorkey now. some driver accepct that _after_ configuration
          * has been set ! But check that color keying is supported.
          */
-        if (desc.caps & DLCAPS_DST_COLORKEY)
-          videoLayer->SetDstColorKey(COLORKEY);
+        try
+        {
+          if (desc.caps & DLCAPS_DST_COLORKEY)
+            videoLayer->SetDstColorKey(COLORKEY);
 
-        videoSurface=videoLayer->GetSurface();
-        videoSurface->Clear(COLORKEY,0xff); //clear and
+          videoSurface=videoLayer->GetSurface();
+          videoSurface->Clear(COLORKEY,0xff);
+        }
+        catch (DFBException *ex)
+        {
+          fprintf (stderr, "[dfb] SetParams (a) EXITING: action=%s, result=%s\n",
+                   ex->GetAction(), ex->GetResult());
+          delete ex;
+          exit(EXIT_FAILURE);
+        }
       }
       else
       {
         fprintf (stderr, "[dfb] creating new surface\n");
-        if (videoSurface)
+        try
         {
-          /* ------------------------------------------------------------------
-           * clear previous used surface. there were some troubles when we
-           * started in I420 mode, switched to YUY2 and video format changed
-           * from 4:3 to 16:9 .
-           */
-          videoSurface->Clear(COLORKEY,0); //clear and
-          videoSurface->Release();
-        }
+          if (videoSurface)
+          {
+            /* ------------------------------------------------------------------
+             * clear previous used surface. there were some troubles when we
+             * started in I420 mode, switched to YUY2 and video format changed
+             * from 4:3 to 16:9 .
+             */
+            videoSurface->Clear(COLORKEY,0); //clear and
+            videoSurface->Release();
+          }
 
-        videoSurface=dfb->CreateSurface(vidDsc);
-        /* --------------------------------------------------------------------
-         * Here is probably a bug in DirectFB, as Clear() does _not_ work
-         * the same, as manual wipe out YUY2 surface. I tried Clear() on my
-         * tests, but it did not solve the problem. That happens with my
-         * Matrox G550.
-         * videoSurface->Clear(0,0,0,0);
-         * The workaround code assumes that in case of stretchBlit, pixelformat
-         * YUY2 is used.
-         */
-        {
+          videoSurface=dfb->CreateSurface(vidDsc);
+          /* --------------------------------------------------------------------
+           * Here is probably a bug in DirectFB, as Clear() does _not_ work
+           * the same, as manual wipe out YUY2 surface. I tried Clear() on my
+           * tests, but it did not solve the problem. That happens with my
+           * Matrox G550.
+           * videoSurface->Clear(0,0,0,0);
+           * The workaround code assumes that in case of stretchBlit, pixelformat
+           * YUY2 is used.
+           */
+          {
             int     *dst, i, j;
             int     pitch;
 
-          videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
-          for(i = 0; i < vidDsc.height; ++i, dst += pitch/4)
-            for (j = 0; j < vidDsc.width / 2; ++j)
-              dst [j] = 0x80008000;
-          videoSurface->Unlock();
+            videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
+            for(i = 0; i < vidDsc.height; ++i, dst += pitch/4)
+              for (j = 0; j < vidDsc.width / 2; ++j)
+                dst [j] = 0x80008000;
+            videoSurface->Unlock();
+          }
         }
-
+        catch (DFBException *ex)
+        {
+          fprintf (stderr, "[dfb] SetParams (b) EXITING: action=%s, result=%s\n",
+                   ex->GetAction(), ex->GetResult());
+          delete ex;
+          exit(EXIT_FAILURE);
+        }
       }
       reportSurfaceCapabilities ("videoSurface", videoSurface);
 
@@ -870,8 +880,8 @@ void cDFBVideoOut::SetParams()
   }
   else
   {
-    fprintf(stderr,"No Videolayer avaiable. Exiting...\n");
-    exit(1);
+    fprintf(stderr,"No Videolayer available. Exiting...\n");
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -890,10 +900,19 @@ void cDFBVideoOut::OpenOSD (int x, int y)
     IDirectFBSurface  *tmpSurface;
 
   cVideoOut::OpenOSD(x, y);
-  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-  tmpSurface->Clear(0,0,0,clearAlpha);
-  tmpSurface->Flip();
-  tmpSurface->Clear(0,0,0,clearAlpha);
+  try
+  {
+    tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+    tmpSurface->Clear(0,0,0,clearAlpha);
+    tmpSurface->Flip();
+    tmpSurface->Clear(0,0,0,clearAlpha);
+  }
+  catch (DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] OpenOSD: action=%s, result=%s\n",
+             ex->GetAction(), ex->GetResult());
+    delete ex;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -902,8 +921,17 @@ void cDFBVideoOut::OSDStart()
 {
     IDirectFBSurface  *tmpSurface;
 
-  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-  tmpSurface->SetBlittingFlags(DSBLIT_NOFX);
+  try
+  {
+    tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+    tmpSurface->SetBlittingFlags(DSBLIT_NOFX);
+  }
+  catch (DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] OSDStart: action=%s, result=%s\n",
+             ex->GetAction(), ex->GetResult());
+    delete ex;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -926,27 +954,36 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
 
   if (Bitmap->Dirty(modArea.x1,modArea.y1,modArea.x2,modArea.y2))
   {
-    tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-    tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-    Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
-    tmpSurface->Unlock();
+    try
+    {
+      tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+      tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+      Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
+      tmpSurface->Unlock();
 
-    /* ------------------------------------------------------------------------
-     * TODO: Have to get area coordinates in screen dimensions from Draw().
-     *       In case Draw() scales down, bitmap dirty area coordinates
-     *       could not be transformed the following way.
-     */
-    modArea.x1 += OSDxOfs + Bitmap->X0();
-    modArea.y1 += OSDyOfs + Bitmap->Y0();
-    modArea.x2 += OSDxOfs + Bitmap->X0();
-    modArea.y2 += OSDyOfs + Bitmap->Y0();
+      /* ------------------------------------------------------------------------
+       * TODO: Have to get area coordinates in screen dimensions from Draw().
+       *       In case Draw() scales down, bitmap dirty area coordinates
+       *       could not be transformed the following way.
+       */
+      modArea.x1 += OSDxOfs + Bitmap->X0();
+      modArea.y1 += OSDyOfs + Bitmap->Y0();
+      modArea.x2 += OSDxOfs + Bitmap->X0();
+      modArea.y2 += OSDyOfs + Bitmap->Y0();
 
-    tmpSurface->Flip(&modArea,DSFLIP_WAIT);
-    osdsrc.x = modArea.x1;
-    osdsrc.y = modArea.y1;
-    osdsrc.w = modArea.x2 - modArea.x1 + 1;
-    osdsrc.h = modArea.y2 - modArea.y1 + 1;
-    tmpSurface->Blit(tmpSurface, &osdsrc, modArea.x1, modArea.y1);
+      tmpSurface->Flip(&modArea,DSFLIP_WAIT);
+      osdsrc.x = modArea.x1;
+      osdsrc.y = modArea.y1;
+      osdsrc.w = modArea.x2 - modArea.x1 + 1;
+      osdsrc.h = modArea.y2 - modArea.y1 + 1;
+      tmpSurface->Blit(tmpSurface, &osdsrc, modArea.x1, modArea.y1);
+    }
+    catch (DFBException *ex)
+    {
+      fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
+               ex->GetAction(), ex->GetResult());
+      delete ex;
+    }
 
     Bitmap->Clean();
   }
@@ -988,25 +1025,33 @@ void cDFBVideoOut::CloseOSD()
 
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
 
-  if (useStretchBlit)
+  try
   {
-    osdMutex.Lock();
-    OSDpresent  = false;
-    osdClrBack = true;
-    osdMutex.Unlock();
-    tmpSurface->Clear(COLORKEY,clearAlpha); //clear and
-  }
-  else
-  {
-    tmpSurface->Clear(COLORKEY,clearAlpha); //clear and
-    tmpSurface->Flip(); // Flip the field
-    if (!isVIAUnichrome)
+    if (useStretchBlit)
+    {
+      osdMutex.Lock();
+      OSDpresent  = false;
+      osdClrBack = true;
+      osdMutex.Unlock();
+      tmpSurface->Clear(COLORKEY,clearAlpha); //clear and
+    }
+    else
     {
       tmpSurface->Clear(COLORKEY,clearAlpha); //clear and
       tmpSurface->Flip(); // Flip the field
+      if (!isVIAUnichrome)
+      {
+        tmpSurface->Clear(COLORKEY,clearAlpha); //clear and
+        tmpSurface->Flip(); // Flip the field
+      }
     }
   }
-
+  catch (DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] CloseOSD: action=%s, result=%s\n",
+             ex->GetAction(), ex->GetResult());
+    delete ex;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -1032,7 +1077,8 @@ void cDFBVideoOut::ShowOSD ()
       osdClrBack = false;
     }
 
-    try {
+    try
+    {
       if (clearBackground) {
         scrSurface->Clear(0,0,0,0);
         clearBackground--;
@@ -1049,8 +1095,12 @@ void cDFBVideoOut::ShowOSD ()
       }
       scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
 
-    } catch (DFBException *ex){
-      fprintf(stderr,"--- OSD refresh failed failed\n");
+    }
+    catch (DFBException *ex)
+    {
+      fprintf (stderr,"[dfb] ShowOSD: action=%s, result=%s\n",
+               ex->GetAction(), ex->GetResult());
+      delete ex;
     }
     osdMutex.Unlock();
   }
@@ -1070,81 +1120,81 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   SetParams();
 
   //fprintf(stderr,"[dfb] draw frame (%d x %d) Y: %d UV: %d\n", Width, Height, Ystride, UVstride);
-
-  videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
-  if (pixelformat == DSPF_I420 || pixelformat == DSPF_YV12)
+  try
   {
+    videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
+    if (pixelformat == DSPF_I420 || pixelformat == DSPF_YV12)
+    {
 #if HAVE_SetSourceLocation
-    Py += Ystride  * cutTop * 2 + cutLeft * 2;
-    Pv += UVstride * cutTop + cutLeft;
-    Pu += UVstride * cutTop + cutLeft;
+      Py += Ystride  * cutTop * 2 + cutLeft * 2;
+      Pv += UVstride * cutTop + cutLeft;
+      Pu += UVstride * cutTop + cutLeft;
 
-    dst += pitch * cutTop * 2;
+      dst += pitch * cutTop * 2;
 
-    for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
-      memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
-      Py  += Ystride;
-      dst += pitch;
-    }
+      for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
+        memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
+        Py  += Ystride;
+        dst += pitch;
+      }
 
-    dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
+      dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
-    for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-      memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
-      Pu  += UVstride;
-      dst += pitch / 2;
-    }
+      for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
+        memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
+        Pu  += UVstride;
+        dst += pitch / 2;
+      }
 
-    dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
+      dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
-    for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-      memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
-      Pv  += UVstride;
-      dst += pitch / 2;
-    }
+      for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
+        memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
+        Pv  += UVstride;
+        dst += pitch / 2;
+      }
 #else
-    Py += (Ystride  * syoff)   + Ystride  * cutTop * 2;
-    Pv += (UVstride * syoff/2) + UVstride * cutTop;
-    Pu += (UVstride * syoff/2) + UVstride * cutTop;
+      Py += (Ystride  * syoff)   + Ystride  * cutTop * 2;
+      Pv += (UVstride * syoff/2) + UVstride * cutTop;
+      Pu += (UVstride * syoff/2) + UVstride * cutTop;
 
-    dst += pitch * cutTop * 2;
+      dst += pitch * cutTop * 2;
 
-    for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
-      memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
-      Py  += Ystride;
-      dst += pitch;
-    }
+      for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
+        memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
+        Py  += Ystride;
+        dst += pitch;
+      }
 
-    dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
+      dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
-    for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-      memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
-      Pu  += UVstride;
-      dst += pitch / 2;
-    }
+      for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
+        memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+        Pu  += UVstride;
+        dst += pitch / 2;
+      }
 
-    dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
+      dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
-    for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-      memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
-      Pv  += UVstride;
-      dst += pitch / 2;
-    }
+      for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
+        memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+        Pv  += UVstride;
+        dst += pitch / 2;
+      }
 #endif
-  } else if (pixelformat == DSPF_YUY2) {
+    } else if (pixelformat == DSPF_YUY2) {
 
-    yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                 Pu + UVstride * cutTop + cutLeft,
-                 Pv + UVstride * cutTop + cutLeft,
-                 dst + pitch * cutTop * 2 + cutLeft * 4,
-                 Width - 2 * (cutLeft + cutRight),
-                 Height - 2 * (cutTop + cutBottom),
-                 Ystride, UVstride, pitch);
-  }
+      yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                   Pu + UVstride * cutTop + cutLeft,
+                   Pv + UVstride * cutTop + cutLeft,
+                   dst + pitch * cutTop * 2 + cutLeft * 4,
+                   Width - 2 * (cutLeft + cutRight),
+                   Height - 2 * (cutTop + cutBottom),
+                   Ystride, UVstride, pitch);
+    }
 
-  videoSurface->Unlock();
+    videoSurface->Unlock();
 
-  try {
     if (useStretchBlit)
     {
         DFBRectangle  src, dst;
@@ -1202,8 +1252,12 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     {
       videoSurface->Flip(NULL, DSFLIP_ONSYNC);
     }
-  } catch (DFBException *ex){
-    fprintf(stderr,"Flip failed\n");
+  }
+  catch (DFBException *ex)
+  {
+    fprintf (stderr, "[dfb] YUV: action=%s, result=%s\n",
+             ex->GetAction(), ex->GetResult());
+    delete ex;
   }
   ProcessEvents ();
   events_not_done = 0;
