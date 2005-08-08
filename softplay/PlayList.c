@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.7 2005/08/04 15:20:40 wachm Exp $
+ * $Id: PlayList.c,v 1.8 2005/08/08 08:36:05 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -17,7 +17,7 @@
 
 #include "vdr/player.h"
 
-//#define LISTDEB(out...) {printf("LISTDEB: ");printf(out);}
+#define LISTDEB(out...) {printf("LISTDEB: ");printf(out);}
 
 #ifndef LISTDEB
 #define LISTDEB(out...)
@@ -165,6 +165,7 @@ eOSState cEditList::ProcessKey(eKeys Key) {
                 default:    
                         break;
         }
+
         return state;
 }
 
@@ -235,7 +236,10 @@ void cReplayList::UpdateStatus() {
 
 eOSState cReplayList::ProcessKey(eKeys Key) {
         eOSState state = cOsdMenu::ProcessKey(Key);
-        if (Key!=kNone) 
+
+	// don't move cursor when it has been moved by the user
+	// a short while ago
+        if ( Key==kUp  || Key==kDown  || Key==kRight || Key==kLeft ) 
                 lastActivity=time(NULL);
         
         if (state != osUnknown ) 
@@ -271,6 +275,10 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
                 case kBlue:
                         state= osEnd;
                         break;
+                case kGreen:
+			// not yet implemented
+                        state= osContinue;
+                        break;
                 case kRed:
                         return AddSubMenu(new cPlOptionsMenu(playList));
                         break;
@@ -296,6 +304,7 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
         }
         if (!HasSubMenu())
                 UpdateStatus();
+		
         return state;
 }
 
@@ -315,10 +324,10 @@ cPlayList::cPlayList(char *Filename, char *Name,sItemIdx *ShuffleIdx)
                 shuffleIdx->currShuffleIdx=-1;
                 shuffleIdx->nIdx=0;
                 shuffleIdx->Idx=new sIdx[MAX_ITEMS];
-                memset(shuffleIdx->Idx,0,sizeof(shuffleIdx->Idx));
+                memset(shuffleIdx->Idx,0,sizeof(sIdx[MAX_ITEMS]));
                 shuffleIdx->nAlbum=0;
                 shuffleIdx->Album=new sIdx[MAX_ITEMS/10];
-                memset(shuffleIdx->Album,0,sizeof(shuffleIdx->Album));
+                memset(shuffleIdx->Album,0,sizeof(sIdx[MAX_ITEMS/10]));
                 shuffleIdxOwner=true;
         } else {
                 shuffleIdxOwner=false;
@@ -572,6 +581,8 @@ bool cPlayList::ScanDir(char * dirname, bool recursive) {
 char * cPlayList::NextFile() {
         LISTDEB("NextFile currShuffleIdx %d\n",
                         shuffleIdx->currShuffleIdx);
+        int saveCurrShuffleIdx=shuffleIdx->currShuffleIdx;
+
         do {
 		++shuffleIdx->currShuffleIdx;
                 if ( options.autoRepeat && 
@@ -584,13 +595,16 @@ char * cPlayList::NextFile() {
         } while ( shuffleIdx->currShuffleIdx<shuffleIdx->nIdx 
                         && !shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item );
 	
-        LISTDEB("NextFile currShuffleIdx %d\n",shuffleIdx->currShuffleIdx);
+        LISTDEB("NextFile currShuffleIdx %d nIdx %d\n",
+                        shuffleIdx->currShuffleIdx,shuffleIdx->nIdx);
 
         if ( shuffleIdx->currShuffleIdx > shuffleIdx->nIdx )
                 shuffleIdx->currShuffleIdx=shuffleIdx->nIdx;
 
 	if ( shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item )
 		return shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item->GetFilename();
+
+        shuffleIdx->currShuffleIdx=saveCurrShuffleIdx;
 	return NULL;
 };
 
@@ -619,6 +633,8 @@ char * cPlayList::NextAlbumFile() {
         cPlayList *currAlbum=shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Album;
         LISTDEB("NextAlbumFile currShuIdx %d currAlbum %p\n",
                         shuffleIdx->currShuffleIdx,currAlbum);
+        int saveCurrShuffleIdx=shuffleIdx->currShuffleIdx;
+
         do {
 		++shuffleIdx->currShuffleIdx;
                 if ( options.autoRepeat && 
@@ -641,6 +657,8 @@ char * cPlayList::NextAlbumFile() {
         
 	if (shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item)
 		return shuffleIdx->Idx[shuffleIdx->currShuffleIdx].Item->GetFilename();
+
+        shuffleIdx->currShuffleIdx=saveCurrShuffleIdx;
 	return NULL;
 };
 

@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.h,v 1.5 2005/05/21 15:35:01 wachm Exp $
+ * $Id: PlayList.h,v 1.6 2005/08/08 08:36:06 wachm Exp $
  */
 
 #ifndef __PLAYLIST_H__
@@ -128,6 +128,10 @@ private:
   public:
         cPlayList(char *Filename=NULL, char *Name=NULL,
                         sItemIdx *shuffleIdx=NULL);
+  private:
+	cPlayList(const cPlayList &List) {};
+	cPlayList &operator=(const cPlayList & List) {return *this;};
+  public:
         virtual ~cPlayList();
 
         virtual void BuildIdx(sItemIdx *ShuffleIdx);
