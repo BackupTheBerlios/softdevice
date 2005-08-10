@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.37 2005/08/08 18:43:41 lucke Exp $
+ * $Id: video-dfb.c,v 1.38 2005/08/10 17:31:18 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1001,19 +1001,28 @@ void cDFBVideoOut::Refresh()
 
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
 
-  tmpSurface->Clear(0,0,0,clearAlpha);
-  tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-  for (int i = 0; i < MAXNUMWINDOWS; i++)
+  try
   {
-    if (layer[i] && layer[i]->visible)
-      layer[i]->Draw(dst, pitch, NULL);
+    tmpSurface->Clear(0,0,0,clearAlpha);
+    tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+    for (int i = 0; i < MAXNUMWINDOWS; i++)
+    {
+      if (layer[i] && layer[i]->visible)
+        layer[i]->Draw(dst, pitch, NULL);
+    }
+    tmpSurface->Unlock();
+
+    if (useStretchBlit)
+      OSDpresent = true;
+
+    tmpSurface->Flip();
   }
-  tmpSurface->Unlock();
-
-  if (useStretchBlit)
-    OSDpresent = true;
-
-  tmpSurface->Flip();
+  catch (DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
+             ex->GetAction(), ex->GetResult());
+    delete ex;
+  }
 }
 #endif
 
