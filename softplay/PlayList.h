@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.h,v 1.6 2005/08/08 08:36:06 wachm Exp $
+ * $Id: PlayList.h,v 1.7 2005/08/15 07:27:42 wachm Exp $
  */
 
 #ifndef __PLAYLIST_H__
@@ -37,14 +37,15 @@ struct sItemIdx {
 
 class cPlayListItem {
         friend class cPlayList;
-        protected:
+        private:
                 char name[SHORT_STR];
                 char filename[STR_LENGTH];
+        protected:
                 int idx;
                 cPlayListItem *next;
                 cPlayListItem *previous;
         public:
-                cPlayListItem(char *Filename=NULL,  char *Name=NULL);
+                cPlayListItem(const char *Filename=NULL,  const char *Name=NULL);
                 virtual ~cPlayListItem();
 
                 void InsertSelfIntoList(cPlayListItem *Next,
@@ -56,6 +57,17 @@ class cPlayListItem {
                 inline char * GetFilename()
                 { return filename; };
 
+        protected:
+                inline void SetName(const char *Name) {
+                        strncpy(name,Name,SHORT_STR);
+                        name[SHORT_STR-1]=0;
+                };
+                inline void SetFilename(const char *Filename) {
+                        strncpy(filename,Filename,STR_LENGTH);
+                        filename[STR_LENGTH-1]=0;
+                };
+
+        public:
                 virtual void BuildIdx(sItemIdx *shuffleIdx);
                         
                 inline int GetIdx()
@@ -72,6 +84,14 @@ class cPlayListItem {
 
                 inline cPlayListItem *GetPrev()
                 {return previous;};
+
+		virtual void Save(FILE *out)
+		{};
+
+                virtual void ParseSaveLine(const char *Line)
+                {};
+        protected:
+                const char *ParseTypeFilenameName(const char *Str, char *Type, char *Filename, char *Name);
 };
 
 class cPlayListRegular: public cPlayListItem {
@@ -79,10 +99,47 @@ class cPlayListRegular: public cPlayListItem {
                 char title[STR_LENGTH];
                 char album[STR_LENGTH];
                 char author[STR_LENGTH];
+
+                int duration;
         public:
                 cPlayListRegular(char *Filename,  char *Name) :
                         cPlayListItem(Filename,Name) {};
                 virtual ~cPlayListRegular() {};
+
+		virtual void Save(FILE *out);
+
+                virtual void ParseSaveLine(const char *Line){};
+
+                inline char *GetTitle() 
+                { return title; };
+
+                inline char *SetTitle( const char *const Title) { 
+                        strncpy(title,Title,STR_LENGTH);
+                        title[STR_LENGTH-1]=0;
+                };
+
+                inline char *GetAlbum()
+                { return album; };
+
+                inline char *SetAlbum( const char *const Album) {
+                        strncpy(album,Album,STR_LENGTH);
+                        album[STR_LENGTH-1]=0;
+                };
+
+                inline char *GetAuthor()
+                { return author; };
+
+                inline char *SetAuthor( const char *const Author) {
+                        strncpy(author,Author,STR_LENGTH);
+                        author[STR_LENGTH-1]=0;
+                };
+
+                inline int GetDuration()
+                { return duration; };
+
+                inline int SetDuration(int Duration) {
+                        duration=Duration;
+                };
 }; 
 
 class cEditList: public cOsdMenu {
@@ -117,7 +174,7 @@ class cPlayList : public cPlayListItem {
 	friend class cEditList;
 	friend class cReplayList;
 	
-	char ListName[STR_LENGTH];
+	//char ListName[STR_LENGTH];
 private:
         cPlayListItem *first;
         cPlayListItem *last;
@@ -126,7 +183,7 @@ private:
        
         sPlayListOptions options;
   public:
-        cPlayList(char *Filename=NULL, char *Name=NULL,
+        cPlayList(const char *Filename=NULL, const char *Name=NULL,
                         sItemIdx *shuffleIdx=NULL);
   private:
 	cPlayList(const cPlayList &List) {};
@@ -148,8 +205,8 @@ private:
                 if (!shuffleIdx) return NULL;
                 return shuffleIdx->Idx[Index].Item; 
         };
-        cPlayListItem *GetItemByName(const char *name);
-        cPlayListItem *GetAlbumByName(const char *name);
+        cPlayListItem *GetItemByFilename(const char *Filename);
+        cPlayListItem *GetAlbumByFilename(const char *Filename);
         int GetIndexByItem(const cPlayListItem *Item);
 
   private:
@@ -167,6 +224,7 @@ private:
 
         bool ScanDir(char * dirname, bool recursive = true);
         bool AddDir(char * dirname,char *Title = NULL, bool recursive = true);
+        bool AddM3U(char * Filename,char *Title = NULL);
 
 	void Shuffle();
 
@@ -176,6 +234,10 @@ private:
 	char *NextAlbumFile();
 	char *PrevAlbumFile();
 	
+	virtual void Save(FILE *out);
+	int Load(FILE *out, const char * StartLine=NULL);
+
+        int LoadM3U(const char *Filename, const char *Name);
 };
 
 class cPlOptionsMenu : public cOsdMenu {

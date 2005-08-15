@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.7 2005/08/04 15:29:32 wachm Exp $
+ * $Id: softplay.c,v 1.8 2005/08/15 07:27:42 wachm Exp $
  */
 
 
@@ -19,6 +19,8 @@
 static const char *VERSION        = "0.0.2";
 static const char *DESCRIPTION    = "SoftPlay play media files with the softdevice";
 static const char *MAINMENUENTRY  = "SoftPlay";
+
+static const char *DIR_NAME ="softplay";
 
 //#define PLUGDEB(out...)     {printf("PLUGDEB: ");printf(out...);}
 
@@ -68,15 +70,20 @@ cMenuDirectory::~cMenuDirectory()
 
 void cMenuDirectory::PrintItemName(char *Name, const struct DirEntry &Entry,int i) {
         char inPlayList=' ';
-        if (Entry.type == DT_DIR) {  
-                if (editList && editList->GetAlbumByName(Entry.name))
-                        inPlayList='P';
+        if (Entry.type == DT_DIR ) {  
+                if (editList && editList->GetAlbumByFilename(Entry.name))
+                        inPlayList='*';
 
                 snprintf(Name,60,"%4d\t%c\t[%s]",
                                 i+1,inPlayList,Entry.title);
-        } else {  
-                if (editList && editList->GetItemByName(Entry.name))
-                        inPlayList='P';
+        } else {
+                if ( IsM3UFile(Entry.name) ) {
+                        if (editList && editList->GetAlbumByFilename(Entry.name))
+                                inPlayList='*';
+                } else {  
+                        if (editList && editList->GetItemByFilename(Entry.name))
+                                inPlayList='*';
+                }
                 snprintf(Name,60,"%4d\t%c\t%s",
                                 i+1,inPlayList,Entry.title);
         };
@@ -109,7 +116,7 @@ void cMenuDirectory::PrepareDirectory(char *path)
 	  return;
   };
   Entries=new DirEntry[n];
-  nEntries=0;;
+  nEntries=0;
   
   for (int i=0; i<n; i++) {
 	  if ( !strcmp("..",namelist[i]->d_name) ||
@@ -152,10 +159,13 @@ void cMenuDirectory::PrepareDirectory(char *path)
 };
 
 eOSState cMenuDirectory::SelectEntry(int No, bool play) {
+        bool refreshAll=false;
+        
         if (No>nEntries)
                 return osContinue;
 
-        if ( Entries[No].type == DT_REG && play ) { 
+        if ( Entries[No].type == DT_REG && play
+                        && !IsM3UFile(Entries[No].name) ) { 
                 cControl::Launch(new cSoftControl(Entries[No].name));
                 return osEnd;
         };
@@ -167,22 +177,47 @@ eOSState cMenuDirectory::SelectEntry(int No, bool play) {
                 Softplay->SetTmpCurrList(PlayList);
         };
         if (Entries[No].type == DT_DIR) {
-                Item=PlayList->GetAlbumByName(Entries[No].name);
+                Item=PlayList->GetAlbumByFilename(Entries[No].name);
                 PLUGDEB("Item %p\n",Item);
                 if (!Item)
                         PlayList->AddDir(Entries[No].name,
                                         Entries[No].title,true);
                 else PlayList->RemoveItem(Item);
+        } else if (Entries[No].type == DT_REG && 
+                        IsM3UFile(Entries[No].name) ) {
+                Item=PlayList->GetAlbumByFilename(Entries[No].name);
+                PLUGDEB("Item %p\n",Item);
+                if (!Item)
+                        PlayList->AddM3U(Entries[No].name,
+                                        Entries[No].title);
+                else PlayList->RemoveItem(Item);   
+                refreshAll=true;
         } else if (Entries[No].type == DT_REG){
-                Item=PlayList->GetItemByName(Entries[No].name);
+                Item=PlayList->GetItemByFilename(Entries[No].name);
                 if (!Item)
                         PlayList->AddFile(Entries[No].name,
                                         Entries[No].title);
                 else PlayList->RemoveItem(Item);
         };
         if (play) {
+                // FIXME remove
+               Softplay->SaveList(PlayList);
                cControl::Launch(new cSoftControl(PlayList));
                return osEnd;
+        };
+
+        if (refreshAll) {
+                char Name[60];
+                int current=Current();
+                Clear();
+                //PrepareDirectory(start_path);
+                for (int i=0; i<nEntries; i++) {
+                        PrintItemName(Name, Entries[i],i);
+                        Add(new cOsdItem(strdup(Name),osUnknown),false);
+                };
+                SetCurrent(Get(current));        
+                Display();
+                return osContinue;
         };
                        
         char str[60];
@@ -215,13 +250,12 @@ eOSState cMenuDirectory::ProcessKey(eKeys Key) {
                                 break;
                         }
 		case kOk: 
-			sscanf(Get(Current())->Text(),"%d ",&No);
-			No--;
+			No=Current();
 			if (No>nEntries)
 				break;
-			if ( Entries[No].type == DT_REG ) { 
-				cControl::Launch(new cSoftControl(Entries[No].name));
-				return osEnd;
+			if ( Entries[No].type == DT_REG ) {
+                                // play current entry
+				return SelectEntry(Current(),true);
 			} else if ( Entries[No].type == DT_DIR ) { 
 				return AddSubMenu(
                                         new cMenuDirectory(Entries[No].name,
@@ -229,9 +263,11 @@ eOSState cMenuDirectory::ProcessKey(eKeys Key) {
 			};      
 			break;
 		case kGreen:
+                        // play current entry
 			state=SelectEntry(Current(),true);
                         break;
                 case kYellow: 
+                        // add / remove current entry 
                         state=SelectEntry(Current(),false);
                         break;
                 case kBlue:
@@ -318,6 +354,12 @@ cSoftPlay::cSoftPlay(void){
         currList=NULL;
 }
 
+bool cSoftPlay::Initialize(void) {
+	configDir=ConfigDirectory(DIR_NAME);
+        currList=OpenList();
+	return true;
+};
+	
 cSoftPlay::~cSoftPlay() {
         // Clean up after yourself!
         if (currList && currListIsTmp)
@@ -405,6 +447,35 @@ void cSoftPlay::SetTmpCurrList(cPlayList *List) {
         currList=List;
 };
 
+void cSoftPlay::SaveList(cPlayList *List) {
+	char filename[60];
+	sprintf(filename,"%s/%s",configDir,List->GetName());
+
+	printf("Save list as %s\n",filename);
+	FILE *out=fopen(filename,"w");
+	if (!out)
+		return;
+	List->Save(out);
+	fclose(out);
+};
+
+cPlayList *cSoftPlay::OpenList() {
+        char filename[60];
+        char line[500];
+	sprintf(filename,"%s/%s",configDir,"Liste 1");
+
+	printf("Read list from %s\n",filename);
+	FILE *out=fopen(filename,"r");
+        if (!out)
+                return NULL;
+        fgets(line,500,out);
+        
+        cPlayList *List=new cPlayList();
+	List->Load(out,line);
+	fclose(out);
+        return List;
+};
+
 VDRPLUGINCREATOR(cSoftPlay); // Don't touch this!
 
 //------------------------------------------------------------------------
@@ -446,4 +517,26 @@ void PrintCutDownString(char *str,char *orig,int len) {
         str[len-1]=0;
         PLUGDEB("before end copy %s\n",str);
 };
-                
+ 
+bool IsM3UFile( const char * const Filename) {
+        char * pos;
+        pos = rindex(Filename,'.');
+        if ( !pos )
+                return false;
+        if ( !strcmp(pos,".m3u") ) {
+                return true;
+        };
+
+        return false;
+};
+
+void chomp(const char *const str) {
+        char *pos;
+        pos = index(str,'\n');
+        if (pos)
+              *pos=0;
+        pos = index(str,'\r');
+        if (pos)
+                *pos=0;
+};
+
