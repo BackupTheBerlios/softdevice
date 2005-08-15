@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.9 2005/08/15 07:27:41 wachm Exp $
+ * $Id: PlayList.c,v 1.10 2005/08/15 08:05:15 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -95,7 +95,6 @@ void cPlayListItem::InsertSelfIntoList(cPlayListItem *Next,
 
 
 void cPlayListItem::BuildIdx(sItemIdx *ShuffleIdx) {
-        idx=ShuffleIdx->nIdx;
 };
 
 const char *cPlayListItem::ParseTypeFilenameName(const char *pos, 
@@ -200,8 +199,8 @@ eOSState cEditList::ProcessKey(eKeys Key) {
                         return AddSubMenu(new cPlOptionsMenu(playList));
                         break;
                 case kYellow:
-                        LISTDEB("Del current %d (idx: %d): %s\n",
-                                        Current(),playList->GetItem(Current())->GetIdx(),
+                        LISTDEB("Del current %d: %s\n",
+                                        Current(),
                                         playList->GetItem(Current())->GetName() );
                         playList->RemoveItem(
                                         playList->GetItem(Current()));
@@ -337,8 +336,8 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
                                 printf("No current Item %d!\n",Current());
                                 break;
                         };
-                        LISTDEB("Del current %d (idx: %d): %s\n",
-                                        Current(),Item->GetIdx(),
+                        LISTDEB("Del current %d: %s\n",
+                                        Current(),
                                         Item->GetName() );
                         playList->RemoveItem(Item);
 			//playList->CleanShuffleIdx();
@@ -522,15 +521,6 @@ void cPlayList::BuildIdx(sItemIdx *ShuffleIdx) {
 			};
 	};
         */
-};
-
-cPlayListItem *cPlayList::GetItemByIndex(int Index) {
-        
-        for (int i=0; i<shuffleIdx->nIdx;i++) 
-                if ( shuffleIdx->Idx[i].Item 
-                        && Index==shuffleIdx->Idx[i].Item->GetIdx() )
-                        return shuffleIdx->Idx[i].Item;
-        return NULL;
 };
 
 cPlayListItem *cPlayList::GetItemByFilename(const char *Filename) {

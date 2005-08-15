@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.h,v 1.7 2005/08/15 07:27:42 wachm Exp $
+ * $Id: PlayList.h,v 1.8 2005/08/15 08:05:15 wachm Exp $
  */
 
 #ifndef __PLAYLIST_H__
@@ -41,7 +41,6 @@ class cPlayListItem {
                 char name[SHORT_STR];
                 char filename[STR_LENGTH];
         protected:
-                int idx;
                 cPlayListItem *next;
                 cPlayListItem *previous;
         public:
@@ -70,12 +69,6 @@ class cPlayListItem {
         public:
                 virtual void BuildIdx(sItemIdx *shuffleIdx);
                         
-                inline int GetIdx()
-                { return idx; };
-
-                virtual cPlayListItem *GetItemByIndex(int Index)
-                {if (Index==idx) return this; else return NULL;};
-
                 virtual int GetNoItems()
                 {return 1; };
 
@@ -113,7 +106,7 @@ class cPlayListRegular: public cPlayListItem {
                 inline char *GetTitle() 
                 { return title; };
 
-                inline char *SetTitle( const char *const Title) { 
+                inline void SetTitle( const char *const Title) { 
                         strncpy(title,Title,STR_LENGTH);
                         title[STR_LENGTH-1]=0;
                 };
@@ -121,7 +114,7 @@ class cPlayListRegular: public cPlayListItem {
                 inline char *GetAlbum()
                 { return album; };
 
-                inline char *SetAlbum( const char *const Album) {
+                inline void SetAlbum( const char *const Album) {
                         strncpy(album,Album,STR_LENGTH);
                         album[STR_LENGTH-1]=0;
                 };
@@ -129,7 +122,7 @@ class cPlayListRegular: public cPlayListItem {
                 inline char *GetAuthor()
                 { return author; };
 
-                inline char *SetAuthor( const char *const Author) {
+                inline void SetAuthor( const char *const Author) {
                         strncpy(author,Author,STR_LENGTH);
                         author[STR_LENGTH-1]=0;
                 };
@@ -137,7 +130,7 @@ class cPlayListRegular: public cPlayListItem {
                 inline int GetDuration()
                 { return duration; };
 
-                inline int SetDuration(int Duration) {
+                inline void SetDuration(int Duration) {
                         duration=Duration;
                 };
 }; 
@@ -200,7 +193,6 @@ private:
 	void GetOptions(sPlayListOptions &Options)
 	{ Options=options; };
         
-        virtual cPlayListItem *GetItemByIndex(int Index);
         inline cPlayListItem *GetShuffledItemByIndex(int Index) {   
                 if (!shuffleIdx) return NULL;
                 return shuffleIdx->Idx[Index].Item; 
