@@ -3,13 +3,14 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.8 2005/08/15 07:27:42 wachm Exp $
+ * $Id: softplay.c,v 1.9 2005/08/15 09:07:30 wachm Exp $
  */
 
 
 #include "softplay.h"
 #include "SoftPlayer.h"
 #include "PlayList.h"
+#include "PlayListMenu.h"
 #include "i18n.h"
 
 #include <dirent.h>
@@ -145,7 +146,7 @@ void cMenuDirectory::PrepareDirectory(char *path)
                   };
           };
 	  
-	  // add to menu using original names
+	  // add to menu useing original names
           PrintItemName(Name, Entries[nEntries],nEntries);
 
 	  Add(new cOsdItem(strdup(Name),osUnknown),false);
@@ -201,7 +202,7 @@ eOSState cMenuDirectory::SelectEntry(int No, bool play) {
         };
         if (play) {
                 // FIXME remove
-               Softplay->SaveList(PlayList);
+               // Softplay->SaveList(PlayList);
                cControl::Launch(new cSoftControl(PlayList));
                return osEnd;
         };
@@ -325,7 +326,7 @@ eOSState cMainMenu::ProcessKey(eKeys Key) {
                                     Softplay->GetCurrList()));
             break;
 
-    case CURR_PLAYLIST: return AddSubMenu(new cEditList(*currList));
+    case CURR_PLAYLIST: return AddSubMenu(new cAlbumList(*currList));
             break;
 
     default: switch (Key) {

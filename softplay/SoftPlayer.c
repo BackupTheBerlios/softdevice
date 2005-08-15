@@ -6,11 +6,12 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.11 2005/08/08 08:39:33 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.12 2005/08/15 09:07:30 wachm Exp $
  */
 
 #include "SoftPlayer.h"
 #include "softplay.h"
+#include "PlayListMenu.h"
 
 #define PLDBG(out...) { printf("PLDBG: ");printf(out);}
 //#define PKTDBG(out...) {printf("PKTDBG: ");printf(out);}
@@ -512,7 +513,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 			if (Softplay->currList) {
 				Hide();
 				OsdActive=OsdPrivMenu;
-				privateMenu=new cEditList(Softplay->currList);
+				privateMenu=new cAlbumList(Softplay->currList);
 				privateMenu->Display();
 				return osContinue;
 			};

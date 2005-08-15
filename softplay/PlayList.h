@@ -6,13 +6,12 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.h,v 1.8 2005/08/15 08:05:15 wachm Exp $
+ * $Id: PlayList.h,v 1.9 2005/08/15 09:07:30 wachm Exp $
  */
 
 #ifndef __PLAYLIST_H__
 #define __PLAYLIST_H__
 
-#include "vdr/osdbase.h"
 #include "softplay.h"
 
 #define MAX_ITEMS   2000
@@ -135,39 +134,15 @@ class cPlayListRegular: public cPlayListItem {
                 };
 }; 
 
-class cEditList: public cOsdMenu {
-        time_t lastActivity;
-        int displayedCurrIdx;
-        cPlayList *playList;
-        public:
-        cEditList(cPlayList * List);
-        ~cEditList();
-        eOSState ProcessKey(eKeys Key);
-};
-
-class cReplayList: public cOsdMenu {
-        time_t lastActivity;
-        int displayedCurrIdx;
-        cPlayList *playList;
-	int lastListItemCount;
-        public:
-        cReplayList(cPlayList * List);
-        ~cReplayList();
-	void RebuildList();
-        eOSState ProcessKey(eKeys Key);
-        void UpdateStatus();
-};
-
 struct sPlayListOptions {
 	int shuffle;
 	int autoRepeat;
 };
 
 class cPlayList : public cPlayListItem {
-	friend class cEditList;
-	friend class cReplayList;
+//	friend class cEditList;
+//	friend class cReplayList;
 	
-	//char ListName[STR_LENGTH];
 private:
         cPlayListItem *first;
         cPlayListItem *last;
@@ -211,6 +186,9 @@ private:
         bool AddFile(char * Filename,char *Title = NULL);
 
         cPlayListItem *GetItem(int No);
+	inline cPlayListItem *GetFirst()
+	{ return first; };
+
 	int GetNoItems();
 	int GetNoItemsRecursive();
 
@@ -219,8 +197,21 @@ private:
         bool AddM3U(char * Filename,char *Title = NULL);
 
 	void Shuffle();
+	inline bool IsDirty()
+	{ return shuffleIdx ? shuffleIdx->reshuffled : 0; };
 
-        char *CurrFile();
+	inline void SetClean()
+	{ if (shuffleIdx)  shuffleIdx->reshuffled = false; };
+
+        inline int GetCurrShuffleIdx()
+	{ return shuffleIdx ? shuffleIdx->currShuffleIdx : -1; };
+        inline void SetCurrShuffleIdx(int Idx)
+	{ if (shuffleIdx) shuffleIdx->currShuffleIdx = Idx; };
+
+	inline int GetShuffleNIdx()
+	{ return shuffleIdx ? shuffleIdx->nIdx : -1; };
+	
+	char *CurrFile();
         char *NextFile();
 	char *PrevFile();
 	char *NextAlbumFile();
@@ -231,18 +222,5 @@ private:
 
         int LoadM3U(const char *Filename, const char *Name);
 };
-
-class cPlOptionsMenu : public cOsdMenu {
-        protected:
-                sPlayListOptions playListOptions;
-                sPlayListOptions *options;
-                cPlayList *playList;
-        public:
-                cPlOptionsMenu(cPlayList *PlayList);
-                cPlOptionsMenu(sPlayListOptions *Options);
-                ~cPlOptionsMenu();
-                eOSState ProcessKey(eKeys Key);
-};
-        
         
 #endif
