@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.12 2005/08/15 09:07:30 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.13 2005/08/15 13:13:14 wachm Exp $
  */
 
 #include "SoftPlayer.h"
@@ -385,7 +385,7 @@ cSoftControl::cSoftControl(cPlayList * PlayList ) :
   playList=PlayList;
   playList->PrepareForPlayback();
   SoftPlayer = dynamic_cast<cSoftPlayer*> (player);
-  char *nextfile=PlayList->NextFile();
+  const char *nextfile=PlayList->NextFile();
   if (nextfile)
 	  SoftPlayer->OpenFile(nextfile);
 };
@@ -456,7 +456,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 
 	if ( !SoftPlayer->IsRunning()  ) {
 		PLDBG("SoftPlayer not runnig. Looking for next file\n");
-                char * nextFile;
+                const char * nextFile;
                 if (!playList || !(nextFile=playList->NextFile())) {
                         PLDBG("No playlist or no next file. Ending.\n");
                         return osEnd;
@@ -469,7 +469,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
         if ( OsdActive == OsdPrivMenu  && privateMenu) {
                 state = privateMenu->ProcessKey(Key);
                 if (state == PLAY_CURR_FILE ) {
-                        char * nextFile;
+                        const char * nextFile;
                         if (!playList || !(nextFile=playList->CurrFile())) {
                                 PLDBG("No playlist or no curr file. Ending.\n");
                                 return osEnd;
@@ -553,7 +553,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 			else ShowProgress(); 
 			break;
 		case k9: if (playList) {
-				 char * nextFile=playList->NextFile();
+				 const char * nextFile=playList->NextFile();
 				 if (nextFile)
 					 SoftPlayer->PlayFile(nextFile);
                                  else {  // last file
@@ -564,14 +564,14 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
 			 };
 			 break;
 		case k7: if (playList) {
-				 char * prevFile=playList->PrevFile();
+				 const char * prevFile=playList->PrevFile();
 				 printf("play PrevFile %p\n",prevFile);
 				 if (prevFile)
 					 SoftPlayer->PlayFile(prevFile);
 			 };
 			 break;
 		case k6: if (playList) {
-				 char * nextFile=playList->NextAlbumFile();
+				 const char * nextFile=playList->NextAlbumFile();
 				 if (nextFile)
 					 SoftPlayer->PlayFile(nextFile);
                                  else {  // last file
@@ -582,7 +582,7 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
                          };
 			 break;
 		case k4: if (playList) {
-				 char * prevFile=playList->PrevAlbumFile();
+				 const char * prevFile=playList->PrevAlbumFile();
 				 if (prevFile)
 					 SoftPlayer->PlayFile(prevFile);
 			 };

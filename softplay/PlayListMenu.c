@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayListMenu.c,v 1.1 2005/08/15 09:07:30 wachm Exp $
+ * $Id: PlayListMenu.c,v 1.2 2005/08/15 13:13:14 wachm Exp $
  */
 #include "vdr/player.h"
 
@@ -99,7 +99,7 @@ cReplayList::~cReplayList() {
 };
 
 void cReplayList::RebuildList() {
-        int nItems=playList->GetNoItemsRecursive();
+        int nItems=playList->GetNIdx();
         MENUDEB("RebuildList nItems %d \n",nItems);
 
         cPlayListItem * Item;
@@ -116,9 +116,9 @@ void cReplayList::RebuildList() {
                 Add(new cOsdItem(Item->GetName(),
                    osUnknown),false);
         };
-        lastListItemCount = playList->GetNoItemsRecursive();
+        lastListItemCount = playList->GetNIdx();
 	playList->SetClean();
-        SetCurrent(Get(playList->GetCurrShuffleIdx()));
+        SetCurrent(Get(playList->GetCurrIdx()));
         lastActivity=time(NULL)-600;
 };
 
@@ -135,21 +135,21 @@ void cReplayList::UpdateStatus() {
         snprintf(Status,60,"Time %02d:%02d:%02d/%02d:%02d:%02d Title %d/%d",
                         current/3600,current/60%60,current%60,
                         total/3600,total/60%60,total%60,
-                        playList->GetCurrShuffleIdx()+1,
-			playList->GetShuffleNIdx());
+                        playList->GetCurrIdx()+1,
+			playList->GetNIdx());
         SetStatus(Status);
 
-        if (displayedCurrIdx != playList->GetCurrShuffleIdx()){
+        if (displayedCurrIdx != playList->GetCurrIdx()){
                 cPlayListItem *Item=playList->GetShuffledItemByIndex(
-                                playList->GetCurrShuffleIdx());
+                                playList->GetCurrIdx());
                 if (Item) {
                         PrintCutDownString(Name,Item->GetName(),30);
                         snprintf(Status,60,"%s: %s",playList->GetName(),
                                                 Name);
                         SetTitle(Status);
                         Display();
-                        displayedCurrIdx=playList->GetCurrShuffleIdx();
-                } else printf("Didn't get currShuffleIdx %d!\n",playList->GetCurrShuffleIdx());
+                        displayedCurrIdx=playList->GetCurrIdx();
+                } else printf("Didn't get currShuffleIdx %d!\n",playList->GetCurrIdx());
         };
 };
 
@@ -161,23 +161,23 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
         if ( Key==kUp || Key==kDown || Key==kRight || Key==kLeft ) 
                 lastActivity=time(NULL);
         
-        if (state != osUnknown ) 
-                return state;
-
-        if ( lastListItemCount != playList->GetNoItemsRecursive()
+        if ( lastListItemCount != playList->GetNIdx()
 	     || playList->IsDirty() ) {
                 Clear();
                 RebuildList();
                 Display();
         };
         
-        if (Current() != playList->GetCurrShuffleIdx() && 
-                        time(NULL) - lastActivity > 120 ) {
+        if (Current() != playList->GetCurrIdx() && 
+                        time(NULL) - lastActivity > 12 ) {
                 MENUDEB("SetCurrent current title %d  time %d lastActivity %d\n",
-                                playList->GetCurrShuffleIdx(),time(NULL),lastActivity);
-                SetCurrent(Get(playList->GetCurrShuffleIdx()));
+                                playList->GetCurrIdx(),time(NULL),lastActivity);
+                SetCurrent(Get(playList->GetCurrIdx()));
                 Display();
         };
+
+	if (state != osUnknown ) 
+		return state;
 
         cPlayListItem *Item;
         switch (Key) {
@@ -211,8 +211,7 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
                                         Current(),
                                         Item->GetName() );
                         playList->RemoveItem(Item);
-			//playList->CleanShuffleIdx();
-			lastListItemCount = playList->GetNoItemsRecursive();
+			lastListItemCount = playList->GetNIdx();
                         Del(Current());
                         Display();
                         state=osContinue;
