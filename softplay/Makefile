@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.3 2005/08/04 15:20:40 wachm Exp $
+# $Id: Makefile,v 1.4 2005/08/15 09:13:39 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -20,7 +20,7 @@ VERSION = $(shell grep 'static const char \*VERSION *=' $(PLUGIN).c | awk '{ pri
 ### The C++ compiler and options:
 
 CXX      ?= g++
-CXXFLAGS ?= -O2 -Wall -Woverloaded-virtual -L$(LIBFFMPEG) -L$(LIBFFMPEG)/libavformat -L$(LIBFFMPEG)/libavcodec -L$(LIBFFMPEG)/libavutil 
+CXXFLAGS ?= -g -O2 -Wall -Woverloaded-virtual -L$(LIBFFMPEG) -L$(LIBFFMPEG)/libavformat -L$(LIBFFMPEG)/libavcodec -L$(LIBFFMPEG)/libavutil 
 
 ### The directory environment:
 
@@ -51,7 +51,7 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = $(PLUGIN).o SoftPlayer.o PlayList.o i18n.o
+OBJS = $(PLUGIN).o SoftPlayer.o PlayList.o PlayListMenu.o i18n.o
 
 LIBS = -lavformat -lavcodec -lz
 
