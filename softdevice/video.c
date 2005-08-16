@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.27 2005/07/22 21:18:41 lucke Exp $
+ * $Id: video.c,v 1.28 2005/08/16 09:45:17 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -748,17 +748,30 @@ void cVideoOut::AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
                 PREFETCH"(%0)\n"
                 PREFETCH"(%1)\n"
                 PREFETCH"(%2)\n"
+                PREFETCH"64(%0)\n"
+                PREFETCH"64(%1)\n"
+                PREFETCH"64(%2)\n"
+                PREFETCH"128(%0)\n"
+                PREFETCH"128(%1)\n"
+                PREFETCH"128(%2)\n"
 #endif //USE_MMX2
                 : : "r" (P1), "r" (P2), "r" (alpha) : "memory");
 
         // I guess this can be further improved...
+	// Useing prefetch makes it slower on Athlon64,
+	// but faster on the Athlon Tbird...
+	// Why is prefetching slower on Athlon64????
         while (count>8 ) {
-         __asm__(
 #ifdef USE_MMX2
-                PREFETCH" 32(%0)\n"
-                PREFETCH" 32(%1)\n"
-                PREFETCH" 32(%2)\n"
+          if (! (count%8 ) )
+               __asm__(
+                  PREFETCH" 192(%0)\n"
+                  PREFETCH" 192(%1)\n"
+                  PREFETCH" 192(%2)\n"
+                  : : "r" (P1), "r" (P2), "r" (alpha) : "memory");
+
 #endif //USE_MMX2
+         __asm__(
                 "  movq  (%0),%%mm0\n"
                 "  movq  (%1),%%mm1\n"
                 "  movq  (%2),%%mm2\n"
@@ -782,7 +795,7 @@ void cVideoOut::AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
                 "  paddw %%mm1, %%mm0 \n"
                 "  paddw %%mm5, %%mm4 \n"
                 "  packuswb %%mm4, %%mm0 \n"
-                "  movq %%mm0,(%3)\n"
+                MOVQ " %%mm0,(%3)\n"
                 : : "r" (P1), "r" (P2), "r" (alpha),"r"(dest) : "memory");
                 count-=8;
                 P1+=8;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.18 2005/07/22 21:18:41 lucke Exp $
+ * $Id: video.h,v 1.19 2005/08/16 09:45:17 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -35,14 +35,17 @@
 #ifdef USE_3DNOW
 //#warning Using 3Dnow! extensions
 #define PREFETCH "prefetch "
+#define MOVQ     "movntq "
 #define EMMS     __asm__ (" femms \n": :  )
 #elif defined ( USE_MMX2 )
 //#warning Using MMX2 extensions
 #define PREFETCH "prefetchnta "
+#define MOVQ     "movntq "
 #define EMMS     __asm__ (" emms \n": :  )
 #else
 //#warning Using MMX extensions
 #define PREFETCH
+#define MOVQ     "movq "
 #define EMMS     __asm__ (" emms \n": :  )
 #endif
 
