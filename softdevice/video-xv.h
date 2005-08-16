@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.8 2005/06/28 18:07:33 lucke Exp $
+ * $Id: video-xv.h,v 1.9 2005/08/16 08:59:36 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -122,6 +122,7 @@ private:
   XvPortID          port;
   XShmSegmentInfo   shminfo, osd_shminfo;
   XvImage           *xv_image;
+  bool              useShm;
   XImage            *osd_image;
   unsigned char     *outbuffer,
                     *osd_buffer,

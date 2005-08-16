@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.31 2005/07/20 20:24:10 lucke Exp $
+ * $Id: video-xv.c,v 1.32 2005/08/16 08:59:36 wachm Exp $
  */
 
 #include <unistd.h>
@@ -208,7 +208,8 @@ void cXvPortAttributeStore::Restore()
       }
     }
   }
-  XSync(dpy,False);
+  if (portAttributes)
+    XSync(dpy,False);
 }
 
 /* ---------------------------------------------------------------------------
@@ -598,6 +599,7 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
   OSDpseudo_alpha = true;
   initialized = 0;
   toggleInProgress = 0;
+  xv_initialized=false;
   /* -------------------------------------------------------------------------
    * could be specified by argv ! TODO
    */
@@ -750,52 +752,69 @@ bool cXvVideoOut::Initialize (void)
   /* -----------------------------------------------------------------------
    * now let's do some OSD initialisations
    */
-  osd_image = XShmCreateImage (dpy,
-                               XDefaultVisual (dpy, scn_id),
-                               XDefaultDepth (dpy, scn_id),
-                               ZPixmap,NULL,
-                               &osd_shminfo,
-                               width, height);
-  if (osd_image) {
-    dsyslog("[XvVideoOut]: Initialize XShmCreateImage Successful (%p)", osd_image);
-  } else {
-    dsyslog("[XvVideoOut]: Initialize ERROR: XShmCreateImage FAILED !");
-  }
+  char *dispName=XDisplayName(NULL);
+  bool isLocal=true;
 
+  dispName=rindex(dispName,':');
+  if ( dispName && atoi(dispName + 1) > 9 )
+          isLocal = false;
+
+  useShm=XShmQueryExtension(dpy) && isLocal;
+  if (useShm) {
+          osd_image = XShmCreateImage (dpy,
+                          XDefaultVisual (dpy, scn_id),
+                          XDefaultDepth (dpy, scn_id),
+                          ZPixmap,NULL,
+                          &osd_shminfo,
+                          width, height);
+          if (osd_image) {
+                  dsyslog("[XvVideoOut]: Initialize XShmCreateImage Successful (%p)", osd_image);
+          } else {
+                  dsyslog("[XvVideoOut]: Initialize ERROR: XShmCreateImage FAILED !");
+          }
+
+          osd_shminfo.shmid = shmget (IPC_PRIVATE,
+                          osd_image->bytes_per_line*height,
+                          IPC_CREAT | 0777);
+          if (osd_shminfo.shmid == -1) {
+                  dsyslog("[XvVideoOut]: Initialize ERROR: shmget FAILED !");
+          } else {
+                  dsyslog("[XvVideoOut]: Initialize shmget Successful (%d bytes)",
+                                  osd_image->bytes_per_line*height);
+          }
+
+          osd_shminfo.shmaddr = (char *) shmat(osd_shminfo.shmid, NULL, 0);
+          osd_buffer = (unsigned char *) osd_shminfo.shmaddr;
+          osd_image->data = (char *) osd_buffer;
+
+          if (osd_image->data == (char *) -1L) {
+                  dsyslog("[XvVideoOut]: Initialize ERROR: shmat FAILED !");
+          } else {
+                  dsyslog("[XvVideoOut]: Initialize shmat Successful");
+          }
+
+          osd_shminfo.readOnly = False;
+
+          rc = XShmAttach(dpy, &osd_shminfo);
+
+          if (osd_shminfo. shmid > 0)
+                  shmctl (osd_shminfo. shmid, IPC_RMID, 0);
+  } else {
+          osd_image = XGetImage(dpy, win, 0, 0,
+                          width, height, AllPlanes,
+                          ZPixmap);
+          if (osd_image) {
+                  dsyslog("[XvVideoOut]: Initialize XGetImage Successful (%p)", osd_image);
+          } else {
+                  dsyslog("[XvVideoOut]: Initialize ERROR: XGetImage FAILED !");
+          }
+          osd_buffer = (unsigned char *) osd_image->data;
+  };
   Bpp=osd_image->bits_per_pixel;
-
-  osd_shminfo.shmid = shmget (IPC_PRIVATE,
-                              osd_image->bytes_per_line*height,
-                              IPC_CREAT | 0777);
-  if (osd_shminfo.shmid == -1) {
-    dsyslog("[XvVideoOut]: Initialize ERROR: shmget FAILED !");
-  } else {
-    dsyslog("[XvVideoOut]: Initialize shmget Successful (%d bytes)",
-            osd_image->bytes_per_line*height);
-  }
-
-  /* compile fix for gcc 3.4.3
-   */
-  osd_shminfo.shmaddr = (char *) shmat(osd_shminfo.shmid, NULL, 0);
-  osd_buffer = (unsigned char *) osd_shminfo.shmaddr;
-  osd_image->data = (char *) osd_buffer;
-
-  if (osd_image->data == (char *) -1L) {
-    dsyslog("[XvVideoOut]: Initialize ERROR: shmat FAILED !");
-  } else {
-    dsyslog("[XvVideoOut]: Initialize shmat Successful");
-  }
-
-  osd_shminfo.readOnly = False;
-
-  rc = XShmAttach(dpy, &osd_shminfo);
-
+  
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
 
   rc = XSync(dpy, False);
-
-  if (osd_shminfo. shmid > 0)
-    shmctl (osd_shminfo. shmid, IPC_RMID, 0);
 
   if (!xScreensaver)
   {
@@ -819,6 +838,8 @@ bool cXvVideoOut::Initialize (void)
     toggleFullScreen();
     setupStore->xvFullscreen=0;
   };
+
+  initialized=true;
   return true;
 }
 
@@ -935,16 +956,20 @@ bool cXvVideoOut::Reconfigure(int format)
 
   } else {
     /* Xv extension probably not present */
-    return false;
+    esyslog("[XvVideoOut]: (ERROR) no Xv extensions found! No video possible!");
+    pthread_mutex_unlock(&xv_mutex);
+    return true;
   } /* else */
 
   if(!ad_cnt) {
-    dsyslog("[XvVideoOut]: (ERROR) no adaptor found!");
-    return false;
+    esyslog("[XvVideoOut]: (ERROR) no adaptor found! No video possible!");
+    pthread_mutex_unlock(&xv_mutex);
+    return true;
   }
   if(!got_port) {
-    dsyslog("[XvVideoOut]: (ERROR) could not grab any port!");
-    return false;
+    esyslog("[XvVideoOut]: (ERROR) could not grab any port! No video possible!");
+    pthread_mutex_unlock(&xv_mutex);
+    return true;
   }
 
   attributeStore.SetXInfo(dpy,port);
@@ -1150,7 +1175,7 @@ void cXvVideoOut::Refresh(cBitmap *Bitmap)
               ToYUV(Bitmap);
             break;
     };
-    
+   
     pthread_mutex_lock(&xv_mutex);
     ++osd_refresh_counter;
     osd_x = OSDxOfs;
@@ -1236,12 +1261,19 @@ void cXvVideoOut::ShowOSD (int skip, int do_sync)
         int y= lheight > OSD_FULL_HEIGHT ? osd_y + (dheight - height) / 2:
                 lyoff + (osd_y * lheight/OSD_FULL_HEIGHT *9/10);
 
-        XShmPutImage (dpy, win, gc, osd_image,
-                      osd_x,
-                      osd_y,
-                      x,y,
-                      osd_w, osd_h,
-                      False);
+	if (useShm) 
+		XShmPutImage (dpy, win, gc, osd_image,
+				osd_x,
+				osd_y,
+				x,y,
+				osd_w, osd_h,
+				False);
+	else
+		XPutImage (dpy, win, gc, osd_image,
+				osd_x,
+				osd_y,
+				x,y,
+				osd_w, osd_h);
 
         if (do_sync)
           XSync(dpy, False);
