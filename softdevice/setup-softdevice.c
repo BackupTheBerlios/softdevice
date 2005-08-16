@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.27 2005/07/31 07:58:20 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.28 2005/08/16 09:22:18 wachm Exp $
  */
 
 #include "video.h"
@@ -317,6 +317,8 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   } else if (!strcasecmp(Name, "OSDalphablend")) {
     osdMode = atoi (Value);
     osdMode = clamp (0, osdMode, 1);
+    fprintf(stderr,"[setup-softdevice] setting alpha blend mode to %s\n",
+		    osdModeNames[osdMode]);
   } else if (!strcasecmp(Name, "Suspend")) {
     shouldSuspend = atoi (Value);
     fprintf(stderr, "[setup-softdevice] shouldSuspend to: %d\n", shouldSuspend);
