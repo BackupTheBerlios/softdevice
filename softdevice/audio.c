@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.18 2005/06/07 19:13:20 lucke Exp $
+ * $Id: audio.c,v 1.19 2005/08/17 21:27:24 lucke Exp $
  */
 
 #include <unistd.h>
@@ -201,19 +201,16 @@ void cAlsaAudioOut::Play(void) {
 }
 
 int cAlsaAudioOut::GetDelay(void) {
-	snd_pcm_status_t *status;
-	snd_pcm_status_alloca(&status);
-	int res;
-	handleMutex.Lock();
-	if ((res = snd_pcm_status(handle, status))<0) {
-    esyslog("[softdevice-audio]: GetDelay status error: %s FATAL exiting",
-            snd_strerror(res));
-		exit(EXIT_FAILURE);
-	}
-        res=snd_pcm_status_get_delay(status) *10000 /
-	  currContext.samplerate;
-	handleMutex.Unlock();
-	return res;
+    int               res = 0;
+    snd_pcm_sframes_t r;
+
+  handleMutex.Lock();
+  if (!snd_pcm_delay(handle, &r)) {
+    // successfully got delay
+    res = (long) r * 10000 / currContext.samplerate;
+  }
+  handleMutex.Unlock();
+  return res;
 }
 
 /* I/O error handler */

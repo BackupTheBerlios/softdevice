@@ -1,4 +1,7 @@
 Changelog
+2005-08-20:
+    - audio-out: changed retrieval of audio delay with newer alsa versions on
+                 "default" device. should fix bug #2971 too.
 2005-08-08:
     - dfb-out: enclose all dfb calls by try{}catch{} by Marko Mäkelä
 2005-07-31:
