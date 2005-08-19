@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.28 2005/08/16 09:45:17 wachm Exp $
+ * $Id: video.c,v 1.29 2005/08/19 09:02:05 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -521,6 +521,11 @@ void ScaleBitmap(cBitmap *Bitmap,
 
 //      printf("minPX %d, maxPX %d, minPY %d maxPY %d, weightX %d,weightYf %d \n",
 //       minPX,maxPX,minPY,maxPY,weightX,weightYf);
+      if ( i > Bitmap->Width() )
+              continue;
+      if ( j > Bitmap->Height() )
+              continue;
+                      
       adr = Bitmap->Data(i,j);
       *((uint32_t *) &pixel) = (uint32_t) Bitmap->Color(*adr);
       sumA+=weight* pixel.a;
@@ -694,7 +699,7 @@ void cVideoOut::ToYUV(cBitmap *Bitmap)
 #define SCALEY(y) ((y) * OsdHeight/OSD_FULL_HEIGHT)
 
   y1=SCALEY(y1); 
-  y2=SCALEY(y2);
+  y2=SCALEY(y2); 
   x1=SCALEX(x1);
   x2=SCALEX(x2);
   int  x0=sxoff+SCALEX(OSDxOfs+Bitmap->X0());
@@ -702,7 +707,8 @@ void cVideoOut::ToYUV(cBitmap *Bitmap)
 
   // we need a even starting point
   y1&=~1;
-  y2+=y2!=Bitmap->Height()?1:0;//FIXME funzt nicht mehr
+  y2= (y2+2) & ~1;
+  y2= ( y2 > Bitmap->Height()-1 ? Bitmap->Height()-1 : y2);
   // two rows at a time...
   for (int y = y1; y < y2; y+=2) 
   {
