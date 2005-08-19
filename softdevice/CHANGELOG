@@ -1,5 +1,7 @@
 Changelog
 2005-08-19:
+    - change #ifdefs to contain closing brackets 
+        (stops my editor from complaining...)
     - fix possible segfault in ToYUV()
 2005-08-20:
     - audio-out: changed retrieval of audio delay with newer alsa versions on

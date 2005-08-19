@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.51 2005/08/08 10:25:03 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.52 2005/08/19 09:09:22 wachm Exp $
  */
 
 #include <math.h>
@@ -1016,10 +1016,11 @@ static int read_packet_RingBuffer(void *opaque, uint8_t *buf, int buf_size) {
 };
     
 #if LIBAVFORMAT_BUILD >4625
-static offset_t seek_RingBuffer(void *opaque, offset_t offset, int whence) {
+static offset_t seek_RingBuffer(void *opaque, offset_t offset, int whence) 
 #else
-static int seek_RingBuffer(void *opaque, offset_t offset, int whence) {
+static int seek_RingBuffer(void *opaque, offset_t offset, int whence) 
 #endif
+{
      cMpeg2Decoder *Dec=(cMpeg2Decoder *)(opaque);
      if (Dec) 
        return Dec->seek(offset, whence);
@@ -1229,19 +1230,22 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     };
 #if LIBAVFORMAT_BUILD > 4628
     aout = new cAudioStreamDecoder(ic->streams[pkt.stream_index]->codec,
+                 audioOut, audioMode );
 #else
     aout = new cAudioStreamDecoder(&ic->streams[pkt.stream_index]->codec,
-#endif
                  audioOut, audioMode );
-  } else
-  if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
-#if LIBAVFORMAT_BUILD > 4628
-      ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO &&
-#else
-      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO &&
 #endif
-      VideoIdx!=pkt.stream_index) {
-
+  } else
+#if LIBAVFORMAT_BUILD > 4628
+  if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
+      ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO &&
+      VideoIdx!=pkt.stream_index) 
+#else
+  if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
+      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO &&
+      VideoIdx!=pkt.stream_index) 
+#endif
+  {
     CMDDEB("new Video stream index.. old %d new %d\n",
       VideoIdx,pkt.stream_index);
     VideoIdx=pkt.stream_index;
@@ -1252,10 +1256,11 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     };
 #if LIBAVFORMAT_BUILD > 4628
     vout = new cVideoStreamDecoder(ic->streams[pkt.stream_index]->codec,
+                   videoOut, &clock, Speed );
 #else
     vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec,
-#endif
                    videoOut, &clock, Speed );
+#endif
   };
   
   // write streams 
