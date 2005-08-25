@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.7 2005/07/16 22:33:08 lucke Exp $
+ * $Id: utils.c,v 1.8 2005/08/25 18:39:45 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -492,7 +492,7 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 		from=((const unsigned char *)from)+64;
 		to=((unsigned char *)to)+64;
 	}
-
+#if 0
 //	printf(" %d %d\n", (int)from&1023, (int)to&1023);
 	// Pure Assembly cuz gcc is a bit unpredictable ;)
 	if(i>=BLOCK_SIZE/64)
@@ -558,7 +558,7 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 				: "%"REG_a, "%ebx"
 #endif
 		);
-
+#endif
 	for(; i>0; i--)
 	{
 		__asm__ __volatile__ (
