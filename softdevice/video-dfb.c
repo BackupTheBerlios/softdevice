@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.38 2005/08/10 17:31:18 lucke Exp $
+ * $Id: video-dfb.c,v 1.39 2005/09/04 05:49:18 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -86,9 +86,9 @@ cDFBRemote::~cDFBRemote()
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBRemote::PutKey(DFBInputDeviceKeySymbol key)
+void cDFBRemote::PutKey(DFBInputDeviceKeySymbol key, bool repeat)
 {
-  Put ((int) key);
+  Put ((int) key, repeat, false);
 }
 
 /* ---------------------------------------------------------------------------
@@ -565,6 +565,9 @@ void cDFBVideoOut::ProcessEvents ()
     switch (event.type)
     {
       case DIET_KEYPRESS:
+#ifdef DFB_SUPPORTS_REPEAT
+      case DIET_KEYREPEAT:
+#endif /* DFB_SUPPORTS_REPEAT */
         if (dfbRemote)
         {
           switch (event.key_symbol)
@@ -573,10 +576,12 @@ void cDFBVideoOut::ProcessEvents ()
             case DIKS_ALTGR: case DIKS_META: case DIKS_SUPER: case DIKS_HYPER:
               break;
             default:
-              if (!setupStore->CatchRemoteKey(dfbRemote->Name(),
+              if (event.type != DIET_KEYPRESS ||
+                  !setupStore->CatchRemoteKey(dfbRemote->Name(),
                                               event.key_symbol))
               {
-                dfbRemote->PutKey(event.key_symbol);
+                dfbRemote->PutKey(event.key_symbol,
+                                  event.type != DIET_KEYPRESS);
               }
               break;
           }

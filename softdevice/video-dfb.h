@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.9 2005/06/30 21:20:55 lucke Exp $
+ * $Id: video-dfb.h,v 1.10 2005/09/04 05:49:18 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -81,7 +81,7 @@ class cDFBRemote : public cRemote, private cThread {
                   cDFBRemote(const char *Name, cDFBVideoOut *vout);
                   ~cDFBRemote();
     void          DFBRemoteStart (void);
-    void          PutKey (DFBInputDeviceKeySymbol key);
+    void          PutKey (DFBInputDeviceKeySymbol key, bool repeat);
 };
 
 #endif // VIDEO_DFB_H

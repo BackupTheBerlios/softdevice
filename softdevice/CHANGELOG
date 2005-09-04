@@ -1,9 +1,11 @@
 Changelog
+2005-09-04: softdevice-0.1.3
+    - dfb-out: applied dfb-key-repeat handling patch (by Marko Mäkelä)
 2005-08-19:
     - change #ifdefs to contain closing brackets 
         (stops my editor from complaining...)
     - fix possible segfault in ToYUV()
-2005-08-20:
+2005-08-17:
     - audio-out: changed retrieval of audio delay with newer alsa versions on
                  "default" device. should fix bug #2971 too.
 2005-08-08:
@@ -98,7 +100,7 @@ Changelog
     - fix possible segfault when called without arguments 
       (thanks to Marko Mäkelä)
     - buffering is now complety signal triggered
-    - made buffersizes variable 
+    - made buffersizes variable
 2005-05-22: softdevice-0.1.2
 2005-05-20:
     - fix possible segfault in fb-mode when resolution is smaller than

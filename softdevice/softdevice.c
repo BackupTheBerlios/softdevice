@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.39 2005/08/08 18:43:41 lucke Exp $
+ * $Id: softdevice.c,v 1.40 2005/09/04 05:49:18 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -68,7 +68,7 @@
 #include "audio.h"
 #include "mpeg2decoder.h"
 #include "utils.h"
-static const char *VERSION        = "0.1.2";
+static const char *VERSION        = "0.1.3";
 static const char *DESCRIPTION    = "A software emulated MPEG2 device";
 static const char *MAINMENUENTRY  = "Softdevice";
 
