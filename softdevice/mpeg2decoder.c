@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.52 2005/08/19 09:09:22 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.53 2005/09/06 21:55:27 lucke Exp $
  */
 
 #include <math.h>
@@ -599,11 +599,11 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
           pts = pts_values[findPTS].pts;
      };
   
-  // prepare picture for display
-  videoOut->CheckAspectDimensions(picture,context);
-  videoOut->SetOldPicture(picture,context->width,context->height);
-
   if (!hurry_up || frame % 2 ) {
+    // prepare picture for display
+    videoOut->CheckAspectDimensions(picture,context);
+    videoOut->SetOldPicture(picture,context->width,context->height);
+
     // sleep ....
     delay-=syncTimer->GetRelTime();
     MPGDEB("Frame# %-5d  aPTS: %lld offset: %d delay %d \n",frame,clock->GetPTS(),offset,delay );

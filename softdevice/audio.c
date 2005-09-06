@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.19 2005/08/17 21:27:24 lucke Exp $
+ * $Id: audio.c,v 1.20 2005/09/06 21:55:27 lucke Exp $
  */
 
 #include <unistd.h>
@@ -205,7 +205,8 @@ int cAlsaAudioOut::GetDelay(void) {
     snd_pcm_sframes_t r;
 
   handleMutex.Lock();
-  if (!snd_pcm_delay(handle, &r)) {
+  if (!snd_pcm_delay(handle, &r) &&
+      currContext.samplerate) {
     // successfully got delay
     res = (long) r * 10000 / currContext.samplerate;
   }

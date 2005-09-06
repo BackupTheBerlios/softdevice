@@ -1,4 +1,7 @@
 Changelog
+2005-09-06:
+    - video-out (all methods): fix for missing actions upon aspect ratio change
+    - audio-out: fix potentially div by zero.
 2005-09-04: softdevice-0.1.3
     - dfb-out: applied dfb-key-repeat handling patch (by Marko Mäkelä)
 2005-08-19:
