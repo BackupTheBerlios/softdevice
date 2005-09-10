@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.7 2005/07/29 20:45:40 lucke Exp $
+ * $Id: i18n.c,v 1.8 2005/09/10 16:14:36 lucke Exp $
  */
 
 #include "i18n.h"
@@ -423,7 +423,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Crop lines from left", //  1
+  { "Crop columns from left", //  1
     "",             //  2 TODO
     "",             //  3 TODO
     "",             //  4 TODO
@@ -446,7 +446,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Crop lines from right", //  1
+  { "Crop columns from right", //  1
     "",             //  2 TODO
     "",             //  3 TODO
     "",             //  4 TODO
