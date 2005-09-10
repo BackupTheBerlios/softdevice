@@ -3,11 +3,17 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.31 2005/08/08 10:25:03 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.32 2005/09/10 19:43:21 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
+
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif
+
 #include <avcodec.h>
+
 #ifdef PP_LIBAVCODEC
   #include <postproc/postprocess.h>
 #endif //PP_LIBAVCODEC

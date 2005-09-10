@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.40 2005/09/04 05:49:18 lucke Exp $
+ * $Id: softdevice.c,v 1.41 2005/09/10 19:43:21 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -27,6 +27,10 @@
 #include "video-dummy.h"
 
 #undef  VOUT_DEFAULT
+
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif
 
 #ifdef VIDIX_SUPPORT
 #include "video-vidix.h"

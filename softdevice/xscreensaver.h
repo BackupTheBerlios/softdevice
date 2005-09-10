@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: xscreensaver.h,v 1.2 2004/10/25 02:36:18 lucke Exp $
+ * $Id: xscreensaver.h,v 1.3 2005/09/10 19:43:21 lucke Exp $
  */
 #ifndef XSCREENSAVER_H
 #define XSCREENSAVER_H
@@ -11,6 +11,10 @@
 #include <X11/Xproto.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif
 
 #ifdef LIBXDPMS_SUPPORT
 

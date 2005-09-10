@@ -3,13 +3,18 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.19 2005/08/16 09:45:17 wachm Exp $
+ * $Id: video.h,v 1.20 2005/09/10 19:43:21 lucke Exp $
  */
 
 #ifndef VIDEO_H
 #define VIDEO_H
 
 #include <vdr/plugin.h>
+
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif
+
 #include "setup-softdevice.h"
 #include "sync-timer.h"
 
