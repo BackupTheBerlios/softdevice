@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.1 2005/09/10 19:54:15 lucke Exp $
+# $Id: configure,v 1.2 2005/09/11 08:22:39 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -25,6 +25,31 @@ fb_dev_name="/dev/fb0"
 with_subplugins="yes"
 with_mmx="yes"
 with_mmx2="yes"
+
+function help () {
+  echo "Usage: configure [options]"
+  echo "available options are:"
+  echo "  --disable-vidix"
+  echo "  --disable-dfb"
+  echo "  --disable-xv"
+  echo "  --with-vidix-path YOUR_VIDIX_PATH"
+  echo "  --help"
+}
+
+while [ $# -gt 0 ]
+do
+  case $1 in
+    --disable-vidix) shift; vidix="no" ;;
+    --disable-dfb) shift; dfb="no" ;;
+    --disable-xv) shift; xv="no" ;;
+    --with-vidix-path) shift;
+      vidix_path=$1 ;
+      echo "vidix path set to: $vidix_path" ;
+      shift ;;
+    --help) help; exit ;;
+    *) echo "ERROR: unknown parameter $1"; help; exit ;;
+  esac
+done
 
 #########################################################
 # start ffmpeg test
