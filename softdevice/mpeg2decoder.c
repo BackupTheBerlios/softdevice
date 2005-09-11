@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.53 2005/09/06 21:55:27 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.54 2005/09/11 09:22:30 lucke Exp $
  */
 
 #include <math.h>
@@ -576,14 +576,14 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 #endif //PP_LIBAVCODEC
 
     // do format conversions if necessary
-    if (context->pix_fmt!=PIX_FMT_YUV420P) 
+    if (context->pix_fmt!=PIX_FMT_YUV420P)
       libavcodec_img_convert();
 
     width  = context->width;
     height = context->height;
     pix_fmt = context->pix_fmt;
 
-   
+
     // find decoded pictures pts value
     int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
     while ( picture->coded_picture_number !=
@@ -598,22 +598,11 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
           picture->coded_picture_number,findPTS);
           pts = pts_values[findPTS].pts;
      };
-  
-  if (!hurry_up || frame % 2 ) {
-    // prepare picture for display
-    videoOut->CheckAspectDimensions(picture,context);
-    videoOut->SetOldPicture(picture,context->width,context->height);
 
-    // sleep ....
-    delay-=syncTimer->GetRelTime();
-    MPGDEB("Frame# %-5d  aPTS: %lld offset: %d delay %d \n",frame,clock->GetPTS(),offset,delay );
-
-    videoOut->Sync(syncTimer, &delay);
-    // display picture
-    videoOut->YUV(picture->data[0], picture->data[1],picture->data[2],
-        context->width,context->height,
-        picture->linesize[0],picture->linesize[1]);
-  } else fprintf(stderr,"+");
+  if (!hurry_up || frame % 2 )
+    videoOut->DrawVideo_420pl(syncTimer, &delay, picture,context);
+  else
+    fprintf(stderr,"+");
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
   // the A-V syncing code is partly based on MPlayer...

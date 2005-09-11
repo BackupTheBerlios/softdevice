@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.29 2005/08/19 09:02:05 wachm Exp $
+ * $Id: video.c,v 1.30 2005/09/11 09:22:30 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -94,18 +94,21 @@ void cVideoOut::Action()
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
          OsdRefreshCounter>10 && Osd_changed))
     {
-      osdMutex.Lock();
       if (old_picture)
       {
-        YUV(old_picture->data[0], old_picture->data[1], old_picture->data[2],
-            old_width,old_height,
-            old_picture->linesize[0],old_picture->linesize[1]);
+        DrawStill_420pl (old_picture->data[0],
+                         old_picture->data[1],
+                         old_picture->data[2],
+                         old_width, old_height,
+                         old_picture->linesize[0],
+                         old_picture->linesize[1]);
       }
       else
       {
-        YUV(OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight,
-            OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
+        DrawStill_420pl (OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight,
+                         OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
       }
+      osdMutex.Lock();
       Osd_changed=0;
       osdMutex.Unlock();
     }
@@ -358,10 +361,59 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
 
 /* ---------------------------------------------------------------------------
  */
+void cVideoOut::CheckArea(int w, int h)
+{
+  if (fwidth != w || fheight != h)
+  {
+    dsyslog("[VideoOut]: resolution changed: W(%d -> %d); H(%d ->%d)\n",
+             fwidth, w, fheight, h);
+    fwidth = w;
+    fheight = h;
+    aspect_changed = 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
 {
+  *delay-=syncTimer->GetRelTime();
   syncTimer->Sleep(delay,displayTimeUS);
   *delay -= syncTimer->GetRelTime();
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
+                                AVFrame *picture, AVCodecContext *context)
+{
+  areaMutex. Lock();
+  CheckAspectDimensions(picture,context);
+  SetOldPicture(picture,context->width,context->height);
+  Sync(syncTimer, delay);
+  // display picture
+  YUV(picture->data[0], picture->data[1],picture->data[2],
+      context->width,context->height,
+      picture->linesize[0],picture->linesize[1]);
+
+  /* --------------------------------------------------------------------------
+   * Unlocking could be done a bit earlier in YUV(), after video is displayed
+   * and before event processing starts. For now it is easier to do it here.
+   * Same applies for DrawStill_420pl() below.
+   */
+  areaMutex. Unlock();
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
+                                int w, int h, int yPitch, int uvPitch)
+{
+  areaMutex. Lock();
+  CheckArea(w, h);
+  // display picture
+  YUV (pY, pU, pV, w, h, yPitch, uvPitch);
+  areaMutex. Unlock();
 }
 
 #define OPACITY_THRESHOLD 0x8F

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.20 2005/09/10 19:43:21 lucke Exp $
+ * $Id: video.h,v 1.21 2005/09/11 09:22:30 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -79,7 +79,8 @@ class cWindowLayer {
 class cVideoOut: public cThread {
 private:
 protected:
-    cMutex  osdMutex;
+    cMutex  osdMutex,
+            areaMutex;
     int     OSDxOfs, OSDyOfs,
             OSDw, OSDh;
     bool    OSDpresent,
@@ -129,6 +130,11 @@ public:
     virtual void SetParValues(double displayAspect, double displayRatio);
     virtual void CheckAspect(int new_afd, float new_asp);
     virtual void CheckAspectDimensions (AVFrame *picture, AVCodecContext *context);
+    virtual void CheckArea(int w, int h);
+    virtual void DrawVideo_420pl (cSyncTimer *syncTimer, int *delay,
+                                  AVFrame *picture, AVCodecContext *context);
+    virtual void DrawStill_420pl (uint8_t *pY, uint8_t *pU, uint8_t *pV,
+                                  int w, int h, int yPitch, int uvPitch);
     virtual bool Initialize(void) {return 1;};
     virtual bool Reconfigure (int format) {return 1;};
     virtual bool GetInfo(int *fmt, unsigned char **dest,int *w, int *h) {return false;};

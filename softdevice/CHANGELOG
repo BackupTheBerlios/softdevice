@@ -1,4 +1,7 @@
 Changelog
+2005-09-11:
+    - fix for segfaults with some OSD activity
+    - introduced configure script: try ./configure --help
 2005-09-06:
     - video-out (all methods): fix for missing actions upon aspect ratio change
     - audio-out: fix potentially div by zero.
