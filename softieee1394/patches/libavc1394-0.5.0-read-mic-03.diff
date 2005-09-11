@@ -1,0 +1,842 @@
+? INSTALL
+? Makefile
+? Makefile.in
+? aclocal.m4
+? autom4te.cache
+? config.guess
+? config.h
+? config.h.in
+? config.log
+? config.status
+? config.sub
+? configure
+? depcomp
+? dv.1999.mic
+? dv.2005-schule.mic
+? dv.2005-stl.mic
+? install-sh
+? libavc1394.pc
+? libavc1394.spec
+? libtool
+? missing
+? mkinstalldirs
+? stamp-h1
+? common/.deps
+? common/.libs
+? common/Makefile
+? common/Makefile.in
+? common/libraw1394util.la
+? common/raw1394util.lo
+? libavc1394/.deps
+? libavc1394/.libs
+? libavc1394/Makefile
+? libavc1394/Makefile.in
+? libavc1394/avc1394_internal.lo
+? libavc1394/avc1394_simple.lo
+? libavc1394/avc1394_vcr.lo
+? libavc1394/libavc1394.la
+? librom1394/.deps
+? librom1394/.libs
+? librom1394/Makefile
+? librom1394/Makefile.in
+? librom1394/librom1394.la
+? librom1394/rom1394_internal.lo
+? librom1394/rom1394_main.lo
+? test/.deps
+? test/.libs
+? test/Makefile
+? test/Makefile.in
+? test/avc_vcr
+? test/dvcont
+? test/mkrfc2734
+? test/romtest
+? test/setrom
+Index: bootstrap
+===================================================================
+RCS file: /cvsroot/libavc1394/libavc1394/bootstrap,v
+retrieving revision 1.2
+diff -U3 -r1.2 bootstrap
+--- bootstrap	23 Apr 2003 05:04:06 -0000	1.2
++++ bootstrap	11 Sep 2005 20:03:33 -0000
+@@ -1,7 +1,7 @@
+ #! /bin/sh
+ aclocal \
++&& libtoolize --automake \
+ && autoheader \
+ && automake --gnu --add-missing --copy \
+-&& autoconf \
+-&& libtoolize --force --copy
++&& autoconf
+ 
+Index: libavc1394/avc1394.h
+===================================================================
+RCS file: /cvsroot/libavc1394/libavc1394/libavc1394/avc1394.h,v
+retrieving revision 1.5
+diff -U3 -r1.5 avc1394.h
+--- libavc1394/avc1394.h	11 Jan 2005 02:51:01 -0000	1.5
++++ libavc1394/avc1394.h	11 Sep 2005 20:03:35 -0000
+@@ -329,6 +329,14 @@
+ #define AVC1394_VCR_OPERAND_TRANSPORT_STATE 0x7F
+ #define AVC1394_VCR_OPERAND_RECORDING_TIME_STATUS 0x71
+ 
++#define AVC1394_VCR_OPERAND_ABSOLUTE_TRACK_NUMBER_SEEK    0x20
++#define AVC1394_VCR_OPERAND_ABSOLUTE_TRACK_NUMBER_STATUS  0x71
++
++#define AVC1394_VCR_OPERAND_MIC_CLOSE       0x00
++#define AVC1394_VCR_OPERAND_MIC_READ_OPEN   0x01
++#define AVC1394_VCR_OPERAND_MIC_STATE       0xFF
++#define AVC1394_VCR_OPERAND_MIC_WRITE_OPEN  0x03
++
+ /* recording speed */
+ #define AVC1394_VCR_OPERAND_RECORDING_SPEED_STANDARD 0x6F
+ 
+@@ -367,6 +375,34 @@
+ #define AVC1394_TUNER_COMMAND_CA_ENABLE 0xCC
+ #define AVC1394_TUNER_COMMAND_AVC1394_TUNER_STATUS 0xCD
+ 
++#define MAX_MIC_SIZE      (64*1024)
++#define MIC_HEADER_SIZE   16
++#define MIC_ADDINFO_SIZE  10
++#define MIC_ENTRY_SIZE    10
++
++#define MIC_TAG_ATN       0x0B
++#define MIC_TAG_NAME      0x18
++#define MIC_TAG_INFO      0x42
++
++#define MIC_TAG_INFO_DT         0x00
++#define MIC_TAG_INFO_TAPE_NAME  0x06
++#define MIC_TAG_INFO_NONE       0x07
++
++typedef struct {
++  int atn;
++  int year;
++  int day;
++  int hour;
++  int minute;
++} t_mic_jump_mark;
++
++typedef struct {
++  int uatn;
++  int eom_atn;
++  t_mic_jump_mark jump_mark[(MAX_MIC_SIZE-(MIC_HEADER_SIZE+MIC_ADDINFO_SIZE)) /
++                            MIC_ENTRY_SIZE];
++} t_mic_directory;
++
+ enum avc1394_measurement_unit {
+     AVC1394_VCR_MEASUREMENT_VIDEO_FRAME = 0,
+     AVC1394_VCR_MEASUREMENT_VIDEO_SCENE,
+@@ -396,7 +432,11 @@
+ avc1394_transaction_block(raw1394handle_t handle, nodeid_t node,
+ 	quadlet_t *buf, int len, int retry);
+ 
+-int 
++quadlet_t *
++avc1394_transaction_block_byte(raw1394handle_t handle, nodeid_t node,
++	quadlet_t *buf, int len, int retry);
++
++int
+ avc1394_open_descriptor(raw1394handle_t handle, nodeid_t node,
+ 	quadlet_t ctype, quadlet_t subunit,
+ 	unsigned char *descriptor_identifier, int len_descriptor_identifier,
+Index: libavc1394/avc1394_internal.c
+===================================================================
+RCS file: /cvsroot/libavc1394/libavc1394/libavc1394/avc1394_internal.c,v
+retrieving revision 1.4
+diff -U3 -r1.4 avc1394_internal.c
+--- libavc1394/avc1394_internal.c	24 Nov 2002 06:01:17 -0000	1.4
++++ libavc1394/avc1394_internal.c	11 Sep 2005 20:03:35 -0000
+@@ -25,6 +25,7 @@
+ #include <string.h>
+ 
+ unsigned char g_fcp_response[MAX_RESPONSE_SIZE];
++int           g_fcp_response_length;
+ 
+ void htonl_block(quadlet_t *buf, int len)
+ {
+@@ -67,9 +68,11 @@
+                     size_t length, unsigned char *data)
+ {
+     if ( response && length > 3 )
+-	{
+-		if ( *((quadlet_t*)data) != 0 ) 
+-			memcpy(g_fcp_response, data, length);
++    {
++      if ( *((quadlet_t*)data) != 0 ) {
++        g_fcp_response_length = length;
++        memcpy(g_fcp_response, data, length);
++      }
+     }
+ 
+     return 0;
+Index: libavc1394/avc1394_simple.c
+===================================================================
+RCS file: /cvsroot/libavc1394/libavc1394/libavc1394/avc1394_simple.c,v
+retrieving revision 1.12
+diff -U3 -r1.12 avc1394_simple.c
+--- libavc1394/avc1394_simple.c	10 Jul 2004 00:50:47 -0000	1.12
++++ libavc1394/avc1394_simple.c	11 Sep 2005 20:03:36 -0000
+@@ -43,6 +43,7 @@
+ #include <sys/poll.h>
+ #include <unistd.h>
+ #include <time.h>
++#include <ctype.h>
+ 
+ #include <string.h>
+ #include <netinet/in.h>
+@@ -50,6 +51,7 @@
+ #include <stdio.h>	//DEBUG
+ 
+ extern unsigned char g_fcp_response[];
++extern int           g_fcp_response_length;
+ 
+ int avc1394_send_command(raw1394handle_t handle, nodeid_t node, quadlet_t command)
+ {
+@@ -69,6 +71,16 @@
+                             command_len*4, command);
+ }
+ 
++int avc1394_send_command_block2(raw1394handle_t handle, nodeid_t node,
++                           quadlet_t *command, int command_len)
++{
++
++    htonl_block(command, command_len);
++
++    return cooked1394_write(handle, 0xffc0 | node, FCP_COMMAND_ADDR,
++                            command_len, command);
++}
++
+ 
+ /*
+  * Send an AV/C request to a device, wait for the corresponding AV/C
+@@ -197,17 +209,84 @@
+ 			fprintf(stderr, " (%s)\n", decode_response(response[0]));
+         }
+ #endif
+-		
++
+ 		if (response != 0) {
+ 			stop_avc_response_handler(handle);
+ 			return response;
+ 		}
+     } while (--retry >= 0);
+-	
++
+     stop_avc_response_handler(handle);
+     return NULL;
+ }
+ 
++quadlet_t *avc1394_transaction_block_byte(raw1394handle_t handle, nodeid_t node,
++                                 quadlet_t *buf, int len, int retry)
++{
++
++    quadlet_t *response = NULL;
++    struct pollfd raw1394_poll;
++    raw1394_poll.fd = raw1394_get_fd(handle);
++    raw1394_poll.events = POLLIN;
++
++  init_avc_response_handler(handle);
++
++  do {
++    if (avc1394_send_command_block2(handle, node, buf, len) < 0) {
++         struct timespec ts = {0, AVC1394_SLEEP};
++      fprintf(stderr,"send oops\n");
++      nanosleep(&ts, NULL);
++      continue;
++    }
++
++    if ( poll( &raw1394_poll, 1, AVC1394_POLL_TIMEOUT) > 0 ) {
++      if (raw1394_poll.revents & POLLIN) {
++        raw1394_loop_iterate(handle);
++        response = (quadlet_t *)g_fcp_response;
++        ntohl_block(response, 1);
++      }
++    }
++    if (response != NULL) {
++      while (AVC1394_MASK_RESPONSE(response[0]) == AVC1394_RESPONSE_INTERIM) {
++#ifdef DEBUG
++        fprintf(stderr,"INTERIM\n");
++#endif
++        if ( poll( &raw1394_poll, 1, AVC1394_POLL_TIMEOUT) > 0 ) {
++          if (raw1394_poll.revents & POLLIN) {
++            raw1394_loop_iterate(handle);
++            response = (quadlet_t *)g_fcp_response;
++            ntohl_block(response, 1);
++          }
++        }
++      }
++    }
++
++#ifdef DEBUG
++    if (response != NULL) {
++        int i;
++      fprintf(stderr, "avc1394_transaction_block_byte received response: \n");
++      for (i=0; i<g_fcp_response_length; i++)
++        fprintf(stderr, "%02X ",
++        g_fcp_response[i]);
++      fprintf(stderr, " (%s)\n", decode_response(response[0]));
++
++      for (i=0; i<g_fcp_response_length; i++)
++        fprintf(stderr, " %c ",
++        isprint(g_fcp_response[i]) ? g_fcp_response[i]:'.');
++      fprintf(stderr, " (%s)\n", decode_response(response[0]));
++    }
++#endif
++
++    if (response != 0) {
++      stop_avc_response_handler(handle);
++      return response;
++    }
++  } while (--retry >= 0);
++
++  stop_avc_response_handler(handle);
++  return NULL;
++}
++
+ /*---------------------
+  * HIGH-LEVEL-FUNCTIONS
+  * --------------------
+Index: libavc1394/avc1394_vcr.c
+===================================================================
+RCS file: /cvsroot/libavc1394/libavc1394/libavc1394/avc1394_vcr.c,v
+retrieving revision 1.7
+diff -U3 -r1.7 avc1394_vcr.c
+--- libavc1394/avc1394_vcr.c	10 Jul 2004 16:07:08 -0000	1.7
++++ libavc1394/avc1394_vcr.c	11 Sep 2005 20:03:37 -0000
+@@ -22,6 +22,7 @@
+ #include <unistd.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include "avc1394_vcr.h"
+ #include "avc1394.h"
+ 
+@@ -178,7 +179,7 @@
+ {
+     quadlet_t request[2];
+ 	if (avc1394_vcr_is_playing(handle, node)) {
+-	    request[0] = CTLVCR0 | AVC1394_VCR_COMMAND_FORWARD | 
++	    request[0] = CTLVCR0 | AVC1394_VCR_COMMAND_FORWARD |
+ 	        AVC1394_VCR_MEASUREMENT_INDEX;
+ 	    request[1] = 0x01FFFFFF;
+ 		avc1394_send_command_block(handle, node, request, 2);
+@@ -302,12 +303,12 @@
+ {
+     quadlet_t  request[2];
+     quadlet_t *response;
+-        
+-    request[0] = STATVCR0 | AVC1394_VCR_COMMAND_TIME_CODE | 
++
++    request[0] = STATVCR0 | AVC1394_VCR_COMMAND_TIME_CODE |
+         AVC1394_VCR_OPERAND_TIME_CODE_STATUS;
+     request[1] = 0xFFFFFFFF;
+     response = avc1394_transaction_block( handle, node, request, 2, AVC1394_RETRY);
+-    if (response == NULL) 
++    if (response == NULL)
+ 		return -1;
+ 
+     // consumer timecode format
+@@ -316,7 +317,7 @@
+         (response[1] >> 8) & 0x000000ff,
+         (response[1] >> 16) & 0x000000ff,
+         (response[1] >> 24) & 0x000000ff);
+-    
++
+     return 0;
+ }
+ 
+@@ -327,18 +328,339 @@
+ {
+     quadlet_t  request[2];
+ 	unsigned int hh,mm,ss,ff;
+-        
+-    request[0] = CTLVCR0 | AVC1394_VCR_COMMAND_TIME_CODE | 
++
++    request[0] = CTLVCR0 | AVC1394_VCR_COMMAND_TIME_CODE |
+         AVC1394_VCR_OPERAND_TIME_CODE_CONTROL;
+ 
+     // consumer timecode format
+     sscanf(timecode, "%2x:%2x:%2x:%2x", &hh, &mm, &ss, &ff);
+-	request[1] = 
++	request[1] =
+ 		((ff & 0x000000ff) << 24) |
+ 		((ss & 0x000000ff) << 16) |
+ 		((mm & 0x000000ff) <<  8) |
+ 		((hh & 0x000000ff) <<  0) ;
+ 	printf("timecode: %08x\n", request[1]);
+-    
++
+     avc1394_send_command_block( handle, node, request, 2);
+ }
++
++/* ----------------------------------------------------------------------------
++ */
++void
++avc1394_vcr_seek_atn(raw1394handle_t handle, nodeid_t node,
++                     int atn, int mt, int mtd, int sfbf)
++{
++    quadlet_t request[2];
++    quadlet_t *response;
++
++  request[0] = CTLVCR0 |
++                AVC1394_VCR_COMMAND_ABSOLUTE_TRACK_NUMBER |
++                AVC1394_VCR_OPERAND_ABSOLUTE_TRACK_NUMBER_SEEK;
++
++  if (mt == 0x1f) {
++    atn <<= 1;
++    atn |= (sfbf & 1);
++    request[1] = (atn << 24) |
++                 ((atn & 0x0000ff00) << 8) |
++                 ((atn & 0x00ff0000) >> 8) |
++                 (mt << 3) |
++                 (mtd & 7);
++  } else if (mt == 0x01) {
++  ;
++  } else {
++    return;
++  }
++  response = avc1394_transaction_block( handle, node, request, 2, AVC1394_RETRY);
++}
++
++/* ----------------------------------------------------------------------------
++ */
++int
++avc1394_vcr_get_atn(raw1394handle_t handle, nodeid_t node,
++                    int *atn, int *mt, int *mtd, int *sfbf)
++{
++    quadlet_t request[2];
++    quadlet_t *response;
++
++  request[0] = STATVCR0 |
++                AVC1394_VCR_COMMAND_ABSOLUTE_TRACK_NUMBER |
++                AVC1394_VCR_OPERAND_ABSOLUTE_TRACK_NUMBER_STATUS;
++  request[1] = 0xFFFFFFFF;
++
++  response = avc1394_transaction_block( handle, node, request, 2, AVC1394_RETRY);
++  if (response == NULL)
++    return -1;
++
++  *mt = (response[1] & 0x000000F8) >> 3;
++  *mtd = response[1] & 0x00000007;
++  if (*mt == 0x1F) {
++    *atn = (response[1] & 0xff000000) >> 24 |
++           (response[1] & 0x00ff0000) >>  8 |
++           (response[1] & 0x0000ff00) <<  8;
++    *atn >>= 1; /* shift out bf flag */
++    *sfbf = (response[1] & 0x01000000) >> 24;
++    /* to get the real tape position in h:mm:ss:ff, calculation depends
++     * on PAL/NTSC
++     * for PAL: *atn /= 12; for NTSC *atn /= 10 (number of DIF sequences ?)
++     * *atn /= fps (25 or 30) to get the absolute frame number on tape
++     */
++  } else if (*mt == 0x01) {
++    *atn = (response[1] & 0x3f000000) >> 23 | /* ignore sf flag */
++           (response[1] & 0x00ff0000) >>  7 |
++           (response[1] & 0x0000ff00) >>  7;
++    *sfbf = (response[1] & 0xC0000000) >> 30;
++  } else {
++    return -2;
++  }
++
++  fprintf(stderr," ATN_raw = 0x%08x\n", response[1]);
++  return 0;
++}
++
++/* ----------------------------------------------------------------------------
++ */
++int
++avc1394_vcr_get_mic_status(raw1394handle_t handle, nodeid_t node)
++{
++    quadlet_t response;
++  /* --------------------------------------------------------------------------
++   * check current status of MIC
++   */
++  response = avc1394_transaction(handle, node,
++                                 STATVCR0 |
++                                    AVC1394_VCR_COMMAND_OPEN_MIC |
++                                    AVC1394_VCR_OPERAND_MIC_STATE,
++                                 AVC1394_RETRY);
++
++  fprintf (stderr, "MIC status = %02x \n", AVC1394_GET_OPERAND0(response));
++  return AVC1394_GET_OPERAND0(response);
++}
++
++int
++avc1394_vcr_mic_open_read(raw1394handle_t handle, nodeid_t node)
++{
++    quadlet_t response;
++  /* --------------------------------------------------------------------------
++   * open mic for read access
++   */
++  response = avc1394_transaction(handle, node,
++                                 CTLVCR0 |
++                                    AVC1394_VCR_COMMAND_OPEN_MIC |
++                                    AVC1394_VCR_OPERAND_MIC_READ_OPEN,
++                                 AVC1394_RETRY);
++
++  fprintf (stderr, "MIC open read status = %02x \n",
++           AVC1394_GET_OPERAND0(response));
++  return AVC1394_GET_OPERAND0(response);
++}
++
++int
++avc1394_vcr_mic_close(raw1394handle_t handle, nodeid_t node)
++{
++    quadlet_t response;
++  /* --------------------------------------------------------------------------
++   * close mic
++   */
++  response = avc1394_transaction(handle, node,
++                                 CTLVCR0 |
++                                    AVC1394_VCR_COMMAND_OPEN_MIC |
++                                    AVC1394_VCR_OPERAND_MIC_CLOSE,
++                                 AVC1394_RETRY);
++
++  fprintf (stderr, "MIC close status = %02x \n", AVC1394_GET_OPERAND0(response));
++  return AVC1394_GET_OPERAND0(response);
++}
++
++void
++avc1394_make_atn (unsigned char *p)
++{
++}
++
++void
++avc1394_mic_atn2str(unsigned char *p, char *strP, char *strN)
++{
++    int atn = 0;
++
++  if (*(p + 4) >> 3 == 0x1f) {
++    atn = (*(p+1) | *(p+2) << 8 | *(p+3) << 16) >> 1;
++  } else if (*(p + 4) >> 3 == 0x1f) {
++    atn = (*(p+3) << 1 | *(p+2) << 9 | (*(p+1) & 0x3f) << 17);
++  }
++  sprintf (strP,
++           "%02d:%02d:%02d.%02d",
++           (atn / (12 * 25 * 60 * 60)) % 24,
++           (atn / (12 * 25 * 60)) % 60,
++           (atn / (12 * 25)) % 60,
++           (atn / 12) % 25);
++  sprintf (strN,
++           "%02d:%02d:%02d.%02d",
++           (atn / (10 * 30 * 60 * 60)) % 24,
++           (atn / (10 * 30 * 60)) % 60 ,
++           (atn / (10 * 30) % 60),
++           (atn / 10) % 30);
++}
++
++void
++avc1394_mic_datetime2str(unsigned char *p, char *d, char *t)
++{
++  sprintf (d,
++           "%02d-%02d-%02d",
++           (*(p+3) & 0xE0) >> 1 | (*(p+4) & 0xF0) >> 4,
++           *(p+4) & 0x0f,
++           *(p+3) & 0x1f);
++  sprintf (t,
++           "%02d:%02d",
++           *(p+2) & 0x1F,
++           *(p+1) & 0x3F);
++}
++
++/*
++ */
++int
++avc1394_vcr_parse_mic_info (unsigned char *mic_data, int len, int prt)
++{
++    unsigned char *p;
++    int           l,
++                  marker;
++    char          buf1 [16],
++                  buf2 [16];
++
++
++  if (prt)
++    fprintf(stderr, "MIC info start\n");
++  p = mic_data;
++  l = len;
++  /* check header */
++
++  p += 11;
++  l -= 11;
++  /* get tape end ATN */
++  if (l < len && *p == 0x1F) {
++    if ((len - l) > 5) {
++      if (prt) {
++        avc1394_mic_atn2str (p, buf1, buf2);
++        fprintf (stderr, "  tape end : %s\n", buf1);
++      }
++    }
++    p += 5; l -= 5;
++  }
++
++  p += 5; l -= 5;
++
++  marker = 1;
++  while (l < len && *p == 0x0b) {
++    if ((len-l) > 10) {
++      if (prt) {
++        avc1394_mic_atn2str (p, buf1, buf2);
++        fprintf (stderr, "  %2d.      : %s ", marker, buf1);
++      }
++      p += 5; l -= 5;
++      if (*p == 0x42) {
++        if (prt) {
++          avc1394_mic_datetime2str(p, buf1, buf2);
++          fprintf (stderr, "%s %s\n", buf1, buf2);
++        }
++      } else {
++        if (prt) {
++          fprintf(stderr,"\n");
++        }
++      }
++      marker++;
++      p += 5; l -= 5;
++      continue;
++    }
++    p++; l--;
++  }
++  if (l < len && *p == 0x18) {
++    if (prt) {
++      fprintf (stderr,"  tape name: %*.*s\n", *(p+1),*(p+1), p+4);
++    }
++  }
++  if (prt)
++    fprintf(stderr, "MIC info done!\n");
++  return 0;
++}
++
++/* Get all data from mic */
++void
++avc1394_vcr_get_mic_info(raw1394handle_t handle, nodeid_t node,
++                         unsigned char **mic_data, int *datalen)
++{
++    int           i,
++                  addr,
++                  count;
++    unsigned char buf[MAX_MIC_SIZE],
++                  *p;
++    quadlet_t     request[512],
++                  *response;
++
++  if (mic_data) {
++    if (*mic_data) {
++      free(*mic_data);
++    }
++    *mic_data = NULL;
++  }
++  if (datalen) {
++    *datalen = 0;
++  }
++
++  count = 0;
++
++  avc1394_vcr_get_mic_status (handle, node);
++
++  /* --------------------------------------------------------------------------
++   * next steps are:
++   * - open mic for read only
++   * - read all mic data
++   * - close mic
++   */
++  avc1394_vcr_mic_open_read (handle, node);
++  avc1394_vcr_get_mic_status (handle, node);
++  for (i = 0, addr = 0; i < 34; i++) {
++    request[0] = CTLVCR0 | AVC1394_VCR_COMMAND_READ_MIC | 0x30;
++    request[1] = addr << 16;
++    response = avc1394_transaction_block_byte(handle, node,
++                                              request, 6, AVC1394_RETRY);
++    if (response) {
++      if (AVC1394_MASK_RESPONSE(*response) != AVC1394_RESPONSE_ACCEPTED)
++        break;
++      p = (unsigned char *) response;
++      memcpy (buf+addr, p+6, AVC1394_MASK_RESPONSE_OPERAND(*response,3));
++      count += AVC1394_MASK_RESPONSE_OPERAND(*response,3);
++      addr += AVC1394_MASK_RESPONSE_OPERAND(*response,3);
++    }
++  }
++  fprintf (stderr, " got %d bytes from MIC\n", count);
++  if (count) {
++    if (datalen) {
++      *datalen = count;
++    }
++    if (mic_data) {
++      if ((*mic_data = malloc (count))) {
++        memcpy (*mic_data, buf, count);
++      }
++    }
++  }
++
++  avc1394_vcr_mic_close (handle, node);
++  //avc1394_vcr_get_mic_status (handle, node);
++}
++
++void
++avc1394_vcr_medium_info(raw1394handle_t handle, nodeid_t node,
++                         unsigned char *medium_info, unsigned char *medium_type)
++{
++    unsigned char *p;
++    quadlet_t     request[2],
++                  *response;
++
++  request[0] = STATVCR0 | AVC1394_VCR_COMMAND_MEDIUM_INFO | 0x7F;
++  request[1] = 0x7F000000;
++  response = avc1394_transaction_block_byte(handle, node,
++                                            request, 5, AVC1394_RETRY);
++  if (response) {
++      p = (unsigned char *) response;
++
++    fprintf(stderr," -- type(%02x) grade(%02x)\n", p[0], p[4]);
++  }
++}
+Index: libavc1394/avc1394_vcr.h
+===================================================================
+RCS file: /cvsroot/libavc1394/libavc1394/libavc1394/avc1394_vcr.h,v
+retrieving revision 1.5
+diff -U3 -r1.5 avc1394_vcr.h
+--- libavc1394/avc1394_vcr.h	10 Jul 2004 16:07:08 -0000	1.5
++++ libavc1394/avc1394_vcr.h	11 Sep 2005 20:03:37 -0000
+@@ -113,6 +113,17 @@
+ void
+ avc1394_vcr_seek_timecode(raw1394handle_t handle, nodeid_t node, char *timecode);
+ 
++void
++avc1394_vcr_get_mic_info(raw1394handle_t handle, nodeid_t node,
++                         unsigned char **mic_data, int *datalen);
++
++int
++avc1394_vcr_get_atn(raw1394handle_t handle, nodeid_t node,
++                    int *atn, int *mt, int *mtd, int *sfbf);
++
++void
++avc1394_vcr_seek_atn(raw1394handle_t handle, nodeid_t node,
++                     int atn, int mt, int mtd, int sfbf);
+ #ifdef __cplusplus
+ }
+ #endif
+Index: test/dvcont.c
+===================================================================
+RCS file: /cvsroot/libavc1394/libavc1394/test/dvcont.c,v
+retrieving revision 1.13
+diff -U3 -r1.13 dvcont.c
+--- test/dvcont.c	17 Feb 2005 15:20:46 -0000	1.13
++++ test/dvcont.c	11 Sep 2005 20:03:38 -0000
+@@ -8,9 +8,9 @@
+  *
+  * This code is based off a GNU project called gscanbus by Andreas Micklei
+  * -- Thanks Andreas for the great code! --
+- * 
++ *
+  * Thanks to Dan Dennedy for patching this version to get it to work
+- * with his camera.  (Panasonic PV-DV910) 
++ * with his camera.  (Panasonic PV-DV910)
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -44,6 +44,27 @@
+ 
+ #define version "Version 0.4"
+ 
++unsigned char demo_mic[512] =
++  {
++0x1F, 0x00, 0xE4, 0x1F, 0x00, 0x70, 0x01, 0x01, 0xF5, 0x20, 0xFF, 0x1F, 0xA1, 0xBB, 0x01, 0xFF,
++0x0B, 0xA1, 0xBB, 0x01, 0xF7, 0x0B, 0x01, 0x00, 0x00, 0xF8, 0x42, 0x86, 0xE9, 0x09, 0x54, 0x0B,
++0x89, 0x64, 0x01, 0xF8, 0x42, 0xAF, 0xF4, 0x03, 0x55, 0x18, 0x09, 0xFE, 0x42, 0x53, 0x54, 0x4C,
++0x27, 0x53, 0x20, 0x54, 0x45, 0x53, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++  };
++int           demo_mic_len = 512;
++
+ void show_help() {
+ 
+ printf("\n--- DVCONT HELP ---");
+@@ -71,6 +92,9 @@
+ printf("\nhelp - Tell the program to show you this screen");
+ printf("\ndev <number> - Select device number on chain to use.");
+ printf("\n               (use the dev command BEFORE any other commands)");
++printf("\nmic      - read out MIC eeprom of cassete if present");
++printf("\natn      - read out ATN Absolute Track Number (position of tape)");
++printf("\natn_seek - seek to given ATN");
+ printf("\n\n");
+ 
+ }
+@@ -84,7 +108,7 @@
+     int i, j;
+ 	int speed;
+ 	char timecode[12];
+-
++avc1394_vcr_parse_mic_info (demo_mic, demo_mic_len, 1);
+ 	if (argc < 2)
+ 	{
+ 		show_help();
+@@ -176,7 +200,7 @@
+ 	    
+ 	    } else if (strcmp("pause", argv[i]) == 0) {
+ 		    avc1394_vcr_pause(handle, device);
+-	    
++
+ 	    } else if (strcmp("record", argv[i]) == 0) {
+     		avc1394_vcr_record(handle, device);
+ 	    
+@@ -246,9 +270,50 @@
+ 				fprintf(stderr, "pluginfo: 0x%08X 0x%08X\n", response[0], response[1]);
+ #endif
+ 			}
++		} else if (strcmp("mic", argv[i]) == 0) {
++				unsigned char *mic_data = NULL;
++				int           len = 0;
++
++			avc1394_vcr_get_mic_info (handle, device,
++			                          &mic_data, &len);
++			avc1394_vcr_parse_mic_info (mic_data, len, 1);
++		} else if (strcmp("atn", argv[i]) == 0) {
++				int atn, med, med_dep, sfbf;
++			if (avc1394_vcr_get_atn (handle, device, &atn, &med, &med_dep, &sfbf) == 0)
++			{
++				fprintf (stderr,
++				         "atn = %08x, "
++				          "(tape position [PAL/NTSC] = "
++				              "%02d:%02d:%02d:%02d/%02d:%02d:%02d:%02d) "
++				          "media = %s, (%sontigous numbers)\n",
++				         atn,
++				         (atn / (12 * 25 * 60 * 60)) % 24,
++				         (atn / (12 * 25 * 60)) % 60,
++				         (atn / (12 * 25)) % 60,
++				         (atn / 12) % 25,
++				         (atn / (10 * 30 * 60 * 60)) % 24,
++				         (atn / (10 * 30 * 60)) % 60 ,
++				         (atn / (10 * 30) % 60),
++				         (atn / 10) % 30,
++				         (med == 0x1f) ? "DVCR" :
++				            (med == 0x01) ? "D-VHS": "unknown",
++				         (!sfbf) ? "NOT C" : "C");
++			}
++		} else if (strcmp("atn_seek", argv[i]) == 0) {
++				int atn, mt, mtd, sfbf;
++			atn = 0x00005160;
++			mt  = 0x1f;
++			mtd = 7;
++			sfbf = 1;
++			avc1394_vcr_seek_atn (handle, device,
++			                      atn, mt, mtd, sfbf);
++		} else if (strcmp("medium", argv[i]) == 0) {
++				unsigned char m, g;
++			avc1394_vcr_medium_info (handle, device, &m, &g);
++fprintf(stderr, "----\n");     
+ 		}
+ 	}
+-		
++
+     raw1394_destroy_handle(handle);
+ 	return 0;
+ }
