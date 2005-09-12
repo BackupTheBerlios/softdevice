@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: avc-handler.h,v 1.1 2005/05/01 22:05:08 lucke Exp $
+ * $Id: avc-handler.h,v 1.2 2005/09/12 12:17:07 lucke Exp $
  */
 
 #ifndef AVC_HANDLER_H
@@ -33,6 +33,8 @@ private:
                       generation;
     octlet_t          deviceId[MAX_IEEE1394_DEVICES];
     bool              active;
+    int               micSize[MAX_IEEE1394_DEVICES];
+    unsigned char     *micData[MAX_IEEE1394_DEVICES];
     rom1394_directory romDirs[MAX_IEEE1394_DEVICES];
     raw1394handle_t   handle;
     cMutex            avcMutex;
@@ -47,7 +49,10 @@ public:
     virtual ~cAVCHandler();
 
     octlet_t        GetGuidForName(const char *name);
-    const char      *GetDeviceNameAt(int i);
+    const char      *GetDeviceNameAt(int i),
+                    *TapePosition(int i, char *pos);
+    int             NumDevices(void);
+    bool            HasMicInfo(int i);
     virtual void    Action(void);
 
 };

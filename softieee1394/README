@@ -1,8 +1,8 @@
 This is a "plugin" for the Video Disk Recorder (VDR).
 
-Written by:                  Stefan Lucke <stefan@lucke.in-berlin.de>
+Written by:                  Stefan Lucke <stefan at lucke.in-berlin.de>
 
-Project's homepage:          http://softdevice.berlios.de
+Project's homepage:          http://softdevice.berlios.de/softieee1394
 
 Latest version available at: via cvs
 
@@ -20,11 +20,20 @@ The following vdr keys are supported:
   play
   pause
 
+Patches:
+  You need to patch libavc1394. Therefore the only supported version
+  is 0.5.0. The patch required is in directory patches. The usual procedure
+  for doing this is:
+  1. cd to_your_libavc1394_directory
+  2. patch --dry-run <path_to_patch_directory/patch_file
+  3. if that was succesfully (no rejects or failed messages)
+     patch <path_to_patch_directory/patch_file
+
 
 Additional required software:
   kernel configured with a working firewire subsystem
 
-  softdevice-0.1.1
+  softdevice-0.1.3
     http://softdevice.berlios.de
 
   libavc1394-0.5.0

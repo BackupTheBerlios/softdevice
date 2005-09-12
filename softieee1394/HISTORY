@@ -1,7 +1,12 @@
 VDR Plugin 'softieee1394' Revision History
 ------------------------------------------
+2005-09-12:
+  - do not offer a mainmenu entry if there are no ieee1394 devices.
+  - some cleanups
+  - depends on a patch for libavc
+
 2005-07-24:
     - finnish translations by Rolf Ahrenberg
-2005-04-09: Version 0.0.1
+2005-04-09:
 
 - Initial revision.

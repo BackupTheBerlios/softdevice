@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: avc-handler.c,v 1.1 2005/05/01 22:05:08 lucke Exp $
+ * $Id: avc-handler.c,v 1.2 2005/09/12 12:17:07 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -36,7 +36,9 @@ cAVCHandler::cAVCHandler()
   numDevices = 0;
   for (int i = 0; i < MAX_IEEE1394_DEVICES; ++i)
   {
-    deviceId [i] = 0;
+    deviceId[i] = 0;
+    micSize[i] = 0;
+    micData[i] = NULL;
   }
 
   if (!handle)
@@ -69,7 +71,8 @@ cAVCHandler::~cAVCHandler()
 
 /* ---------------------------------------------------------------------------
  */
-void cAVCHandler::checkDevices(void)
+void
+cAVCHandler::checkDevices(void)
 {
     int               i, j;
     int               newDevices = 0;
@@ -97,16 +100,21 @@ void cAVCHandler::checkDevices(void)
        * report new device found
        */
       if (j >= numDevices) {
+#if 0
+// disabled since it may cause segfaults Skins.Message()
           char msg[100];
           //static int once = 1;
 
         snprintf (msg, 100, "%s: %s",
                   tr("New FireWire Device"),newRomDirs[i].label);
         Skins.Message(mtInfo,msg);
+#endif
+        avc1394_vcr_get_mic_info (handle, i, NULL, NULL);
       }
     }
   }
 
+#if 0 // disabled since it may cause segfaults Skins.Message()
   for (j = 0; j < numDevices; j++) {
     if (deviceId[j]) {
         char msg[100];
@@ -116,6 +124,7 @@ void cAVCHandler::checkDevices(void)
       Skins.Message(mtWarning,msg);
     }
   }
+#endif
 
   if (newDevices != numDevices) {
     dsyslog("[AVCHandler] number of connected devices changed %d -> %d\n",
@@ -133,7 +142,10 @@ void cAVCHandler::checkDevices(void)
   avcMutex.Unlock();
 }
 
-const char * cAVCHandler::GetDeviceNameAt(int i)
+/* ---------------------------------------------------------------------------
+ */
+const char *
+cAVCHandler::GetDeviceNameAt(int i)
 {
     const char *name = NULL;
 
@@ -148,7 +160,8 @@ const char * cAVCHandler::GetDeviceNameAt(int i)
 
 /* ---------------------------------------------------------------------------
  */
-octlet_t cAVCHandler::GetGuidForName(const char *name)
+octlet_t
+cAVCHandler::GetGuidForName(const char *name)
 {
     octlet_t  ret = 0;
 
@@ -167,7 +180,42 @@ octlet_t cAVCHandler::GetGuidForName(const char *name)
 
 /* ---------------------------------------------------------------------------
  */
-void cAVCHandler::Action()
+bool
+cAVCHandler::HasMicInfo(int i)
+{
+  return micSize[i] > 0;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+const char *
+cAVCHandler::TapePosition(int i, char *pos)
+{
+    int atn, m, mt, sfbf;
+
+  if (avc1394_vcr_get_atn (handle, i, &atn, &m, &mt, &sfbf) == 0) {
+    snprintf(pos, 16,
+            "%02d:%02d:%02d.%02d",
+            (atn / (12 * 25 * 60 * 60)) % 24,
+            (atn / (12 * 25 * 60)) % 60,
+            (atn / (12 * 25)) % 60,
+            (atn / 12) % 25);
+  }
+  return pos;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int
+cAVCHandler::NumDevices(void)
+{
+  return numDevices;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void
+cAVCHandler::Action()
 {
     int               fd, pollRc;
     struct pollfd     pfds[1];
@@ -267,7 +315,8 @@ cAVCPlayer::~cAVCPlayer()
 
 /* ----------------------------------------------------------------------------
  */
-void cAVCPlayer::Stop()
+void
+cAVCPlayer::Stop()
 {
   dsyslog("[AVCPlayer-Stop]\n");
   running = false;
@@ -276,7 +325,8 @@ void cAVCPlayer::Stop()
 
 /* ----------------------------------------------------------------------------
  */
-void cAVCPlayer::Activate(bool On)
+void
+cAVCPlayer::Activate(bool On)
 {
   dsyslog("[AVCPlayer-Activate]: %s", (On) ? "ON" : "OFF");
   if (On) {
@@ -290,7 +340,8 @@ void cAVCPlayer::Activate(bool On)
 
 /* ---------------------------------------------------------------------------
  */
-void cAVCPlayer::Action(void)
+void
+cAVCPlayer::Action(void)
 {
     int               rc, packetCount = 0;
     cSoftDevice       *pDevice;
@@ -332,8 +383,14 @@ void cAVCPlayer::Action(void)
       fprintf(stderr,"Error (%d) reading packet!\n",rc);
       break;
     }
-    if (paused)
+    if (paused) {
+      DeviceFreeze();
+      cPlayer::DeviceClear();
+      while (paused && running)
+        usleep(10000);
+      DevicePlay();
       continue;
+    }
 
     av_dup_packet(&pkt);
 
@@ -342,7 +399,6 @@ void cAVCPlayer::Action(void)
       pkt.pts/=100;
     }
 
-    // length = -2 : queue packet
     pDevice->PlayVideo((uchar *)&pkt,-2);
 
     if (nStreams!=ic->nb_streams ){
@@ -374,7 +430,8 @@ void cAVCPlayer::Action(void)
 
 /* ---------------------------------------------------------------------------
  */
-void cAVCPlayer::Command(eKeys key)
+void
+cAVCPlayer::Command(eKeys key)
 {
 
   if (!deviceOK || deviceNum == -1)
@@ -464,14 +521,16 @@ cAVCControl::~cAVCControl()
 
 /* ---------------------------------------------------------------------------
  */
-void cAVCControl::Hide(void)
+void
+cAVCControl::Hide(void)
 {
   dsyslog("[AVCControl-Hide]");
 }
 
 /* ---------------------------------------------------------------------------
  */
-eOSState cAVCControl::ProcessKey(eKeys key)
+eOSState
+cAVCControl::ProcessKey(eKeys key)
 {
     eOSState state = cOsdObject::ProcessKey(key);
 
@@ -487,7 +546,7 @@ eOSState cAVCControl::ProcessKey(eKeys key)
     state = osContinue;
 
     switch (key) {
-      case kPause: case kPlay: case kFastFwd: case kFastRew:
+      case kPause: case kPlay: case kFastFwd: case kFastRew: case kStop:
         player->Command(key);
         break;
       default:
