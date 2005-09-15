@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.39 2005/09/04 05:49:18 lucke Exp $
+ * $Id: video-dfb.c,v 1.40 2005/09/15 18:23:05 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -20,8 +20,10 @@
 # define HAVE_SetSourceLocation 0
 # if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
 #   define HAVE_GraphicsDeviceDescription 0
+#   define HAVE_DIEF_REPEAT               0
 # else
 #   define HAVE_GraphicsDeviceDescription 1
+#   define HAVE_DIEF_REPEAT               1
 # endif
 # if (DIRECTFB_MAJOR_VERSION > 0 || ((DIRECTFB_MINOR_VERSION == 9) && DIRECTFB_MICRO_VERSION > 22))
 #   define HAVE_DSCAPS_DOUBLE 1
@@ -562,33 +564,24 @@ void cDFBVideoOut::ProcessEvents ()
 
   while (events->GetEvent( DFB_EVENT(&event) ))
   {
-    switch (event.type)
+    if (event.type == DIET_KEYPRESS && dfbRemote)
     {
-      case DIET_KEYPRESS:
-#ifdef DFB_SUPPORTS_REPEAT
-      case DIET_KEYREPEAT:
-#endif /* DFB_SUPPORTS_REPEAT */
-        if (dfbRemote)
-        {
-          switch (event.key_symbol)
-          {
-            case DIKS_SHIFT: case DIKS_CONTROL: case DIKS_ALT:
-            case DIKS_ALTGR: case DIKS_META: case DIKS_SUPER: case DIKS_HYPER:
-              break;
-            default:
-              if (event.type != DIET_KEYPRESS ||
-                  !setupStore->CatchRemoteKey(dfbRemote->Name(),
-                                              event.key_symbol))
-              {
-                dfbRemote->PutKey(event.key_symbol,
-                                  event.type != DIET_KEYPRESS);
-              }
-              break;
-          }
-        }
+      switch (event.key_symbol)
+      {
+      case DIKS_SHIFT: case DIKS_CONTROL: case DIKS_ALT:
+      case DIKS_ALTGR: case DIKS_META: case DIKS_SUPER: case DIKS_HYPER:
         break;
       default:
+        if (!setupStore->CatchRemoteKey(dfbRemote->Name(), event.key_symbol))
+        {
+#if HAVE_DIEF_REPEAT
+          dfbRemote->PutKey(event.key_symbol, event.flags & DIEF_REPEAT);
+#else
+          dfbRemote->PutKey(event.key_symbol, false);
+#endif
+        }
         break;
+      }
     }
   }
 }

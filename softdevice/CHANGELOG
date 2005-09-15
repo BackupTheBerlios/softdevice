@@ -1,4 +1,6 @@
 Changelog
+2005-09-15:
+    - video-dfb: keyrepeat handling + configure check for DIET_REPEAT
 2005-09-11:
     - fix for segfaults with some OSD activity
     - introduced configure script: try ./configure --help
