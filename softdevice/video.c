@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.30 2005/09/11 09:22:30 lucke Exp $
+ * $Id: video.c,v 1.31 2005/09/15 19:08:22 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -24,6 +24,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   sxoff = syoff = lxoff = lyoff = 0;
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
+  Osd_changed = Osd_Bitmap_changed = 0;
   PixelMask=NULL;
   OsdRefreshCounter=0;
   displayTimeUS = 0;
@@ -108,6 +109,7 @@ void cVideoOut::Action()
         DrawStill_420pl (OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight,
                          OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
       }
+      
       osdMutex.Lock();
       Osd_changed=0;
       osdMutex.Unlock();
@@ -464,6 +466,13 @@ void cVideoOut::OSDCommit()
   //fprintf (stderr, "-");
   OSDdirty=false;
   OSDpresent=true;
+#if VDRVERSNUM >= 10307
+  if (Osd_Bitmap_changed)
+  {
+    Osd_Bitmap_changed = 0;
+    Osd_changed = 1;
+  }
+#endif
   osdMutex.Unlock();
 }
 
@@ -471,7 +480,7 @@ void cVideoOut::OSDCommit()
  */
 void cVideoOut::ClearOSD()
 {
-  //if (current_osdMode==OSDMODE_SOFTWARE) 
+  //if (current_osdMode==OSDMODE_SOFTWARE)
   {
     if (OsdPy)
        memset(OsdPy,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
@@ -726,14 +735,14 @@ void cVideoOut::ToYUV(cBitmap *Bitmap)
 
   
  // printf( "YUV:OSDWidth %d %d Bitmap %d %d \n",
- //   OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height()); 
+ //   OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height());
  
     int           x1,x2,y1,y2;
     // if bitmap didn't change, return
     if (!Bitmap->Dirty(x1,y1,x2,y2) && !OSDdirty)
       return;
     
-  Osd_changed=1;
+  Osd_Bitmap_changed=1;
    //printf( "----------------------------\nOSDWidth %d %d Bitmap %d %d \n",
    //     OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height()); 
    //printf("dirty area (%d,%d) (%d,%d) \n",x1,y1,x2,y2);

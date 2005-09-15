@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.21 2005/09/11 09:22:30 lucke Exp $
+ * $Id: video.h,v 1.22 2005/09/15 19:08:22 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -157,7 +157,8 @@ public:
     virtual void SetOldPicture(AVFrame *picture, int width, int height);
 
     uint8_t *PixelMask;
-    int Osd_changed;
+    int     Osd_changed,
+            Osd_Bitmap_changed;
     uint8_t *OsdPy;
     uint8_t *OsdPu; 
     uint8_t *OsdPv;
