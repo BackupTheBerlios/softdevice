@@ -1,4 +1,7 @@
 Changelog
+2005-09-16:
+    - introduce audio debug
+    - return 0 in GetDelay if pcm is not running
 2005-09-15:
     - modified previous OSD redraw handling (timed redraw after _all_ OSD bitmaps
       have been drawn)
