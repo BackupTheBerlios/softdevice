@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.20 2005/09/06 21:55:27 lucke Exp $
+ * $Id: audio.c,v 1.21 2005/09/16 16:13:18 wachm Exp $
  */
 
 #include <unistd.h>
@@ -15,9 +15,17 @@
 #define ALSA_PCM_NEW_SW_PARAMS_API
 #include <alsa/asoundlib.h>
 #include "audio.h"
+#include "utils.h"
 
 
 #define PCM_FMT SND_PCM_FORMAT_S16_LE
+
+//#define AUDIODEB(out...) {printf("AUDIO[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+
+#ifndef AUDIODEB
+#define AUDIODEB(out...)
+#endif
+
 
 cAudioOut::~cAudioOut() {
 }
@@ -80,6 +88,7 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
 {
     int err;
     size_t size;
+    AUDIODEB("Write %p %d\n",Data,Length);
 
   if (ac3PassThrough)
   {
@@ -89,17 +98,24 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
   size = Length/(2*currContext.channels);
   while (size) {
     while (paused) usleep(1000); // block
+    AUDIODEB("pcm_mmap_writei  handle %p Data %p size %d\n",handle,Data,size);
     err = snd_pcm_mmap_writei(handle,Data, size);
+    AUDIODEB("pcm_mmap_writeei return value %d Data %p size %d \n",
+                   err,Data,size);
     if (err == -EAGAIN || (err >= 0 && (size_t)err < size)) {
+      AUDIODEB("wait \n");
       snd_pcm_wait(handle, 1000);
     } else if (err == -EPIPE) {
+      AUDIODEB("Xrun \n");
       Xrun();
       dsyslog("[softdevice-audio]: xrun");
     } else if (err == -ESTRPIPE) {
       //suspend();
+      AUDIODEB("Suspend \n");
       dsyslog("[softdevice-audio]: Suspend");
     } else if (err == -EINTR) {
       dsyslog ("[softdevice-audio]: EINTR");
+      AUDIODEB("EINTR \n");
       return;
     } else if (err < 0) {
       dsyslog("[softdevice-audio]: write error: %s FATAL exiting",
@@ -112,6 +128,7 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
       size -=err;
     };
   }
+  AUDIODEB("Write end\n");
 }
 
 /* ----------------------------------------------------------------------------
@@ -205,10 +222,21 @@ int cAlsaAudioOut::GetDelay(void) {
     snd_pcm_sframes_t r;
 
   handleMutex.Lock();
+  if (!handle) {
+          handleMutex.Unlock();
+          return 0;
+  };
+  
+  if ( snd_pcm_state(handle) != SND_PCM_STATE_RUNNING ) {
+          handleMutex.Unlock();
+          return 0;
+  };
+          
   if (!snd_pcm_delay(handle, &r) &&
       currContext.samplerate) {
     // successfully got delay
     res = (long) r * 10000 / currContext.samplerate;
+    AUDIODEB("GetDelay %d\n",res);
   }
   handleMutex.Unlock();
   return res;
