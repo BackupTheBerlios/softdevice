@@ -1,4 +1,7 @@
 Changelog
+2005-09-17
+    - configure: check if vidix compiles, optionally disable fb-out via
+                 command line "--disable-fb" and/or subplugins via "--disable-subplugins"
 2005-09-16:
     - introduce audio debug
     - return 0 in GetDelay if pcm is not running
