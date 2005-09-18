@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.16 2005/09/18 05:55:32 lucke Exp $
+# $Id: Makefile,v 1.17 2005/09/18 15:17:44 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -216,7 +216,7 @@ ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
     DFB_OBJS  = utils.o video.o video-dfb.o
     ALL_OBJS += $(DFB_OBJS)
-    TARGETS  += libvdr-$(PLUGIN)-dfb.so
+    TARGETS  += libsubvdr-$(PLUGIN)-dfb.so
   else
     OBJS     += video-dfb.o
     LIBS     += $(DFB_LIBS)
@@ -229,7 +229,7 @@ ifdef FB_SUPPORT
     FB_LIBS   =
     FB_OBJS   = utils.o video.o video-fb.o
     ALL_OBJS  += $(FB_OBJS)
-    TARGETS   += libvdr-$(PLUGIN)-fb.so
+    TARGETS   += libsubvdr-$(PLUGIN)-fb.so
   else
     OBJS 	+= video-fb.o
   endif
@@ -239,7 +239,7 @@ ifdef XV_SUPPORT
   ifdef USE_SUBPLUGINS
     XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o
     ALL_OBJS  += $(XV_OBJS)
-    TARGETS   += libvdr-$(PLUGIN)-xv.so
+    TARGETS   += libsubvdr-$(PLUGIN)-xv.so
   else
     OBJS 	+= video-xv.o xscreensaver.o
     LIBS 	+= $(XV_LIBS)
@@ -250,7 +250,7 @@ ifdef VIDIX_SUPPORT
   ifdef USE_SUBPLUGINS
     VIDIX_OBJS  = utils.o video.o video-vidix.o
     ALL_OBJS    += $(VIDIX_OBJS)
-    TARGETS     += libvdr-$(PLUGIN)-vidix.so
+    TARGETS     += libsubvdr-$(PLUGIN)-vidix.so
   else
     OBJS        += video-vidix.o
     LIBS        += -lvidix
@@ -284,19 +284,19 @@ libvdr-$(PLUGIN).so: $(OBJS)
 
 ifdef USE_SUBPLUGINS
 
-libvdr-$(PLUGIN)-dfb.so: $(DFB_OBJS)
+libsubvdr-$(PLUGIN)-dfb.so: $(DFB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(DFB_OBJS) $(DFB_LIBS) -o $@
 	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
 
-libvdr-$(PLUGIN)-fb.so: $(FB_OBJS)
+libsubvdr-$(PLUGIN)-fb.so: $(FB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(FB_OBJS) $(FB_LIBS) -o $@
 	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
 
-libvdr-$(PLUGIN)-xv.so: $(XV_OBJS)
+libsubvdr-$(PLUGIN)-xv.so: $(XV_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(XV_OBJS) $(XV_LIBS) -o $@
 	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
 
-libvdr-$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
+libsubvdr-$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(VIDIX_OBJS) $(VIDIX_LIBS) -o $@
 	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
 

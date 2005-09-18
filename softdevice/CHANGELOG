@@ -1,6 +1,8 @@
 Changelog
 2005-09-18:
     - Makefile: compatibility for build without configure
+    - subplugin targets: changed prefix from libvdr to libsubvdr. so it doesn't
+      interfere with vdr's "load all plugins" for plain help command.
 2005-09-17:
     - configure: check if vidix compiles, optionally disable fb-out via
                  command line "--disable-fb" and/or subplugins via "--disable-subplugins"
