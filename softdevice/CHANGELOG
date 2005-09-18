@@ -1,5 +1,7 @@
 Changelog
-2005-09-17
+2005-09-18:
+    - Makefile: compatibility for build without configure
+2005-09-17:
     - configure: check if vidix compiles, optionally disable fb-out via
                  command line "--disable-fb" and/or subplugins via "--disable-subplugins"
 2005-09-16:
