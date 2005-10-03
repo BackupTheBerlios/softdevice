@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.17 2005/09/18 15:17:44 lucke Exp $
+# $Id: Makefile,v 1.18 2005/10/03 18:57:11 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -255,7 +255,6 @@ ifdef VIDIX_SUPPORT
     OBJS        += video-vidix.o
     LIBS        += -lvidix
   endif
-  LIBS        += $(VIDIX_LIBS)
   INCLUDES    += $(VIDIX_CFLAGS)
 endif
 
