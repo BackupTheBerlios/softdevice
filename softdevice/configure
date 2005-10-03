@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.4 2005/09/17 16:17:15 lucke Exp $
+# $Id: configure,v 1.5 2005/10/03 16:04:55 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -124,7 +124,7 @@ cat > ${TMPC} << EOF
 #include <directfb.h>
 int main(void) {
     DFBInputEvent event;
-  event.flags |= DIEF_REPEAT;
+  event.flags = DIEF_REPEAT;
   return 0;
 }
 EOF
@@ -243,7 +243,7 @@ if test "${dfb}" = "yes" ; then
     echo "#define HAVE_DSCAPS_DOUBLE              0" >> $TMPH
   fi
 
-  if test "${dfb_dfb_dief_repeat}" = "yes" ; then
+  if test "${dfb_dief_repeat}" = "yes" ; then
     echo "#define HAVE_DIEF_REPEAT                1" >> $TMPH
   else
     echo "#define HAVE_DIEF_REPEAT                0" >> $TMPH
