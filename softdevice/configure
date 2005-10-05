@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.5 2005/10/03 16:04:55 lucke Exp $
+# $Id: configure,v 1.6 2005/10/05 13:05:42 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -152,6 +152,23 @@ $cc $CFLAGS $vidix_cflags $vidix_libs -o $TMPE $TMPC > /dev/null 2>&1 || vidix="
 fi
 
 #########################################################
+# X11: check if X11 is present
+#
+if test "${xv}" = "yes" ; then
+  xv_libs="-L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv"
+  cat > ${TMPC} << EOF
+#include <stdio.h>
+#include <X11/Xlib.h>
+int main(void) {
+    Display       *dpy;
+  dpy = XOpenDisplay(NULL);
+  return 0;
+}
+EOF
+$cc $CFLAGS $xv_libs -o $TMPE $TMPC > /dev/null 2>&1 || xv="no"
+fi
+
+#########################################################
 broken_gcc_cpp="no"
 cat > ${TMPC} << EOF
 
@@ -269,7 +286,7 @@ fi
 if test "${xv}" = "yes" ; then
   echo "XV_SUPPORT       = 1" >> $TMPM
   echo "LIBXDPMS_SUPPORT = 1" >> $TMPM
-  echo "XV_LIBS          = -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv"  >> $TMPM
+  echo "XV_LIBS          = ${xv_libs}"  >> $TMPM
   echo "#define XV_SUPPORT       1" >> $TMPH
   echo "#define LIBXDPMS_SUPPORT 1" >> $TMPH
 fi
