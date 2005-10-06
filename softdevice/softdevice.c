@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.42 2005/09/18 15:17:44 lucke Exp $
+ * $Id: softdevice.c,v 1.43 2005/10/06 21:28:11 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -678,7 +678,8 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 {
   // Return a string that describes all known command line options.
   return
-  "  -ao alsa:devicename      alsa output device\n"
+  "  -ao alsa:pcm=dev_name#   alsa output device for analog and PCM out\n"
+  "  -ao alsa:ac3=dev_name#   alsa output device for AC3 passthrough\n"
   "  -ao dummy:               dummy output device\n"
 #ifdef XV_SUPPORT
   "  -vo xv:                  enable output via X11-Xv\n"
@@ -814,8 +815,50 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           ao_argv += 5;
           setupStore.aoArgs = ao_argv;
           aoutMethod = AOUT_ALSA;
-          fprintf(stderr, "[softdevice] using alsa device %s\n", ao_argv);
-          strncpy(setupStore.alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);
+          while (strlen(ao_argv) > 1) {
+              char  *sep;
+              int   len;
+
+            if (*ao_argv == ':' || *ao_argv == '#')
+              ++ao_argv;
+
+            sep = ao_argv;
+            while (*sep && *sep != '#')
+              ++sep;
+            if (!*sep || *sep != '#')
+              sep = NULL;
+
+            if (!strncmp(ao_argv, "pcm=", 4)) {
+              ao_argv += 4;
+              len = (sep) ? sep - ao_argv : 0;
+              len = (len > ALSA_DEVICE_NAME_LENGTH) ?
+                      ALSA_DEVICE_NAME_LENGTH : len;
+              if (len) {
+                strncpy(setupStore.alsaDevice, ao_argv, len);
+                setupStore.alsaDevice [len] = 0;
+                fprintf (stderr, "[softdevice] using PCM alsa device %s\n",
+                         setupStore.alsaDevice);
+              }
+              ao_argv += len;
+            } else if (!strncmp(ao_argv, "ac3=", 4)) {
+              ao_argv += 4;
+              len = (sep) ? sep - ao_argv : 0;
+              len = (len > ALSA_DEVICE_NAME_LENGTH) ?
+                      ALSA_DEVICE_NAME_LENGTH : len;
+              if (len) {
+                strncpy(setupStore.alsaAC3Device, ao_argv, len);
+                setupStore.alsaAC3Device [len] = 0;
+                fprintf (stderr, "[softdevice] using AC3 alsa device %s\n",
+                         setupStore.alsaAC3Device);
+              }
+              ao_argv += len;
+            } else {
+              fprintf(stderr, "[softdevice] using alsa device %s\n", ao_argv);
+              strncpy(setupStore.alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);
+              ao_argv += strlen(ao_argv);
+            }
+
+          }
         } else if (!strncmp(ao_argv, "dummy:", 6)) {
           ao_argv += 6;
           setupStore.aoArgs = ao_argv;

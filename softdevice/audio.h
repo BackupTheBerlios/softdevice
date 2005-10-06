@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.8 2005/05/01 08:07:43 lucke Exp $
+ * $Id: audio.h,v 1.9 2005/10/06 21:28:11 lucke Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -13,6 +13,7 @@
 #include <alsa/asoundlib.h>
 #include <vdr/plugin.h>
 #include "setup-softdevice.h"
+#include "audio-ac3pt.h"
 
 struct SampleContext {
    uint32_t channels;
@@ -50,30 +51,34 @@ public:
  */
 class cAlsaAudioOut : public cAudioOut  {
 private:
-  cMutex        handleMutex;
-  snd_pcm_t     *handle;
-  char          *device;
-  volatile bool paused;
-  bool          ac3PassThrough;
-  SampleContext oldContext;
+  cMutex            handleMutex;
+  snd_pcm_t         *handle;
+  char              *device,
+                    *ac3Device;
+  volatile bool     paused;
+  bool              ac3PassThrough,
+                    ac3SpdifPro;
+  SampleContext     oldContext;
+  cAlsaAC3pt        ac3pt;
 
-  void SetAC3PassThroughMode(bool on);
-  void Xrun(void);
+  bool  SetAC3PassThroughMode(bool on);
+  void  Xrun(void);
 
 protected:
 public:
   cAlsaAudioOut(cSetupStore *setupStore);
   virtual ~cAlsaAudioOut();
-  virtual void Write(uchar *Data, int Length);
-  virtual void WriteAC3(uchar *Data, int Length);
+
+  virtual void  Write(uchar *Data, int Length);
+  virtual void  WriteAC3(uchar *Data, int Length);
   //virtual int SetParams(int channels, unsigned int samplerate);
-  virtual int SetParams(SampleContext &context);
-  virtual int GetDelay(void);
-  virtual void Pause(void);
-  virtual void Play(void);
-  virtual void SetVolume(int vol);
-  virtual void Suspend(void);
-  virtual bool Resume(void);
+  virtual int   SetParams(SampleContext &context);
+  virtual int   GetDelay(void);
+  virtual void  Pause(void);
+  virtual void  Play(void);
+  virtual void  SetVolume(int vol);
+  virtual void  Suspend(void);
+  virtual bool  Resume(void);
 };
 
 /* ---------------------------------------------------------------------------

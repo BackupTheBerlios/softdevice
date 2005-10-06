@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.54 2005/09/11 09:22:30 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.55 2005/10/06 21:28:11 lucke Exp $
  */
 
 #include <math.h>
@@ -353,9 +353,38 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
         context->channels = 2;
         break;
       case 1:
+      {
+          int       delta_pts;
+          uint64_t  PTS;
+
         // feed data for AC3 pass through to device
         audioOut->WriteAC3(data,size);
+//
+// TODO it's a hack for subsequent pts counting
+//
+#define AC3_PTS_TRACE 0
+
+        delta_pts = (size*10000*2/(48000*3));
+        pts += delta_pts;
+        if (pkt->pts != (int64_t) AV_NOPTS_VALUE)
+        {
+#if AC3_PTS_TRACE
+          fprintf (stderr,
+                   "audio pts %lld pkt->PTS : %lld pts - valid PTS: %lld \n",
+                   pts,pkt->pts,(int) pts - pkt->pts );
+#endif
+          pts = pkt->pts;
+          pkt->pts=AV_NOPTS_VALUE;
+        }
+        PTS = pts - audioOut->GetDelay() + setupStore.avOffset*10;
+#if AC3_PTS_TRACE
+        fprintf (stderr, "audio pts offset %lld %d\n",
+                 cClock::GetTime()-PTS, delta_pts);
+#endif
+        cClock::AdjustAudioPTS(PTS);
+
         return size;
+      }
       case 2:
         // get the AC3 -> 4CH stereo data
         context->channels = 4;
@@ -403,8 +432,11 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     
     audioOut->SetParams(audioOutContext);
     audioOut->Write(audiosamples,audio_size);
-    // adjust PTS according to audio_size, sampel_rate and no. of channels  
-    pts += (audio_size*10000/(context->sample_rate*2*context->channels)); 
+    // adjust PTS according to audio_size, sampel_rate and no. of channels
+    if (!context->channels)
+      pts += (audio_size*10000/(context->sample_rate*2*2));
+    else
+      pts += (audio_size*10000/(context->sample_rate*2*context->channels));
 
     if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
       MPGDEB("audio pts %lld pkt->PTS : %lld pts - valid PTS: %lld \n",

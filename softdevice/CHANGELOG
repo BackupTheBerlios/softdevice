@@ -1,4 +1,7 @@
 Changelog
+2005-10-06:
+    - configure: check if X11 is present
+    - audio: AC3 pass through
 2005-09-18:
     - Makefile: compatibility for build without configure
     - subplugin targets: changed prefix from libvdr to libsubvdr. so it doesn't

@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.18 2005/10/03 18:57:11 lucke Exp $
+# $Id: Makefile,v 1.19 2005/10/06 21:28:11 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -209,7 +209,7 @@ DEFINES += -DPLUGINLIBDIR='"./PLUGINS/lib"'
 
 TARGETS = libvdr-$(PLUGIN).so
 LIBS = $(FFMPEGLIBS) -lasound
-OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o video-dummy.o setup-softdevice.o sync-timer.o
+OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o audio-ac3pt.o video-dummy.o setup-softdevice.o sync-timer.o
 ALL_OBJS = $(OBJS)
 
 ifdef DFB_SUPPORT

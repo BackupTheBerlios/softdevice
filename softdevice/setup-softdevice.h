@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.18 2005/07/22 08:24:56 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.19 2005/10/06 21:28:11 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -55,7 +55,7 @@ class cSetupStore {
     int   ac3Mode;
     int   bufferMode;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
-    char  alsaSPDIFDevice [ALSA_DEVICE_NAME_LENGTH];
+    char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
     char  *voArgs;
     char  *aoArgs;
 };

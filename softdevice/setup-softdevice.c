@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.28 2005/08/16 09:22:18 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.29 2005/10/06 21:28:11 lucke Exp $
  */
 
 #include "video.h"
@@ -131,7 +131,7 @@ cSetupStore::cSetupStore ()
   screenPixelAspect   = 0;
 
   strcpy (alsaDevice, "");
-  strcpy (alsaSPDIFDevice, "hw:0,2");
+  strcpy (alsaAC3Device, "");
   voArgs = aoArgs = NULL;
 
   xv_startup_aspect[0] = tr("16:9 wide");
@@ -318,7 +318,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     osdMode = atoi (Value);
     osdMode = clamp (0, osdMode, 1);
     fprintf(stderr,"[setup-softdevice] setting alpha blend mode to %s\n",
-		    osdModeNames[osdMode]);
+            osdModeNames[osdMode]);
   } else if (!strcasecmp(Name, "Suspend")) {
     shouldSuspend = atoi (Value);
     fprintf(stderr, "[setup-softdevice] shouldSuspend to: %d\n", shouldSuspend);
@@ -327,7 +327,13 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     ac3Mode = atoi (Value);
     fprintf(stderr, "[setup-softdevice] alsa ac3Mode set to: %d\n", ac3Mode);
     ac3Mode = clamp (0, ac3Mode, 3);
-  }  else  return false;
+  } else if (!strcasecmp(Name, "AlsaAC3Device") && strlen(alsaAC3Device) == 0) {
+    strncpy(alsaAC3Device, Value, ALSA_DEVICE_NAME_LENGTH);
+    alsaAC3Device [ALSA_DEVICE_NAME_LENGTH-1] = 0;
+    fprintf(stderr, "[setup-softdevice] alsa AC3 device set to: %s\n",
+            alsaAC3Device);
+  }  else
+    return false;
 
   return true;
 }
@@ -592,7 +598,7 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Picture mirroring",  setupStore.mirror);
   SetupStore ("avOffset",           setupStore.avOffset);
   SetupStore ("AlsaDevice",         setupStore.alsaDevice);
-  SetupStore ("AlsaSPDIFDevice",    setupStore.alsaSPDIFDevice);
+  SetupStore ("AlsaAC3Device",      setupStore.alsaAC3Device);
   SetupStore ("PixelAspect",        setupStore.screenPixelAspect);
   SetupStore ("Suspend",            setupStore.shouldSuspend);
   SetupStore ("OSDalphablend",      setupStore.osdMode);
