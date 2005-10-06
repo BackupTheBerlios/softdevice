@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.6 2005/10/05 13:05:42 lucke Exp $
+# $Id: configure,v 1.7 2005/10/06 09:03:47 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -11,7 +11,14 @@ TMPE="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}"
 TMPH="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}.h"
 TMPM="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}.mak"
 
-PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig/
+if test -z "$PKG_CONFIG_PATH" ; then
+  PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+else
+  PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
+fi
+
+set -u
+: ${CFLAGS=""}
 
 dfb="yes"
 libpostproc="no"
