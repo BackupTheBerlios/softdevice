@@ -1,4 +1,7 @@
 Changelog
+2005-10-07:
+    - dfb+vidix: fix colored shadow bug for some crop modes
+    - configure: fix VIDIX_DIR path
 2005-10-06:
     - configure: check if X11 is present
     - audio: AC3 pass through

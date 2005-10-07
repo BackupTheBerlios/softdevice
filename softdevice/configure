@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.7 2005/10/06 09:03:47 lucke Exp $
+# $Id: configure,v 1.8 2005/10/07 13:37:53 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -283,7 +283,7 @@ if test "${vidix}" = "yes" ; then
   echo "VIDIX_LIBS    = ${vidix_libs}" >> $TMPM
   echo "VIDIX_CFLAGS  = ${vidix_cflags}" >> $TMPM
   echo "#define VIDIX_SUPPORT 1" >> $TMPH
-  echo "#define VIDIX_DIR     \"${vidix_path}/lib/vidix\"" >> $TMPH
+  echo "#define VIDIX_DIR     \"${vidix_path}/lib/vidix/\"" >> $TMPH
   echo "#define FBDEV         \"${fb_dev_name}\"" >> $TMPH
 fi
 
