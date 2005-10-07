@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.31 2005/09/15 19:08:22 lucke Exp $
+ * $Id: video.c,v 1.32 2005/10/07 13:07:15 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -254,6 +254,22 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
   }
   sxoff = (fwidth - swidth) / 2;
   syoff = (fheight - sheight) / 2;
+
+  /* --------------------------------------------------------------------------
+   * adjust possible rounding errors. as we are in YV12 or similar mode,
+   * line offsets and coloumn offsets must be even.
+   */
+  if (syoff & 1) {
+    syoff--;
+    if ((fheight - sheight) > 1)
+      sheight += 2;
+  }
+
+  if (sxoff & 1) {
+    sxoff--;
+    if ((fwidth - swidth) > 1)
+      swidth += 2;
+  }
 
   /* --------------------------------------------------------------------------
    * handle screen aspect support now
