@@ -1,4 +1,5 @@
 Changelog
+2005-10-08: softdevice-0.2.0
 2005-10-07:
     - dfb+vidix: fix colored shadow bug for some crop modes
     - configure: fix VIDIX_DIR path

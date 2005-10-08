@@ -54,10 +54,16 @@ This plugin is written for VDR 1.2.x and VDR 1.3.x
 As usual, unpack the plugin and make a link in the
 ./VDR/PLUGINS/src directory
 
-You _will_ have to modify the Makefile to your needs. Comment out all
-ouput methods that you don't plan to use ( put a "#"-sign in at the
-start of the line ). Adjust the path to libavcodec in the Makefile, 
-and disable all other features you don't want.
+By default you should "cd" to softdevice directory and run "./configure" .
+This will generate config.h and config.mak files, which will guide make.
+Available parameters of configure are listed by "./configure --help" .
+
+To get rid of these generated files a "make dist-clean" should be done.
+
+Without running configure, you'll have to modify the Makefile to your needs.
+Comment out all ouput methods that you don't plan to use
+( put a "#"-sign in at the start of the line ). Adjust the path to libavcodec
+in the Makefile, and disable all other features you don't want.
 
 If you don't plan to use Xv,set up a framebuffer on /dev/fb0
 
@@ -84,6 +90,20 @@ Note that we strongly recommend to use Xv, DirectFB or Vidix for output.
 Framebuffer mode is not well maintained and  _completly_ unaccelerated. 
 
 
+AC3 pass through:
+-----------------
+For using AC3 pass through, you have to specify the IEC958 device name of
+your sound card. Which device to use, can be checked with ac3play.
+For my system, ac3play works with: "ac3play -C -D 0,1 AC3_FILE_NAME"
+
+So my vdr call with parameter list for softdevice looks like:
+-P "softdevice -ao alsa:pcm=default#ac3=hw:0,1# -vo dfb:mgatv"
+
+Notice the trailing '#' of the last alsa subparameter.
+
+AC3 pass through is mainly based on the code of ac3play-0.5.2f, so
+many thanks to the authors of that program.
+
 Problems/todo:
 --------------
 What does NOT work:
@@ -93,6 +113,7 @@ The code in the plugin is based on parts of:
 - mplayer
 - mpeg2dec
 - alsa
+- ac3play-0.5.2f
 
 Many thanks to:
 - Colin Paton
