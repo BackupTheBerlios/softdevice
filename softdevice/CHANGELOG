@@ -1,4 +1,7 @@
 Changelog
+2005-10-14:
+    - reverted change from 2005-01-12 as effect it not reproducable and delivers
+      now wrong results for some streams.
 2005-10-08: softdevice-0.2.0
 2005-10-07:
     - dfb+vidix: fix colored shadow bug for some crop modes

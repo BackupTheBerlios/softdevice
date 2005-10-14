@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.32 2005/10/07 13:07:15 lucke Exp $
+ * $Id: video.c,v 1.33 2005/10/14 18:20:23 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -326,10 +326,18 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
   /* --------------------------------------------------------------------------
    * removed aspect ratio calculation based on picture->pan_scan->width
    * as this value seems to be wrong on some dvds.
+   * reverted this removal as effect from above it is not reproducable.
    */
   if (!context->sample_aspect_ratio.num)
   {
     new_asp = (float) (context->width) / (float) (context->height);
+  }
+  else if (picture->pan_scan->width)
+  {
+    new_asp = (float) (picture->pan_scan->width *
+                        context->sample_aspect_ratio.num) /
+                (float) (picture->pan_scan->height *
+                          context->sample_aspect_ratio.den);
   }
   else
   {
