@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.34 2005/10/25 19:35:25 lucke Exp $
+ * $Id: video.c,v 1.35 2005/10/25 20:50:25 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -341,7 +341,7 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
   {
     new_asp = (double) (context->width) / (double) (context->height);
   }
-  else if (picture->pan_scan->width)
+  else if (picture->pan_scan && picture->pan_scan->width)
   {
     new_asp = (double) (picture->pan_scan->width *
                          context->sample_aspect_ratio.num) /
