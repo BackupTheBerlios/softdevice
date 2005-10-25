@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.22 2005/09/15 19:08:22 lucke Exp $
+ * $Id: video.h,v 1.23 2005/10/25 19:35:25 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -78,6 +78,9 @@ class cWindowLayer {
 
 class cVideoOut: public cThread {
 private:
+    int     aspect_I;
+    double  aspect_F;
+
 protected:
     cMutex  osdMutex,
             areaMutex;
@@ -116,6 +119,8 @@ protected:
     bool active;
     bool OSDdirty;
 
+    virtual void RecalculateAspect(void);
+
 public:
     cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
@@ -128,7 +133,7 @@ public:
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
     virtual void Pause(void) {return;};
     virtual void SetParValues(double displayAspect, double displayRatio);
-    virtual void CheckAspect(int new_afd, float new_asp);
+    virtual void CheckAspect(int new_afd, double new_asp);
     virtual void CheckAspectDimensions (AVFrame *picture, AVCodecContext *context);
     virtual void CheckArea(int w, int h);
     virtual void DrawVideo_420pl (cSyncTimer *syncTimer, int *delay,

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.32 2005/08/16 08:59:36 wachm Exp $
+ * $Id: video-xv.c,v 1.33 2005/10/25 19:35:25 lucke Exp $
  */
 
 #include <unistd.h>
@@ -382,7 +382,6 @@ void cXvVideoOut::toggleFullScreen(void)
 void cXvVideoOut::ProcessEvents ()
 {
 
-    float           old_aspect;
     char            buffer [80];
     int             len,
                     map_count = 0;
@@ -422,14 +421,7 @@ void cXvVideoOut::ProcessEvents ()
         dy = event.xconfigure.y;
         dwidth = event.xconfigure.width;
         dheight = event.xconfigure.height;
-        /* --------------------------------------------------------------------
-         * set current picture format to unknown, so that .._check_format
-         * does some work.
-         */
-        old_aspect = (current_aspect == DV_FORMAT_WIDE) ?
-                      16.0 / 9.0 : 4.0 / 3.0;
-        current_aspect = -1;
-        CheckAspect (current_afd, old_aspect);
+        RecalculateAspect();
 
         if (toggleInProgress &&
             ((fullScreen &&

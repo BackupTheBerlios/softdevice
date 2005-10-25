@@ -1,4 +1,7 @@
 Changelog
+2005-10-25:
+    - video-xv: fix aspectratio recalculation upon ConfigureNotify events
+    - minor cleanup: moved static floats to member double (cVideoOut)
 2005-10-14:
     - reverted change from 2005-01-12 as effect it not reproducable and delivers
       now wrong results for some streams.

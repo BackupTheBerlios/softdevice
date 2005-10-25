@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.33 2005/10/14 18:20:23 lucke Exp $
+ * $Id: video.c,v 1.34 2005/10/25 19:35:25 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -25,6 +25,8 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
   Osd_changed = Osd_Bitmap_changed = 0;
+  aspect_F = -100.0;
+  aspect_I = -100;
   PixelMask=NULL;
   OsdRefreshCounter=0;
   displayTimeUS = 0;
@@ -189,7 +191,7 @@ void cVideoOut::SetParValues(double displayAspect, double displayRatio)
 
 /* ---------------------------------------------------------------------------
  */
-void cVideoOut::CheckAspect(int new_afd, float new_asp)
+void cVideoOut::CheckAspect(int new_afd, double new_asp)
 {
     int           new_aspect;
     double        d_asp, afd_asp, p_asp;
@@ -305,11 +307,18 @@ void cVideoOut::CheckAspect(int new_afd, float new_asp)
 
 /* ---------------------------------------------------------------------------
  */
+void cVideoOut::RecalculateAspect(void)
+{
+  current_aspect = -1;
+  CheckAspect (current_afd, aspect_F);
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cVideoOut::CheckAspectDimensions(AVFrame *picture,
                                         AVCodecContext *context)
 {
-    static volatile float new_asp, aspect_F = -100.0;
-    static int            aspect_I = -100;
+    double new_asp;
 
   /* --------------------------------------------------------------------------
    * check and handle changes of dimensions first
@@ -330,19 +339,19 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
    */
   if (!context->sample_aspect_ratio.num)
   {
-    new_asp = (float) (context->width) / (float) (context->height);
+    new_asp = (double) (context->width) / (double) (context->height);
   }
   else if (picture->pan_scan->width)
   {
-    new_asp = (float) (picture->pan_scan->width *
-                        context->sample_aspect_ratio.num) /
-                (float) (picture->pan_scan->height *
-                          context->sample_aspect_ratio.den);
+    new_asp = (double) (picture->pan_scan->width *
+                         context->sample_aspect_ratio.num) /
+                (double) (picture->pan_scan->height *
+                           context->sample_aspect_ratio.den);
   }
   else
   {
-    new_asp = (float) (context->width * context->sample_aspect_ratio.num) /
-               (float) (context->height * context->sample_aspect_ratio.den);
+    new_asp = (double) (context->width * context->sample_aspect_ratio.num) /
+               (double) (context->height * context->sample_aspect_ratio.den);
   }
 #else
   new_asp = context->aspect_ratio;
