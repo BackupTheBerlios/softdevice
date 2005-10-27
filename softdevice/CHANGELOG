@@ -1,4 +1,7 @@
 Changelog
+2005-10-26:
+    - fix cropmode handling via OSD
+    - set some vars for aspect calculation to reasonable defaults
 2005-10-25:
     - video-xv: fix aspectratio recalculation upon ConfigureNotify events
     - minor cleanup: moved static floats to member double (cVideoOut)
