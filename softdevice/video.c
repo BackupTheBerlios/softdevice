@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.35 2005/10/25 20:50:25 lucke Exp $
+ * $Id: video.c,v 1.36 2005/10/27 05:30:52 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -25,8 +25,9 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
   Osd_changed = Osd_Bitmap_changed = 0;
-  aspect_F = -100.0;
-  aspect_I = -100;
+  aspect_F = 4.1 / 3.0;
+  aspect_I = 0;
+  current_aspect = -1;
   PixelMask=NULL;
   OsdRefreshCounter=0;
   displayTimeUS = 0;
