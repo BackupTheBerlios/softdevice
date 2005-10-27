@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.29 2005/10/06 21:28:11 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.30 2005/10/27 05:29:39 lucke Exp $
  */
 
 #include "video.h"
@@ -19,8 +19,8 @@
 /* ----------------------------------------------------------------------------
  * index to this array correspond to AFD values
  */
-#define SETUP_CROPMODES 5
-const char *crop_str[SETUP_CROPMODES];
+#define SETUP_CROPMODES 4
+const char *crop_str[SETUP_CROPMODES+1];
 
 /* ---------------------------------------------------------------------------
  */
@@ -419,7 +419,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   crop_str[0] = tr("none");
   Add(new cMenuEditStraItem(tr("CropMode"),
                             &data->cropMode,
-                            (SETUP_CROPMODES-1),
+                            SETUP_CROPMODES,
                             crop_str));
 
   userKeyUsage[0] = tr("none");
