@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.32 2005/09/10 19:43:21 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.33 2005/10/29 08:30:27 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -143,7 +143,8 @@ public:
 // Output device handler
 class cStreamDecoder : public cThread {
 private:
-    cPacketQueue PacketQueue;
+    cPacketQueue  PacketQueue;
+    bool          packetMode;
 
 protected:
     cSyncTimer         *syncTimer;
@@ -175,7 +176,7 @@ public:
     void              resetCodec(void);
     virtual uint64_t  GetPTS()  {return pts;};
     
-    cStreamDecoder(AVCodecContext * Context);
+    cStreamDecoder(AVCodecContext * Context, bool packetMode);
     virtual ~cStreamDecoder();
 };
 
@@ -198,7 +199,7 @@ protected:
 public:
     virtual int DecodePacket(AVPacket *pkt);
     cAudioStreamDecoder(AVCodecContext *Context, cAudioOut *AudioOut,
-       int AudioChannel=0);
+       int AudioChannel=0, bool packetMode = false);
     ~cAudioStreamDecoder();
     inline void SetAudioMode(int AudioMode)
       { audioMode=AudioMode; };
@@ -254,7 +255,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
 
   public:
     cVideoStreamDecoder(AVCodecContext *Context, cVideoOut *VideoOut,
-       cClock *clock, int Trickspeed);
+       cClock *clock, int Trickspeed, bool packetMode);
     ~cVideoStreamDecoder();
 
     virtual void      Freeze(void);
@@ -303,7 +304,8 @@ public:
       PmAudioOnly,
     };
 private:
-    softPlayMode curPlayMode;
+    softPlayMode  curPlayMode;
+    bool          packetMode;
 public:
     int read_packet(uint8_t *buf, int buf_size);
     int seek(offset_t offset, int whence);
@@ -325,7 +327,7 @@ public:
     void Resume(void);
     void TrickSpeed(int Speed);
    
-    void SetPlayMode(softPlayMode playMode);
+    void SetPlayMode(softPlayMode playMode, bool packetMode);
     void PlayAudioVideo(bool playAudio,bool playVideo)
     { AudioIdx=playAudio?NO_STREAM:DONT_PLAY;
       VideoIdx=playVideo?NO_STREAM:DONT_PLAY;}

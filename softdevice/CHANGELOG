@@ -1,6 +1,8 @@
 Changelog
 2005-10-29:
     - french translations (by Nicolas Huillard)
+    - packet playback: assume we get complete frames via packet interface.
+                       This fixes playing divx via softplay.
 2005-10-26:
     - fix cropmode handling via OSD
     - set some vars for aspect calculation to reasonable defaults

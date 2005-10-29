@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.44 2005/10/08 12:37:16 lucke Exp $
+ * $Id: softdevice.c,v 1.45 2005/10/29 08:30:27 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -448,17 +448,17 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
     switch(PlayMode) {
       // FIXME - Implement audio or video only Playmode (is this really needed?)
       case pmAudioVideo:
-          decoder->SetPlayMode(cMpeg2Decoder::PmAudioVideo);
+          decoder->SetPlayMode(cMpeg2Decoder::PmAudioVideo,packetMode);
           decoder->Start();
           break;
       case pmAudioOnly:
       case pmAudioOnlyBlack:
-          decoder->SetPlayMode(cMpeg2Decoder::PmAudioOnly);
+          decoder->SetPlayMode(cMpeg2Decoder::PmAudioOnly,packetMode);
           decoder->Start();
           break;
 #if VDRVERSNUM > 10310
       case pmVideoOnly:
-          decoder->SetPlayMode(cMpeg2Decoder::PmVideoOnly);
+          decoder->SetPlayMode(cMpeg2Decoder::PmVideoOnly,packetMode);
           decoder->Start();
           break;
 #endif

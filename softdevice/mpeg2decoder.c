@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.55 2005/10/06 21:28:11 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.56 2005/10/29 08:30:27 lucke Exp $
  */
 
 #include <math.h>
@@ -130,7 +130,7 @@ int64_t  cClock::GetPTS() {
 
 // --- cStreamDecoder ---------------------------------------------------------
 
-cStreamDecoder::cStreamDecoder(AVCodecContext *Context)
+cStreamDecoder::cStreamDecoder(AVCodecContext *Context, bool packetMode)
         : PacketQueue(packet_buf_size[setupStore.bufferMode])
 {
   context=Context;
@@ -140,6 +140,7 @@ cStreamDecoder::cStreamDecoder(AVCodecContext *Context)
         getpid(),context,context->codec_type );
   pts=0;
   frame=0;
+  this->packetMode = packetMode;
   initCodec();
   syncTimer=NULL;
 
@@ -270,10 +271,13 @@ bool cStreamDecoder::initCodec(void)
       context->codec_id);
     return false;
   }
-  
-    /* we don't send complete frames */
-  if(codec->capabilities&CODEC_CAP_TRUNCATED)
-    context->flags|= CODEC_FLAG_TRUNCATED; 
+
+  if (!packetMode)
+  {
+      /* we don't send complete frames */
+    if(codec->capabilities&CODEC_CAP_TRUNCATED)
+      context->flags|= CODEC_FLAG_TRUNCATED;
+  }
   
   if ( (ret=avcodec_open(context, codec)) < 0)
   {
@@ -304,8 +308,9 @@ int cStreamDecoder::BufferFill()
 
 // --- AUDIO ------------------------------------------------------------------
 cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
-                                         cAudioOut *AudioOut, int AudioMode)
-                                         : cStreamDecoder(Context)
+                                         cAudioOut *AudioOut, int AudioMode,
+                                         bool packetMode)
+                                         : cStreamDecoder(Context, packetMode)
 {
   audioOut=AudioOut;
   audioMode=AudioMode;
@@ -467,8 +472,9 @@ cAudioStreamDecoder::~cAudioStreamDecoder()
 
 cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
                                          cVideoOut *VideoOut, cClock *Clock,
-                                         int Trickspeed)
-                                         : cStreamDecoder(Context)
+                                         int Trickspeed,
+                                         bool packetMode)
+                                         : cStreamDecoder(Context, packetMode)
 {
   width = height = -1;
   pix_fmt = PIX_FMT_NB;
@@ -1251,20 +1257,20 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     };
 #if LIBAVFORMAT_BUILD > 4628
     aout = new cAudioStreamDecoder(ic->streams[pkt.stream_index]->codec,
-                 audioOut, audioMode );
+                 audioOut, audioMode, packetMode );
 #else
     aout = new cAudioStreamDecoder(&ic->streams[pkt.stream_index]->codec,
-                 audioOut, audioMode );
+                 audioOut, audioMode, packetMode );
 #endif
   } else
 #if LIBAVFORMAT_BUILD > 4628
   if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
       ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO &&
-      VideoIdx!=pkt.stream_index) 
+      VideoIdx!=pkt.stream_index)
 #else
   if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
       ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO &&
-      VideoIdx!=pkt.stream_index) 
+      VideoIdx!=pkt.stream_index)
 #endif
   {
     CMDDEB("new Video stream index.. old %d new %d\n",
@@ -1277,10 +1283,10 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     };
 #if LIBAVFORMAT_BUILD > 4628
     vout = new cVideoStreamDecoder(ic->streams[pkt.stream_index]->codec,
-                   videoOut, &clock, Speed );
+                   videoOut, &clock, Speed, packetMode );
 #else
     vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec,
-                   videoOut, &clock, Speed );
+                   videoOut, &clock, Speed, packetMode );
 #endif
   };
   
@@ -1380,9 +1386,10 @@ void cMpeg2Decoder::Play(void)
   };
 };
 
-void cMpeg2Decoder::SetPlayMode(softPlayMode playMode)
+void cMpeg2Decoder::SetPlayMode(softPlayMode playMode, bool packetMode)
 {
   curPlayMode=playMode;
+  this->packetMode=packetMode;
   switch (curPlayMode) {
     case PmAudioVideo: 
       CMDDEB("SetPlayMode PmAudioVideo\n");
