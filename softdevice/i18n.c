@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.8 2005/09/10 16:14:36 lucke Exp $
+ * $Id: i18n.c,v 1.9 2005/10/29 05:10:32 lucke Exp $
  */
 
 #include "i18n.h"
@@ -15,7 +15,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Softdevice",   //  7
     "",             //  8 TODO
     "Näyttölaite",  //  9
     "",             // 10 TODO
@@ -38,7 +38,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO   
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Affichage vidéo sur carte graphique", //  7
     "",             //  8 TODO
     "Ohjelmistopohjainen näyttölaite",  //  9
     "",             // 10 TODO
@@ -61,7 +61,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Aspect Xv au démarrage", //  7
     "",             //  8 TODO
     "Xv-kuvasuhde käynnistettäessä",   //  9
     "",             // 10 TODO
@@ -84,7 +84,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Découpage de l'image au ratio", //  7
     "",             //  8 TODO
     "Kuvan rajaustapa", //  9
     "",             // 10 TODO
@@ -107,7 +107,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Désentrelacement", //  7
     "",             //  8 TODO
     "Lomituksen poisto",    //  9
     "",             // 10 TODO
@@ -130,7 +130,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Format de pixel", //  7
     "",             //  8 TODO
     "Pikseliformaatti", //  9
     "",             // 10 TODO
@@ -153,7 +153,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Mirroir horizontal", //  7
     "",             //  8 TODO
     "Kuvan peilaus",//  9
     "",             // 10 TODO
@@ -176,7 +176,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Délai A/V",    //  7
     "",             //  8 TODO
     "A/V-viive",    //  9
     "",             // 10 TODO
@@ -199,7 +199,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Proportion de l'écran", //  7
     "",             //  8 TODO
     "Näytön kuvasuhde",   //  9
     "",             // 10 TODO
@@ -222,7 +222,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Affichage",    //  7
     "",             //  8 TODO
     "Näytön ulostulo", //  9
     "",             // 10 TODO
@@ -245,7 +245,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Fusion du menu avec la vidéo", //  7
     "",             //  8 TODO
     "Kuvaruutunäytön läpinäkyvyys", //  9
     "",             // 10 TODO
@@ -268,7 +268,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "oui",          //  7
     "",             //  8 TODO
     "päällä",       //  9
     "",             // 10 TODO
@@ -291,7 +291,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "non",          //  7
     "",             //  8 TODO
     "pois",         //  9
     "",             // 10 TODO
@@ -314,7 +314,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Sortie AC3",   //  7
     "",             //  8 TODO
     "AC3-äänet",    //  9
     "",             // 10 TODO
@@ -337,7 +337,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Mémoire tampon", //  7
     "",             //  8 TODO
     "Puskurointitapa", //  9
     "",             // 10 TODO
@@ -360,7 +360,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Bouton de changement d'aspect", //  7
     "",             //  8 TODO
     "Näppäin kuvan rajaukselle", //  9
     "",             // 10 TODO
@@ -383,7 +383,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Lignes à enlever en haut", //  7
     "",             //  8 TODO
     "Rajaa kuvaa ylhäältä", //  9
     "",             // 10 TODO
@@ -406,7 +406,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Lignes à enlever en bas", //  7
     "",             //  8 TODO
     "Rajaa kuvaa alhaalta", //  9
     "",             // 10 TODO
@@ -429,7 +429,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Colonnes à enlever à gauche", //  7
     "",             //  8 TODO
     "Rajaa kuvaa vasemmalta", //  9
     "",             // 10 TODO
@@ -452,7 +452,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Colonnes à enlever à droite", //  7
     "",             //  8 TODO
     "Rajaa kuvaa oikealta", //  9
     "",             // 10 TODO
@@ -475,7 +475,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Post-traitement", //  7
     "",             //  8 TODO
     "Kuvan jälkikäsittely", //  9
     "",             // 10 TODO
@@ -498,7 +498,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Qualité du post-traitement", //  7
     "",             //  8 TODO
     "Kuvan jälkikäsittelyn laatu", //  9
     "",             // 10 TODO
@@ -521,7 +521,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Utiliser StretchBlit", //  7
     "",             //  8 TODO
     "Käytä StretchBlit-metodia", //  9
     "",             // 10 TODO
@@ -544,7 +544,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "aucun",        //  7
     "",             //  8 TODO
     "ei",           //  9
     "",             // 10 TODO
@@ -567,7 +567,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "rapide",       //  7
     "",             //  8 TODO
     "nopea",        //  9
     "",             // 10 TODO
@@ -590,7 +590,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "défaut",       //  7
     "",             //  8 TODO
     "oletus",       //  9
     "",             // 10 TODO
@@ -613,7 +613,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "activé",       //  7
     "",             //  8 TODO
     "toiminnassa",  //  9
     "",             // 10 TODO
@@ -636,7 +636,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "suspendu",     //  7
     "",             //  8 TODO
     "pysäytetty",   //  9
     "",             // 10 TODO
@@ -659,7 +659,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "pseudo",       //  7
     "",             //  8 TODO
     "näennäinen",   //  9
     "",             // 10 TODO
@@ -682,7 +682,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "logiciel",     //  7
     "",             //  8 TODO
     "ohjelmallinen",//  9
     "",             // 10 TODO
@@ -705,7 +705,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "limitée",      //  7
     "",             //  8 TODO
     "tallennus",    //  9
     "",             // 10 TODO
@@ -728,7 +728,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "précision",    //  7
     "",             //  8 TODO
     "nopea haku",   //  9
     "",             // 10 TODO
@@ -751,7 +751,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "HDTV",         //  7
     "",             //  8 TODO
     "HDTV",         //  9
     "",             // 10 TODO
@@ -774,7 +774,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "16:9 large",   //  7
     "",             //  8 TODO
     "16:9 laaja",   //  9
     "",             // 10 TODO
@@ -797,7 +797,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "4:3 normal",   //  7
     "",             //  8 TODO
     "4:3 normaali", //  9
     "",             // 10 TODO
