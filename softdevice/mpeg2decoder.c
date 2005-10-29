@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.56 2005/10/29 08:30:27 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.57 2005/10/29 23:06:48 lucke Exp $
  */
 
 #include <math.h>
@@ -59,13 +59,13 @@ int cPacketQueue::PutPacket(const AVPacket &Packet) {
       BUFDEB("PacketQueue.EnableGet.Signal\n");
       EnableGet.Signal();
   };
-  
+
   if (FirstPacket == Next(LastPacket) ) {
         BUFDEB("PacketQueue.EnablePut.Sleep start\n");
         EnablePut.Sleep(50000);
         BUFDEB("PacketQueue.EnablePut.Sleep stop\n");
   };
-  
+
   if (FirstPacket != Next(LastPacket) ) {
     queue[LastPacket]=Packet;
     LastPacket=Next(LastPacket);
@@ -88,7 +88,7 @@ AVPacket * cPacketQueue::GetReadPacket() {
        EnableGet.Sleep(10000);  
        BUFDEB("PacketQueue.EnableGet.Sleep stop pid: %d \n",getpid());
   };
-  
+
   if ( FirstPacket != LastPacket )
     return &queue[FirstPacket];
 
@@ -157,7 +157,7 @@ cStreamDecoder::~cStreamDecoder()
   if (codec && context)  
     avcodec_close(context);
   else fprintf(stderr,"Error not closing context %p, codec %p\n",context,codec);
-  
+
   PacketQueue.Clear();
 }
 
@@ -173,7 +173,7 @@ void cStreamDecoder::Action()
       PacketQueue.Available(),getpid(),context->codec_type );
     usleep(10000);
   };
- 
+
   while(active)
   {
     BUFDEB("while loop start StreamDecoder  pid:%d type %d\n",getpid(),context->codec_type );
@@ -278,7 +278,7 @@ bool cStreamDecoder::initCodec(void)
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
       context->flags|= CODEC_FLAG_TRUNCATED;
   }
-  
+
   if ( (ret=avcodec_open(context, codec)) < 0)
   {
     printf("[mpegdecoder] Error! Could not open codec %d Error: %d\n",
@@ -555,14 +555,14 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     }
     size-=len;
     data+=len;
- 
+
     // save coded picture number together with corresponding pts
     if (context->coded_frame  &&
         context->coded_frame->coded_picture_number!=lastCodedPictNo
         && lastPTS != (int64_t) AV_NOPTS_VALUE ) {
       pts_values[lastPTSidx].pts = lastPTS;
       pts_values[lastPTSidx].duration = lastDuration;
-      pts_values[lastPTSidx].coded_frame_no = 
+      pts_values[lastPTSidx].coded_frame_no =
         context->coded_frame->coded_picture_number;
       lastPTSidx = (lastPTSidx+1)%NO_PTS_VALUES;
       lastCodedPictNo = context->coded_frame->coded_picture_number;
@@ -571,12 +571,12 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
         lastPTS,
         lastPTSidx);
       lastPTS = AV_NOPTS_VALUE;
-    };
-    
+    }
+
     if (pkt->pts != (int64_t) AV_NOPTS_VALUE) {
          lastPTS=pkt->pts;
          lastDuration=pkt->duration;
-         
+
          if (lastDuration) {
 #if LIBAVCODEC_BUILD > 4753
                  default_frametime=context->time_base.num*
@@ -621,21 +621,34 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     height = context->height;
     pix_fmt = context->pix_fmt;
 
-
     // find decoded pictures pts value
     int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
     while ( picture->coded_picture_number !=
-                pts_values[findPTS].coded_frame_no && 
-                findPTS != lastPTSidx) 
+                pts_values[findPTS].coded_frame_no &&
+                findPTS != lastPTSidx)
          findPTS=(findPTS+1)%NO_PTS_VALUES;
-   
-     // found corresponding pts value
-     if (picture->coded_picture_number==pts_values[findPTS].coded_frame_no) {
-          MPGDEB("video pts: %lld, values.pkt : %lld pts - valid PTS: %lld pictno: %d idx: %d\n",
-          pts,pts_values[findPTS].pts,(int) pts - pts_values[findPTS].pts,
-          picture->coded_picture_number,findPTS);
-          pts = pts_values[findPTS].pts;
-     };
+
+    // found corresponding pts value
+    if (picture->coded_picture_number==pts_values[findPTS].coded_frame_no) {
+      MPGDEB("video pts: %lld, values.pkt : %lld pts - valid PTS: %lld pictno: %d idx: %d\n",
+             pts,pts_values[findPTS].pts,(int) pts - pts_values[findPTS].pts,
+             picture->coded_picture_number,findPTS);
+      pts = pts_values[findPTS].pts;
+    }
+
+    /* ------------------------------------------------------------------------
+     * DV read via dv1394 seems to have
+     * context->coded_frame->coded_picture_number
+     * always set to zero. Therefor lets do the following guess upon current
+     * PTS value. Don't know if there are other codecs which deliver
+     * codec_picture_number as zero.
+     * Hopefully noone else will see '#' chars printed.
+     */
+    if (!pts && lastPTS != (int64_t) AV_NOPTS_VALUE)
+    {
+       fprintf(stderr,"#");
+       pts = lastPTS;
+    }
 
   if (!hurry_up || frame % 2 )
     videoOut->DrawVideo_420pl(syncTimer, &delay, picture,context);
@@ -666,9 +679,9 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 
   // calculate delay
   delay += ( frametime() - pts_corr  ) * 100;
-  // update video pts 
+  // update video pts
   pts += frametime();
- 
+
   if (delay > 2*frametime()*100)
     delay = 2*frametime()*100;
   else if (delay < -frametime()*100)
