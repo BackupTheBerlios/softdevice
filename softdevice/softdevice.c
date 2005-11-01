@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.45 2005/10/29 08:30:27 lucke Exp $
+ * $Id: softdevice.c,v 1.46 2005/11/01 20:50:24 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -672,7 +672,11 @@ const char *cPluginSoftDevice::Description(void)
 { return tr(DESCRIPTION); }
 
 const char *cPluginSoftDevice::MainMenuEntry(void)
-{ return tr(MAINMENUENTRY); }
+{
+  if (setupStore.mainMenu)
+    return tr(MAINMENUENTRY);
+  return NULL;
+}
 
 const char *cPluginSoftDevice::CommandLineHelp(void)
 {

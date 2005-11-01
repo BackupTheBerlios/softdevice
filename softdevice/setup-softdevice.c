@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.30 2005/10/27 05:29:39 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.31 2005/11/01 20:50:24 lucke Exp $
  */
 
 #include "video.h"
@@ -124,6 +124,8 @@ cSetupStore::cSetupStore ()
   useMGAtv      = 0;
   useStretchBlit = 0;
   bufferMode    = 0;
+  mainMenu  = 1;
+
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
    * for non square pixel mode should be set via osd to 720/576
@@ -332,6 +334,10 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     alsaAC3Device [ALSA_DEVICE_NAME_LENGTH-1] = 0;
     fprintf(stderr, "[setup-softdevice] alsa AC3 device set to: %s\n",
             alsaAC3Device);
+  } else if (!strcasecmp(Name, "mainMenu")) {
+    mainMenu = atoi (Value);
+    mainMenu = clamp (0, mainMenu, 1);
+    fprintf(stderr, "[setup-softdevice] mainMenu: %d\n", mainMenu);
   }  else
     return false;
 
@@ -538,6 +544,9 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             &data->ac3Mode,
                             (SETUP_AC3MODENAMES-1),
                             ac3ModeNames));
+
+  Add(new cMenuEditBoolItem(tr("Main menu entry"),
+                            &data->mainMenu, tr("off"), tr("on")));
 }
 
 /* ---------------------------------------------------------------------------
@@ -546,6 +555,36 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
 {
     eOSState state = cOsdMenu::ProcessKey(Key);
 
+#if 0
+  switch (state)
+  {
+    case osUnknown:
+      switch (Key)
+      {
+        case kOk:
+          fprintf(stderr, "--> (%s) <--\n",Get(Current())->Text());
+          if (!strcmp(Get(Current())->Text(),tr("Cropping")))
+          {
+            fprintf(stderr, "## -> (%s) <- ##\n",Get(Current())->Text());
+          }
+          else
+          {
+            Store();
+            state = osBack;
+          }
+          break;
+        default:
+          break;
+      }
+      break;
+    case osBack:
+      setupStore = copyData;
+      fprintf (stderr, "[setup-softdevice] restoring setup state\n");
+      break;
+    default:
+      break;
+  }
+#else
   if (state == osUnknown)
   {
     switch (Key)
@@ -563,6 +602,7 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
     setupStore = copyData;
     fprintf (stderr, "[setup-softdevice] restoring setup state\n");
   }
+#endif
   return state;
 }
 
@@ -603,5 +643,6 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Suspend",            setupStore.shouldSuspend);
   SetupStore ("OSDalphablend",      setupStore.osdMode);
   SetupStore ("AC3Mode",            setupStore.ac3Mode);
-  SetupStore ("bufferMode",            setupStore.bufferMode);
+  SetupStore ("bufferMode",           setupStore.bufferMode);
+  SetupStore ("mainMenu",             setupStore.mainMenu);
 }

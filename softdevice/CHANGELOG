@@ -1,4 +1,7 @@
 Changelog
+2005-11-01:
+    - some some german translations (with help from Andre Neumann)
+    - hide main menu entry via OSD
 2005-10-29:
     - french translations (by Nicolas Huillard)
     - packet playback: assume we get complete frames via packet interface.
