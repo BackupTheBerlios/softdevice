@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.9 2005/10/29 05:10:32 lucke Exp $
+ * $Id: i18n.c,v 1.10 2005/11/01 19:34:53 lucke Exp $
  */
 
 #include "i18n.h"
@@ -32,8 +32,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "A software emulated MPEG2 device", //  1
-    "",             //  2 TODO
+  { "A software emulated MPEG2 device",   //  1
+    "Software-Ausgabegerät",              //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO   
@@ -102,7 +102,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Deinterlace Method",   //  1
-    "Deinterlace Method",   //  2
+    "Deinterlace Methode",   //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -125,7 +125,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Pixel Format",   //  1
-    "Pixel Format",   //  2
+    "Pixelformat",   //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -332,7 +332,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Buffer Mode",  //  1
-    "",             //  2 TODO
+    "Puffermodus",  //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -354,8 +354,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "CropModeToggleKey", //  1
-    "",             //  2 TODO
+  { "CropModeToggleKey",                  //  1
+    "Bildausschnitt-Taste",               //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -377,8 +377,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Crop lines from top", //  1
-    "",             //  2 TODO
+  { "Crop lines from top",                //  1
+    "Zeilen von oben abschneiden",        //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -400,8 +400,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Crop lines from bottom", //  1
-    "",             //  2 TODO
+  { "Crop lines from bottom",             //  1
+    "Zeilen von unten abschneiden",       //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -423,8 +423,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Crop columns from left", //  1
-    "",             //  2 TODO
+  { "Crop columns from left",             //  1
+    "Spalten von links abschneiden",      //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -446,8 +446,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Crop columns from right", //  1
-    "",             //  2 TODO
+  { "Crop columns from right",            //  1
+    "Spalten von rechts abschneiden",     //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -469,8 +469,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Postprocessing Method", //  1
-    "",             //  2 TODO
+  { "Postprocessing Method",              //  1
+    "Bildnachbearbeitungsmethode",        //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -492,8 +492,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Postprocessing Quality", //  1
-    "",             //  2 TODO
+  { "Postprocessing Quality",             //  1
+    "Nachbearbeitungs Qualität",          //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -515,8 +515,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Use StretchBlit", //  1
-    "",             //  2 TODO
+  { "Use StretchBlit",                    //  1
+    "StretchBlit verwenden",              //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -562,7 +562,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "fast",         //  1
-    "",             //  2 TODO
+    "schnell",      //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -585,7 +585,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "default",      //  1
-    "",             //  2 TODO
+    "standart",     //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -608,7 +608,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "playing",      //  1
-    "",             //  2 TODO
+    "aktiviert",    //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -631,7 +631,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "suspended",    //  1
-    "",             //  2 TODO
+    "deaktiviert",                        //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -654,7 +654,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "pseudo",       //  1
-    "",             //  2 TODO
+    "pseudo",       //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -700,7 +700,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "save",         //  1
-    "",             //  2 TODO
+    "sicher",       //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -746,7 +746,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "HDTV",         //  1
-    "",             //  2 TODO
+    "HDTV",         //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -768,8 +768,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "16:9 wide",    //  1
-    "",             //  2 TODO
+  { "16:9 wide",                          //  1
+    "16:9 Breitbild",                     //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -791,8 +791,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "4:3 normal",   //  1
-    "",             //  2 TODO
+  { "4:3 normal",                         //  1
+    "4:3 Normalbild",                     //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
