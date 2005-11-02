@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.20 2005/11/01 20:50:24 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.21 2005/11/02 03:30:05 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -66,12 +66,42 @@ class cSetupStore {
 
 /* ---------------------------------------------------------------------------
  */
+class cMenuSetupCropping : public cOsdMenu
+{
+  private:
+    cSetupStore *data, copyData;
+
+  protected:
+    virtual eOSState ProcessKey(eKeys Key);
+
+  public:
+    cMenuSetupCropping(const char *name);
+};
+
+/* ---------------------------------------------------------------------------
+ */
+class cMenuSetupPostproc : public cOsdMenu
+{
+  private:
+    cSetupStore *data, copyData;
+
+  protected:
+    virtual eOSState ProcessKey(eKeys Key);
+
+  public:
+    cMenuSetupPostproc(const char *name);
+};
+
+/* ---------------------------------------------------------------------------
+ */
 class cMenuSetupSoftdevice : public cMenuSetupPage {
   private:
     cSetupStore *data, copyData;
+
   protected:
     virtual eOSState ProcessKey(eKeys Key);
     virtual void Store(void);
+
   public:
     cMenuSetupSoftdevice(cPlugin *plugin = NULL);
 };

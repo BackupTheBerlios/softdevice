@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.31 2005/11/01 20:50:24 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.32 2005/11/02 03:30:05 lucke Exp $
  */
 
 #include "video.h"
@@ -396,31 +396,12 @@ bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64 key)
   return false;
 }
 
-/* --------------------------------------------------------------------------- */
-cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
+/* ---------------------------------------------------------------------------
+ */
+cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
 {
-  if (plugin)
-    SetPlugin(plugin);
-
   copyData = setupStore;
   data = &setupStore;
-
-  if (data->outputMethod == VOUT_XV)
-  {
-    xv_startup_aspect[0] = tr("16:9 wide");
-    xv_startup_aspect[1] = tr("4:3 normal");
-    Add(new cMenuEditStraItem(tr("Xv startup aspect"),
-                             &data->xvAspect,
-                             (SETUP_XVSTARTUPASPECT-1),
-                             xv_startup_aspect));
-
-    /* ------------------------------------------------------------------------
-     * don't offer that menu option as there is no immediate check
-     * if we have a still a operational system
-     */
-    //Add(new cMenuEditBoolItem(tr("Xv MaxArea"),
-    //                         &data->xvMaxArea, tr("no"), tr("yes")));
-  }
 
   crop_str[0] = tr("none");
   Add(new cMenuEditStraItem(tr("CropMode"),
@@ -458,6 +439,42 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                              0,
                              MAX_CROP_COLS));
   }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+eOSState cMenuSetupCropping::ProcessKey(eKeys Key)
+{
+    eOSState state = cOsdMenu::ProcessKey(Key);
+
+  switch (state)
+  {
+    case osUnknown:
+      switch (Key)
+      {
+        case kOk:
+          state = osBack;
+          break;
+        default:
+          break;
+      }
+      break;
+    case osBack:
+      setupStore = copyData;
+      fprintf (stderr, "[setup-cropping] restoring setup state\n");
+      break;
+    default:
+      break;
+  }
+  return state;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+cMenuSetupPostproc::cMenuSetupPostproc(const char *name) : cOsdMenu(name, 33)
+{
+  copyData = setupStore;
+  data = &setupStore;
 
   deint_str[0] = tr("none");
   if (data->outputMethod == VOUT_FB)
@@ -482,7 +499,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 #endif //PP_LIBAVCODEC
                               deint_str));
   }
-  
+
 #ifdef PP_LIBAVCODEC
   pp_str[0] = tr("none");
   pp_str[1] = tr("fast");
@@ -493,12 +510,104 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                               &data->ppQuality,0,6));
 #endif
 
+  Add(new cMenuEditBoolItem(tr("Picture mirroring"),
+                            &data->mirror, tr("off"), tr("on")));
+
+}
+
+/* ---------------------------------------------------------------------------
+ */
+eOSState cMenuSetupPostproc::ProcessKey(eKeys Key)
+{
+    eOSState state = cOsdMenu::ProcessKey(Key);
+
+  switch (state)
+  {
+    case osUnknown:
+      switch (Key)
+      {
+        case kOk:
+          state = osBack;
+          break;
+        default:
+          break;
+      }
+      break;
+    case osBack:
+      setupStore = copyData;
+      fprintf (stderr, "[setup-postproc] restoring setup state\n");
+      break;
+    default:
+      break;
+  }
+  return state;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
+{
+  if (plugin)
+    SetPlugin(plugin);
+
+  copyData = setupStore;
+  data = &setupStore;
+
+  Add(new cOsdItem(tr("Cropping")));
+  Add(new cOsdItem(tr("Post processing")));
+  Add(new cOsdItem(tr(" "), osUnknown, false));
+
+  if (data->outputMethod == VOUT_XV)
+  {
+    xv_startup_aspect[0] = tr("16:9 wide");
+    xv_startup_aspect[1] = tr("4:3 normal");
+    Add(new cMenuEditStraItem(tr("Xv startup aspect"),
+                             &data->xvAspect,
+                             (SETUP_XVSTARTUPASPECT-1),
+                             xv_startup_aspect));
+  }
+
+  videoAspectNames[0] = tr("default");
+  Add(new cMenuEditStraItem(tr("Screen Aspect"),
+                            &data->screenPixelAspect,
+                            (SETUP_VIDEOASPECTNAMES-1),
+                            videoAspectNames));
+
+  osdModeNames[0] = tr("pseudo");
+  osdModeNames[1] = tr("software");
+  Add(new cMenuEditStraItem(tr("OSD alpha blending"),
+                            &data->osdMode,
+                            (SETUP_OSDMODES-1),
+                            osdModeNames));
+
+  Add(new cOsdItem(tr(" "), osUnknown, false));
+
   bufferModes[0] = tr("save");
   bufferModes[1] = tr("good seeking");
   bufferModes[2] = tr("HDTV");
   Add(new cMenuEditStraItem(tr("Buffer Mode"),
                               &data->bufferMode,(SETUP_BUFFERMODES-1),bufferModes));
-  
+
+  suspendVideo[0] = tr("playing");
+  suspendVideo[1] = tr("suspended");
+  Add(new cMenuEditStraItem(tr("Playback"),
+                            &data->shouldSuspend,
+                            (SETUP_SUSPENDVIDEO-1),
+                            suspendVideo));
+
+  Add(new cOsdItem(tr(" "), osUnknown, false));
+
+  Add(new cMenuEditIntItem(tr("A/V Delay"),
+                           &data->avOffset,
+                           MINAVOFFSET, MAXAVOFFSET));
+
+  Add(new cMenuEditStraItem(tr("AC3 Mode"),
+                            &data->ac3Mode,
+                            (SETUP_AC3MODENAMES-1),
+                            ac3ModeNames));
+
+  Add(new cOsdItem(tr(" "), osUnknown, false));
+
   if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
   {
     Add(new cMenuEditStraItem(tr("Pixel Format"),
@@ -513,38 +622,6 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                               &data->useStretchBlit, tr("off"), tr("on")));
   }
 
-  Add(new cMenuEditBoolItem(tr("Picture mirroring"),
-                            &data->mirror, tr("off"), tr("on")));
-
-  Add(new cMenuEditIntItem(tr("A/V Delay"),
-                           &data->avOffset,
-                           MINAVOFFSET, MAXAVOFFSET));
-
-  videoAspectNames[0] = tr("default");
-  Add(new cMenuEditStraItem(tr("Screen Aspect"),
-                            &data->screenPixelAspect,
-                            (SETUP_VIDEOASPECTNAMES-1),
-                            videoAspectNames));
-
-  suspendVideo[0] = tr("playing");
-  suspendVideo[1] = tr("suspended");
-  Add(new cMenuEditStraItem(tr("Playback"),
-                            &data->shouldSuspend,
-                            (SETUP_SUSPENDVIDEO-1),
-                            suspendVideo));
-
-  osdModeNames[0] = tr("pseudo");
-  osdModeNames[1] = tr("software");
-  Add(new cMenuEditStraItem(tr("OSD alpha blending"),
-                            &data->osdMode,
-                            (SETUP_OSDMODES-1),
-                            osdModeNames));
-
-  Add(new cMenuEditStraItem(tr("AC3 Mode"),
-                            &data->ac3Mode,
-                            (SETUP_AC3MODENAMES-1),
-                            ac3ModeNames));
-
   Add(new cMenuEditBoolItem(tr("Main menu entry"),
                             &data->mainMenu, tr("off"), tr("on")));
 }
@@ -555,23 +632,22 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
 {
     eOSState state = cOsdMenu::ProcessKey(Key);
 
-#if 0
   switch (state)
   {
     case osUnknown:
       switch (Key)
       {
         case kOk:
-          fprintf(stderr, "--> (%s) <--\n",Get(Current())->Text());
           if (!strcmp(Get(Current())->Text(),tr("Cropping")))
           {
-            fprintf(stderr, "## -> (%s) <- ##\n",Get(Current())->Text());
+            return AddSubMenu (new cMenuSetupCropping(tr("Cropping")));
           }
-          else
+          else if (!strcmp(Get(Current())->Text(),tr("Post processing")))
           {
-            Store();
-            state = osBack;
+            return AddSubMenu (new cMenuSetupPostproc(tr("Post processing")));
           }
+          Store();
+          state = osBack;
           break;
         default:
           break;
@@ -584,25 +660,6 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
     default:
       break;
   }
-#else
-  if (state == osUnknown)
-  {
-    switch (Key)
-    {
-      case kOk:
-        Store();
-        state = osBack;
-        break;
-      default:
-        break;
-    }
-  }
-  else if (state == osBack)
-  {
-    setupStore = copyData;
-    fprintf (stderr, "[setup-softdevice] restoring setup state\n");
-  }
-#endif
   return state;
 }
 
