@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.57 2005/10/29 23:06:48 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.58 2005/11/04 19:08:16 lucke Exp $
  */
 
 #include <math.h>
@@ -497,7 +497,7 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
   offset=0;
   delay=0;
   hurry_up=0;
-  syncTimer = new cSyncTimer (emRtcTimer);
+  syncTimer = new cSyncTimer ((eSyncMode) setupStore.syncTimerMode);
   syncTimer->Reset();
 
   default_frametime = DEFAULT_FRAMETIME;

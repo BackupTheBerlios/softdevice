@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.32 2005/11/02 03:30:05 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.33 2005/11/04 19:08:16 lucke Exp $
  */
 
 #include "video.h"
@@ -88,6 +88,9 @@ const char *ac3ModeNames[SETUP_AC3MODENAMES];
 #define SETUP_USERKEYS 11
 const char *userKeyUsage[SETUP_USERKEYS];
 
+#define SETUP_SYNC_TIMER_NAMES  4
+const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
+
 /* ----------------------------------------------------------------------------
  */
 static inline int clamp (int min, int val, int max)
@@ -125,6 +128,7 @@ cSetupStore::cSetupStore ()
   useStretchBlit = 0;
   bufferMode    = 0;
   mainMenu  = 1;
+  syncTimerMode = 1;
 
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
@@ -195,6 +199,11 @@ cSetupStore::cSetupStore ()
   ac3ModeNames[2] = "5.1 Analog (4CH)"; // no need to translate?
   ac3ModeNames[3] = "5.1 Analog (6CH)"; // no need to translate?
   ac3ModeNames[4] = NULL;
+
+  syncTimerNames[0] = "usleep";
+  syncTimerNames[1] = "rtc";
+  syncTimerNames[2] = "sig";
+  syncTimerNames[3] = NULL;
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
@@ -338,6 +347,11 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     mainMenu = atoi (Value);
     mainMenu = clamp (0, mainMenu, 1);
     fprintf(stderr, "[setup-softdevice] mainMenu: %d\n", mainMenu);
+  } else if (!strcasecmp(Name, "syncTimerMode")) {
+    syncTimerMode = atoi (Value);
+    syncTimerMode = clamp (0, syncTimerMode, 2);
+    fprintf(stderr, "[setup-softdevice] syncTimerMode: %d\n",
+            syncTimerNames[syncTimerMode]);
   }  else
     return false;
 
@@ -417,6 +431,8 @@ cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
 
   if (data->outputMethod != VOUT_FB)
   {
+    Add(new cOsdItem(tr(" "), osUnknown, false));
+
     Add(new cMenuEditIntItem(tr("Crop lines from top"),
                              &data->cropTopLines,
                              0,
@@ -606,6 +622,11 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_AC3MODENAMES-1),
                             ac3ModeNames));
 
+  Add(new cMenuEditStraItem(tr("Sync Mode"),
+                            &data->syncTimerMode,
+                            (SETUP_SYNC_TIMER_NAMES-1),
+                            syncTimerNames));
+
   Add(new cOsdItem(tr(" "), osUnknown, false));
 
   if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
@@ -622,8 +643,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                               &data->useStretchBlit, tr("off"), tr("on")));
   }
 
-  Add(new cMenuEditBoolItem(tr("Main menu entry"),
-                            &data->mainMenu, tr("off"), tr("on")));
+  Add(new cMenuEditBoolItem(tr("Hide main menu entry"),
+                            &data->mainMenu, tr("yes"), tr("no")));
 }
 
 /* ---------------------------------------------------------------------------
@@ -702,4 +723,5 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("AC3Mode",            setupStore.ac3Mode);
   SetupStore ("bufferMode",           setupStore.bufferMode);
   SetupStore ("mainMenu",             setupStore.mainMenu);
+  SetupStore ("syncTimerMode",        setupStore.syncTimerMode);
 }
