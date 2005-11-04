@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.34 2005/11/04 20:52:50 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.35 2005/11/04 21:36:12 lucke Exp $
  */
 
 #include "video.h"
@@ -350,7 +350,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   } else if (!strcasecmp(Name, "syncTimerMode")) {
     syncTimerMode = atoi (Value);
     syncTimerMode = clamp (0, syncTimerMode, 2);
-    fprintf(stderr, "[setup-softdevice] syncTimerMode: %d\n",
+    fprintf(stderr, "[setup-softdevice] syncTimerMode: %s\n",
             syncTimerNames[syncTimerMode]);
   }  else
     return false;
