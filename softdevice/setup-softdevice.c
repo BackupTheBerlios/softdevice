@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.33 2005/11/04 19:08:16 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.34 2005/11/04 20:52:50 lucke Exp $
  */
 
 #include "video.h"
@@ -128,7 +128,7 @@ cSetupStore::cSetupStore ()
   useStretchBlit = 0;
   bufferMode    = 0;
   mainMenu  = 1;
-  syncTimerMode = 1;
+  syncTimerMode = 2;
 
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
@@ -431,7 +431,7 @@ cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
 
   if (data->outputMethod != VOUT_FB)
   {
-    Add(new cOsdItem(tr(" "), osUnknown, false));
+    Add(new cOsdItem(" ", osUnknown, false));
 
     Add(new cMenuEditIntItem(tr("Crop lines from top"),
                              &data->cropTopLines,
@@ -571,7 +571,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 
   Add(new cOsdItem(tr("Cropping")));
   Add(new cOsdItem(tr("Post processing")));
-  Add(new cOsdItem(tr(" "), osUnknown, false));
+  Add(new cOsdItem(" ", osUnknown, false));
 
   if (data->outputMethod == VOUT_XV)
   {
@@ -596,7 +596,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_OSDMODES-1),
                             osdModeNames));
 
-  Add(new cOsdItem(tr(" "), osUnknown, false));
+  Add(new cOsdItem(" ", osUnknown, false));
 
   bufferModes[0] = tr("save");
   bufferModes[1] = tr("good seeking");
@@ -611,7 +611,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_SUSPENDVIDEO-1),
                             suspendVideo));
 
-  Add(new cOsdItem(tr(" "), osUnknown, false));
+  Add(new cOsdItem(" ", osUnknown, false));
 
   Add(new cMenuEditIntItem(tr("A/V Delay"),
                            &data->avOffset,
@@ -627,7 +627,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_SYNC_TIMER_NAMES-1),
                             syncTimerNames));
 
-  Add(new cOsdItem(tr(" "), osUnknown, false));
+  Add(new cOsdItem(" ", osUnknown, false));
 
   if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
   {
