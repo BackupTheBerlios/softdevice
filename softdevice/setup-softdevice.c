@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.35 2005/11/04 21:36:12 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.36 2005/11/04 22:32:02 lucke Exp $
  */
 
 #include "video.h"
@@ -431,7 +431,11 @@ cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
 
   if (data->outputMethod != VOUT_FB)
   {
+#if VDRVERSNUM >= 10334
     Add(new cOsdItem(" ", osUnknown, false));
+#else
+    Add(new cOsdItem(" ", osUnknown));
+#endif
 
     Add(new cMenuEditIntItem(tr("Crop lines from top"),
                              &data->cropTopLines,
@@ -571,7 +575,11 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 
   Add(new cOsdItem(tr("Cropping")));
   Add(new cOsdItem(tr("Post processing")));
+#if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
+#else
+  Add(new cOsdItem(" ", osUnknown));
+#endif
 
   if (data->outputMethod == VOUT_XV)
   {
@@ -596,7 +604,11 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_OSDMODES-1),
                             osdModeNames));
 
+#if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
+#else
+  Add(new cOsdItem(" ", osUnknown));
+#endif
 
   bufferModes[0] = tr("save");
   bufferModes[1] = tr("good seeking");
@@ -611,7 +623,11 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_SUSPENDVIDEO-1),
                             suspendVideo));
 
+#if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
+#else
+  Add(new cOsdItem(" ", osUnknown));
+#endif
 
   Add(new cMenuEditIntItem(tr("A/V Delay"),
                            &data->avOffset,
@@ -627,7 +643,11 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_SYNC_TIMER_NAMES-1),
                             syncTimerNames));
 
+#if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
+#else
+  Add(new cOsdItem(" ", osUnknown));
+#endif
 
   if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
   {
