@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.10 2005/11/01 19:34:53 lucke Exp $
+ * $Id: i18n.c,v 1.11 2005/11/04 19:03:24 lucke Exp $
  */
 
 #include "i18n.h"
@@ -109,7 +109,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "Désentrelacement", //  7
     "",             //  8 TODO
-    "Lomituksen poisto",    //  9
+    "Käytä lomituksen poistoa", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -477,7 +477,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "Post-traitement", //  7
     "",             //  8 TODO
-    "Kuvan jälkikäsittely", //  9
+    "Käytä kuvan jälkikäsittelyä", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -800,6 +800,75 @@ const tI18nPhrase Phrases[] = {
     "4:3 normal",   //  7
     "",             //  8 TODO
     "4:3 normaali", //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Hide main menu entry", //  1
+    "Hauptmenüeintrag verstecken", //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "Piilota valinta päävalikosta", //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Cropping",     //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "Kuvan rajaus", //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Post processing",//  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO                                                              
+    "",             //  8 TODO
+    "Kuvan jälkikäsittely", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
