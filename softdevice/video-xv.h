@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.9 2005/08/16 08:59:36 wachm Exp $
+ * $Id: video-xv.h,v 1.10 2005/11/06 07:29:16 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -68,18 +68,26 @@ private:
                 *portAttributeSaveValues,
                 *portAttributeCurrentValues;
   Atom          *portAttributeAtoms;
+  cSetupStore   *setupStore;
+  int           currBrightness,
+                currContrast,
+                currHue,
+                currSaturation;
 
   void Restore();
 
 public:
   cXvPortAttributeStore();
   ~cXvPortAttributeStore();
-  void SetXInfo(Display *dpy, XvPortID port);
+  void SetXInfo(Display *dpy, XvPortID port, cSetupStore *setupStore);
   void SetValue(char *name, int value);
+  void SetValuePercent(char *name, int value);
   void SetColorkey(int value);
   void Increment(char *name);
   void Decrement(char *name);
   void Save();
+  bool HasAttribute(char *name);
+  void CheckVideoParmChange();
 };
 
 /* ---------------------------------------------------------------------------

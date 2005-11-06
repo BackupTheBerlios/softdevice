@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.33 2005/10/25 19:35:25 lucke Exp $
+ * $Id: video-xv.c,v 1.34 2005/11/06 07:29:16 lucke Exp $
  */
 
 #include <unistd.h>
@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "2005-07-20"
+#define PATCH_VERSION "2005-11-06"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cXvRemote        *xvRemote = NULL;
@@ -45,6 +45,7 @@ cXvPortAttributeStore::cXvPortAttributeStore() {
   portAttributeCurrentValues = NULL;
   portAttributeAtoms = NULL;
   portAttributeCount = 0;
+  currBrightness = currContrast = currHue = currSaturation = 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -79,10 +80,13 @@ cXvPortAttributeStore::~cXvPortAttributeStore() {
 
 /* ---------------------------------------------------------------------------
  */
-void cXvPortAttributeStore::SetXInfo(Display *dpy, XvPortID port)
+void cXvPortAttributeStore::SetXInfo(Display      *dpy,
+                                     XvPortID     port,
+                                     cSetupStore  *setupStore)
 {
   this->dpy = dpy;
   this->port = port;
+  this->setupStore = setupStore;
 }
 
 /* ---------------------------------------------------------------------------
@@ -96,6 +100,30 @@ void cXvPortAttributeStore::SetValue(char *name, int value)
       if (value <= portAttributes[i].max_value &&
           value >= portAttributes[i].min_value)
       {
+        portAttributeCurrentValues[i] = value;
+        XvSetPortAttribute(dpy,port,portAttributeAtoms[i],portAttributeCurrentValues[i]);
+      }
+      return;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cXvPortAttributeStore::SetValuePercent(char *name, int value)
+{
+  for (int i = 0; i < portAttributeCount; ++i)
+  {
+    if (!strcmp(name,portAttributes[i].name))
+    {
+      value = (int) ((double) portAttributes[i].min_value +
+                      ((double) portAttributes[i].max_value -
+                        (double) portAttributes[i].min_value) *
+                      (double) value / 100.0);
+      if (value <= portAttributes[i].max_value &&
+          value >= portAttributes[i].min_value)
+      {
+fprintf(stderr, " - (%s) new val [%d]\n",name, value);
         portAttributeCurrentValues[i] = value;
         XvSetPortAttribute(dpy,port,portAttributeAtoms[i],portAttributeCurrentValues[i]);
       }
@@ -173,6 +201,15 @@ void cXvPortAttributeStore::Save()
         XvGetPortAttribute(dpy,port,portAttributeAtoms[i],&portAttributeSaveValues[i]);
         portAttributeCurrentValues[i] = portAttributeSaveValues[i];
       }
+      if (!strcmp(portAttributes[i].name, "XV_BRIGHTNESS"))
+        setupStore->vidCaps |= CAP_BRIGHTNESS;
+      if (!strcmp(portAttributes[i].name, "XV_CONTRAST"))
+        setupStore->vidCaps |= CAP_CONTRAST;
+      if (!strcmp(portAttributes[i].name, "XV_HUE"))
+        setupStore->vidCaps |= CAP_HUE;
+      if (!strcmp(portAttributes[i].name, "XV_SATURATION"))
+        setupStore->vidCaps |= CAP_SATURATION;
+
       dsyslog("[XvVideoOut]:"
               "   %-25s %-4sXvGettable %-4sXvSettable "
               "(%8d [0x%08x] - %8d [0x%08x]) (%8d [0x%08x]",
@@ -188,6 +225,54 @@ void cXvPortAttributeStore::Save()
 
     }
   }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+bool cXvPortAttributeStore::HasAttribute(char *name)
+{
+  for (int i = 0; i < portAttributeCount; ++i)
+  {
+    if (!strcmp(name,portAttributes[i].name))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cXvPortAttributeStore::CheckVideoParmChange()
+{
+    int changed = 0;
+
+  if (currBrightness != setupStore->vidBrightness)
+  {
+    changed++;
+    currBrightness = setupStore->vidBrightness;
+    SetValuePercent("XV_BRIGHTNESS", currBrightness);
+  }
+  if (currContrast != setupStore->vidContrast)
+  {
+    changed++;
+    currContrast = setupStore->vidContrast;
+    SetValuePercent("XV_CONTRAST", currContrast);
+  }
+  if (currHue != setupStore->vidHue)
+  {
+    changed++;
+    currHue = setupStore->vidHue;
+    SetValuePercent("XV_HUE", currHue);
+  }
+  if (currSaturation != setupStore->vidSaturation)
+  {
+    changed++;
+    currSaturation = setupStore->vidSaturation;
+    SetValuePercent("XV_SATURATION", currSaturation);
+  }
+  if (changed)
+    XSync(dpy, False);
 }
 
 /* ---------------------------------------------------------------------------
@@ -559,17 +644,20 @@ void cXvVideoOut::ProcessEvents ()
     }
   }
 
-  if (xv_initialized && map_count) {
-    XClearArea (dpy, win, 0, 0, 0, 0, True);
-    XvShmPutImage(dpy, port,
-                  win, gc,
-                  xv_image,
-                  sxoff, syoff,      /* sx, sy */
-                  swidth, sheight,   /* sw, sh */
-                  lxoff,  lyoff,     /* dx, dy */
-                  lwidth, lheight,   /* dw, dh */
-                  False);
-    XSync(dpy, False);
+  if (xv_initialized) {
+    if (map_count) {
+      XClearArea (dpy, win, 0, 0, 0, 0, True);
+      XvShmPutImage(dpy, port,
+                    win, gc,
+                    xv_image,
+                    sxoff, syoff,      /* sx, sy */
+                    swidth, sheight,   /* sw, sh */
+                    lxoff,  lyoff,     /* dx, dy */
+                    lwidth, lheight,   /* dw, dh */
+                    False);
+      XSync(dpy, False);
+    }
+    attributeStore.CheckVideoParmChange();
   }
 
   if(cursor_visible == True) {
@@ -964,7 +1052,7 @@ bool cXvVideoOut::Reconfigure(int format)
     return true;
   }
 
-  attributeStore.SetXInfo(dpy,port);
+  attributeStore.SetXInfo(dpy,port,setupStore);
   attributeStore.Save();
   attributeStore.SetColorkey(0x00000000);
   attributeStore.SetValue("XV_AUTOPAINT_COLORKEY",1);
