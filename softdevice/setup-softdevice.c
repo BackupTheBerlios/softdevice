@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.36 2005/11/04 22:32:02 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.37 2005/11/06 07:26:31 lucke Exp $
  */
 
 #include "video.h"
@@ -129,6 +129,8 @@ cSetupStore::cSetupStore ()
   bufferMode    = 0;
   mainMenu  = 1;
   syncTimerMode = 2;
+  vidCaps = 0;
+  vidBrightness = vidHue = vidContrast = vidSaturation = VID_MAX_PARM_VALUE / 2;
 
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
@@ -352,6 +354,22 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     syncTimerMode = clamp (0, syncTimerMode, 2);
     fprintf(stderr, "[setup-softdevice] syncTimerMode: %s\n",
             syncTimerNames[syncTimerMode]);
+  } else if (!strcasecmp(Name, "vidBrightness")) {
+    vidBrightness = atoi (Value);
+    vidBrightness = clamp (0, vidBrightness, 100);
+    fprintf(stderr, "[setup-softdevice] vidBrightness: %d\n", vidBrightness);
+  } else if (!strcasecmp(Name, "vidContrast")) {
+    vidContrast = atoi (Value);
+    vidContrast = clamp (0, vidContrast, 100);
+    fprintf(stderr, "[setup-softdevice] vidContrast: %d\n", vidContrast);
+  } else if (!strcasecmp(Name, "vidHue")) {
+    vidHue = atoi (Value);
+    vidHue = clamp (0, vidHue, 100);
+    fprintf(stderr, "[setup-softdevice] vidHue: %d\n", vidHue);
+  } else if (!strcasecmp(Name, "vidSaturation")) {
+    vidSaturation = atoi (Value);
+    vidSaturation = clamp (0, vidSaturation, 100);
+    fprintf(stderr, "[setup-softdevice] vidSaturation: %d\n", vidSaturation);
   }  else
     return false;
 
@@ -408,6 +426,71 @@ bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64 key)
     }
   }
   return false;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+cMenuSetupVideoParm::cMenuSetupVideoParm(const char *name) : cOsdMenu(name, 33)
+{
+  copyData = setupStore;
+  data = &setupStore;
+
+  if (data->vidCaps & CAP_BRIGHTNESS)
+  {
+    Add(new cMenuEditIntItem(tr("Brightness"),
+                             &data->vidBrightness,
+                             0,
+                             VID_MAX_PARM_VALUE));
+  }
+  if (data->vidCaps & CAP_CONTRAST)
+  {
+    Add(new cMenuEditIntItem(tr("Contrast"),
+                             &data->vidContrast,
+                             0,
+                             VID_MAX_PARM_VALUE));
+  }
+  if (data->vidCaps & CAP_HUE)
+  {
+    Add(new cMenuEditIntItem(tr("Hue"),
+                             &data->vidHue,
+                             0,
+                             VID_MAX_PARM_VALUE));
+  }
+  if (data->vidCaps & CAP_SATURATION)
+  {
+    Add(new cMenuEditIntItem(tr("Saturation"),
+                             &data->vidSaturation,
+                             0,
+                             VID_MAX_PARM_VALUE));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+eOSState cMenuSetupVideoParm::ProcessKey(eKeys Key)
+{
+    eOSState state = cOsdMenu::ProcessKey(Key);
+
+  switch (state)
+  {
+    case osUnknown:
+      switch (Key)
+      {
+        case kOk:
+          state = osBack;
+          break;
+        default:
+          break;
+      }
+      break;
+    case osBack:
+      setupStore = copyData;
+      fprintf (stderr, "[setup-videoparm] restoring setup state\n");
+      break;
+    default:
+      break;
+  }
+  return state;
 }
 
 /* ---------------------------------------------------------------------------
@@ -575,6 +658,12 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 
   Add(new cOsdItem(tr("Cropping")));
   Add(new cOsdItem(tr("Post processing")));
+
+  if (data->vidCaps)
+  {
+    Add(new cOsdItem(tr("Video out")));
+  }
+
 #if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
 #else
@@ -687,6 +776,10 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
           {
             return AddSubMenu (new cMenuSetupPostproc(tr("Post processing")));
           }
+          else if (!strcmp(Get(Current())->Text(),tr("Video out")))
+          {
+            return AddSubMenu (new cMenuSetupVideoParm(tr("Video out")));
+          }
           Store();
           state = osBack;
           break;
@@ -744,4 +837,8 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("bufferMode",           setupStore.bufferMode);
   SetupStore ("mainMenu",             setupStore.mainMenu);
   SetupStore ("syncTimerMode",        setupStore.syncTimerMode);
+  SetupStore ("vidBrightness",        setupStore.vidBrightness);
+  SetupStore ("vidContrast",          setupStore.vidContrast);
+  SetupStore ("vidHue",               setupStore.vidHue);
+  SetupStore ("vidSaturation",        setupStore.vidSaturation);
 }

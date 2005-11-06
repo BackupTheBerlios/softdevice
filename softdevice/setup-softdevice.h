@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.22 2005/11/04 19:08:16 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.23 2005/11/06 07:26:31 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -16,6 +16,13 @@
 #define VOUT_DUMMY    5
 
 #define ALSA_DEVICE_NAME_LENGTH  64
+
+#define CAP_BRIGHTNESS  1
+#define CAP_CONTRAST    2
+#define CAP_HUE         4
+#define CAP_SATURATION  8
+
+#define VID_MAX_PARM_VALUE  100
 
 /* ---------------------------------------------------------------------------
  */
@@ -56,6 +63,11 @@ class cSetupStore {
     int   bufferMode;
     int   mainMenu;
     int   syncTimerMode;
+    int   vidBrightness,
+          vidContrast,
+          vidHue,
+          vidSaturation,
+          vidCaps;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
     char  *voArgs;
@@ -64,6 +76,20 @@ class cSetupStore {
 
 #define OSDMODE_PSEUDO    0
 #define OSDMODE_SOFTWARE  1
+
+/* ---------------------------------------------------------------------------
+ */
+class cMenuSetupVideoParm : public cOsdMenu
+{
+  private:
+    cSetupStore *data, copyData;
+
+  protected:
+    virtual eOSState ProcessKey(eKeys Key);
+
+  public:
+    cMenuSetupVideoParm(const char *name);
+};
 
 /* ---------------------------------------------------------------------------
  */
