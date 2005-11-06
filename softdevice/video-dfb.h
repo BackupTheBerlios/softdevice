@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.11 2005/10/07 09:09:33 lucke Exp $
+ * $Id: video-dfb.h,v 1.12 2005/11/06 17:56:06 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -40,9 +40,11 @@ class cDFBVideoOut : public cVideoOut {
     bool isVIAUnichrome;
     int   clearAlpha;
     int   clearBackCount,
-          clearBackground;
+          clearBackground,
+          fieldParity;
 
     void SetParams();
+    void EnableFieldParity(IDirectFBDisplayLayer *layer);
 
   public:
     IDirectFB	*dfb;

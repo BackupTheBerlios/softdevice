@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.40 2005/09/15 18:23:05 lucke Exp $
+ * $Id: video-dfb.c,v 1.41 2005/11/06 17:56:06 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -253,6 +253,30 @@ static DFBEnumerationResult EnumVideoModeCallback(int x, int y, int bpp, void *d
 
 /* ---------------------------------------------------------------------------
  */
+static void BESColorkeyState(IDirectFBDisplayLayer *layer, bool state)
+{
+  if (layer)
+  {
+      DFBDisplayLayerConfig       dlc;
+    dlc.flags = DLCONF_OPTIONS;
+    dlc.options = (state) ? DLOP_DST_COLORKEY : DLOP_NONE;
+    try
+    {
+      layer->SetConfiguration(dlc);
+      layer->SetDstColorKey(COLORKEY);
+    }
+    catch (DFBException *ex)
+    {
+      fprintf (stderr,"[dfb] BES-%s: action=%s, result=%s\n",
+               (state) ? "ON" : "OFF",
+               ex->GetAction(), ex->GetResult());
+      delete ex;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
 cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
               : cVideoOut(setupStore)
 {
@@ -274,6 +298,10 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   clearBackground = 0;
   clearBackCount = 2; // by default for double buffering;
   OSDpresent = false;
+  fieldParity = 0;    // 0 - top field first, 1 - bottom field first
+
+  if(setupStore->viaTv)
+    setupStore->tripleBuffering = 1;
 
   try
   {
@@ -332,24 +360,16 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
     if (setupStore->useMGAtv)
     {
-      DFBDisplayLayerConfig   dlc;
-
-      dlc.flags = (DFBDisplayLayerConfigFlags)
-                  (DLCONF_PIXELFORMAT | DLCONF_BUFFERMODE | DLCONF_OPTIONS);
-      //dlc.buffermode = DLBM_BACKVIDEO;
-      dlc.buffermode = DLBM_TRIPLE;
-      clearBackCount = 3;             // 3 for triple, 2 for double buffering
-      dlc.pixelformat = DSPF_ARGB;
-      dlc.options = DLOP_FIELD_PARITY;
-
-      osdLayer->SetCooperativeLevel(DLSCL_EXCLUSIVE);
-      osdLayer->SetOpacity(0xff);
-      osdLayer->SetConfiguration(dlc);
-      osdLayer->SetFieldParity(0);
+      EnableFieldParity(osdLayer);
       scrSurface = osdLayer->GetSurface();
     }
     else
     {
+      if (setupStore->viaTv)
+      {
+        EnableFieldParity(videoLayer);
+      }
+
       scrSurface = dfb->CreateSurface (scrDsc);
     }
 
@@ -479,6 +499,9 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
         fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
         videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
 
+        if (!setupStore->viaTv)
+          BESColorkeyState(videoLayer, true);
+
         fprintf(stderr,"[dfb] Configuring CooperativeLevel for OSD\n");
         osdLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
       }
@@ -502,6 +525,54 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
              ex->GetAction(), ex->GetResult());
     delete ex;
     exit(EXIT_FAILURE);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::EnableFieldParity(IDirectFBDisplayLayer *layer)
+{
+    DFBDisplayLayerConfig         dlc;
+    DFBDisplayLayerDescription    desc;
+
+  desc = layer->GetDescription();
+
+  dlc.flags = (DFBDisplayLayerConfigFlags)
+                (DLCONF_PIXELFORMAT | DLCONF_BUFFERMODE | DLCONF_OPTIONS);
+  dlc.buffermode = DLBM_TRIPLE;
+  fprintf(stderr,"[dfb] Set DLBM_TRIPLE for layer [%s]\n", desc.name);
+
+  dlc.pixelformat = DSPF_ARGB;
+  clearBackCount = 3;             // 3 for triple, 2 for double buffering
+
+  if (desc.caps & DLCAPS_FIELD_PARITY)
+  {
+    dlc.options = DLOP_FIELD_PARITY;
+    fprintf(stderr,
+            "[dfb] DLOP_FIELD_PARITY supported by layer [%s]\n",
+            desc.name);
+  }
+  else
+  {
+    dlc.options = DLOP_NONE;
+    fprintf(stderr,
+            "[dfb] DLOP_FIELD_PARITY not supported by layer [%s]\n",
+            desc.name);
+  }
+
+  try
+  {
+    layer->SetCooperativeLevel(DLSCL_EXCLUSIVE);
+    layer->SetOpacity(0xff);
+    layer->SetConfiguration(dlc);
+    if (desc.caps & DLCAPS_FIELD_PARITY)
+      layer->SetFieldParity(fieldParity);
+  }
+  catch(DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] EnableFieldParity: action=%s, result=%s\n",
+             ex->GetAction(), ex->GetResult());
+    delete ex;
   }
 }
 
@@ -724,9 +795,11 @@ void cDFBVideoOut::SetParams()
           }
         }
 
-        if (setupStore->useMGAtv)
+        if (setupStore->useMGAtv || setupStore->viaTv) {
           dlc.options = (DFBDisplayLayerOptions)((int)dlc.options|
                                                  DLOP_FIELD_PARITY);
+          fprintf(stderr, "[dfb] SetParams: Enabling DLOP_FIELD_PARITY\n");
+        }
         try
         {
           if (isVIAUnichrome)
@@ -746,22 +819,44 @@ void cDFBVideoOut::SetParams()
         dlc.flags = (DFBDisplayLayerConfigFlags)
                       ((int) dlc.flags | DLCONF_BUFFERMODE);
 
-        //dlc.buffermode = DLBM_TRIPLE;
+        dlc.buffermode = DLBM_UNKNOWN;
+        if (setupStore->tripleBuffering)
+        {
+          dlc.buffermode = DLBM_TRIPLE;
 
-        //videoLayer->TestConfiguration(dlc, &failed);
-        //if (failed & DLCONF_BUFFERMODE)
-        //{
-        //  fprintf(stderr, "[dfb]: SetParms (): failed to set buffermode "
-        //          "to triple mode, trying back video\n");
-          dlc.buffermode = DLBM_BACKVIDEO;
-          videoLayer->TestConfiguration(dlc, &failed);
-          if (failed & DLCONF_BUFFERMODE)
+          try
           {
-            fprintf(stderr, "[dfb]: SetParams: failed to set buffermode "
-                    "to back video, reverting to normal\n");
-            dlc.buffermode = DLBM_FRONTONLY;
+            videoLayer->TestConfiguration(dlc, &failed);
           }
-        //}
+          catch (DFBException *ex)
+          {
+            if (failed & DLCONF_BUFFERMODE)
+            {
+              fprintf(stderr, "[dfb]: SetParms (): failed to set buffermode "
+                      "to triple, will try back video\n");
+              dlc.buffermode = DLBM_UNKNOWN;
+            }
+            delete ex;
+          }
+        }
+        if (dlc.buffermode == DLBM_UNKNOWN)
+        {
+          dlc.buffermode = DLBM_BACKVIDEO;
+          try
+          {
+            videoLayer->TestConfiguration(dlc, &failed);
+          }
+          catch (DFBException *ex)
+          {
+            if (failed & DLCONF_BUFFERMODE)
+            {
+              fprintf(stderr, "[dfb]: SetParams: failed to set buffermode "
+                      "to back video, reverting to normal\n");
+              dlc.buffermode = DLBM_FRONTONLY;
+            }
+            delete ex;
+          }
+        }
 
         /* --------------------------------------------------------------------
          * OK, try to set the video layer configuration
@@ -1257,7 +1352,10 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     }
     else
     {
-      videoSurface->Flip(NULL, DSFLIP_ONSYNC);
+      if (setupStore->tripleBuffering)
+        videoSurface->Flip(/*NULL, DSFLIP_ONSYNC*/);
+      else
+        videoSurface->Flip(NULL, DSFLIP_ONSYNC);
     }
   }
   catch (DFBException *ex)

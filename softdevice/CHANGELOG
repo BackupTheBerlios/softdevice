@@ -1,6 +1,16 @@
 Changelog
+2005-11-06:
+    - video-xv: some of X11 atoms could be set via OSD too. So using hardcoded
+      hotkeys for brightness, contrast, hue and saturation is obsolete and
+      may be removed soon.
+    - video-dfb: (by Laurence Abbott) selecting field parity and triple buffering
+      on via epia boards. That could be used for others too if primary head
+      is connected to TV. Triple buffering is independently available as a
+      separate option now.
+        "-vo dfb:viatv"
+        "-vo dfb:triple"
 2005-11-04:
-    - some more finish translations (by Rolf Ahrenberg)
+    - some more finnish translations (by Rolf Ahrenberg)
     - sync timer mode selectable via OSD
     - removed translations of empty lines (by Rolf Ahrenberg)
     - made sig timer the default one for new users

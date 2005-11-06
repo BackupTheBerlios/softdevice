@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.37 2005/11/06 07:26:31 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.38 2005/11/06 17:56:06 lucke Exp $
  */
 
 #include "video.h"
@@ -125,8 +125,10 @@ cSetupStore::cSetupStore ()
   shouldSuspend = 0;
   ac3Mode       = 0;
   useMGAtv      = 0;
-  useStretchBlit = 0;
-  bufferMode    = 0;
+  viaTv         = 0;
+  tripleBuffering = 0;
+  useStretchBlit  = 0;
+  bufferMode      = 0;
   mainMenu  = 1;
   syncTimerMode = 2;
   vidCaps = 0;

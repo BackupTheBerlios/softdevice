@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.46 2005/11/01 20:50:24 lucke Exp $
+ * $Id: softdevice.c,v 1.47 2005/11/06 17:56:06 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -698,6 +698,8 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 #ifdef DFB_SUPPORT
   "  -vo dfb:                 enable output via directFB\n"
   "  -vo dfb:mgatv                   output via MATROX TV-out\n"
+  "  -vo dfb:viatv                   output via Unichrome TV-out\n"
+  "  -vo dfb:triple                  enables triple buffering on back end scaler\n"
 #endif
 #ifdef VIDIX_SUPPORT
   "  -vo vidix:               enable output via vidix driver\n"
@@ -788,6 +790,13 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           voutMethod = VOUT_DFB;
           if (!strncmp (vo_argv, "mgatv", 5))
             setupStore.useMGAtv = 1;
+          else if (!strncmp (vo_argv, "viatv", 5)) {
+            setupStore.viaTv = 1;
+            fprintf(stderr,"[softdevice] enabling field parity\n");
+          } else if (!strncmp (vo_argv, "triple", 6)) {
+            setupStore.tripleBuffering = 1;
+            fprintf(stderr,"[softdevice] enabling triple buffering\n");
+          }
 #else
           fprintf(stderr,"[softdevice] dfb support not compiled in\n");
 #endif
