@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.11 2005/11/04 19:03:24 lucke Exp $
+ * $Id: i18n.c,v 1.12 2005/11/06 07:21:45 lucke Exp $
  */
 
 #include "i18n.h"
@@ -869,6 +869,29 @@ const tI18nPhrase Phrases[] = {
     "",             //  7 TODO                                                              
     "",             //  8 TODO
     "Kuvan jälkikäsittely", //  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Sync Mode",//  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "A/V-synkronointitapa", //  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
