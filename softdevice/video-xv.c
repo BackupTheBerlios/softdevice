@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.34 2005/11/06 07:29:16 lucke Exp $
+ * $Id: video-xv.c,v 1.35 2005/11/07 20:59:35 lucke Exp $
  */
 
 #include <unistd.h>
@@ -123,7 +123,6 @@ void cXvPortAttributeStore::SetValuePercent(char *name, int value)
       if (value <= portAttributes[i].max_value &&
           value >= portAttributes[i].min_value)
       {
-fprintf(stderr, " - (%s) new val [%d]\n",name, value);
         portAttributeCurrentValues[i] = value;
         XvSetPortAttribute(dpy,port,portAttributeAtoms[i],portAttributeCurrentValues[i]);
       }
