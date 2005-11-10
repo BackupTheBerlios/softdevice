@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.8 2005/10/07 13:37:53 lucke Exp $
+# $Id: configure,v 1.9 2005/11/10 06:54:07 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -20,6 +20,7 @@ fi
 set -u
 : ${CFLAGS=""}
 
+ffmpeg="yes"
 dfb="yes"
 libpostproc="no"
 cc="g++"
@@ -68,7 +69,13 @@ ffmpeg_l1="libavcodec libavformat"
 
 pkg-config --libs libpostproc >/dev/null 2>&1 && { ffmpeg_l1="$ffmpeg_l1 libpostproc";libpostproc="yes"; }
 
-ffmpeg_libs=`pkg-config --libs $ffmpeg_l1`
+ffmpeg_libs=`pkg-config --libs $ffmpeg_l1` || ffmpeg="no"
+
+if test "${ffmpeg}" = "no" ; then
+  echo "A more recent (cvs) version of ffmpeg is required to run configure"
+  exit 8;
+fi
+
 ffmpeg_cflags=`pkg-config --cflags $ffmpeg_l1`
 
 #########################################################
