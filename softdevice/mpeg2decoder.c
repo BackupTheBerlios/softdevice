@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.58 2005/11/04 19:08:16 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.59 2005/11/12 07:57:41 wachm Exp $
  */
 
 #include <math.h>
@@ -220,14 +220,15 @@ void cStreamDecoder::Play(void)
     syncTimer->Signal();
 };
 
-void cStreamDecoder::Freeze(void)
+void cStreamDecoder::Freeze(bool freeze)
 {
   //printf("freeze mode\n");
-  freezeMode=true;
+  freezeMode=freeze;
 };
 
 void cStreamDecoder::Stop(void)
 {
+  CMDDEB("cStreamDecoder::Stop\n");
   active=false;
   if (syncTimer)
     syncTimer->Signal();
@@ -236,6 +237,7 @@ void cStreamDecoder::Stop(void)
   mutex.Unlock();
   PacketQueue.EnablePutSignal();
   Cancel(3);
+  CMDDEB("cStreamDecoder::Stop finished\n");
 }
 
 void cStreamDecoder::Clear(void)
@@ -463,6 +465,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
 
 cAudioStreamDecoder::~cAudioStreamDecoder()
 {
+  CMDDEB("~cAudioStreamDecoder\n");
   cClock::AdjustAudioPTS(0);
   Cancel(3);
   free(audiosamples);
@@ -512,18 +515,11 @@ void cVideoStreamDecoder::Play(void)
   videoOut->FreezeMode(freezeMode);
 };
 
-void cVideoStreamDecoder::Freeze(void)
+void cVideoStreamDecoder::Freeze(bool freeze)
 {
-  cStreamDecoder::Freeze();
+  cStreamDecoder::Freeze(freeze);
   videoOut->FreezeMode(freezeMode);
 };
-
-void cVideoStreamDecoder::Stop(void)
-{
-  active=false;
-  syncTimer->Signal(); // abort waiting for frame display
-  Cancel(3);
-}
 
 uint64_t cVideoStreamDecoder::GetPTS() {
   return pts - (delay + syncTimer->TimePassed())/100;
@@ -541,13 +537,15 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     if ( context->width  > 2048 || context->height  > 2048 ) {
       fprintf(stderr,"Invalid width (%d) or height (%d), most likely a broken stream\n",
           context->width,context->height);
+      resetCodec();
       return len;
     };
 
     BUFDEB("start decode video stream %d data: %p size: %d \n",
         pkt->stream_index,data,size);
     len = avcodec_decode_video(context, picture, &got_picture,data, size);
-    BUFDEB("end decode video\n");
+    BUFDEB("end decode video got_picture %d, data %p, size %d\n",
+        got_picture,data,size);
     if (len < 0) {
       printf("[mpegdecoder] Error while decoding video frame %d\n", frame);
       resetCodec();
@@ -650,9 +648,11 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
        pts = lastPTS;
     }
 
-  if (!hurry_up || frame % 2 )
+  if (!hurry_up || frame % 2 ) {
+    MPGDEB("DrawVideo...delay : %d\n",delay);
     videoOut->DrawVideo_420pl(syncTimer, &delay, picture,context);
-  else
+    MPGDEB("end DrawVideo\n");
+  } else
     fprintf(stderr,"+");
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
@@ -664,6 +664,8 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   if ( aPTS )
     offset = aPTS - pts ;
   else offset = 0;
+  if ( abs(offset) > 100000)
+          offset=0;
 
   // this few lines does the whole syncing
   int pts_corr;
@@ -702,7 +704,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       (picture->pict_type == FF_P_TYPE ? "P_t":
       (picture->pict_type == FF_B_TYPE ? "B_t":"other"
       )))
-      ,(float)dispTime/1000 );
+      ,(float)dispTime/1000.0 );
   }
 #endif
 
@@ -725,8 +727,8 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     {
       printf("A-V: %02.2f+-%02.2f ms DispTime: %02.2f ms hurry_up: %d\n",
        offsetSum/(float)Freq,
-       sqrt(offsetSqSum/((float)Freq)-(offsetSum*offsetSum)/((float)Freq*Freq)),
-       DispTSum/(float)Freq/1000,hurry_up);
+       sqrt(offsetSqSum/((float)Freq)-(offsetSum*offsetSum)/((float)(Freq*Freq))),
+       DispTSum/(float)Freq/1000.0,hurry_up);
       offsetSum=offsetSqSum=DispTSum=DispTSqSum=0;
       StatCount=0;
     };
@@ -1024,6 +1026,7 @@ cVideoStreamDecoder::~cVideoStreamDecoder()
   cClock::AdjustVideoPTS(0);
   videoOut->InvalidateOldPicture();
   delete(syncTimer);
+  syncTimer=NULL;
   free(picture);
   if (pic_buf_lavc)
      pic_buf_lavc = freePicBuf(pic_buf_lavc);
@@ -1094,15 +1097,22 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
 
 cMpeg2Decoder::~cMpeg2Decoder()
 {
+  aoutMutex.Lock();
   if (aout)
     delete(aout);
   aout=0;
+  aoutMutex.Unlock();
+  
+  voutMutex.Lock();
   if (vout)
     delete(vout);
   vout=0;
+  voutMutex.Unlock();
 }
 
 int cMpeg2Decoder::read_packet(uint8_t *buf, int buf_size) {
+   if (!StreamBuffer)
+           return 0;
    BUFDEB("read_packet Del %d\n",LastSize);
     StreamBuffer->Del(LastSize);
     int size=StreamBuffer->Available(); 
@@ -1172,6 +1182,7 @@ void cMpeg2Decoder::initStream() {
 
    init_put_byte(&ic->pb, NULL,dvb_buf_size[setupStore.bufferMode]/2, 0, this,
        read_packet_RingBuffer,NULL,seek_RingBuffer);
+   ic->pb.buf_end=NULL;
    CMDDEB("init put byte finished\n");
 };
 
@@ -1190,9 +1201,9 @@ void cMpeg2Decoder::Action()
   while(ThreadActive) {
         while (freezeMode && ThreadActive)
           usleep(50000);
-      
-        //ret = av_read_frame(ic, &pkt);
+        
         BUFDEB("av_read_frame start\n");
+        //ret = av_read_frame(ic, &pkt);
         ret = av_read_packet(ic, &pkt);
         if (ret < 0) {
             BUFDEB("cMpeg2Decoder Stream Error!\n");
@@ -1200,13 +1211,14 @@ void cMpeg2Decoder::Action()
 		    usleep(10000);
             continue;
         }
+        //av_dup_packet(&pkt);
         PacketCount++;
         BUFDEB("got packet from av_read_frame!\n");
 
         if ( pkt.pts != (int64_t) AV_NOPTS_VALUE )
           pkt.pts/=9;
 
-        QueuePacket(ic,pkt);
+        QueuePacket(ic,pkt,packetMode);
 
         if (nStreams!=ic->nb_streams ){
           PacketCount=0;
@@ -1228,15 +1240,37 @@ void cMpeg2Decoder::Action()
   CMDDEB("Thread beendet : mpegDecoder pid %d\n",getpid());
 }
 
-void cMpeg2Decoder::ClearPacketQueue()
+void cMpeg2Decoder::ResetDecoder(int Stream)
 {
-  if (aout)
-    aout->Clear();
-  if (vout)
-    vout->Clear();
+  CMDDEB("ResetDecoder %d\n",Stream);
+  
+  if (Stream & SOFTDEVICE_AUDIO_STREAM)  {
+    aoutMutex.Lock();
+    if (aout) {
+      CMDDEB("ResetDecoder resetting audio decoder\n");
+      aout->Stop();
+      delete aout;
+      aout=NULL;
+      AudioIdx=NO_STREAM;
+    };
+    aoutMutex.Unlock();
+  };
+    
+  if (Stream & SOFTDEVICE_VIDEO_STREAM)  {
+    voutMutex.Lock();
+    if (vout) {
+      CMDDEB("ResetDecoder resetting video decoder\n");
+      vout->Stop();
+      delete vout;
+      vout=NULL;
+      VideoIdx=NO_STREAM;
+    };
+    voutMutex.Unlock();
+  };
 };
 
-void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
+void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt,
+		bool PacketMode)
 {
   BUFDEB("QueuePacket AudioIdx: %d VideoIdx %d pkt.stream_index: %d\n",
     AudioIdx,VideoIdx,pkt.stream_index);
@@ -1251,18 +1285,29 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
         av_free_packet(&pkt);
         return;
   }; 
-  // check if there are new streams
-  if (AudioIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
-#if LIBAVFORMAT_BUILD > 4628
-      ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_AUDIO &&
-#else
-      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_AUDIO &&
-#endif
-      AudioIdx != pkt.stream_index) {
+  int packet_type=CODEC_TYPE_UNKNOWN;
 
+#if LIBAVFORMAT_BUILD > 4628
+  if ( ic->streams[pkt.stream_index] 
+                  && ic->streams[pkt.stream_index]->codec )
+          packet_type = ic->streams[pkt.stream_index]->codec->codec_type;
+#else
+  if ( ic->streams[pkt.stream_index] ) 
+          packet_type = ic->streams[pkt.stream_index]->codec.codec_type;
+#endif         
+
+  if ( packet_type == CODEC_TYPE_UNKNOWN ) {
+          BUFDEB("Unknown packet type! Return;\n");
+          return;
+  };
+  
+  // check if there are new streams
+  if ( AudioIdx != DONT_PLAY && packet_type == CODEC_TYPE_AUDIO
+       && AudioIdx != pkt.stream_index) {
     CMDDEB("new Audio stream index.. old %d new %d\n",
       AudioIdx,pkt.stream_index);
     AudioIdx = pkt.stream_index;
+    aoutMutex.Lock();
     if (aout) {
       aout->Stop();
       delete aout;
@@ -1270,53 +1315,56 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
     };
 #if LIBAVFORMAT_BUILD > 4628
     aout = new cAudioStreamDecoder(ic->streams[pkt.stream_index]->codec,
-                 audioOut, audioMode, packetMode );
+                 audioOut, audioMode, PacketMode );
 #else
     aout = new cAudioStreamDecoder(&ic->streams[pkt.stream_index]->codec,
-                 audioOut, audioMode, packetMode );
+                 audioOut, audioMode, PacketMode );
 #endif
+    aoutMutex.Unlock();
   } else
-#if LIBAVFORMAT_BUILD > 4628
-  if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
-      ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO &&
-      VideoIdx!=pkt.stream_index)
-#else
-  if (VideoIdx != DONT_PLAY && ic->streams[pkt.stream_index] &&
-      ic->streams[pkt.stream_index]->codec.codec_type == CODEC_TYPE_VIDEO &&
-      VideoIdx!=pkt.stream_index)
-#endif
-  {
+  if (VideoIdx != DONT_PLAY && packet_type == CODEC_TYPE_VIDEO 
+       && VideoIdx!=pkt.stream_index) {
     CMDDEB("new Video stream index.. old %d new %d\n",
       VideoIdx,pkt.stream_index);
     VideoIdx=pkt.stream_index;
+    voutMutex.Lock();
     if (vout) {
       vout->Stop();
       delete vout;
       vout = NULL;
     };
+    voutMutex.Unlock();
 #if LIBAVFORMAT_BUILD > 4628
     vout = new cVideoStreamDecoder(ic->streams[pkt.stream_index]->codec,
-                   videoOut, &clock, Speed, packetMode );
+                   videoOut, &clock, Speed, PacketMode );
 #else
     vout = new cVideoStreamDecoder(&ic->streams[pkt.stream_index]->codec,
-                   videoOut, &clock, Speed, packetMode );
+                   videoOut, &clock, Speed, PacketMode );
 #endif
   };
   
   // write streams 
-  if ( pkt.stream_index == VideoIdx && vout ) {
+  voutMutex.Lock();
+  if ( packet_type == CODEC_TYPE_VIDEO && vout ) {
     BUFDEB("QueuePacket video stream\n");
     while ( vout->PutPacket(pkt) == -1 && ThreadActive ) {
       // PutPacket sleeps is necessary
       //printf("Video Buffer full\n");
     };
-  } else if ( pkt.stream_index == AudioIdx && aout ) {
+  } ;
+  voutMutex.Unlock();
+  
+  aoutMutex.Lock();
+  if ( packet_type == CODEC_TYPE_AUDIO && aout ) {
     BUFDEB("QueuePacket audio stream\n");
     while ( aout->PutPacket(pkt) == -1 && ThreadActive ) {
       // PutPacket sleeps is necessary
       //printf("Audio Buffer full\n");
     };
-  } else {
+  };
+  aoutMutex.Unlock();
+  
+  if ( packet_type != CODEC_TYPE_VIDEO && packet_type != CODEC_TYPE_AUDIO ) {
     //printf("Unknown packet or vout or aout not init!!\n");
     av_free_packet(&pkt);
   }
@@ -1325,7 +1373,10 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt)
 
 void cMpeg2Decoder::Start(bool GetMutex)
 {
-  CMDDEB("Start IsSuspended %d \n",IsSuspended);
+  CMDDEB("Mpeg2Decoder Start IsSuspended %d  GetMutex %d\n",IsSuspended,GetMutex);
+  if (running)
+          return;
+
   if (IsSuspended)
     // don't start if we are suspended
     return;
@@ -1349,6 +1400,7 @@ void cMpeg2Decoder::Start(bool GetMutex)
   running=true;
   if (GetMutex)
     mutex.Unlock();
+  CMDDEB("mpeg2Decoder Start finished");
 }
 
 void cMpeg2Decoder::Suspend()
@@ -1390,11 +1442,16 @@ void cMpeg2Decoder::Play(void)
   freezeMode=false;
   if (running) 
   {
+    aoutMutex.Lock();
     if (aout)
       aout->Play();
+    aoutMutex.Unlock();
+    
+    voutMutex.Lock();
     if (vout)
       vout->Play();
-
+    voutMutex.Unlock();
+    
     cClock::SetFreezeMode(false);
   };
 };
@@ -1421,20 +1478,30 @@ void cMpeg2Decoder::SetPlayMode(softPlayMode playMode, bool packetMode)
   };
 };
       
-void cMpeg2Decoder::Freeze(void)
+void cMpeg2Decoder::Freeze(int Stream, bool freeze)
 {
-  CMDDEB("Freeze\n");
-  freezeMode=true;
+  CMDDEB("Freeze Streams %d freeze %d\n",Stream,freeze);
+  if (Stream & SOFTDEVICE_BOTH_STREAMS == SOFTDEVICE_BOTH_STREAMS )
+    freezeMode=freeze;
   // sleep a short while before putting the
   // audio and video stream decoders to sleep
   usleep(20000);
   if (running) 
-  { 
-    if (aout)
-      aout->Freeze();
-    if (vout)
-      vout->Freeze();
-
+  {
+    if (Stream & SOFTDEVICE_AUDIO_STREAM) {
+      aoutMutex.Lock();
+      if (aout)
+        aout->Freeze(freeze);
+      aoutMutex.Unlock();
+    };
+    
+    if (Stream & SOFTDEVICE_VIDEO_STREAM) {
+      voutMutex.Lock();
+      if (vout)
+        vout->Freeze(freeze);
+      voutMutex.Unlock();
+    };
+    
     cClock::SetFreezeMode(true);
   };
 };
@@ -1455,19 +1522,27 @@ void cMpeg2Decoder::Stop(bool GetMutex)
     StreamBuffer->Clear();
     EnableGetSignal.Signal();
     Cancel(4);
+    
     CMDDEB("stopping video\n"); 
+    voutMutex.Lock();
     if (vout) {
       vout->Stop();
       delete(vout);
     }
+    vout=NULL;
+    voutMutex.Unlock();
+
     CMDDEB("stopping audio\n");
+    aoutMutex.Lock();
     if (aout) {
       aout->Stop();
       delete(aout);
     }
     aout=NULL;
-    vout=NULL;
+    aoutMutex.Unlock();
+
     av_close_input_file(ic);
+    ic=NULL;
   }
   if (StreamBuffer) {
      delete StreamBuffer;
@@ -1524,25 +1599,35 @@ void cMpeg2Decoder::TrickSpeed(int trickSpeed)
   Speed=trickSpeed;
   // XXX hack to ingore audio junk sent by vdr in the
   if (trickSpeed!=1) {
+    aoutMutex.Lock();
     if (aout)
       aout->Clear();
+    aoutMutex.Unlock();
+    
     AudioIdx=DONT_PLAY;
   } else if (AudioIdx==DONT_PLAY)
     AudioIdx=NO_STREAM;
   Play();
   if (running)
   {
+    aoutMutex.Lock();
     if (aout)
       aout->TrickSpeed(Speed);
+    aoutMutex.Unlock();
+
+    voutMutex.Lock();
     if (vout)
       vout->TrickSpeed(Speed);
+    voutMutex.Unlock();
   };
 }
 void cMpeg2Decoder::SetAudioMode(int AudioMode)  { 
   CMDDEB("SetAudioMode %d\n",AudioMode);
-  audioMode=AudioMode; 
+  audioMode=AudioMode;
+  aoutMutex.Lock();
   if (aout) 
-    aout->SetAudioMode(audioMode); 
+    aout->SetAudioMode(audioMode);
+  aoutMutex.Unlock();
 };
 
 /* ----------------------------------------------------------------------------
@@ -1550,31 +1635,41 @@ void cMpeg2Decoder::SetAudioMode(int AudioMode)  {
 int64_t cMpeg2Decoder::GetSTC(void) {
   if (running) {
     return clock.GetPTS()*9;
-
+/*
     if (vout)
       return vout->GetPTS()*9;
     if (aout)
       return aout->GetPTS()*9;
+      */
   }
   return -1;
 };
 
-int cMpeg2Decoder::BufferFill() 
+int cMpeg2Decoder::BufferFill(int Stream) 
 {
   if (freezeMode)
     return 100;
-  int fill=0;
-  int fill2=0;
-  BUFDEB("buffer fill\n");
-  if (running && vout )
-    fill= vout->BufferFill();
-    BUFDEB("vout buffer fill: %d\n",fill);
-  if (running && aout )
-    if ( (fill2=aout->BufferFill()) >fill)
-       fill=fill2;
-    
-    BUFDEB("aout buffer fill: %d\n",fill2);
-  return fill;
+  
+  int video_Fill=0;
+  int audio_Fill=0;
+
+  BUFDEB("BufferFill Stream %d vout %p aout %p\n",Stream,vout,aout);
+  if (Stream & SOFTDEVICE_VIDEO_STREAM) {
+    voutMutex.Lock();
+    if ( vout  )
+      video_Fill = vout->BufferFill();
+    voutMutex.Unlock();
+  };
+
+  if ( Stream & SOFTDEVICE_AUDIO_STREAM )  {
+    aoutMutex.Lock();
+    if (aout)
+      audio_Fill = aout->BufferFill();
+    aoutMutex.Unlock();
+  };
+  
+  BUFDEB("audio_Fill: %d video_Fill: %d\n",audio_Fill,video_Fill);
+  return video_Fill>audio_Fill ? video_Fill : audio_Fill;
 }
 
 /* ----------------------------------------------------------------------------
@@ -1582,6 +1677,7 @@ int cMpeg2Decoder::BufferFill()
 int cMpeg2Decoder::Decode(const uchar *Data, int Length)
 {
   BUFDEB("Decode %x, Length %d\n",Data,Length);
+  
   if (running && !IsSuspended && setupStore.shouldSuspend)
      // still running and should suspend
      Suspend();
@@ -1594,6 +1690,9 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
     BUFDEB("not running..\n");
     return Length;
   };
+
+  if (!StreamBuffer)
+          return 0;
 
   if (freezeMode)
     return 0;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.33 2005/10/29 08:30:27 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.34 2005/11/12 07:57:42 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -15,7 +15,7 @@
 #include <avcodec.h>
 
 #ifdef PP_LIBAVCODEC
-  #include <postproc/postprocess.h>
+  #include <postprocess.h>
 #endif //PP_LIBAVCODEC
 
 #include "sync-timer.h"
@@ -45,6 +45,11 @@
 
 #define NO_STREAM    -1
 #define DONT_PLAY  -100
+
+#define SOFTDEVICE_VIDEO_STREAM  1
+#define SOFTDEVICE_AUDIO_STREAM  2
+#define SOFTDEVICE_BOTH_STREAMS (SOFTDEVICE_VIDEO_STREAM | SOFTDEVICE_AUDIO_STREAM ) 
+
 
 class cAudioStreamDecoder; 
 class cVideoStreamDecoder; 
@@ -167,9 +172,9 @@ public:
                         { return PacketQueue.PutPacket(pkt); };
 
     virtual void      Clear(void);
-    virtual void      Freeze(void);
+    virtual void      Freeze(bool freeze=true);
     virtual void      Play(void);
-    virtual void      Stop();
+    void      Stop();
     virtual void      TrickSpeed(int Speed) {return;};
     virtual int       BufferFill(void);
     bool              initCodec(void);
@@ -258,20 +263,20 @@ class cVideoStreamDecoder : public cStreamDecoder {
        cClock *clock, int Trickspeed, bool packetMode);
     ~cVideoStreamDecoder();
 
-    virtual void      Freeze(void);
+    virtual void      Freeze(bool freeze=true);
     virtual void      Play(void);
-    virtual void Stop();
     virtual int DecodePacket(AVPacket *pkt);
     virtual void TrickSpeed(int Speed);
     virtual uint64_t GetPTS();
 };
-
 
 //--------------------------------cMpeg2Decoder -------------------------
 class cMpeg2Decoder: public cThread  {
 private:
     cVideoStreamDecoder  *vout;
     cAudioStreamDecoder  *aout;
+    cMutex          voutMutex;
+    cMutex          aoutMutex;
     cAudioOut       *audioOut;
     cVideoOut       *videoOut;
     bool running;
@@ -314,13 +319,14 @@ public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);
     ~cMpeg2Decoder();
 
-    void QueuePacket(const AVFormatContext *ic,AVPacket &pkt);
-    void ClearPacketQueue();
+    void QueuePacket(const AVFormatContext *ic,AVPacket &pkt, 
+		    bool PacketMode);
+    void ResetDecoder( int Stream = SOFTDEVICE_BOTH_STREAMS );
     int Decode(const uchar *Data, int Length);
     int StillPicture(uchar *Data, int Length);
     void Start(bool GetMutex=true);
     void Play(void);
-    void Freeze(void);
+    void Freeze( int Stream = SOFTDEVICE_BOTH_STREAMS, bool freeze=true );
     void Stop(bool GetMutex=true);
     void Clear(void);
     void Suspend(void);
@@ -336,7 +342,7 @@ public:
     inline int GetAudioMode()
     { return audioMode; };
     
-    int BufferFill(void);
+    int BufferFill( int Stream = SOFTDEVICE_BOTH_STREAMS );
     // in percent 
     
     int64_t GetSTC(void);

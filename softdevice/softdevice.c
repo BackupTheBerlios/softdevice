@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.47 2005/11/06 17:56:06 lucke Exp $
+ * $Id: softdevice.c,v 1.48 2005/11/12 07:57:41 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -467,7 +467,6 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
           break;
       default:
           printf("playmode not implemented... %d\n",PlayMode);
-          decoder->Stop();
           break;
     }
     return true;
@@ -488,7 +487,7 @@ void cSoftDevice::Clear(void)
     if ( !packetMode ) {
       cDevice::Clear();
       decoder->Clear();
-    } else decoder->ClearPacketQueue();
+    } else decoder->ResetDecoder();
 }
 void cSoftDevice::Play(void)
 {
@@ -529,7 +528,7 @@ void cSoftDevice::StillPicture(const uchar *Data, int Length)
 
 bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
 {
-   //fprintf(stderr,"[softdevice] Poll TimeoutMs: %d ....\n",TimeoutMs);
+  SOFTDEB("[softdevice] Poll TimeoutMs: %d ....\n",TimeoutMs);
 
   if ( decoder->BufferFill() > 90 ) {
      //fprintf(stderr,"[softdevice] Buffer filled, TimeoutMs %d, fill %d\n",
@@ -585,7 +584,7 @@ int cSoftDevice::PlayAudio(const uchar *Data, int Length)
   };
   if ( packetMode && ic && Length == -2 ) {
      // Length = -2 : pass pointer to packet
-     decoder->QueuePacket(ic,( AVPacket &) *Data);
+     decoder->QueuePacket(ic,( AVPacket &) *Data,true);
      return -2;
   };
   return 0;
@@ -638,7 +637,7 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
   };
   if ( packetMode && ic && Length == -2 ) {
      // Length = -2 : pass pointer to packet
-     decoder->QueuePacket(ic,( AVPacket &) *Data);
+     decoder->QueuePacket(ic,( AVPacket &) *Data,true);
      return -2;
   };
   return 0;
@@ -896,6 +895,59 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
   }
   return true;
 }
+
+#if VDRVERSNUM >= 10330
+static void QueuePacketFct(cDevice *Device, AVFormatContext *ic, AVPacket &pkt) {
+        cSoftDevice *device = dynamic_cast <cSoftDevice*>(Device);
+
+        if (device)
+                device->QueuePacket(ic,pkt);
+        else printf("Device is not the softdevice!!\n");
+};
+
+static int BufferFillFct(cDevice *Device, int Stream, int value =-1) {
+        cSoftDevice *device = dynamic_cast <cSoftDevice*>(Device);
+
+        if (device)
+                return device->BufferFill(Stream);
+        else printf("Device is not the softdevice!!\n");
+        return 0;
+};
+
+static int FreezeFct(cDevice *Device, int Stream, int value =-1) {
+        cSoftDevice *device = dynamic_cast <cSoftDevice*>(Device);
+
+        if (device)
+                return device->Freeze(Stream,value);
+        else printf("Device is not the softdevice!!\n");
+        return 0;
+};
+
+static int ResetDecoderFct(cDevice *Device, int Stream, int value =-1) {
+        cSoftDevice *device = dynamic_cast <cSoftDevice*>(Device);
+
+        if (device)
+                device->ResetDecoder(Stream);
+        else printf("Device is not the softdevice!!\n");
+        return 0;
+};
+ 
+bool cPluginSoftDevice::Service(const char *Id, void *Data ) {
+        printf("Service '%s'\n",Id);
+        struct PacketHandlesV100 *Handles=(struct PacketHandlesV100 *) Data;
+        if ( strcmp(Id,GET_PACKET_HANDEL_IDV100) == 0 ) {
+                if ( Data ) {
+                        Handles->QueuePacket=&QueuePacketFct;
+                        Handles->ResetDecoder = &ResetDecoderFct;
+                        Handles->BufferFill = &BufferFillFct;
+                        Handles->Freeze = &FreezeFct;
+                };
+                return true;
+        };
+        return false;
+};
+#endif
+
 
 bool cPluginSoftDevice::Start(void)
 {

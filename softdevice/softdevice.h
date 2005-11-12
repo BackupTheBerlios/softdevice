@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.5 2005/07/22 08:24:56 lucke Exp $
+ * $Id: softdevice.h,v 1.6 2005/11/12 07:57:41 wachm Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -17,6 +17,25 @@
 #include "audio.h"
 #include "mpeg2decoder.h"
 #include "utils.h"
+
+// ---- Service interface ----------------------------------------------------
+
+
+typedef void (* fQueuePacket)(cDevice *Device, AVFormatContext *ic, AVPacket &pkt);
+
+typedef int (* SoftdeviceHandle)(cDevice *Device,int Stream, int value=-1);
+
+struct PacketHandlesV100{
+        fQueuePacket  QueuePacket;
+        SoftdeviceHandle ResetDecoder;
+        SoftdeviceHandle BufferFill;
+        SoftdeviceHandle Freeze;
+        // value = 0 Play, value = 1 Pause
+};
+        
+
+static const char *const GET_PACKET_HANDEL_IDV100="softdevice-GetPacketHandles-v1.0";
+// 
 
 // --- cSoftDevice ------------------------------------------------------------
 class cPluginSoftDevice : public cPlugin {
@@ -39,6 +58,9 @@ public:
   virtual cOsdObject *MainMenuAction(void);
   virtual cMenuSetupPage *SetupMenu(void);
   virtual bool SetupParse(const char *Name, const char *Value);
+#if VDRVERSNUM >= 10330
+  virtual bool Service(const char *Id, void *Data = NULL);
+#endif
 };
 
 
@@ -61,10 +83,14 @@ public:
   cSoftDevice(int method, int audioMethod, char *pluginPath);
   ~cSoftDevice();
   
-  void QueuePacket(const AVFormatContext *ic, AVPacket &pkt) 
-  { if (decoder) decoder->QueuePacket(ic,pkt); };
-  void ClearPacketQueue() 
-  { if (decoder) decoder->ClearPacketQueue(); };
+  inline void QueuePacket(AVFormatContext *ic, AVPacket &pkt) 
+  { if (decoder) decoder->QueuePacket(ic,pkt,true); };
+  inline int ResetDecoder(int Stream) 
+  { if (decoder) decoder->ResetDecoder(Stream); return 0;};
+  inline int BufferFill(int Stream)
+  { if (decoder) return decoder->BufferFill(Stream); return 0;};
+  inline int Freeze(int Stream, int Value)
+  { if (decoder) decoder->Freeze(Stream,Value); return 0;};
 
   void LoadSubPlugin(char *outMethodName, int reconfigureArg, char *pluginPath);
 

@@ -1,4 +1,7 @@
 Changelog
+2005-11-12:
+    - new packet mode: make some softdevice functions available to other
+      plugins like softplay useing the new service interface
 2005-11-06:
     - video-xv: some of X11 atoms could be set via OSD too. So using hardcoded
       hotkeys for brightness, contrast, hue and saturation is obsolete and
