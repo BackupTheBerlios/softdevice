@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.6 2005/11/12 07:57:41 wachm Exp $
+ * $Id: softdevice.h,v 1.7 2005/11/12 15:47:34 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -23,7 +23,7 @@
 
 typedef void (* fQueuePacket)(cDevice *Device, AVFormatContext *ic, AVPacket &pkt);
 
-typedef int (* SoftdeviceHandle)(cDevice *Device,int Stream, int value=-1);
+typedef int (* SoftdeviceHandle)(cDevice *Device,int Stream, int value);
 
 struct PacketHandlesV100{
         fQueuePacket  QueuePacket;
