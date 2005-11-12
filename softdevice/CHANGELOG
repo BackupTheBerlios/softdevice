@@ -1,5 +1,5 @@
 Changelog
-2005-11-12:
+2005-11-12: softdevice-0.2.1
     - speed up moving of cutmarks by a factor of about 100. I forgot to signal
       that new data is available in StillPicture() :-/
     - new packet mode: make some softdevice functions available to other
