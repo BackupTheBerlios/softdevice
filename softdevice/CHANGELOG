@@ -1,5 +1,7 @@
 Changelog
 2005-11-12:
+    - speed up moving of cutmarks by a factor of about 100. I forgot to signal
+      that new data is available in StillPicture() :-/
     - new packet mode: make some softdevice functions available to other
       plugins like softplay useing the new service interface
 2005-11-06:

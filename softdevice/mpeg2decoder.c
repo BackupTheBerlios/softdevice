@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.59 2005/11/12 07:57:41 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.60 2005/11/12 08:07:21 wachm Exp $
  */
 
 #include <math.h>
@@ -1568,11 +1568,18 @@ int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
     int P;
     uchar *data=Data;
     int Size=Length;
+    BUFDEB("StillPicture StreamBuffer Put %d\n",Size);
     while ( (P = StreamBuffer->Put(data, Size)) != Size ) {
+      BUFDEB("StillPicture StreamBuffer->Put only accepted %d bytes\n",P);
       data+=P;
       Size-=P;
-      usleep( 10000 );
+      BUFDEB("StillPicture EnableGet.Signal(), EnablePut.Sleep start\n");
+      EnableGetSignal.Signal();
+      EnablePutSignal.Sleep(50000);
+      BUFDEB("StillPicture EnablePut.Sleep end\n");
     }
+    BUFDEB("StillPicture EnableGetSignal.Signal() wrote %d bytes\n",Length);
+    EnableGetSignal.Signal();
   }
   CMDDEB("StillPicture end \n");
   mutex.Unlock();
