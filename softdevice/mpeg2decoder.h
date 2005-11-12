@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.34 2005/11/12 07:57:42 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.35 2005/11/12 15:49:33 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -15,7 +15,7 @@
 #include <avcodec.h>
 
 #ifdef PP_LIBAVCODEC
-  #include <postprocess.h>
+  #include <postproc/postprocess.h>
 #endif //PP_LIBAVCODEC
 
 #include "sync-timer.h"
