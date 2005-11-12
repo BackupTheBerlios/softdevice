@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.14 2005/11/10 06:55:35 lucke Exp $
+ * $Id: i18n.c,v 1.15 2005/11/12 11:55:15 wachm Exp $
  */
 
 #include "i18n.h"
@@ -585,7 +585,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "default",      //  1
-    "standart",     //  2
+    "standard",     //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
