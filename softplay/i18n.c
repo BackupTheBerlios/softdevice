@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.1 2005/08/04 15:20:40 wachm Exp $
+ * $Id: i18n.c,v 1.2 2005/11/13 11:47:05 wachm Exp $
  */
 
 #include "i18n.h"
@@ -15,7 +15,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Lecteur de média", //  7 french
     "",             //  8 TODO
     "Mediasoitin",  //  9 finnish
     "",             // 10 TODO
@@ -38,7 +38,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Lecteur multimédia utilisant Softdevice", //  7
     "",             //  8 TODO
     "Mediasoitin ohjelmistopohjaiselle näyttölaitteelle", //  9
     "",             // 10 TODO
@@ -61,7 +61,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Fichiers",     //  7
     "",             //  8 TODO
     "Tiedostot",    //  9
     "",             // 10 TODO
@@ -84,7 +84,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Lire",         //  7
     "",             //  8 TODO
     "Toista",       //  9
     "",             // 10 TODO
@@ -107,7 +107,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Parcourir les fichiers", //  7
     "",             //  8 TODO
     "Toista tiedostot", //  9
     "",             // 10 TODO
@@ -125,12 +125,12 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Toggle List",  //  1
-    "Liste",        //  2 TODO
+    "+/- Liste",    //  2 TODO
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "+/- liste",    //  7
     "",             //  8 TODO
     "Vaihda lista", //  9
     "",             // 10 TODO
@@ -153,7 +153,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Jouer liste",  //  7
     "",             //  8 TODO
     "Toista lista", //  9
     "",             // 10 TODO
@@ -176,7 +176,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Fichiers: %s", //  7
     "",             //  8 TODO
     "Tiedostot: %s",//  9
     "",             // 10 TODO
@@ -199,7 +199,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Liste de lecture courante", //  7
     "",             //  8 TODO
     "nykyinen soittolista", //  9
     "",             // 10 TODO
@@ -222,7 +222,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Options",      //  7
     "",             //  8 TODO
     "Asetukset",    //  9
     "",             // 10 TODO
@@ -245,7 +245,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Lecture aléatoire", //  7
     "",             //  8 TODO
     "Satunnaissoitto", //  9
     "",             // 10 TODO
@@ -268,7 +268,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Répétition automatique", //  7
     "",             //  8 TODO
     "Uudelleentoisto", //  9
     "",             // 10 TODO
@@ -291,7 +291,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "(Ajouter)",    //  7
     "",             //  8 TODO
     "(Lisää)",      //  9
     "",             // 10 TODO
@@ -314,7 +314,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "(Ajouter)",    //  7
     "",             //  8 TODO
     "(Lisää)",      //  9
     "",             // 10 TODO
@@ -331,13 +331,13 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Delete",       //  1
+  { "Delete",       //  1 NH20051027 : seems to be already translated in core VDR
     "Löschen",      //  2 TODO
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Supprime",     //  7
     "",             //  8 TODO
     "Poista",       //  9
     "",             // 10 TODO
@@ -354,13 +354,13 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Stop",         //  1
+  { "Stop",         //  1 NH20051027 : seems to be already translated in core VDR
     "Stopp",        //  2 TODO
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Stop",         //  7
     "",             //  8 TODO
     "Pysäytä",      //  9
     "",             // 10 TODO
@@ -383,7 +383,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO
+    "Liste de lecture 1", //  7
     "",             //  8 TODO
     "Soittolista 1",//  9
     "",             // 10 TODO
