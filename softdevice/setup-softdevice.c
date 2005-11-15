@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.38 2005/11/06 17:56:06 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.39 2005/11/15 23:05:23 lucke Exp $
  */
 
 #include "video.h"
@@ -155,7 +155,7 @@ cSetupStore::cSetupStore ()
   pp_str[2] = tr("default");
   pp_str[3] = NULL;
 
-  bufferModes[0] = tr("save");
+  bufferModes[0] = tr("safe");
   bufferModes[1] = tr("good seeking");
   bufferModes[2] = tr("HDTV");
   bufferModes[3] = NULL;
@@ -701,7 +701,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   Add(new cOsdItem(" ", osUnknown));
 #endif
 
-  bufferModes[0] = tr("save");
+  bufferModes[0] = tr("safe");
   bufferModes[1] = tr("good seeking");
   bufferModes[2] = tr("HDTV");
   Add(new cMenuEditStraItem(tr("Buffer Mode"),
