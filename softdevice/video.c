@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.36 2005/10/27 05:30:52 lucke Exp $
+ * $Id: video.c,v 1.37 2005/11/15 06:02:16 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -319,7 +319,7 @@ void cVideoOut::RecalculateAspect(void)
 void cVideoOut::CheckAspectDimensions(AVFrame *picture,
                                         AVCodecContext *context)
 {
-    double new_asp;
+    volatile double new_asp;
 
   /* --------------------------------------------------------------------------
    * check and handle changes of dimensions first
