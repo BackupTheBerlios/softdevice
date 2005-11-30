@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.8 2005/08/25 18:39:45 wachm Exp $
+ * $Id: utils.c,v 1.9 2005/11/30 18:26:33 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -488,7 +488,7 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 		MOVNTQ" %%mm5, 40(%1)\n"
 		MOVNTQ" %%mm6, 48(%1)\n"
 		MOVNTQ" %%mm7, 56(%1)\n"
-		:: "r" (from), "r" (to) : "memory");
+		: : "r" (from), "r" (to) : "memory");
 		from=((const unsigned char *)from)+64;
 		to=((unsigned char *)to)+64;
 	}
@@ -581,7 +581,7 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 		MOVNTQ" %%mm5, 40(%1)\n"
 		MOVNTQ" %%mm6, 48(%1)\n"
 		MOVNTQ" %%mm7, 56(%1)\n"
-		:: "r" (from), "r" (to) : "memory");
+		: : "r" (from), "r" (to) : "memory");
 		from=((const unsigned char *)from)+64;
 		to=((unsigned char *)to)+64;
 	}
@@ -589,11 +589,11 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 #ifdef USE_MMX2
                 /* since movntq is weakly-ordered, a "sfence"
 		 * is needed to become ordered again. */
-		__asm__ __volatile__ ("sfence":::"memory");
+		__asm__ __volatile__ ("sfence" : : : "memory");
 #endif
 #ifdef USE_MMX
 		/* enables to use FPU */
-		__asm__ __volatile__ (EMMS:::"memory");
+		__asm__ __volatile__ (EMMS : : :"memory");
 #endif
 	}
 	/*
