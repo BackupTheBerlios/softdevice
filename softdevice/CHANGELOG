@@ -1,4 +1,6 @@
 Changelog
+2005-12-15:
+    - use fast_memcpy in dfb out
 2005-11-30:
     - g++-2.95 complaints about "::" in inline asm and wants ": :" instead.
 2005-11-12: softdevice-0.2.1

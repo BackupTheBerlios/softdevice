@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.41 2005/11/06 17:56:06 lucke Exp $
+ * $Id: video-dfb.c,v 1.42 2005/12/15 20:12:38 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -1235,7 +1235,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       dst += pitch * cutTop * 2;
 
       for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
-        memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
+        fast_memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
         Py  += Ystride;
         dst += pitch;
       }
@@ -1243,7 +1243,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
       for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-        memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
+        fast_memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
         Pu  += UVstride;
         dst += pitch / 2;
       }
@@ -1251,7 +1251,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
       for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-        memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
+        fast_memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
         Pv  += UVstride;
         dst += pitch / 2;
       }
@@ -1263,7 +1263,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       dst += pitch * cutTop * 2;
 
       for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
-        memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
+        fast_memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
         Py  += Ystride;
         dst += pitch;
       }
@@ -1271,7 +1271,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
       for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-        memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+        fast_memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
         Pu  += UVstride;
         dst += pitch / 2;
       }
@@ -1279,7 +1279,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
       for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-        memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+        fast_memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
         Pv  += UVstride;
         dst += pitch / 2;
       }
