@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.9 2005/11/30 18:26:33 wachm Exp $
+ * $Id: utils.c,v 1.10 2006/01/07 13:26:43 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -97,6 +97,9 @@ void yv12_to_yuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
 
     dst += dstStride;
   }
+  __asm__ __volatile__ ("sfence \n"
+		        "emms \n" : : : "memory");
+
 #endif
 }
 
