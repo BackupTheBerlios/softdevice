@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.22 2005/10/06 21:28:11 lucke Exp $
+ * $Id: audio.c,v 1.23 2006/01/07 13:20:24 wachm Exp $
  */
 
 #include <unistd.h>
@@ -79,8 +79,8 @@ void cAlsaAudioOut::Suspend()
 bool cAlsaAudioOut::Resume() {
    int err;
    printf("Device %s\n",device);
-   if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-     esyslog("[softdevice-audio] Playback open error: %s, %s FATAL",
+   if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK,SND_PCM_NONBLOCK )) < 0) {
+     esyslog("[softdevice-audio] Playback open error: %s, %s ",
              device, snd_strerror(err));
      return false;
    }
