@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.49 2005/11/12 15:50:41 lucke Exp $
+ * $Id: softdevice.c,v 1.50 2006/01/07 14:30:11 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -89,64 +89,7 @@ static const char *MAINMENUENTRY  = "Softdevice";
 
 #if VDRVERSNUM >= 10307
 
-// --- cSoftOsd -----------------------------------------------
-
-/* ---------------------------------------------------------------------------
- */
-class cSoftOsd : public cOsd {
-private:
-    cVideoOut *videoOut;
-protected:
-public:
-    cSoftOsd(cVideoOut *VideoOut, int XOfs, int XOfs);
-    virtual ~cSoftOsd();
-    virtual eOsdError CanHandleAreas(const tArea *Areas, int NumAreas);
-    virtual void Flush(void);
-};
-
-/* ---------------------------------------------------------------------------
- */
-cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y) : cOsd(X, Y)
-{
-  videoOut = VideoOut;
-  videoOut->OpenOSD(X, Y);
-}
-
-/* ---------------------------------------------------------------------------
- */
-cSoftOsd::~cSoftOsd()
-{
-  if (videoOut)
-  {
-    videoOut->CloseOSD();
-    videoOut=0;
-  }
-}
-
-/* ---------------------------------------------------------------------------
- */
-eOsdError cSoftOsd::CanHandleAreas(const tArea *Areas, int NumAreas)
-{
-    eOsdError Result = cOsd::CanHandleAreas(Areas, NumAreas);
-
-    return Result;
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cSoftOsd::Flush(void)
-{
-    cBitmap *Bitmap;
-
-  videoOut->Size(Width(),Height());
-  videoOut->OSDStart();
-  for (int i = 0; (Bitmap = GetBitmap(i)) != NULL; i++)
-  {
-    videoOut->Refresh(Bitmap);
-  }
-  videoOut->OSDCommit();
-}
-
+#include "SoftOsd.h"
 // --- cSoftOsdProvider -----------------------------------------------
 class cSoftOsdProvider : public cOsdProvider {
 private:
@@ -165,7 +108,6 @@ cSoftOsdProvider::cSoftOsdProvider(cVideoOut *VideoOut) : cOsdProvider()
 cOsd * cSoftOsdProvider::CreateOsd(int Left, int Top)
 {
     osd = new cSoftOsd(videoOut, Left, Top);
-    videoOut->SetOsd(osd);
     return osd;
 }
 

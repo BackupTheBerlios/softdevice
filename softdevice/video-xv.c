@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.35 2005/11/07 20:59:35 lucke Exp $
+ * $Id: video-xv.c,v 1.36 2006/01/07 14:28:39 wachm Exp $
  */
 
 #include <unistd.h>
@@ -31,7 +31,7 @@
 #define PATCH_VERSION "2005-11-06"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
-static cXvRemote        *xvRemote = NULL;
+cXvRemote        *xvRemote = NULL;
 static cScreensaver     *xScreensaver = NULL;
 static int              events_not_done = 0;
 
@@ -461,6 +461,9 @@ void cXvVideoOut::toggleFullScreen(void)
   xScreensaver->DisableScreensaver(fullScreen); // enable of disable based on fullScreen state
 }
 
+//#define EVDEB(out...) {printf("EVDEB:");printf(out);} 
+#define EVDEB(out...)
+
 /* ---------------------------------------------------------------------------
  */
 void cXvVideoOut::ProcessEvents ()
@@ -500,6 +503,7 @@ void cXvVideoOut::ProcessEvents ()
         }
         break;
       case ConfigureNotify:
+        EVDEB("ConfigureNotify\n");
         map_count++;
         dx = event.xconfigure.x;
         dy = event.xconfigure.y;
@@ -609,6 +613,7 @@ void cXvVideoOut::ProcessEvents ()
         break;
 
       case MapNotify:
+        EVDEB("MapNotify\n");
         map_count++;
         if (initialized) {
           XSetInputFocus(dpy,
@@ -617,6 +622,7 @@ void cXvVideoOut::ProcessEvents ()
                    CurrentTime);
           if (map_count > 2 && xv_initialized) {
             XClearArea (dpy, win, 0, 0, 0, 0, True);
+            ShowOSD(0,false);
             XvShmPutImage(dpy, port,
                           win, gc,
                           xv_image,
@@ -631,6 +637,7 @@ void cXvVideoOut::ProcessEvents ()
         }
         break;
       case UnmapNotify:
+        EVDEB("UnmapNotify\n");
         if (xv_initialized)
           XvStopVideo (dpy,port,win);
         if(cursor_visible == False) {
@@ -638,23 +645,30 @@ void cXvVideoOut::ProcessEvents ()
           cursor_visible = True;
         }
         break;
+      case Expose:
+        EVDEB("Expose\n");
+        map_count++;
+        break;
       default:
+        EVDEB("unhandled event: %d\n",event.type);
         break;
     }
   }
 
   if (xv_initialized) {
     if (map_count) {
-      XClearArea (dpy, win, 0, 0, 0, 0, True);
-      XvShmPutImage(dpy, port,
-                    win, gc,
-                    xv_image,
-                    sxoff, syoff,      /* sx, sy */
-                    swidth, sheight,   /* sw, sh */
-                    lxoff,  lyoff,     /* dx, dy */
-                    lwidth, lheight,   /* dw, dh */
-                    False);
+      //XClearArea (dpy, win, 0, 0, 0, 0, True);
+      ShowOSD(0,false);
+//      XvShmPutImage(dpy, port,
+//                    win, gc,
+//                    xv_image,
+//                    sxoff, syoff,      /* sx, sy */
+//                    swidth, sheight,   /* sw, sh */
+//                    lxoff,  lyoff,     /* dx, dy */
+//                    lwidth, lheight,   /* dw, dh */
+//                    False);
       XSync(dpy, False);
+      map_count=0;
     }
     attributeStore.CheckVideoParmChange();
   }
@@ -840,12 +854,16 @@ bool cXvVideoOut::Initialize (void)
 
   useShm=XShmQueryExtension(dpy) && isLocal;
   if (useShm) {
+	  osd_max_width=DisplayWidth(dpy,DefaultScreen(dpy));
+          osd_max_height=DisplayHeight(dpy,DefaultScreen(dpy));
+
           osd_image = XShmCreateImage (dpy,
                           XDefaultVisual (dpy, scn_id),
                           XDefaultDepth (dpy, scn_id),
                           ZPixmap,NULL,
                           &osd_shminfo,
-                          width, height);
+			  osd_max_width,osd_max_height);
+                          //width, height);
           if (osd_image) {
                   dsyslog("[XvVideoOut]: Initialize XShmCreateImage Successful (%p)", osd_image);
           } else {
@@ -853,7 +871,8 @@ bool cXvVideoOut::Initialize (void)
           }
 
           osd_shminfo.shmid = shmget (IPC_PRIVATE,
-                          osd_image->bytes_per_line*height,
+                          osd_image->bytes_per_line*osd_max_height,
+                          //osd_image->bytes_per_line*height,
                           IPC_CREAT | 0777);
           if (osd_shminfo.shmid == -1) {
                   dsyslog("[XvVideoOut]: Initialize ERROR: shmget FAILED !");
@@ -880,16 +899,19 @@ bool cXvVideoOut::Initialize (void)
                   shmctl (osd_shminfo. shmid, IPC_RMID, 0);
   } else {
           osd_image = XGetImage(dpy, win, 0, 0,
-                          width, height, AllPlanes,
+                          osd_max_width, osd_max_height, AllPlanes,
                           ZPixmap);
           if (osd_image) {
                   dsyslog("[XvVideoOut]: Initialize XGetImage Successful (%p)", osd_image);
+		  osd_buffer = (unsigned char *) osd_image->data;
           } else {
                   dsyslog("[XvVideoOut]: Initialize ERROR: XGetImage FAILED !");
+		  osd_buffer = NULL;
           }
-          osd_buffer = (unsigned char *) osd_image->data;
   };
   Bpp=osd_image->bits_per_pixel;
+  printf("got osd_image: width %d height %d, bytes per line %d\n",
+                  osd_max_width, osd_max_height,osd_image->bytes_per_line);
   
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
 
@@ -1054,7 +1076,7 @@ bool cXvVideoOut::Reconfigure(int format)
   attributeStore.SetXInfo(dpy,port,setupStore);
   attributeStore.Save();
   attributeStore.SetColorkey(0x00000000);
-  attributeStore.SetValue("XV_AUTOPAINT_COLORKEY",1);
+  attributeStore.SetValue("XV_AUTOPAINT_COLORKEY",0);
 
   /*
    * Now we do shared memory allocation etc..
@@ -1200,10 +1222,11 @@ void cXvVideoOut::CloseOSD()
 #endif
   if (initialized)
   {
-    memset (osd_buffer, 0, osd_image->bytes_per_line * height);
+    memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
     pthread_mutex_lock(&xv_mutex);
     osd_refresh_counter = osd_skip_counter = 0;
     XClearArea (dpy, win, 0, 0, 0, 0, True);
+    ShowOSD(0,false);
     XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
   }
@@ -1216,8 +1239,13 @@ void cXvVideoOut::CloseOSD()
 void cXvVideoOut::ClearOSD()
 {
   cVideoOut::ClearOSD();
-  if (initialized && current_osdMode==OSDMODE_PSEUDO)
-    memset (osd_buffer, 0, osd_image->bytes_per_line * height);
+  if (initialized && current_osdMode==OSDMODE_PSEUDO) {
+    pthread_mutex_lock(&xv_mutex);
+    memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
+    //XClearArea (dpy, win, 0, 0, 0, 0, True);// still needs locking!
+    //XSync(dpy, False);
+    pthread_mutex_unlock(&xv_mutex);
+  };
 };
 
 /* ---------------------------------------------------------------------------
@@ -1226,8 +1254,8 @@ void cXvVideoOut::ClearOSD()
 void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
    switch (current_osdMode) {
       case OSDMODE_PSEUDO :
-                OsdWidth=lwidth;//*9/10;
-                OsdHeight=lheight;//*9/10;
+                OsdWidth=lwidth<osd_max_width?lwidth:osd_max_width;
+                OsdHeight=lheight<osd_max_height?lheight:osd_max_height;
              break;
       case OSDMODE_SOFTWARE:
                 OsdWidth=swidth;//*9/10;
@@ -1236,9 +1264,21 @@ void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
     };
 };
 
-/* ---------------------------------------------------------------------------
- */
-void cXvVideoOut::Refresh(cBitmap *Bitmap)
+void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
+                  bool &IsYUV, uint8_t *&PixelMask) {
+        if (current_osdMode==OSDMODE_SOFTWARE) {
+                IsYUV=true;
+                PixelMask=NULL;
+                return;
+        };
+
+        IsYUV=false; 
+        Depth=osd_image->bits_per_pixel;
+        HasAlpha=false;
+        PixelMask=NULL;
+};       
+
+void cXvVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
 {
   // refreshes the screen
   // copy video Data
@@ -1248,23 +1288,23 @@ void cXvVideoOut::Refresh(cBitmap *Bitmap)
   {
     switch (current_osdMode) {
       case OSDMODE_PSEUDO :
-              Draw(Bitmap, osd_buffer, osd_image->bytes_per_line);
+              Osd->CopyToBitmap(osd_buffer, osd_image->bytes_per_line,
+                              OsdWidth,OsdHeight,RefreshAll);
             break;
       case OSDMODE_SOFTWARE:
-              ToYUV(Bitmap);
-            break;
-    };
-   
+	    Osd->CopyToBitmap(OsdPy,OsdPv,OsdPu,OsdPAlphaY,OsdPAlphaUV,
+                            OSD_FULL_WIDTH,OSD_FULL_WIDTH/2,
+			    OsdWidth,OsdHeight,RefreshAll);
+	    break;
+ 
+    }
     pthread_mutex_lock(&xv_mutex);
     ++osd_refresh_counter;
-    osd_x = OSDxOfs;
-    osd_y = OSDyOfs;
-    osd_w = OSDw;
-    osd_h = OSDh;
+    ShowOSD(0,1);
     //OSDpresent=true;
     pthread_mutex_unlock(&xv_mutex);
-  }
-}
+  };
+};
 
 #else
 /* ---------------------------------------------------------------------------
@@ -1275,7 +1315,7 @@ void cXvVideoOut::Refresh()
   // copy video Data
   if (!initialized)
     return;
-  if (OSDpresent)
+  //if (OSDpresent)
   {
       int x0 = 0, y0 = 0, x1 = 0, y1 = 0, w = 0, h = 0,
           cx0 = 0, cy0 = 0, cx1 = 0, cy1 = 0, cw = 0, ch = 0;
@@ -1320,6 +1360,7 @@ void cXvVideoOut::Refresh()
       osd_y = y0;
       osd_w = w;
       osd_h = h;
+      ShowOSD(0,1);
       pthread_mutex_unlock(&xv_mutex);
 
     }
@@ -1331,29 +1372,30 @@ void cXvVideoOut::Refresh()
  */
 void cXvVideoOut::ShowOSD (int skip, int do_sync)
 {
-  if (OSDpresent) {
-    if (osd_refresh_counter) {
-      if (current_osdMode==OSDMODE_PSEUDO && osd_skip_counter > skip) {
-      
-        int x= lwidth > OSD_FULL_WIDTH ? osd_x + (dwidth - width) / 2:
-                lxoff + (osd_x * lwidth/OSD_FULL_WIDTH *9/10);
-        int y= lheight > OSD_FULL_HEIGHT ? osd_y + (dheight - height) / 2:
-                lyoff + (osd_y * lheight/OSD_FULL_HEIGHT *9/10);
-
+  //if (OSDpresent) 
+  {
+    //if (osd_refresh_counter) {
+      if (current_osdMode==OSDMODE_PSEUDO ){//&& osd_skip_counter > skip) {
+     
+#if VDRVERSNUM >= 10307
+        int x= lwidth > osd_max_width ?(lwidth - osd_max_width)/2+lxoff:lxoff;
+        int y= lheight > osd_max_height ? (lheight - osd_max_height) / 2+lyoff:lyoff;
+#else
+        int x=lwidth > OSD_WIDTH ?(lwidth - OSD_WIDTH)/2+lxoff:lxoff;
+	int y=lheight > OSD_HEIGHT?(lheight - OSD_HEIGHT) / 2+lyoff:lyoff;
+#endif
 	if (useShm) 
 		XShmPutImage (dpy, win, gc, osd_image,
-				osd_x,
-				osd_y,
+				1,1,
 				x,y,
-				osd_w, osd_h,
+				lwidth-1,lheight-1,
 				False);
 	else
 		XPutImage (dpy, win, gc, osd_image,
-				osd_x,
-				osd_y,
+				1,
+				1,
 				x,y,
-				osd_w, osd_h);
-
+				lwidth-1,lheight-1);
         if (do_sync)
           XSync(dpy, False);
         osd_skip_counter = 0;
@@ -1361,7 +1403,7 @@ void cXvVideoOut::ShowOSD (int skip, int do_sync)
       } else {
         osd_skip_counter++;
       }
-    }
+    //}
   }
 }
 
@@ -1374,6 +1416,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   if (!initialized || !xv_initialized)
     return;
 
+  pthread_mutex_lock(&xv_mutex);
   if (aspect_changed ||
       cutTop != setupStore->cropTopLines ||
       cutBottom != setupStore->cropBottomLines ||
@@ -1381,6 +1424,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       cutRight != setupStore->cropRightCols)
   {
     XClearArea (dpy, win, 0, 0, 0, 0, True);
+    ShowOSD(0,false);
     aspect_changed = 0;
     cutTop = setupStore->cropTopLines;
     cutBottom = setupStore->cropBottomLines;
@@ -1429,11 +1473,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                      OsdPAlphaUV+i*OSD_FULL_WIDTH/2+cutLeft,
                      fwidth/2-(cutLeft+cutRight));
         }
-#ifdef USE_MMX
-     EMMS;
-#endif
 
-        pthread_mutex_lock(&xv_mutex);
         XvShmPutImage(dpy, port,
                 win, gc,
                 xv_image,
@@ -1461,7 +1501,6 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                           Pu + i * UVstride + cutLeft,
                           fwidth / 2 - (cutLeft + cutRight));
 
-          pthread_mutex_lock(&xv_mutex);
           XvShmPutImage(dpy, port,
                 win, gc,
                 xv_image,
@@ -1470,7 +1509,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                 lxoff,  lyoff,     /* dx, dy */
                 lwidth, lheight,   /* dw, dh */
                 False);
-          ShowOSD (1, False);
+          //ShowOSD (1, False);
   }
   ProcessEvents ();
   events_not_done = 0;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.37 2005/11/15 06:02:16 lucke Exp $
+ * $Id: video.c,v 1.38 2006/01/07 14:28:39 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -14,6 +14,13 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 #include "sync-timer.h"
+#include "SoftOsd.h"
+
+//#define OSDDEB(out...) {printf("vout_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+
+#ifndef OSDDEB
+#define OSDDEB(out...)
+#endif
 
 cVideoOut::cVideoOut(cSetupStore *setupStore)
 {
@@ -21,15 +28,19 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   OsdWidth=OSD_FULL_WIDTH;
   OsdHeight=OSD_FULL_HEIGHT;
 #endif
+  // set some reasonable defaults
+  fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
+  fheight = lheight = old_dheight = dheight = sheight = 536;
   sxoff = syoff = lxoff = lyoff = 0;
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
-  Osd_changed = Osd_Bitmap_changed = 0;
+  Osd_changed = 0;
   aspect_F = 4.1 / 3.0;
   aspect_I = 0;
   current_aspect = -1;
   PixelMask=NULL;
   OsdRefreshCounter=0;
+  osd=NULL;
   displayTimeUS = 0;
   this->setupStore=setupStore;
   freezeMode=false;
@@ -98,6 +109,7 @@ void cVideoOut::Action()
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
          OsdRefreshCounter>10 && Osd_changed))
     {
+      osdMutex.Lock();
       if (old_picture)
       {
         DrawStill_420pl (old_picture->data[0],
@@ -109,13 +121,12 @@ void cVideoOut::Action()
       }
       else
       {
-        DrawStill_420pl (OsdPy,OsdPu, OsdPv, OsdWidth, OsdHeight,
+        DrawStill_420pl (OsdPy,OsdPu, OsdPv,OSD_FULL_WIDTH, OSD_FULL_HEIGHT,
                          OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
       }
-      
-      osdMutex.Lock();
       Osd_changed=0;
       osdMutex.Unlock();
+      
     }
 #if 0
     // freeze mode and osd changed, change osd mode
@@ -130,30 +141,20 @@ void cVideoOut::Action()
       newOsdWidth=OSD_FULL_WIDTH;
       newOsdHeight=OSD_FULL_HEIGHT;
     }
-    else 
-    {
-      if (newOsdWidth > OSD_FULL_WIDTH)
-        newOsdWidth=OSD_FULL_WIDTH;
-      if (newOsdHeight > OSD_FULL_HEIGHT)
-        newOsdHeight=OSD_FULL_HEIGHT;
-    }
-    if (OSDpresent && osd
+   
+    osdMutex.Lock();
+    if (OSDpresent && osd 
        && ( OsdWidth!=newOsdWidth  || OsdHeight!=newOsdHeight  || 
            changeMode )
         )
     {
-      OSDdirty=true;
-      //printf("OsdWidth %d newOsdWidth %d OsdHeight %d newOsdHeight %d \n",
-      //   OsdWidth,newOsdWidth,OsdHeight,newOsdHeight);
-      if (changeMode) {
-        cOsd *osdSave=osd;
-        CloseOSD();
-        current_osdMode=newOsdMode;
-        OpenOSD(OSDxOfs,OSDyOfs);
-        osd=osdSave;
-      }
-      osd->Flush();
+      OSDDEB("change size: OsdWidth %d newOsdWidth %d\n",OsdWidth,newOsdWidth);
+      current_osdMode=newOsdMode;
+      // redraw the complete osd
+      OSDFlush_nolock(osd,true);
+      OSDDEB("change size end\n");
     }
+    osdMutex.Unlock();
     usleep(50000);
   }
 #endif
@@ -163,20 +164,20 @@ void cVideoOut::Action()
  */
 void cVideoOut::InvalidateOldPicture(void)
 {
-  osdMutex.Lock();
+  areaMutex.Lock();
   old_picture = NULL;
-  osdMutex.Unlock();
+  areaMutex.Unlock();
 }
 
 /* ---------------------------------------------------------------------------
  */
 void cVideoOut::SetOldPicture(AVFrame *picture, int width, int height)
 {
-  osdMutex.Lock();
+  //osdMutex.Lock(); //protected by areaMutex osdMutex will cause deadlocks!
   old_picture = picture;
   old_width = width;
   old_height = height;
-  osdMutex.Unlock();
+  //osdMutex.Unlock();
 }
 
 /* ---------------------------------------------------------------------------
@@ -311,6 +312,7 @@ void cVideoOut::CheckAspect(int new_afd, double new_asp)
 void cVideoOut::RecalculateAspect(void)
 {
   current_aspect = -1;
+  //printf("aspect_F %f\n",aspect_F);
   CheckAspect (current_afd, aspect_F);
 }
 
@@ -424,6 +426,7 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
                                 AVFrame *picture, AVCodecContext *context)
 {
   areaMutex. Lock();
+  OsdRefreshCounter=0;
   CheckAspectDimensions(picture,context);
   SetOldPicture(picture,context->width,context->height);
   Sync(syncTimer, delay);
@@ -446,24 +449,19 @@ void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
                                 int w, int h, int yPitch, int uvPitch)
 {
   areaMutex. Lock();
+  OsdRefreshCounter=0;
   CheckArea(w, h);
   // display picture
   YUV (pY, pU, pV, w, h, yPitch, uvPitch);
   areaMutex. Unlock();
 }
 
-#define OPACITY_THRESHOLD 0x8F
-#define TRANSPARENT_THRESHOLD 0x0F
-#define IS_BACKGROUND(a) (((a) < OPACITY_THRESHOLD) && (a > TRANSPARENT_THRESHOLD))
-
-/* ---------------------------------------------------------------------------
- */
-void cVideoOut::OSDStart()
-{
-  osdMutex.Lock();
-  //fprintf (stderr, "+");
-
 #if VDRVERSNUM >= 10307
+void cVideoOut::OSDFlush_nolock(cSoftOsd *Osd,bool RefreshAll)
+{
+  OSDDEB("OSDFlush RefreshAll: %d \n",
+                  RefreshAll);
+
   if (current_osdMode==OSDMODE_SOFTWARE)
   	init_OsdBuffers();
 
@@ -474,46 +472,38 @@ void cVideoOut::OSDStart()
     newX=OSD_FULL_WIDTH;
     newY=OSD_FULL_HEIGHT;
   }
-  else 
-  {
-    if (newX > OSD_FULL_WIDTH)
-      newX=OSD_FULL_WIDTH;
-    if (newY > OSD_FULL_HEIGHT)
-      newY=OSD_FULL_HEIGHT;
-  }
   if (newX!=OsdWidth || newY!=OsdHeight)
   {
+    OSDDEB("new osd dimensions: %d,%d\n",newX,newY);
     OsdWidth=newX;
     OsdHeight=newY;
-    OSDdirty=true;
+    RefreshAll=true;
   };
+  
 
-  if (OSDdirty)
+  if (RefreshAll)
     ClearOSD();
-#endif
-} 
-
-/* ---------------------------------------------------------------------------
- */
-void cVideoOut::OSDCommit()
-{
-  //fprintf (stderr, "-");
-  OSDdirty=false;
+ 
+  cSoftOsd *SoftOsd=dynamic_cast<cSoftOsd*>(Osd);
+  if (SoftOsd) {
+          int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
+          uint8_t *PixelMask;
+          GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+          SoftOsd->SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+	  RefreshOSD(SoftOsd,RefreshAll);
+  } else printf("SoftOsd=NULL!!!!!!!\n");
+  
   OSDpresent=true;
-#if VDRVERSNUM >= 10307
-  if (Osd_Bitmap_changed)
-  {
-    Osd_Bitmap_changed = 0;
-    Osd_changed = 1;
-  }
-#endif
-  osdMutex.Unlock();
+  Osd_changed = 1;
+  OSDDEB("End OSDFlush\n");
 }
+#endif
 
 /* ---------------------------------------------------------------------------
  */
 void cVideoOut::ClearOSD()
 {
+  OSDDEB("ClearOSD\n");
   //if (current_osdMode==OSDMODE_SOFTWARE)
   {
     if (OsdPy)
@@ -531,314 +521,30 @@ void cVideoOut::ClearOSD()
 
 #if VDRVERSNUM >= 10307
 
-void cVideoOut::OpenOSD(int X, int Y)
+void cVideoOut::OpenOSD(int X, int Y, cSoftOsd * Osd)
 {
-  OSDxOfs = X;
-  OSDyOfs = Y;
-  OSDdirty=true;
+  OSDDEB("OpenOSD\n");
+  osd=Osd;
+  //cSoftOsd *SoftOsd=dynamic_cast<cSoftOsd*>(osd);
+  //if (SoftOsd) {
+          int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV;
+          uint8_t *PixelMask;
+          GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+          osd->SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+  //} else printf("SoftOSD NULL!\n");
 }
 
 void cVideoOut::CloseOSD()
 {
   osdMutex.Lock();
-
   ClearOSD();
-  
   osd=NULL;
   OSDpresent=false;
   Osd_changed=1;
   osdMutex.Unlock();
+  OSDDEB("CloseOSD\n");
 }
 
-
-/* ---------------------------------------------------------------------------
- */
-
-void ScaleBitmap(cBitmap *Bitmap,
-              int &a, int &r, int &g, int &b,
-              int x, int y, int newX, int newY) {
-// scales a bitmap down... no upscaling...
-  const tIndex  *adr;
-  struct color {
-    unsigned char b;
-    unsigned char g;
-    unsigned char r;
-    unsigned char a;
-    } pixel;
- 
-  if ( OSD_FULL_HEIGHT == newY &&
-      OSD_FULL_WIDTH == newX) 
-  {
-     adr = Bitmap->Data(x,y);
-     *((uint32_t *) &pixel) = (uint32_t) Bitmap->Color(*adr);
-     a = pixel.a;
-     b = pixel.b;
-     r = pixel.r;
-     g = pixel.g;
-     return;
-  };
-  
-  int minPY=OSD_FULL_HEIGHT*y/newY;
-  int maxPY=OSD_FULL_HEIGHT*(y+1)/newY;
-  int minPX=OSD_FULL_WIDTH*x/newX;
-  int maxPX=OSD_FULL_WIDTH*(x+1)/newX;
-  int sumA=0;
-  int sumR=0;
-  int sumG=0;
-  int sumB=0;
-  int weightYf=0;
-  int weightYl=0;
-  int weightXf=0;
-  int weightXl=0;
-  int weightX=0;
-  int weight;
-  int weights=0;
-   
-
-  weightYf=-OSD_FULL_HEIGHT*100*y/newY+(minPY+1)*100;
-  weightYl=-(maxPY)*100+OSD_FULL_HEIGHT*100*(y+1)/newY;
-  weightXf=-OSD_FULL_WIDTH*100*x/newX+(minPX+1)*100;
-  weightXl=-(maxPX)*100+OSD_FULL_WIDTH*100*(x+1)/newX;
-
-  for (int i=minPX; i<= maxPX; i++) {
-    if (i==minPX)
-      weightX=weightXf;
-    else if (i==maxPX)
-      weightX=weightXl;
-    else weight=100;
-    
-    for (int j=minPY; j<= maxPY; j++) {
-      if (j==minPY)
-        weight=weightX*weightYf;
-      else if (j==maxPY)
-        weight=weightX*weightYl;
-      else weight=weightX*100;
-
-//      printf("minPX %d, maxPX %d, minPY %d maxPY %d, weightX %d,weightYf %d \n",
-//       minPX,maxPX,minPY,maxPY,weightX,weightYf);
-      if ( i > Bitmap->Width() )
-              continue;
-      if ( j > Bitmap->Height() )
-              continue;
-                      
-      adr = Bitmap->Data(i,j);
-      *((uint32_t *) &pixel) = (uint32_t) Bitmap->Color(*adr);
-      sumA+=weight* pixel.a;
-      sumB+=weight* pixel.b;
-      sumR+=weight* pixel.r;
-      sumG+=weight* pixel.g;
-      weights+=weight;
-    };
-  };
-
-  a= sumA/weights;
-  b= sumB/weights;
-  r= sumR/weights;
-  g= sumG/weights;
-};
-  
-void cVideoOut::Draw(cBitmap *Bitmap,
-                     unsigned char *osd_buf,
-                     int linelen,
-                     bool inverseAlpha)
-{
-    int           depth = (Bpp + 7) / 8;
-    int           a, r, g, b;
-    bool          prev_pix = false, do_dither;
-    tIndex        *buf;
-    int           x1,x2,y1,y2;
-    uint8_t       *PixelMaskPtr;
-
-
-//  printf( "Draw: OSDWidth %d %d Bitmap %d %d \n",
-//   OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height()); 
-    // if bitmap didn't change, return
-    if (!Bitmap->Dirty(x1,y1,x2,y2) && !OSDdirty )
-      return;
-  
-// printf("dirty area (%d,%d) (%d,%d) \n",x1,y1,x2,y2);
-  
-  if (OSDdirty)
-  {
-    y1=x1=0;
-    x2=Bitmap->Width()-1;
-    y2=Bitmap->Height()-1;
-  };
-
-#define SCALEX(x) ((x) * OsdWidth/OSD_FULL_WIDTH)
-#define SCALEY(y) ((y) * OsdHeight/OSD_FULL_HEIGHT)
-  for (int y =SCALEY(y1); y <= SCALEY(y2); y++)
-  {
-    buf = (tIndex *) osd_buf +
-            linelen * ( OSDyOfs + y + SCALEY(Bitmap->Y0())) +
-            (OSDxOfs + SCALEX(Bitmap->X0() + x1) ) * depth;
-    PixelMaskPtr=PixelMask +
-           linelen/16 * ( OSDyOfs + y + SCALEY(Bitmap->Y0())) +
-            (OSDxOfs + SCALEX(Bitmap->X0() + x1))/8;
-    prev_pix = false;
-
-    for (int x = SCALEX(x1); x <= SCALEX(x2); x++)
-    {
-      do_dither = ((x % 2 == 1 && y % 2 == 1) ||
-                    x % 2 == 0 && y % 2 == 0 || prev_pix);
-     /* 
-      adr = Bitmap->Data(x, y);
-      c = Bitmap->Color(*adr);
-      a = (c >> 24) & 255; //Alpha
-      r = (c >> 16) & 255; //Red
-      g = (c >> 8) & 255;  //Green
-      b = c & 255;         //Blue
-    */ 
-     ScaleBitmap(Bitmap,a,r,g,b,x,y,OsdWidth,OsdHeight);
-
-      if (PixelMask) {
-        if (a>TRANSPARENT_THRESHOLD)
-          PixelMaskPtr[x/8]|=(1<<x%8);
-      }
-
-      /* ---------------------------------------------------------------------
-       * pseudo spu drawing looks better if rgb values are set to colorkey
-       * so that they are full transparent in case of zero alpha value
-       */
-      if (!a)
-        r = g = b = 0;
-
-      switch (depth) {
-        case 4:
-          if ((do_dither && IS_BACKGROUND(a) && OSDpseudo_alpha) ||
-              (a == 255 && r == 0 && g == 0 && b == 0))
-          {
-            buf[0] = 1; buf[1] = 1; buf[2] = 1; buf[3] = 255;
-          } else {
-            if (inverseAlpha)
-              a = 255 - a;
-
-            buf[0] = b;
-            buf[1] = g;
-            buf[2] = r;
-            buf[3] = a;
-          }
-
-          buf += 4;
-          break;
-        case 3:
-          if ((do_dither && IS_BACKGROUND(a)) ||
-              (a == 255 && r == 0 && g == 0 && b == 0))
-          {
-            buf[0] = 1; buf[1] = 1; buf[2] = 1;
-          } else {
-            buf[0] = b;
-            buf[1] = g;
-            buf[2] = r;
-          }
-
-          buf += 3;
-          break;
-        case 2:
-          if ((do_dither && IS_BACKGROUND(a)) ||
-              (a == 255 && r == 0 && g == 0 && b == 0))
-          {
-              buf[0] = 0x21; buf[1] = 0x08;
-          } else {
-            buf[0] = ((b >> 3)& 0x1F) | ((g & 0x1C) << 3);
-            buf[1] = (r & 0xF8) | (g >> 5);
-          }
-
-          buf += 2;
-          break;
-        default:
-            //dsyslog("[VideoOut] OSD: unsupported depth %d exiting",depth);
-            //exit(1);
-          break;
-      }
-      prev_pix = !IS_BACKGROUND(a);
-    }
-  }
-  Bitmap->Clean();
-}
-
-void cVideoOut::ToYUV(cBitmap *Bitmap)
-{
-    int      a1, r1, g1, b1;
-    int      a2, r2, g2, b2;
-    uint8_t       Y1,U1,V1;
-    uint8_t       Y2,U2,V2;
-    int linelen=OSD_FULL_WIDTH;
-    int offset;
-  //  printf("ToYUV... OsdPy: 0%x Res:(%d,%d)\n",OsdPy,linelen,lines);
-
-  
- // printf( "YUV:OSDWidth %d %d Bitmap %d %d \n",
- //   OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height());
- 
-    int           x1,x2,y1,y2;
-    // if bitmap didn't change, return
-    if (!Bitmap->Dirty(x1,y1,x2,y2) && !OSDdirty)
-      return;
-    
-  Osd_Bitmap_changed=1;
-   //printf( "----------------------------\nOSDWidth %d %d Bitmap %d %d \n",
-   //     OsdWidth,OsdHeight,Bitmap->Width(),Bitmap->Height()); 
-   //printf("dirty area (%d,%d) (%d,%d) \n",x1,y1,x2,y2);
-    
-    if ( OSDdirty )
-    {
-      //printf("++++++++++++++++++++++new OsdHeight+++++++ OSDdirty %d+++++\n",
-      //  OSDdirty);
-      x1=y1=0;
-      x2=Bitmap->Width()-1;
-      y2=Bitmap->Height()-1;
-   }
-
-#define SCALEX(x) ((x) * OsdWidth/OSD_FULL_WIDTH)
-#define SCALEY(y) ((y) * OsdHeight/OSD_FULL_HEIGHT)
-
-  y1=SCALEY(y1); 
-  y2=SCALEY(y2); 
-  x1=SCALEX(x1);
-  x2=SCALEX(x2);
-  int  x0=sxoff+SCALEX(OSDxOfs+Bitmap->X0());
-  int  y0=(syoff+SCALEY(OSDyOfs+Bitmap->Y0())) & ~1; // we need an even offset
-
-  // we need a even starting point
-  y1&=~1;
-  y2= (y2+2) & ~1;
-  y2= ( y2 > Bitmap->Height()-1 ? Bitmap->Height()-1 : y2);
-  // two rows at a time...
-  for (int y = y1; y < y2; y+=2) 
-  {
-    offset = (y0+y)*linelen;
-    for (int x = x1; x <= x2; x++)
-    {
-     ScaleBitmap(Bitmap,a1,r1,g1,b1,x,y,OsdWidth,OsdHeight);
-     ScaleBitmap(Bitmap,a2,r2,g2,b2,x,y+1,OsdWidth,OsdHeight);
-  
-      Y1 = (( 66 * r1 + 129 * g1 + 25 * b1 + 128 )  >> 8)+16;
-      Y2 = (( 66 * r2 + 129 * g2 + 25 * b2 + 128 )  >> 8)+16;
-      OsdPy[offset+x+x0]=Y1;
-      OsdPAlphaY[offset+x+x0]=a1;
-      OsdPy[offset+linelen+x+x0]=Y2;
-      OsdPAlphaY[offset+linelen+x+x0]=a2;
-      
-      // even columns have U and V
-      if ( (x&1)==0 ) 
-      {
-        // I got this formular from Wikipedia...
-        U1 = (( -38 * r1 - 74 * g1 +112 * b1 + 128 )  >> 8)+128;
-        V1 = (( 112 * r1 - 94 * g1 - 18 * b1 + 128 )  >> 8)+128;
-
-        U2 = (( -38 * r2 - 74 * g2 +112 * b2 + 128 )  >> 8)+128;
-        V2 = (( 112 * r2 - 94 * g2 - 18 * b2 + 128 )  >> 8)+128;
-
-        OsdPu[offset/4+(x+x0)/2]=(U1+U2)/2;
-        OsdPv[offset/4+(x+x0)/2]=(V1+V2)/2;
-        OsdPAlphaUV[offset/4+(x+x0)/2]=(a1+a2)/2;
-      }
-     }
-    }
-  Bitmap->Clean();
-
-}
 void cVideoOut::AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
           uint8_t *alpha,uint16_t count) {
      // printf("%x %x %x \n",P1,P2,alpha);

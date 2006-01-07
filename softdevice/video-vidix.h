@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.5 2005/07/23 20:14:32 lucke Exp $
+ * $Id: video-vidix.h,v 1.6 2006/01/07 14:28:39 wachm Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -46,8 +46,13 @@ public:
 
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();
-  virtual void Refresh(cBitmap *Bitmap);
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight); 
+  virtual void GetOSDMode(int &Depth,bool &HasAlpha, bool &AlphaInversed,
+		  bool &IsYUV,uint8_t *&PixelMask)
+  { Depth=Bpp; HasAlpha=false;AlphaInversed=false; 
+	  IsYUV=(current_osdMode == OSDMODE_SOFTWARE);
+	  PixelMask=NULL;};
+  virtual void Refresh(cSoftOsd *Osd,bool RefreshAll=false);
 #else
   virtual void Refresh();
 #endif

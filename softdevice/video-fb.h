@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.4 2005/03/03 20:22:17 lucke Exp $
+ * $Id: video-fb.h,v 1.5 2006/01/07 14:28:39 wachm Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -21,6 +21,7 @@ private:
   int orig_cmaplen;
   __u16 * orig_cmap;
 
+  uint8_t *PixelMask;
   size_t size;
   int line_len;
   unsigned char * fb;	// Framebuffer memory
@@ -28,9 +29,12 @@ public:
   cFBVideoOut(cSetupStore *setupStore);
   virtual ~cFBVideoOut();
 #if VDRVERSNUM >= 10307
-  virtual void OpenOSD(int X, int Y);
+  virtual void OpenOSD(int X, int Y, cSoftOsd *osd);
   virtual void ClearOSD();
-  virtual void Refresh(cBitmap *Bitmap);
+  virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
+		  bool &IsYUV, uint8_t *&pixelmask)
+  { Depth=16;HasAlpha=false;IsYUV=false;pixelmask=PixelMask; };
+  virtual void RefreshOSD(cSoftOsd *Osd, bool RefreshAll=false);
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
 #else
   virtual void Refresh();

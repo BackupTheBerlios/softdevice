@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.23 2005/10/25 19:35:25 lucke Exp $
+ * $Id: video.h,v 1.24 2006/01/07 14:28:39 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -41,17 +41,17 @@
 //#warning Using 3Dnow! extensions
 #define PREFETCH "prefetch "
 #define MOVQ     "movntq "
-#define EMMS     __asm__ (" femms \n": :  )
+#define EMMS     __asm__ __volatile__  (" femms \n": : : "memory"  )
 #elif defined ( USE_MMX2 )
 //#warning Using MMX2 extensions
 #define PREFETCH "prefetchnta "
 #define MOVQ     "movntq "
-#define EMMS     __asm__ (" emms \n": :  )
+#define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
 #else
 //#warning Using MMX extensions
 #define PREFETCH
 #define MOVQ     "movq "
-#define EMMS     __asm__ (" emms \n": :  )
+#define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
 #endif
 
 
@@ -76,6 +76,8 @@ class cWindowLayer {
 
 #endif
 
+class cSoftOsd;
+
 class cVideoOut: public cThread {
 private:
     int     aspect_I;
@@ -84,8 +86,6 @@ private:
 protected:
     cMutex  osdMutex,
             areaMutex;
-    int     OSDxOfs, OSDyOfs,
-            OSDw, OSDh;
     bool    OSDpresent,
             OSDpseudo_alpha;
     int     current_osdMode;
@@ -115,20 +115,15 @@ protected:
 
     cSetupStore *setupStore;
 
-    cOsd *osd;
     bool active;
-    bool OSDdirty;
 
     virtual void RecalculateAspect(void);
 
 public:
     cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
-    virtual void Size(int w, int h) {OSDw = w; OSDh = h;};
-    virtual void OSDStart();
-    virtual void OSDCommit();
-    virtual void OpenOSD(int X, int Y);
     virtual void CloseOSD();
+    
     virtual void Sync(cSyncTimer *syncTimer, int *delay);
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
     virtual void Pause(void) {return;};
@@ -155,15 +150,11 @@ public:
     // activates fallback mode if the osd was not updated for a too long
     // time
 
-    void SetOsd(cOsd * Osd) {osd=Osd;};
-    // sets a pointer to the current osd. For refreshing of the osd 
-
     virtual void InvalidateOldPicture(void);
     virtual void SetOldPicture(AVFrame *picture, int width, int height);
 
     uint8_t *PixelMask;
-    int     Osd_changed,
-            Osd_Bitmap_changed;
+    int     Osd_changed;
     uint8_t *OsdPy;
     uint8_t *OsdPu; 
     uint8_t *OsdPv;
@@ -184,31 +175,35 @@ public:
     // clear the OSD buffer
 
 #if VDRVERSNUM >= 10307
+    cSoftOsd *osd;
+    void OSDFlush_nolock(cSoftOsd *Osd,bool RefreshAll=false);
+    inline void OSDFlush(cSoftOsd *Osd,bool RefreshAll=false)
+    {osdMutex.Lock();OSDFlush_nolock(Osd,RefreshAll); osdMutex.Unlock();};
+    
+    virtual void OpenOSD(int X, int Y, cSoftOsd *Osd);
+    
     virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight)
     // called whenever OSD is to be displayed
     // every video-out should implement a method which desired osd dimension
     // for scaling, if -1,-1 is returned no scaling is done.
     { OsdWidth=-1;OsdHeight=-1;};
+     
+    virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
+                    bool &IsYUV, uint8_t *&PixelMask)
+    { Depth=32; HasAlpha=true; AlphaInversed=false; IsYUV=false; 
+            PixelMask=NULL;};
+    // should be implemented by all video out method to set the OSD pixel mode
 
-    
-    virtual void Refresh(cBitmap *Bitmap) { return; };
-    
-    void Draw(cBitmap *Bitmap,
-              unsigned char * buf,
-              int linelen,
-              bool inverseAlpha = false);
-    // draws the bitmap in buf. The bitmap is scaled automaticaly if
-    // GetOSDDimension return smaller dimensions
+    virtual void RefreshOSD(cSoftOsd *SoftOsd, bool RefreshAll=false) 
+    { return; };
       
-   void ToYUV(cBitmap *Bitmap);
-   // converts the bitmap to YUV format, saved in OSDP[yuv] and 
-   // OSDPAlpha[YUV]. The bitmap is also scaled if requested
-   
    void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        uint8_t *alpha,uint16_t count);
    // performes alpha blending in software
 
 #else
+    int OSDxOfs,OSDyOfs;
+
     cWindowLayer *layer[MAXNUMWINDOWS];
     virtual bool OpenWindow(cWindow *Window);
     virtual void CommitWindow(cWindow *Window);

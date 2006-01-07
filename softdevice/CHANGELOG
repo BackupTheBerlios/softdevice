@@ -1,5 +1,6 @@
 Changelog
 2006-01-07:
+    - completely rewritten OSD. Supports up- and down-scaleing in MMX
     - add sfence and emms to yv12_to_yuy2()
     - on resume try to open audio-out in non-blocking mode
 2005-12-15:

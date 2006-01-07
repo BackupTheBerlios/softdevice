@@ -12,12 +12,13 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.10 2005/11/06 07:29:16 lucke Exp $
+ * $Id: video-xv.h,v 1.11 2006/01/07 14:28:39 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
 #define VIDEO_XV_H
 #include "video.h"
+#include "SoftOsd.h"
 
 #include <pthread.h>
 
@@ -132,9 +133,9 @@ private:
   XvImage           *xv_image;
   bool              useShm;
   XImage            *osd_image;
+  int               osd_max_width,osd_max_height;
   unsigned char     *outbuffer,
                     *osd_buffer,
-                    *osd_argb_buffer,
                     *pixels[3];
   char              *w_name, *i_name;
   unsigned int      use_xv_port;
@@ -157,7 +158,9 @@ public:
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
-  virtual void Refresh(cBitmap *Bitmap);
+  virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
+                  bool &IsYUV, uint8_t *&PixelMask);
+ virtual void RefreshOSD(cSoftOsd *Osd, bool RefreshAll=false);
 #else
   virtual void Refresh();
 #endif
@@ -188,8 +191,9 @@ class cXvRemote : public cRemote, private cThread {
                   ~cXvRemote();
     void          SetX11Info (Display *d, Window w);
     void          XvRemoteStart (void);
-    void          PutKey (KeySym key);
+    virtual void  PutKey (KeySym key);
 //    virtual bool  Initialize(void);
 };
+extern cXvRemote        *xvRemote;
 
 #endif // VIDEO_XV_H

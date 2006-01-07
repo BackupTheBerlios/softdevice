@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.42 2005/12/15 20:12:38 wachm Exp $
+ * $Id: video-dfb.c,v 1.43 2006/01/07 14:28:39 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -13,6 +13,8 @@
 #include "video-dfb.h"
 #include "utils.h"
 #include "setup-softdevice.h"
+
+#include "SoftOsd.h"
 
 #ifdef HAVE_CONFIG
 # include "config.h"
@@ -411,12 +413,12 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
                "[dfb] got fmt = 0x%08x bpp = %d\n",
                fmt, DFB_BITS_PER_PIXEL(fmt));
       Bpp = DFB_BITS_PER_PIXEL(fmt);
-
+/*
       if (Xres > OSD_FULL_WIDTH)
         Xres = OSD_FULL_WIDTH;
       if (Yres > OSD_FULL_HEIGHT)
         Yres = OSD_FULL_HEIGHT;
-
+*/
       /* ------------------------------------------------------------------------
        * clear screen surface at startup
        */
@@ -923,7 +925,7 @@ void cDFBVideoOut::SetParams()
       }
       else
       {
-        fprintf (stderr, "[dfb] creating new surface\n");
+        fprintf (stderr, "[dfb] creating new surface (stretchBlit)\n");
         try
         {
           if (videoSurface)
@@ -988,11 +990,11 @@ void cDFBVideoOut::Pause(void)
 
 /* ----------------------------------------------------------------------------
  */
-void cDFBVideoOut::OpenOSD (int x, int y)
+void cDFBVideoOut::OpenOSD (int x, int y, cSoftOsd *osd)
 {
     IDirectFBSurface  *tmpSurface;
 
-  cVideoOut::OpenOSD(x, y);
+  cVideoOut::OpenOSD(x, y,osd);
   try
   {
     tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
@@ -1031,12 +1033,56 @@ void cDFBVideoOut::OSDStart()
  */
 void cDFBVideoOut::OSDCommit()
 {
-  OSDdirty=false;
   OSDpresent = true;
 }
 
+void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll) 
+{
+    int               pitch;
+    uint8_t           *dst;
+    IDirectFBSurface  *tmpSurface;
+    DFBRegion         modArea;
+    DFBRectangle      osdsrc;
+
+    try
+    {
+      bool dirtyLines[Yres];
+      tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
+      tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+      //Osd->SetMode(Bpp,!OSDpseudo_alpha,(isVIAUnichrome) ? true:false);
+      Osd->CopyToBitmap(dst, pitch,
+                              Xres,Yres,RefreshAll,dirtyLines);
+      tmpSurface->Unlock();
+
+      /* ------------------------------------------------------------------------
+       * TODO: Have to get area coordinates in screen dimensions from Draw().
+       *       In case Draw() scales down, bitmap dirty area coordinates
+       *       could not be transformed the following way.
+       */
+      modArea.x1 = 0;
+      modArea.y1 = 0;
+      modArea.x2 = Xres;
+      modArea.y2 = Yres;
+
+      tmpSurface->Flip(&modArea,DSFLIP_WAIT);
+      osdsrc.x = modArea.x1;
+      osdsrc.y = modArea.y1;
+      osdsrc.w = modArea.x2 - modArea.x1 + 1;
+      osdsrc.h = modArea.y2 - modArea.y1 + 1;
+      tmpSurface->Blit(tmpSurface, &osdsrc, modArea.x1, modArea.y1);
+    }
+    catch (DFBException *ex)
+    {
+      fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
+               ex->GetAction(), ex->GetResult());
+      delete ex;
+    }
+
+}
+	
 /* ---------------------------------------------------------------------------
  */
+/*
 void cDFBVideoOut::Refresh(cBitmap *Bitmap)
 {
     int               pitch;
@@ -1054,11 +1100,6 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
       Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
       tmpSurface->Unlock();
 
-      /* ------------------------------------------------------------------------
-       * TODO: Have to get area coordinates in screen dimensions from Draw().
-       *       In case Draw() scales down, bitmap dirty area coordinates
-       *       could not be transformed the following way.
-       */
       modArea.x1 += OSDxOfs + Bitmap->X0();
       modArea.y1 += OSDyOfs + Bitmap->Y0();
       modArea.x2 += OSDxOfs + Bitmap->X0();
@@ -1081,7 +1122,7 @@ void cDFBVideoOut::Refresh(cBitmap *Bitmap)
     Bitmap->Clean();
   }
 }
-
+*/
 #else
 
 /* ---------------------------------------------------------------------------
@@ -1293,7 +1334,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                    Width - 2 * (cutLeft + cutRight),
                    Height - 2 * (cutTop + cutBottom),
                    Ystride, UVstride, pitch);
-    }
+     }
 
     videoSurface->Unlock();
 
