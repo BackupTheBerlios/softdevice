@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.13 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video-dfb.h,v 1.14 2006/01/08 09:43:32 wachm Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -58,6 +58,10 @@ class cDFBVideoOut : public cVideoOut {
     virtual void OpenOSD(int x, int y, cSoftOsd *Osd);
 //    virtual void Refresh(cBitmap *Bitmap);
     virtual void RefreshOSD(cSoftOsd *Osd, bool RefreshAll=false);
+    virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
+                  bool &IsYUV, uint8_t *&PixelMask) 
+    { Depth=Bpp; HasAlpha=!OSDpseudo_alpha; AlphaInversed=isVIAUnichrome;
+            IsYUV=false;PixelMask=NULL;}
     virtual void OSDStart();
     virtual void OSDCommit();
 #else

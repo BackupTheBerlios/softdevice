@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.43 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video-dfb.c,v 1.44 2006/01/08 09:43:32 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -1041,35 +1041,41 @@ void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
     int               pitch;
     uint8_t           *dst;
     IDirectFBSurface  *tmpSurface;
-    DFBRegion         modArea;
     DFBRectangle      osdsrc;
 
     try
     {
       bool dirtyLines[Yres];
+      memset(dirtyLines,false,sizeof(dirtyLines));
+
       tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
       tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-      //Osd->SetMode(Bpp,!OSDpseudo_alpha,(isVIAUnichrome) ? true:false);
       Osd->CopyToBitmap(dst, pitch,
                               Xres,Yres,RefreshAll,dirtyLines);
       tmpSurface->Unlock();
 
-      /* ------------------------------------------------------------------------
-       * TODO: Have to get area coordinates in screen dimensions from Draw().
-       *       In case Draw() scales down, bitmap dirty area coordinates
-       *       could not be transformed the following way.
-       */
-      modArea.x1 = 0;
-      modArea.y1 = 0;
-      modArea.x2 = Xres;
-      modArea.y2 = Yres;
+      tmpSurface->Flip();
+              
+      int miny=0;
+      int maxy=0;
+      do {
+              while (!dirtyLines[miny] && miny <= Yres)
+                      miny++;
 
-      tmpSurface->Flip(&modArea,DSFLIP_WAIT);
-      osdsrc.x = modArea.x1;
-      osdsrc.y = modArea.y1;
-      osdsrc.w = modArea.x2 - modArea.x1 + 1;
-      osdsrc.h = modArea.y2 - modArea.y1 + 1;
-      tmpSurface->Blit(tmpSurface, &osdsrc, modArea.x1, modArea.y1);
+              maxy=miny;
+              while (dirtyLines[maxy] && maxy<=Yres)
+                      maxy++;
+    
+              osdsrc.x = 0;
+              osdsrc.y = miny;
+              osdsrc.w = Xres;
+              osdsrc.h = maxy-miny + 1;
+              tmpSurface->Blit(tmpSurface,&osdsrc,0,miny);
+              
+              miny=maxy;
+             
+      } while ( miny<=Yres);
+      
     }
     catch (DFBException *ex)
     {

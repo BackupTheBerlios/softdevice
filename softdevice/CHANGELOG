@@ -1,4 +1,7 @@
 Changelog
+2006-01-08:
+    - updated video-dfb for the new OSD. Double buffered displays should
+      work now as well and the OSD mode is set properly
 2006-01-07:
     - completely rewritten OSD. Supports up- and down-scaleing in MMX
     - add sfence and emms to yv12_to_yuy2()
