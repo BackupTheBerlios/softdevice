@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.1 2006/01/07 14:29:35 wachm Exp $
+ * $Id: SoftOsd.c,v 1.2 2006/01/08 14:22:57 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -639,7 +639,7 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
 	};
 	
 	cMutexLock dirty(&dirty_Mutex);
-	const int dest_stride=1056;
+	const int dest_stride=dest_Width+16;
 	void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
 	ScaleHoriz= dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
 		&cSoftOsd::ScaleUpHoriz_MMX;
@@ -788,6 +788,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
 				new_pixel_height,start_pos,
                                 scaleH_Reference,dest_Width);
                 buf=dest+y*linesize;
+                //printf("copy to destination %d\n",y);
                 (*OutputConvert)(buf,tmp_pixmap,dest_Width);
                 if (pixelMask)
                         CreatePixelMask(pixelMask+y*linesize/16,
