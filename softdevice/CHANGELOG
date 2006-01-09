@@ -1,4 +1,6 @@
 Changelog
+2006-01-09:
+    - add missing sanity check in cSoftOsd::DrawConvertBitmap()
 2006-01-08:
     - fix segfault in cSoftOsd for lines longer than 1024
     - updated video-dfb for the new OSD. Double buffered displays should

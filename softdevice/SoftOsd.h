@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.1 2006/01/07 14:29:35 wachm Exp $
+ * $Id: SoftOsd.h,v 1.2 2006/01/09 20:26:02 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -57,7 +57,7 @@ private:
 protected:
     int xOfs,yOfs;
     uint32_t *OSD_Bitmap;
-    bool dirty_lines[OSD_STRIDE];
+    bool dirty_lines[OSD_HEIGHT+10];
     cMutex dirty_Mutex;
     
     void (*OutputConvert)(uint8_t * dest, color * pixmap, int Pixel);

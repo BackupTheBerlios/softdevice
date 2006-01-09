@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.2 2006/01/08 14:22:57 wachm Exp $
+ * $Id: SoftOsd.c,v 1.3 2006/01/09 20:26:02 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -211,12 +211,18 @@ bool cSoftOsd::DrawConvertBitmap(cBitmap *bitmap, bool OnlyDirty)  {
 			bitmap,bitmap->X0(),bitmap->Y0(),x1,y1,x2,y2);
 	y2++;
 	x2++;
+        y2= yOfs+y2+bitmap->Y0() > OSD_HEIGHT ? 
+                OSD_HEIGHT-bitmap->Y0()-yOfs : y2;
+        x2= xOfs+x2+bitmap->X0() > OSD_WIDTH ? 
+                OSD_WIDTH-bitmap->X0()-xOfs : x2;
+        
 	int bitmap_yOfs=yOfs+bitmap->Y0()+Y_OFFSET;
 	uint32_t *OSD_pointer=&OSD_Bitmap[(bitmap_yOfs+y1)*OSD_STRIDE+
                 xOfs+bitmap->X0()+x1+X_OFFSET];
         int missing_line_length=OSD_STRIDE-(x2-x1);
         bool *dirty_line=&dirty_lines[bitmap_yOfs+y1];
-	for (int y=y1; y<y2; y++) {
+
+        for (int y=y1; y<y2; y++) {
 		for (int x=x1; x<x2; x++) {
 			*(OSD_pointer++)=palette[*bitmap->Data(x,y)];
 		}
