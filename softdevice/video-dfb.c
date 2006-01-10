@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.44 2006/01/08 09:43:32 wachm Exp $
+ * $Id: video-dfb.c,v 1.45 2006/01/10 19:40:25 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -1059,13 +1059,16 @@ void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
       int miny=0;
       int maxy=0;
       do {
-              while (!dirtyLines[miny] && miny <= Yres)
+              while (!dirtyLines[miny] && miny < Yres)
                       miny++;
 
+	      if (miny >= Yres)
+		      break;
+
               maxy=miny;
-              while (dirtyLines[maxy] && maxy<=Yres)
+              while (dirtyLines[maxy] && maxy < Yres)
                       maxy++;
-    
+	      
               osdsrc.x = 0;
               osdsrc.y = miny;
               osdsrc.w = Xres;
@@ -1074,7 +1077,7 @@ void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
               
               miny=maxy;
              
-      } while ( miny<=Yres);
+      } while ( miny<Yres);
       
     }
     catch (DFBException *ex)
