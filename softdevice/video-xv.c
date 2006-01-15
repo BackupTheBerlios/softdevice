@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.36 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video-xv.c,v 1.37 2006/01/15 20:41:15 wachm Exp $
  */
 
 #include <unistd.h>
@@ -1025,7 +1025,7 @@ bool cXvVideoOut::Reconfigure(int format)
           {
             if (!strcmp(encodingInfo[n].name, "XV_IMAGE"))
             {
-              fprintf(stderr, "[XvVideoOut]: max area size %d x %d\n",
+              fprintf(stderr, "[XvVideoOut]: max area size %lu x %lu\n",
                       encodingInfo[n].width, encodingInfo[n].height);
               dsyslog("[XvVideoOut]: max area size %lu x %lu",
                       encodingInfo[n].width, encodingInfo[n].height);

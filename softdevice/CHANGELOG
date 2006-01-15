@@ -1,10 +1,14 @@
 Changelog
+2006-01-15:
+   - fix for AMD64 builds (patch by Janne Huttunen, many thanks to him)
 2006-01-10:
    - fix error message from DirectFB about wrong blitting area with new OSD
 2006-01-09:
     - add missing sanity check in cSoftOsd::DrawConvertBitmap()
+      (many thanks to Andre Neumann for reporting the problem)
 2006-01-08:
     - fix segfault in cSoftOsd for lines longer than 1024
+      (thanks to Andre Neumann for reporting the problem)
     - updated video-dfb for the new OSD. Double buffered displays should
 work now as well and the OSD mode is set properly
 2006-01-07:

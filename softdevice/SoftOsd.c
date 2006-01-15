@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.3 2006/01/09 20:26:02 wachm Exp $
+ * $Id: SoftOsd.c,v 1.4 2006/01/15 20:41:15 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -323,7 +323,7 @@ void cSoftOsd::ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel) {
 	end_dest+=16;
 #endif
         while (end_dest>dest) {
-                if ( IS_BACKGROUND(pixmap->a) && (((int)dest) & 0x4) ) {
+                if ( IS_BACKGROUND(pixmap->a) && (((intptr_t)dest) & 0x4) ) {
                         dest[0] = 0; dest[1] = 0; dest[2] = 0; dest[3] = 0x00;
                         // color key!
                 } else {
@@ -472,7 +472,7 @@ void cSoftOsd::ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel) {
         end_dest+=8;
 #endif
         while (end_dest>dest) {
-                if ( IS_BACKGROUND(pixmap->a) && (((int)dest) & 0x2) ) {
+                if ( IS_BACKGROUND(pixmap->a) && (((intptr_t)dest) & 0x2) ) {
                         dest[0] = 0x0; dest[1] = 0x0; // color key!
                 } else {
                         dest[0] = ((pixmap->b >> 3)& 0x1F) | 
@@ -490,7 +490,7 @@ void cSoftOsd::ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
 	uint8_t *end_dest=dest+2*Pixel;
 	int PixelCount=0;
         while (end_dest>dest) {
-                if ( IS_BACKGROUND(pixmap->a) && (((int)pixmap) & 0x4)
+                if ( IS_BACKGROUND(pixmap->a) && (((intptr_t)pixmap) & 0x4)
 				|| IS_TRANSPARENT(pixmap->a) ) {
                         // transparent, don't draw anything !
                 } else {
@@ -509,7 +509,7 @@ void cSoftOsd::ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
 void cSoftOsd::CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel) {
 	int CurrPixel=0;
         while (CurrPixel<Pixel) {
-                if ( (IS_BACKGROUND(pixmap->a) && !(((int)pixmap) & 0x4)  )
+                if ( (IS_BACKGROUND(pixmap->a) && !(((intptr_t)pixmap) & 0x4)  )
                                 || IS_OPAQUE(pixmap->a) ) 
                         dest[CurrPixel/8]|=(1<<CurrPixel%8);
                  else dest[CurrPixel/8]&=~(1<<CurrPixel%8);

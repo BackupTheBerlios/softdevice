@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-ac3pt.c,v 1.1 2005/10/06 21:16:47 lucke Exp $
+ * $Id: audio-ac3pt.c,v 1.2 2006/01/15 20:41:15 wachm Exp $
  */
 
 #include <unistd.h>
@@ -18,7 +18,7 @@
 #include <alsa/asoundlib.h>
 #include "audio-ac3pt.h"
 
-enum {SPDIF_CON, SPDIF_PRO} spdif_t;
+typedef enum {SPDIF_CON, SPDIF_PRO} spdif_t;
 
 
 #ifndef WORDS_BIGENDIAN

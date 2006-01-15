@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.10 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video-fb.c,v 1.11 2006/01/15 20:41:14 wachm Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -135,7 +135,7 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
 
     OSDpresent=false;
 
-    printf("[video-fb] init %d x %d (Size: %d Bytes LineLen %d) Bpp: %d\n",fb_vinfo.xres, fb_vinfo.yres, size, line_len, fb_vinfo.bits_per_pixel);
+    printf("[video-fb] init %d x %d (Size: %zu Bytes LineLen %d) Bpp: %d\n",fb_vinfo.xres, fb_vinfo.yres, size, line_len, fb_vinfo.bits_per_pixel);
     // clear screens
     printf("[video-fb] Clearing the FB\n");
     unsigned char * fbinit;
