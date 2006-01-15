@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.24 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video.h,v 1.25 2006/01/15 21:11:25 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -205,6 +205,7 @@ public:
     int OSDxOfs,OSDyOfs;
 
     cWindowLayer *layer[MAXNUMWINDOWS];
+    virtual void OpenOSD(int X, int Y);
     virtual bool OpenWindow(cWindow *Window);
     virtual void CommitWindow(cWindow *Window);
     virtual void ShowWindow(cWindow *Window);

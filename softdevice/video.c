@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.38 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video.c,v 1.39 2006/01/15 21:11:25 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -27,6 +27,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
 #if VDRVERSNUM >= 10307
   OsdWidth=OSD_FULL_WIDTH;
   OsdHeight=OSD_FULL_HEIGHT;
+  osd=NULL;
 #endif
   // set some reasonable defaults
   fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
@@ -40,7 +41,6 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   current_aspect = -1;
   PixelMask=NULL;
   OsdRefreshCounter=0;
-  osd=NULL;
   displayTimeUS = 0;
   this->setupStore=setupStore;
   freezeMode=false;

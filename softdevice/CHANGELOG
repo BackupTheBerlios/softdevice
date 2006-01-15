@@ -1,5 +1,6 @@
 Changelog
 2006-01-15:
+   - compile fix for vdr-1.2.6
    - fix for AMD64 builds (patch by Janne Huttunen, many thanks to him)
 2006-01-10:
    - fix error message from DirectFB about wrong blitting area with new OSD
