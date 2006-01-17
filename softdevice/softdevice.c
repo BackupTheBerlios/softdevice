@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.50 2006/01/07 14:30:11 wachm Exp $
+ * $Id: softdevice.c,v 1.51 2006/01/17 20:45:46 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -49,6 +49,10 @@
 #define VOUT_DEFAULT  VOUT_FB
 #endif
 
+#endif
+
+#ifdef SHM_SUPPORT
+#include "video-shm.h"
 #endif
 
 #ifdef DFB_SUPPORT
@@ -205,6 +209,11 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         LoadSubPlugin ("vidix", 0, pluginPath);
 #endif
         break;
+      case VOUT_SHM:
+#ifdef SHM_SUPPORT
+        LoadSubPlugin ("shm", 0, pluginPath);
+#endif
+        break;
       case VOUT_DUMMY:
         videoOut=new cDummyVideoOut(&setupStore);
         break;
@@ -229,6 +238,11 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       case VOUT_FB:
 #ifdef FB_SUPPORT
         videoOut=new cFBVideoOut(&setupStore);
+#endif
+        break;
+      case VOUT_SHM:
+#ifdef SHM_SUPPORT
+        videoOut=new cShmVideoOut(&setupStore);
 #endif
         break;
       case VOUT_DFB:
@@ -317,6 +331,7 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
     else
     {
       esyslog("[softdevice] videoOut failure exiting\n");
+      fprintf(stderr,"[softdevice] videoOut failure exiting\n");
       exit (1);
     }
 
@@ -723,6 +738,14 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           voutMethod = VOUT_FB;
 #else
           fprintf(stderr,"[softdevice] fb support not compiled in\n");
+#endif
+        } else if (!strncmp (vo_argv, "shm:", 3)) {
+          vo_argv += 4;
+          setupStore.voArgs = vo_argv;
+#ifdef SHM_SUPPORT
+          voutMethod = VOUT_SHM;
+#else
+          fprintf(stderr,"[softdevice] shm support not compiled in\n");
 #endif
         } else if (!strncmp (vo_argv, "dfb:", 4)) {
           vo_argv += 4;

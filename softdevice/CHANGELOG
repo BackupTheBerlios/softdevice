@@ -1,4 +1,7 @@
 Changelog
+2006-01-17:
+   - add video-shm and ShmClient, a simple server/client model for the 
+     softdevice. See the file README for details.
 2006-01-15:
    - compile fix for vdr-1.2.6
    - fix for AMD64 builds (patch by Janne Huttunen, many thanks to him)

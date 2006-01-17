@@ -104,6 +104,22 @@ Notice the trailing '#' of the last alsa subparameter.
 AC3 pass through is mainly based on the code of ac3play-0.5.2f, so
 many thanks to the authors of that program.
 
+
+Shared Memory Client/Server
+---------------------------
+
+There is now an experimental client/server model in the softdevice. To use
+it compile the softdevice with SHM_SUPPORT enabled and start it using
+"-vo shm:". The softdevice will then start with the decoding suspended until
+a client connects to the shared memory. For now there is only an Xv client,
+to build it type "make ShmClient" in the plugin's source directory. To start
+the Xv client simply type "ShmClient", and a window will open from which you
+can use Vdr just like you are used to from the Xv-out will open up. When
+this window is closed the Softdevice will automatically suspend the decoding.
+It is possible to make a client for the other video-out methods too, but
+I found the Xv-Client the most usefull for combined desktop/vdr machines :-)
+
+
 Problems/todo:
 --------------
 What does NOT work:

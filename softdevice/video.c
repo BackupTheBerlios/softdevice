@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.39 2006/01/15 21:11:25 wachm Exp $
+ * $Id: video.c,v 1.40 2006/01/17 20:45:46 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -224,7 +224,7 @@ void cVideoOut::CheckAspect(int new_afd, double new_asp)
     current_aspect = -1;
   }
 
-  if (new_aspect == current_aspect && new_afd == current_afd)
+  if (new_aspect == current_aspect && new_afd == current_afd && !aspect_changed)
   {
     aspect_changed = 0;
     return;

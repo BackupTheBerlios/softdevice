@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.25 2006/01/15 21:11:25 wachm Exp $
+ * $Id: video.h,v 1.26 2006/01/17 20:45:46 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -82,6 +82,9 @@ class cVideoOut: public cThread {
 private:
     int     aspect_I;
     double  aspect_F;
+protected:
+    inline double GetAspect_F()
+    { return aspect_F;};
 
 protected:
     cMutex  osdMutex,
