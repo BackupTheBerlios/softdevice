@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.37 2006/01/15 20:41:15 wachm Exp $
+ * $Id: video-xv.c,v 1.38 2006/01/23 19:59:17 lucke Exp $
  */
 
 #include <unistd.h>
@@ -461,7 +461,7 @@ void cXvVideoOut::toggleFullScreen(void)
   xScreensaver->DisableScreensaver(fullScreen); // enable of disable based on fullScreen state
 }
 
-//#define EVDEB(out...) {printf("EVDEB:");printf(out);} 
+//#define EVDEB(out...) {printf("EVDEB:");printf(out);}
 #define EVDEB(out...)
 
 /* ---------------------------------------------------------------------------
@@ -620,20 +620,6 @@ void cXvVideoOut::ProcessEvents ()
                    win,
                    RevertToParent,
                    CurrentTime);
-          if (map_count > 2 && xv_initialized) {
-            XClearArea (dpy, win, 0, 0, 0, 0, True);
-            ShowOSD(0,false);
-            XvShmPutImage(dpy, port,
-                          win, gc,
-                          xv_image,
-                          sxoff, syoff,      /* sx, sy */
-                          swidth, sheight,   /* sw, sh */
-                          lxoff,  lyoff,     /* dx, dy */
-                          lwidth, lheight,   /* dw, dh */
-                          False);
-            XSync(dpy, False);
-            map_count = 0;
-          }
         }
         break;
       case UnmapNotify:
@@ -657,18 +643,17 @@ void cXvVideoOut::ProcessEvents ()
 
   if (xv_initialized) {
     if (map_count) {
-      //XClearArea (dpy, win, 0, 0, 0, 0, True);
+      XClearArea (dpy, win, 0, 0, 0, 0, False);
       ShowOSD(0,false);
-//      XvShmPutImage(dpy, port,
-//                    win, gc,
-//                    xv_image,
-//                    sxoff, syoff,      /* sx, sy */
-//                    swidth, sheight,   /* sw, sh */
-//                    lxoff,  lyoff,     /* dx, dy */
-//                    lwidth, lheight,   /* dw, dh */
-//                    False);
+      XvShmPutImage(dpy, port,
+                    win, gc,
+                    xv_image,
+                    sxoff, syoff,      /* sx, sy */
+                    swidth, sheight,   /* sw, sh */
+                    lxoff,  lyoff,     /* dx, dy */
+                    lwidth, lheight,   /* dw, dh */
+                    False);
       XSync(dpy, False);
-      map_count=0;
     }
     attributeStore.CheckVideoParmChange();
   }
@@ -1225,7 +1210,7 @@ void cXvVideoOut::CloseOSD()
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
     pthread_mutex_lock(&xv_mutex);
     osd_refresh_counter = osd_skip_counter = 0;
-    XClearArea (dpy, win, 0, 0, 0, 0, True);
+    XClearArea (dpy, win, 0, 0, 0, 0, False);
     ShowOSD(0,false);
     XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
@@ -1423,7 +1408,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       cutLeft != setupStore->cropLeftCols ||
       cutRight != setupStore->cropRightCols)
   {
-    XClearArea (dpy, win, 0, 0, 0, 0, True);
+    XClearArea (dpy, win, 0, 0, 0, 0, False);
     ShowOSD(0,false);
     aspect_changed = 0;
     cutTop = setupStore->cropTopLines;
