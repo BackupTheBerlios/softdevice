@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.22 2006/01/17 20:45:46 wachm Exp $
+# $Id: Makefile,v 1.23 2006/02/03 22:34:54 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -220,7 +220,7 @@ ALL_OBJS = $(OBJS)
 
 ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
-    DFB_OBJS  = utils.o video.o video-dfb.o SoftOsd.o
+    DFB_OBJS  = utils.o video.o video-dfb.o 
     ALL_OBJS += $(DFB_OBJS)
     TARGETS  += libsubvdr-$(PLUGIN)-dfb.so
   else
@@ -233,7 +233,7 @@ endif
 ifdef FB_SUPPORT
   ifdef USE_SUBPLUGINS
     FB_LIBS   =
-    FB_OBJS   = utils.o video.o video-fb.o SoftOsd.o
+    FB_OBJS   = utils.o video.o video-fb.o 
     ALL_OBJS  += $(FB_OBJS)
     TARGETS   += libsubvdr-$(PLUGIN)-fb.so
   else
@@ -243,7 +243,7 @@ endif
 
 ifdef XV_SUPPORT
   ifdef USE_SUBPLUGINS
-    XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o SoftOsd.o
+    XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o 
     ALL_OBJS  += $(XV_OBJS)
     TARGETS   += libsubvdr-$(PLUGIN)-xv.so
   else
@@ -254,7 +254,7 @@ endif
 
 ifdef VIDIX_SUPPORT
   ifdef USE_SUBPLUGINS
-    VIDIX_OBJS  = utils.o video.o video-vidix.o SoftOsd.o
+    VIDIX_OBJS  = utils.o video.o video-vidix.o 
     ALL_OBJS    += $(VIDIX_OBJS)
     TARGETS     += libsubvdr-$(PLUGIN)-vidix.so
   else
@@ -266,7 +266,7 @@ endif
 
 ifdef SHM_SUPPORT
   ifdef USE_SUBPLUGINS
-    SHM_OBJS  = utils.o video.o video-shm.o SoftOsd.o
+    SHM_OBJS  = utils.o video.o video-shm.o 
     ALL_OBJS    += $(SHM_OBJS)
     TARGETS     += libsubvdr-$(PLUGIN)-shm.so
   else
@@ -336,12 +336,12 @@ dist-clean: clean
 clean:
 	@-rm -f $(OBJS) $(DEPFILE) *.so *.o *.tgz core* *~
 
-VDR_SHM_CLIENT_OBJS = ../../../osd.o ../../../tools.o ../../../thread.o \
+VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../remote.o ../../../i18n.o ../../../keys.o \
-		      ../../../font.o ../../../config.o ../../../plugin.o\
+		      ../../../config.o ../../../plugin.o\
 		      ../../../sources.o
 SHM_CLIENT_OBJS  = video.o video-xv.o setup-softdevice.o xscreensaver.o \
-		   utils.o SoftOsd.o
+		   utils.o 
 
 ShmClient: ShmClient.o $(SHM_CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) $(XV_LIBS) $(VDR_SHM_CLIENT_OBJS) $(SHM_CLIENT_OBJS) -lpthread $< -o $@

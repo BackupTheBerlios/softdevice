@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.41 2006/01/19 19:20:02 wachm Exp $
+ * $Id: video.c,v 1.42 2006/02/03 22:34:54 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -27,7 +27,6 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
 #if VDRVERSNUM >= 10307
   OsdWidth=OSD_FULL_WIDTH;
   OsdHeight=OSD_FULL_HEIGHT;
-  osd=NULL;
 #endif
   // set some reasonable defaults
   fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
@@ -91,20 +90,7 @@ void cVideoOut::Action()
 #if VDRVERSNUM >= 10307
   while(active)
   {
-    int newOsdWidth;
-    int newOsdHeight;
-    bool changeMode=false;
-    int newOsdMode=0;
-
     OsdRefreshCounter++;
-#if 0
-    if (freezeMode && OsdRefreshCounter > 10 )
-      OsdRefreshCounter=3;
-#endif
-    changeMode=(current_osdMode != setupStore->osdMode);
-    newOsdMode=setupStore->osdMode;
-    // if software osd has not been shown for some time or
-    // no signal
     if (OsdRefreshCounter > 80 ||
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
          OsdRefreshCounter>10 && Osd_changed))
@@ -126,35 +112,7 @@ void cVideoOut::Action()
       }
       Osd_changed=0;
       osdMutex.Unlock();
-      
     }
-#if 0
-    // freeze mode and osd changed, change osd mode
-    if ( Osd_changed && freezeMode && OsdRefreshCounter >  2 ) {
-        changeMode= (current_osdMode != OSDMODE_PSEUDO);
-        newOsdMode=OSDMODE_PSEUDO;
-    }
-#endif
-    GetOSDDimension(newOsdWidth,newOsdHeight);
-    if ( newOsdWidth==-1 || newOsdHeight==-1 )
-    {
-      newOsdWidth=OSD_FULL_WIDTH;
-      newOsdHeight=OSD_FULL_HEIGHT;
-    }
-   
-    osdMutex.Lock();
-    if (OSDpresent && osd 
-       && ( OsdWidth!=newOsdWidth  || OsdHeight!=newOsdHeight  || 
-           changeMode )
-        )
-    {
-      OSDDEB("change size: OsdWidth %d newOsdWidth %d\n",OsdWidth,newOsdWidth);
-      current_osdMode=newOsdMode;
-      // redraw the complete osd
-      OSDFlush_nolock(osd,true);
-      OSDDEB("change size end\n");
-    }
-    osdMutex.Unlock();
     usleep(50000);
   }
 #endif
@@ -457,49 +415,6 @@ void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
   areaMutex. Unlock();
 }
 
-#if VDRVERSNUM >= 10307
-void cVideoOut::OSDFlush_nolock(cSoftOsd *Osd,bool RefreshAll)
-{
-  OSDDEB("OSDFlush RefreshAll: %d \n",
-                  RefreshAll);
-
-  if (current_osdMode==OSDMODE_SOFTWARE)
-  	init_OsdBuffers();
-
-  int newX,newY;
-  GetOSDDimension(newX,newY);
-  if ( newX==-1 || newY==-1 )
-  {
-    newX=OSD_FULL_WIDTH;
-    newY=OSD_FULL_HEIGHT;
-  }
-  if (newX!=OsdWidth || newY!=OsdHeight)
-  {
-    OSDDEB("new osd dimensions: %d,%d\n",newX,newY);
-    OsdWidth=newX;
-    OsdHeight=newY;
-    RefreshAll=true;
-  };
-  
-
-  if (RefreshAll)
-    ClearOSD();
- 
-  cSoftOsd *SoftOsd=dynamic_cast<cSoftOsd*>(Osd);
-  if (SoftOsd) {
-          int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
-          uint8_t *PixelMask;
-          GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
-          SoftOsd->SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
-	  RefreshOSD(SoftOsd,RefreshAll);
-  } else printf("SoftOsd=NULL!!!!!!!\n");
-  
-  OSDpresent=true;
-  Osd_changed = 1;
-  OSDDEB("End OSDFlush\n");
-}
-#endif
-
 /* ---------------------------------------------------------------------------
  */
 void cVideoOut::ClearOSD()
@@ -522,24 +437,15 @@ void cVideoOut::ClearOSD()
 
 #if VDRVERSNUM >= 10307
 
-void cVideoOut::OpenOSD(int X, int Y, cSoftOsd * Osd)
+void cVideoOut::OpenOSD()
 {
   OSDDEB("OpenOSD\n");
-  osd=Osd;
-  //cSoftOsd *SoftOsd=dynamic_cast<cSoftOsd*>(osd);
-  //if (SoftOsd) {
-          int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV;
-          uint8_t *PixelMask;
-          GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
-          osd->SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
-  //} else printf("SoftOSD NULL!\n");
 }
 
 void cVideoOut::CloseOSD()
 {
   osdMutex.Lock();
   ClearOSD();
-  osd=NULL;
   OSDpresent=false;
   Osd_changed=1;
   osdMutex.Unlock();

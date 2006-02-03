@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.26 2006/01/17 20:45:46 wachm Exp $
+ * $Id: video.h,v 1.27 2006/02/03 22:34:54 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -18,9 +18,6 @@
 #include "setup-softdevice.h"
 #include "sync-timer.h"
 
-#if VDRVERSNUM >= 10307
-#include <vdr/osd.h>
-#endif
 #include <avcodec.h>
 
 #define DV_FORMAT_UNKNOWN -1
@@ -125,7 +122,6 @@ protected:
 public:
     cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
-    virtual void CloseOSD();
     
     virtual void Sync(cSyncTimer *syncTimer, int *delay);
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
@@ -178,13 +174,9 @@ public:
     // clear the OSD buffer
 
 #if VDRVERSNUM >= 10307
-    cSoftOsd *osd;
-    void OSDFlush_nolock(cSoftOsd *Osd,bool RefreshAll=false);
-    inline void OSDFlush(cSoftOsd *Osd,bool RefreshAll=false)
-    {osdMutex.Lock();OSDFlush_nolock(Osd,RefreshAll); osdMutex.Unlock();};
-    
-    virtual void OpenOSD(int X, int Y, cSoftOsd *Osd);
-    
+    virtual void OpenOSD();
+    virtual void CloseOSD();
+
     virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight)
     // called whenever OSD is to be displayed
     // every video-out should implement a method which desired osd dimension
@@ -197,8 +189,24 @@ public:
             PixelMask=NULL;};
     // should be implemented by all video out method to set the OSD pixel mode
 
-    virtual void RefreshOSD(cSoftOsd *SoftOsd, bool RefreshAll=false) 
-    { return; };
+    // RGB modes
+    virtual void GetLockOsdSurface(uint8_t *&osd, int &stride, 
+                    bool *&dirtyLines)
+    { osd=NULL; stride=0; dirtyLines=NULL;};
+    virtual void CommitUnlockOsdSurface()
+    { current_osdMode=OSDMODE_PSEUDO;OSDpresent=true; };
+
+    // Software YUV mode
+    virtual void GetLockSoftOsdSurface(
+                        uint8_t *&osdPy, uint8_t *&osdPu, uint8_t *&osdPv,
+                        uint8_t *&osdPAlphaY, uint8_t *&osdPAlphaUV,
+                        int &strideY, int &strideUV)
+    { osdPy=OsdPy; osdPu=OsdPu; osdPv=OsdPv; 
+            osdPAlphaY=OsdPAlphaY; osdPAlphaUV=OsdPAlphaUV;
+            strideY=OSD_FULL_WIDTH; strideUV=OSD_FULL_WIDTH/2;};
+
+    virtual void CommitUnlockSoftOsdSurface()
+    { current_osdMode=OSDMODE_SOFTWARE; OSDpresent=true; };
       
    void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        uint8_t *alpha,uint16_t count);
@@ -216,6 +224,7 @@ public:
     virtual void MoveWindow(cWindow *Window, int X, int Y);
     virtual void CloseWindow(cWindow *Window);
     virtual void Refresh() {return;};
+    virtual void CloseOSD();
 #endif
 
 };

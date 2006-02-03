@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.38 2006/01/23 19:59:17 lucke Exp $
+ * $Id: video-xv.c,v 1.39 2006/02/03 22:34:54 wachm Exp $
  */
 
 #include <unistd.h>
@@ -859,6 +859,7 @@ bool cXvVideoOut::Initialize (void)
                           osd_image->bytes_per_line*osd_max_height,
                           //osd_image->bytes_per_line*height,
                           IPC_CREAT | 0777);
+          printf("osd_image allocated: %d\n",osd_shminfo.shmid);
           if (osd_shminfo.shmid == -1) {
                   dsyslog("[XvVideoOut]: Initialize ERROR: shmget FAILED !");
           } else {
@@ -1227,8 +1228,7 @@ void cXvVideoOut::ClearOSD()
   if (initialized && current_osdMode==OSDMODE_PSEUDO) {
     pthread_mutex_lock(&xv_mutex);
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
-    //XClearArea (dpy, win, 0, 0, 0, 0, True);// still needs locking!
-    //XSync(dpy, False);
+    ShowOSD(0,true);
     pthread_mutex_unlock(&xv_mutex);
   };
 };
@@ -1251,7 +1251,7 @@ void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
 
 void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
                   bool &IsYUV, uint8_t *&PixelMask) {
-        if (current_osdMode==OSDMODE_SOFTWARE) {
+        if (setupStore->osdMode==OSDMODE_SOFTWARE) {
                 IsYUV=true;
                 PixelMask=NULL;
                 return;
@@ -1263,6 +1263,21 @@ void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
         PixelMask=NULL;
 };       
 
+void cXvVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
+                  bool *&dirtyLines) {
+        osd=osd_buffer;
+        stride=osd_image->bytes_per_line;
+        dirtyLines=NULL;
+};
+
+void cXvVideoOut::CommitUnlockOsdSurface() {
+        cVideoOut::CommitUnlockOsdSurface();
+        pthread_mutex_lock(&xv_mutex);
+        ++osd_refresh_counter;
+        ShowOSD(0,true);
+        pthread_mutex_unlock(&xv_mutex);
+};
+/*
 void cXvVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
 {
   // refreshes the screen
@@ -1290,7 +1305,7 @@ void cXvVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
     pthread_mutex_unlock(&xv_mutex);
   };
 };
-
+*/
 #else
 /* ---------------------------------------------------------------------------
  */

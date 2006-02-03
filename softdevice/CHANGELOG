@@ -1,4 +1,8 @@
 Changelog
+2006-02-03:
+   - remove cSoftOsd and cOsd dependency from cVideoOut. Size and
+     Mode changes are now handled by a thread from cSoftOsd.
+   - introduce separate OSD layer in ShmClient/video-shm
 2006-01-19:
    - now correct fix for CheckArea() not updateing the aspect ratio
 2006-01-17:

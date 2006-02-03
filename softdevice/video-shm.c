@@ -6,12 +6,11 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.1 2006/01/17 20:45:46 wachm Exp $
+ * $Id: video-shm.c,v 1.2 2006/02/03 22:34:54 wachm Exp $
  */
 
 #include "video-shm.h"
 #include "utils.h"
-#include "SoftOsd.h"
 
 #define SHMDEB(out...) {printf("SHMSERV[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -117,9 +116,11 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore)
                 exit(-1);
         };
    
-        curr_pict_shmid=0;
+        curr_pict_shmid=-1;
+        curr_osd_shmid=-1;
         //ctl->pict_shmid=-1;
         curr_pict=NULL;
+        osd_surface=NULL;
         ctl->key=kNone;
         remote = new cShmRemote("softdevice-xv",this);
 };
@@ -145,17 +146,97 @@ cShmVideoOut::~cShmVideoOut() {
 */
 };
 
-void cShmVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
+void cShmVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
+   switch (setupStore->osdMode) {
+   //switch (current_osdMode) {
+      case OSDMODE_PSEUDO :
+                OsdWidth=ctl->osd_width;
+                OsdHeight=ctl->osd_height;
+             break;
+      case OSDMODE_SOFTWARE:
+                OsdWidth=swidth;
+                OsdHeight=sheight;
+             break;
+    };
+};
+
+void cShmVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
+                bool &IsYUV, uint8_t *&PixelMask) {
+        if (setupStore->osdMode==OSDMODE_SOFTWARE) {
+                IsYUV=true;
+                PixelMask=NULL;
+                return;
+        };
+
+        IsYUV=false; 
+        Depth=ctl->osd_depth;
+        HasAlpha=false;
+        PixelMask=NULL;
+};       
+
+void cShmVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
+                  bool *&dirtyLines) {
+        if ( ctl->osd_shmid != curr_osd_shmid ) {
+                if (osd_surface) {
+                        shmdt(osd_surface);
+                        osd_surface=NULL;
+                        osd=NULL;
+                };
+                
+                if ( ctl->osd_shmid != -1 ) {
+                       if ( (osd_surface = (uint8_t *)shmat(ctl->osd_shmid,NULL,0)) 
+                                       == (uint8_t*) -1 ) {
+                               fprintf(stderr,"error attatching osd pict(%d)! Assuming no client connected\n",
+                                               ctl->osd_shmid);
+                               ctl->osd_shmid = -1;
+                               ctl->attached = 0;
+                               osd_surface=NULL;
+                               osd=NULL;
+                               return;
+                       } 
+                };
+        };
+
+        
+        osd=osd_surface;
+        stride=ctl->osd_stride;
+        dirtyLines=NULL;
+};
+
+void cShmVideoOut::ClearOSD()
 {
-    if (current_osdMode==OSDMODE_SOFTWARE)
-	    Osd->CopyToBitmap(OsdPy,OsdPv,OsdPu,OsdPAlphaY,OsdPAlphaUV,
-                            OSD_FULL_WIDTH,OSD_FULL_WIDTH/2,
-			    OsdWidth,OsdHeight,RefreshAll);
+  cVideoOut::ClearOSD();
+  if ( ctl->osd_shmid != curr_osd_shmid ) {
+          if (osd_surface) {
+                  shmdt(osd_surface);
+                  osd_surface=NULL;
+          };
+
+          if ( ctl->osd_shmid != -1 ) {
+                  if ( (osd_surface = (uint8_t *)shmat(ctl->osd_shmid,NULL,0)) 
+                                  == (uint8_t*) -1 ) {
+                          fprintf(stderr,"error attatching osd pict(%d)! Assuming no client connected\n",
+                                          ctl->osd_shmid);
+                          ctl->osd_shmid = -1;
+                          ctl->attached = 0;
+                          osd_surface=NULL;
+                          return;
+                  } 
+          };
+  };
+  if (osd_surface)
+          memset (osd_surface, 0, ctl->osd_stride *ctl->osd_height);
+  ctl->new_osd++;
+        sem_sig_unlock(ctl->semid,PICT_SIG);
+};
+
+void cShmVideoOut::CommitUnlockOsdSurface() {
+        ctl->new_osd++;        
+        sem_sig_unlock(ctl->semid,PICT_SIG);
 };
 
 void cShmVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                      int Width, int Height, int Ystride, int UVstride) {
-        OsdRefreshCounter=0; 
 
         if (!ctl->attached) {
                 setupStore->shouldSuspend=1;
@@ -249,13 +330,6 @@ void cShmVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
         sem_sig_unlock(ctl->semid,PICT_SIG);
         //SHMDEB("send signal\n");
         
-};
-
-void cShmVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
-   if (current_osdMode==OSDMODE_SOFTWARE) {
-                OsdWidth=swidth;
-                OsdHeight=sheight;
-    };
 };
 
 #ifdef USE_SUBPLUGINS

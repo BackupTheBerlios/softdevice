@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.45 2006/01/10 19:40:25 wachm Exp $
+ * $Id: video-dfb.c,v 1.46 2006/02/03 22:34:54 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -14,7 +14,6 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#include "SoftOsd.h"
 
 #ifdef HAVE_CONFIG
 # include "config.h"
@@ -990,11 +989,11 @@ void cDFBVideoOut::Pause(void)
 
 /* ----------------------------------------------------------------------------
  */
-void cDFBVideoOut::OpenOSD (int x, int y, cSoftOsd *osd)
+void cDFBVideoOut::OpenOSD ()
 {
     IDirectFBSurface  *tmpSurface;
 
-  cVideoOut::OpenOSD(x, y,osd);
+  cVideoOut::OpenOSD();
   try
   {
     tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
@@ -1031,11 +1030,78 @@ void cDFBVideoOut::OSDStart()
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::OSDCommit()
-{
-  OSDpresent = true;
-}
+void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride, 
+                                     bool *&DirtyLines) {
+  int               pitch;
+  uint8_t           *dst;
 
+  try
+  {
+    dirtyLines=DirtyLines=new bool[Yres];
+    memset(dirtyLines,false,sizeof(dirtyLines));
+
+    tmpOsdSurface = (useStretchBlit) ? osdSurface : scrSurface;
+    tmpOsdSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+    osd=dst;stride=pitch;
+  }
+  catch (DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
+        ex->GetAction(), ex->GetResult());
+    delete ex;
+  }
+};
+
+void cDFBVideoOut::CommitUnlockOsdSurface() {
+  if (!tmpOsdSurface)
+    return;
+
+  printf("CommitUnlockOsdSurface %p\n",tmpOsdSurface);fflush(stdout);
+  try 
+  {
+    DFBRectangle      osdsrc;
+    
+    tmpOsdSurface->Unlock();
+    tmpOsdSurface->Flip();
+
+    int miny=0;
+    int maxy=0;
+    do {
+      while (!dirtyLines[miny] && miny < Yres)
+        miny++;
+
+      if (miny >= Yres)
+        break;
+
+      maxy=miny;
+      while (dirtyLines[maxy] && maxy < Yres)
+        maxy++;
+
+      osdsrc.x = 0;
+      osdsrc.y = miny;
+      osdsrc.w = Xres;
+      osdsrc.h = maxy-miny + 1;
+      tmpOsdSurface->Blit(tmpOsdSurface,&osdsrc,0,miny);
+
+  printf("CommitUnlockOsdSurface3 %p\n",tmpOsdSurface);fflush(stdout);
+      miny=maxy;
+
+    } while ( miny<Yres);
+
+  }
+  catch (DFBException *ex)
+  {
+    fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
+        ex->GetAction(), ex->GetResult());
+    delete ex;
+  }
+  printf("CommitUnlockOsdSurface %p 4\n",tmpOsdSurface);fflush(stdout);
+  free(dirtyLines);
+  dirtyLines=NULL;
+  tmpOsdSurface=NULL;
+  cVideoOut::CommitUnlockOsdSurface();
+}
+/*
 void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll) 
 {
     int               pitch;
@@ -1088,7 +1154,7 @@ void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
     }
 
 }
-	
+	*/
 /* ---------------------------------------------------------------------------
  */
 /*

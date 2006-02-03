@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.4 2006/01/15 20:41:15 wachm Exp $
+ * $Id: SoftOsd.c,v 1.5 2006/02/03 22:34:54 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -32,7 +32,7 @@ static uint64_t pseudo_transparent = COLOR_64BIT(COLOR_KEY);
  */
 
 cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y) 
-	: cOsd(X, Y) {
+	: cOsd(X, Y),active(false) {
         OSDDEB("cSoftOsd constructor\n");
         OutputConvert=&cSoftOsd::ARGB_to_ARGB32;
         pixelMask=NULL;
@@ -40,8 +40,14 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         OSD_Bitmap=new uint32_t[OSD_STRIDE*(OSD_HEIGHT+2)];
         
         videoOut = VideoOut;
-	videoOut->OpenOSD(X, Y, this);
+	videoOut->OpenOSD();
 	xOfs=X;yOfs=Y;
+        int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
+        uint8_t *PixelMask;
+        videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
+                        IsYUV,PixelMask);
+        SetMode(Depth,HasAlpha,AlphaInversed,
+                        IsYUV,PixelMask);
 };
 
 /*--------------------------------------------------------------------------*/
@@ -61,19 +67,102 @@ void cSoftOsd::Clear() {
 
 /* --------------------------------------------------------------------------*/
 cSoftOsd::~cSoftOsd() {
-  OSDDEB("cSoftOsd destructor\n");
-  if (videoOut) {
-    videoOut->CloseOSD();
-    videoOut=0;
-  }
-  delete OSD_Bitmap;
+        OSDDEB("cSoftOsd destructor\n");
+        active=false;
+        Cancel(3);
+        if (videoOut) {
+                videoOut->CloseOSD();
+                videoOut=0;
+        }
+        delete OSD_Bitmap;
 }
+
+/* -------------------------------------------------------------------------*/
+void cSoftOsd::Action() {
+        OSDDEB("OSD thread started\n");
+        active=true;
+        while(active && videoOut) {
+                int newOsdWidth;
+                int newOsdHeight;
+
+                videoOut->GetOSDDimension(newOsdWidth,newOsdHeight);
+                if ( newOsdWidth==-1 || newOsdHeight==-1 )
+                {
+                        newOsdWidth=OSD_FULL_WIDTH;
+                        newOsdHeight=OSD_FULL_HEIGHT;
+                }
+                
+                int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
+                uint8_t *PixelMask;
+                videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
+                                IsYUV,PixelMask);
+                bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,
+                                IsYUV,PixelMask);
+
+                if ( ScreenOsdWidth!=newOsdWidth  || 
+                                ScreenOsdHeight!=newOsdHeight  || 
+                                modeChanged ) {
+                        OSDDEB("Resolution or mode changed!\n");
+                        if (modeChanged)
+                                videoOut->ClearOSD();
+                        OsdCommit();
+                }
+                usleep(17000);
+        }
+        OSDDEB("OSD thread ended\n");
+}
+
+/*--------------------------------------------------------------------------*/
+void cSoftOsd::OsdCommit() {
+        int newX;
+        int newY;
+        bool RefreshAll=false;
+        videoOut->GetOSDDimension(newX,newY);
+        if ( newX==-1 || newY==-1 ) {
+                newX=OSD_FULL_WIDTH;
+                newY=OSD_FULL_HEIGHT;
+        }
+        if (newX!=ScreenOsdWidth || newY!=ScreenOsdHeight) {
+                ScreenOsdWidth=newX;
+                ScreenOsdHeight=newY;
+                RefreshAll=true;
+        };
+
+        int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
+        uint8_t *PixelMask;
+        videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+        bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+        if (modeChanged)
+                videoOut->ClearOSD();
+
+        if (IsYUV) { 
+                uint8_t *osdPy; uint8_t *osdPu; uint8_t *osdPv;
+                uint8_t *osdPAlphaY; uint8_t *osdPAlphaUV;
+                int strideY; int strideUV;
+                videoOut->GetLockSoftOsdSurface(osdPy,osdPu,osdPv,
+                                osdPAlphaY,osdPAlphaUV,strideY,strideUV);
+                if (osdPy)
+                        CopyToBitmap(osdPy,osdPv,osdPu,
+                                        osdPAlphaY,osdPAlphaUV,
+                                        strideY,strideUV,
+                                        ScreenOsdWidth,ScreenOsdHeight,
+                                        RefreshAll);
+                videoOut->CommitUnlockSoftOsdSurface();
+        } else {
+                uint8_t *osd; int stride; bool *dirtyLines;
+                videoOut->GetLockOsdSurface(osd,stride,dirtyLines);
+                if (osd)
+                        CopyToBitmap(osd,stride,ScreenOsdWidth,ScreenOsdHeight,
+                                        RefreshAll,dirtyLines);
+                videoOut->CommitUnlockOsdSurface();
+        }
+};
 
 /* --------------------------------------------------------------------------*/
 bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed, 
                 bool IsYUV,uint8_t *PixelMask) {
-        OSDDEB("SetMode Depth %d HasAlpha %d IsYUV %d AlphaInversed %d PixelMask %p\n",
-                        Depth,HasAlpha,IsYUV,AlphaInversed,PixelMask);
+        //OSDDEB("SetMode Depth %d HasAlpha %d IsYUV %d AlphaInversed %d PixelMask %p\n",
+        //                Depth,HasAlpha,IsYUV,AlphaInversed,PixelMask);
         
         if (IsYUV) {
                 if ( bitmap_Format!= PF_AYUV) {
@@ -81,8 +170,9 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
                         bitmap_Format= PF_AYUV;
                         Clear();
                         FlushBitmaps(false);
+                        return true;
                 };
-                return true;
+                return false;
         };
 
         pixelMask=PixelMask;
@@ -118,9 +208,10 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
         if (old_bitmap_Format != bitmap_Format) {
                 Clear();
 		FlushBitmaps(false);
+                return true;
         };
         
-        return true;
+        return false;
 };
 
 
@@ -130,10 +221,12 @@ void cSoftOsd::Flush(void) {
 	bool OSD_changed=FlushBitmaps(true);
 	
 	if (OSD_changed)
-		videoOut->OSDFlush(this);
+		OsdCommit();
 
 	// give priority to the other threads
 	pthread_yield();
+        if (!active)
+                Start();
 }
 
 /* -------------------------------------------------------------------------*/

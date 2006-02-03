@@ -12,13 +12,12 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.11 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video-xv.h,v 1.12 2006/02/03 22:34:54 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
 #define VIDEO_XV_H
 #include "video.h"
-#include "SoftOsd.h"
 
 #include <pthread.h>
 
@@ -129,10 +128,12 @@ private:
   GC                gc, osd_gc;
   XEvent            event;
   XvPortID          port;
+  bool              useShm;
+public:
   XShmSegmentInfo   shminfo, osd_shminfo;
   XvImage           *xv_image;
-  bool              useShm;
   XImage            *osd_image;
+private:
   int               osd_max_width,osd_max_height;
   unsigned char     *outbuffer,
                     *osd_buffer,
@@ -160,7 +161,9 @@ public:
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
                   bool &IsYUV, uint8_t *&PixelMask);
- virtual void RefreshOSD(cSoftOsd *Osd, bool RefreshAll=false);
+  virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
+                  bool *&dirtyLines);
+  virtual void CommitUnlockOsdSurface();
 #else
   virtual void Refresh();
 #endif

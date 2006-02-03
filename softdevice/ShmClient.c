@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.1 2006/01/17 20:45:46 wachm Exp $
+ * $Id: ShmClient.c,v 1.2 2006/02/03 22:34:54 wachm Exp $
  */
 
 #include <signal.h>
@@ -121,8 +121,13 @@ int main(int argc, char **argv) {
                 exit(-1);
         };
         xvRemote->XvRemoteStart();
+
+        ctl->osd_shmid= vout->osd_shminfo.shmid;
+        ctl->osd_stride=vout->osd_image->bytes_per_line;
+        ctl->osd_depth=vout->osd_image->bits_per_pixel;
+        vout->GetOSDDimension(ctl->osd_width,ctl->osd_height);
+        printf("osd_shmid %d stride %d\n",ctl->osd_shmid,ctl->osd_stride);
         
-                
         ctl->key=NO_KEY;
         // wakeup remote thread to unsuspend video/audio
         sem_sig_unlock(ctl->semid,KEY_SIG);
@@ -133,18 +138,26 @@ int main(int argc, char **argv) {
                 //SHMDEB("got signal\n");
                 sem_wait_lock(ctl->semid,PICT_MUT,SEM_UNDO);
                 //SHMDEB("got lock\n");
-                
-                int width=ctl->width>ctl->max_width?ctl->max_width:ctl->width;
-                int height=ctl->height>ctl->max_height?
-                        ctl->max_height:ctl->height;
+               
+                if (ctl->new_pict) {
+                        int width=ctl->width>ctl->max_width?
+                                ctl->max_width:ctl->width;
+                        int height=ctl->height>ctl->max_height?
+                                ctl->max_height:ctl->height;
 
-                vout->CheckArea(width,height);
-                vout->CheckAspect(ctl->new_afd,ctl->new_asp);
-                vout->YUV(pixel[0],pixel[1],pixel[2],
-                                width,height,
-                                ctl->stride0,ctl->stride1);
-                ctl->new_pict=0;
+                        vout->CheckArea(width,height);
+                        vout->CheckAspect(ctl->new_afd,ctl->new_asp);
+                        vout->YUV(pixel[0],pixel[1],pixel[2],
+                                        width,height,
+                                        ctl->stride0,ctl->stride1);
+                        ctl->new_pict=0;
+                };
+                if (ctl->new_osd) {
+                        vout->CommitUnlockOsdSurface();
+                        ctl->new_osd=0;
+                };
                 
+                vout->GetOSDDimension(ctl->osd_width,ctl->osd_height);
                 // consumed all pictures - set semaphore to 0
                 sem_zero(ctl->semid,PICT_SIG);
                 // unlock picture ctl

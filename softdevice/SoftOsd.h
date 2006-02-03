@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.2 2006/01/09 20:26:02 wachm Exp $
+ * $Id: SoftOsd.h,v 1.3 2006/02/03 22:34:54 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -51,7 +51,7 @@ class cVideoOut;
 
 /* ---------------------------------------------------------------------------
  */
-class cSoftOsd : public cOsd {
+class cSoftOsd : public cOsd,cThread {
 private:
     cVideoOut *videoOut;
 protected:
@@ -73,7 +73,10 @@ protected:
 
     void ConvertPalette(tColor *dest_palette, const tColor *orig_palette, 
 		    int maxColors);
-    
+   
+    bool active;
+    int ScreenOsdWidth;
+    int ScreenOsdHeight;
 public:
     cSoftOsd(cVideoOut *VideoOut, int XOfs, int XOfs);
     virtual ~cSoftOsd();
@@ -84,8 +87,10 @@ public:
     bool FlushBitmaps(bool OnlyDirty);
     bool DrawConvertBitmap(cBitmap *Bitmap, bool OnlyDirty);
     virtual void Flush(void);
+    void OsdCommit();
     
     void Clear();
+    virtual void Action();
     
     static void ARGB_to_AYUV(uint8_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel);

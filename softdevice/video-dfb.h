@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.14 2006/01/08 09:43:32 wachm Exp $
+ * $Id: video-dfb.h,v 1.15 2006/02/03 22:34:54 wachm Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -55,15 +55,19 @@ class cDFBVideoOut : public cVideoOut {
     void GetDisplayFrameTime();
 
 #if VDRVERSNUM >= 10307
-    virtual void OpenOSD(int x, int y, cSoftOsd *Osd);
-//    virtual void Refresh(cBitmap *Bitmap);
-    virtual void RefreshOSD(cSoftOsd *Osd, bool RefreshAll=false);
+    bool *dirtyLines;
+    IDirectFBSurface  *tmpOsdSurface;
+    virtual void OpenOSD();
     virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                   bool &IsYUV, uint8_t *&PixelMask) 
     { Depth=Bpp; HasAlpha=!OSDpseudo_alpha; AlphaInversed=isVIAUnichrome;
-            IsYUV=false;PixelMask=NULL;}
+            IsYUV=false;PixelMask=NULL;};
+    virtual void GetOSDDimension( int &Width, int &Height)
+    { Width=Xres; Height=Yres;};		    
     virtual void OSDStart();
-    virtual void OSDCommit();
+    virtual void GetLockOsdSurface(uint8_t *&osd, int &stride, 
+                    bool *&dirtyLines);
+    virtual void CommitUnlockOsdSurface();
 #else
     virtual void Refresh();
 #endif

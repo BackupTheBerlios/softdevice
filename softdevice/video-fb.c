@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.11 2006/01/15 20:41:14 wachm Exp $
+ * $Id: video-fb.c,v 1.12 2006/02/03 22:34:54 wachm Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -17,7 +17,6 @@
 #include "video-fb.h"
 #include "utils.h"
 #include "setup-softdevice.h"
-#include "SoftOsd.h"
 
 static  pthread_mutex_t fb_mutex = PTHREAD_MUTEX_INITIALIZER;
 // --- cFrameBuffer --------------------------------------------------------
@@ -154,9 +153,9 @@ void cFBVideoOut::Pause(void)
 #if VDRVERSNUM >= 10307
 /* ---------------------------------------------------------------------------
  */
-void cFBVideoOut::OpenOSD(int X, int Y, cSoftOsd *osd)
+void cFBVideoOut::OpenOSD()
 {
-  cVideoOut::OpenOSD(X,Y,osd);
+  cVideoOut::OpenOSD();
   //OSDxOfs = X & ~7;
   //OSDyOfs = Y & ~1;
 }
@@ -181,14 +180,18 @@ void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
     }
 }
 
-void cFBVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
-{
+void cFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride, 
+                  bool *&dirtyLines) {
   pthread_mutex_lock(&fb_mutex);
-  OSDpresent=true;
-  Osd->CopyToBitmap(fb,line_len,OsdWidth,OsdHeight,RefreshAll);
-  //Draw(Bitmap,fb,line_len);
+  osd=fb; 
+  stride=line_len;
+  dirtyLines=NULL;
+};
+
+void cFBVideoOut::CommitUnlockOsdSurface() {      
   pthread_mutex_unlock(&fb_mutex);
-}
+  cVideoOut::CommitUnlockOsdSurface();
+};
 
 #else
 

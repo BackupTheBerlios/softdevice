@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.13 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video-vidix.c,v 1.14 2006/02/03 22:34:54 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -13,7 +13,6 @@
 #include "video-vidix.h"
 #include "utils.h"
 #include "setup-softdevice.h"
-#include "SoftOsd.h"
 
 //#define TIMINGS
 
@@ -584,19 +583,12 @@ void cVidixVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
 
 /* ---------------------------------------------------------------------------
  */
-void cVidixVideoOut::Refresh(cSoftOsd *Osd,bool RefreshAll)
-{
-    switch (current_osdMode) {
-      case OSDMODE_PSEUDO :
-              Osd->CopyToBitmap(fb,fb_line_len,OsdWidth,OsdHeight,RefreshAll);
-            break;
-      case OSDMODE_SOFTWARE:
-              Osd->CopyToBitmap(OsdPy,OsdPu,OsdPv,OsdPAlphaY,OsdPAlphaUV,
-			      OSD_FULL_WIDTH,OSD_FULL_WIDTH/2,
-			      OsdWidth,OsdHeight,RefreshAll);
-            break;
-    }
-}
+void cVidixVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride, 
+                bool *&dirtyLines) {
+        osd=fb;
+        stride=fb_line_len;
+        dirtyLines=NULL;
+};
 
 #else
 

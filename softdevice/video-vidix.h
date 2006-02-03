@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.6 2006/01/07 14:28:39 wachm Exp $
+ * $Id: video-vidix.h,v 1.7 2006/02/03 22:34:54 wachm Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -52,7 +52,8 @@ public:
   { Depth=Bpp; HasAlpha=false;AlphaInversed=false; 
 	  IsYUV=(current_osdMode == OSDMODE_SOFTWARE);
 	  PixelMask=NULL;};
-  virtual void Refresh(cSoftOsd *Osd,bool RefreshAll=false);
+  virtual void GetLockOsdSurface(uint8_t *&osd, int &stride, 
+                  bool *&dirtyLines);
 #else
   virtual void Refresh();
 #endif
