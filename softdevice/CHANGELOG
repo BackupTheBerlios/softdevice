@@ -1,5 +1,6 @@
 Changelog
 2006-03-03:
+   - remove unused code, variables and parameters from video-xv
    - add more documentation to the readme
    - fix ShmClient pixel[] array initialisation
    - compile fix for video-shm.h

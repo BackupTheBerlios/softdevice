@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.27 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video.h,v 1.28 2006/02/04 17:33:31 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -136,7 +136,6 @@ public:
                                   int w, int h, int yPitch, int uvPitch);
     virtual bool Initialize(void) {return 1;};
     virtual bool Reconfigure (int format) {return 1;};
-    virtual bool GetInfo(int *fmt, unsigned char **dest,int *w, int *h) {return false;};
 
     virtual void Suspend(void) { return;};
     virtual bool Resume(void) { return true;};

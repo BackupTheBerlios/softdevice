@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.39 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-xv.c,v 1.40 2006/02/04 17:33:31 wachm Exp $
  */
 
 #include <unistd.h>
@@ -298,15 +298,6 @@ void cXvPortAttributeStore::Restore()
 
 /* ---------------------------------------------------------------------------
  */
-Bool chk_event (Display *d, XEvent *e, char *a)
-{
-  if (e->type == KeyPress)
-    return True;
-  return False;
-}
-
-/* ---------------------------------------------------------------------------
- */
 cXvRemote::cXvRemote(const char *Name, cXvVideoOut *vout) : cRemote(Name)
 {
   video_out = vout;
@@ -339,7 +330,6 @@ void cXvRemote::Action(void)
     pthread_mutex_lock(&xv_mutex);
     if (events_not_done > 2) {
       video_out->ProcessEvents ();
-      video_out->ShowOSD (0, True);
       events_not_done = 0;
     } else {
       events_not_done++;
@@ -470,11 +460,11 @@ void cXvVideoOut::ProcessEvents ()
 {
 
     char            buffer [80];
-    int             len,
-                    map_count = 0;
+    int             map_count = 0;
     XComposeStatus  compose;
     KeySym          keysym;
     struct timeval  current_time;
+    XEvent            event;
 
   while (XCheckMaskEvent (dpy, /* win, */
                                  PointerMotionMask |
@@ -529,7 +519,7 @@ void cXvVideoOut::ProcessEvents ()
         gettimeofday(&current_time, NULL);
         button_time = current_time.tv_sec;
 
-        len = XLookupString (&event. xkey, buffer, 80, &keysym, &compose);
+        XLookupString (&event.xkey, buffer, 80, &keysym, &compose);
         switch (keysym)
         {
           case XK_Shift_L: case XK_Shift_R: case XK_Control_L: case XK_Control_R:
@@ -644,7 +634,7 @@ void cXvVideoOut::ProcessEvents ()
   if (xv_initialized) {
     if (map_count) {
       XClearArea (dpy, win, 0, 0, 0, 0, False);
-      ShowOSD(0,false);
+      ShowOSD();
       XvShmPutImage(dpy, port,
                     win, gc,
                     xv_image,
@@ -682,14 +672,12 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
    * could be specified by argv ! TODO
    */
   display_aspect = current_aspect = setupStore->xvAspect;
-  scale_size = 0;
   screenPixelAspect = -1;
   xvWidth  = width  = XV_SRC_WIDTH;
   xvHeight = height = XV_SRC_HEIGHT;
 
   format = FOURCC_YV12;
   use_xv_port = 0;
-  len = width * height * 4;
   outbuffer = NULL;
   w_name = "vdr";
   i_name = "vdr";
@@ -768,12 +756,6 @@ bool cXvVideoOut::Initialize (void)
           "[XvVideoOut]: displayAspect = %f, displayRatio = %f, PAR = %f\n",
           displayAspect, displayRatio, parValues[0]);
 
-  if (scale_size) {
-    lwidth  = (int)(((double)lwidth  * (double)scale_size)/100.0);
-    lheight = (int)(((double)lheight * (double)scale_size)/100.0);
-    dwidth  = (int)(((double)dwidth  * (double)scale_size)/100.0);
-    dheight = (int)(((double)dheight * (double)scale_size)/100.0);
-  }
   if (flags & XV_FORMAT_MASK) {
     hints.flags |= PAspect;
     if (flags & XV_FORMAT_WIDE) {
@@ -801,7 +783,7 @@ bool cXvVideoOut::Initialize (void)
                          PointerMotionMask | ButtonPressMask);
 
   XMapRaised(dpy, win);
-  XNextEvent(dpy, &event);
+  //XNextEvent(dpy, &event);
 
   gc = XCreateGC(dpy, win, 0, &values);
 
@@ -940,6 +922,7 @@ bool cXvVideoOut::Reconfigure(int format)
                         i;
     XvAdaptorInfo       *ad_info;
     XvImageFormatValues *fmt_info;
+    int                 len=0;
 
   pthread_mutex_lock(&xv_mutex);
 
@@ -1181,17 +1164,6 @@ bool cXvVideoOut::Resume(void)
 
 /* ---------------------------------------------------------------------------
  */
-bool cXvVideoOut::GetInfo(int *fmt, unsigned char **dest, int *w, int *h)
-{
-  *fmt = format;
-  *dest = (unsigned char *) xv_image->data;
-  *w = width;
-  *h = height;
-  return true;
-}
-
-/* ---------------------------------------------------------------------------
- */
 void cXvVideoOut::CloseOSD()
 {
   cVideoOut::CloseOSD();
@@ -1210,9 +1182,8 @@ void cXvVideoOut::CloseOSD()
   {
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
     pthread_mutex_lock(&xv_mutex);
-    osd_refresh_counter = osd_skip_counter = 0;
     XClearArea (dpy, win, 0, 0, 0, 0, False);
-    ShowOSD(0,false);
+    ShowOSD();
     XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
   }
@@ -1228,7 +1199,8 @@ void cXvVideoOut::ClearOSD()
   if (initialized && current_osdMode==OSDMODE_PSEUDO) {
     pthread_mutex_lock(&xv_mutex);
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
-    ShowOSD(0,true);
+    ShowOSD();
+    XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
   };
 };
@@ -1273,8 +1245,8 @@ void cXvVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
 void cXvVideoOut::CommitUnlockOsdSurface() {
         cVideoOut::CommitUnlockOsdSurface();
         pthread_mutex_lock(&xv_mutex);
-        ++osd_refresh_counter;
-        ShowOSD(0,true);
+        ShowOSD();
+        XSync(dpy, False);
         pthread_mutex_unlock(&xv_mutex);
 };
 /*
@@ -1299,7 +1271,6 @@ void cXvVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
  
     }
     pthread_mutex_lock(&xv_mutex);
-    ++osd_refresh_counter;
     ShowOSD(0,1);
     //OSDpresent=true;
     pthread_mutex_unlock(&xv_mutex);
@@ -1355,12 +1326,8 @@ void cXvVideoOut::Refresh()
     if (w && h)
     {
       pthread_mutex_lock(&xv_mutex);
-      ++osd_refresh_counter;
-      osd_x = x0;
-      osd_y = y0;
-      osd_w = w;
-      osd_h = h;
-      ShowOSD(0,1);
+      ShowOSD();
+      XSync(dpy, False);
       pthread_mutex_unlock(&xv_mutex);
 
     }
@@ -1370,40 +1337,28 @@ void cXvVideoOut::Refresh()
 
 /* ---------------------------------------------------------------------------
  */
-void cXvVideoOut::ShowOSD (int skip, int do_sync)
+void cXvVideoOut::ShowOSD ()
 {
-  //if (OSDpresent) 
-  {
-    //if (osd_refresh_counter) {
-      if (current_osdMode==OSDMODE_PSEUDO ){//&& osd_skip_counter > skip) {
-     
+  if (current_osdMode==OSDMODE_PSEUDO ) {
 #if VDRVERSNUM >= 10307
-        int x= lwidth > osd_max_width ?(lwidth - osd_max_width)/2+lxoff:lxoff;
-        int y= lheight > osd_max_height ? (lheight - osd_max_height) / 2+lyoff:lyoff;
+    int x= lwidth > osd_max_width ?(lwidth - osd_max_width)/2+lxoff:lxoff;
+    int y= lheight > osd_max_height ? (lheight - osd_max_height) / 2+lyoff:lyoff;
 #else
-        int x=lwidth > OSD_WIDTH ?(lwidth - OSD_WIDTH)/2+lxoff:lxoff;
-	int y=lheight > OSD_HEIGHT?(lheight - OSD_HEIGHT) / 2+lyoff:lyoff;
+    int x=lwidth > OSD_WIDTH ?(lwidth - OSD_WIDTH)/2+lxoff:lxoff;
+    int y=lheight > OSD_HEIGHT?(lheight - OSD_HEIGHT) / 2+lyoff:lyoff;
 #endif
-	if (useShm) 
-		XShmPutImage (dpy, win, gc, osd_image,
-				1,1,
-				x,y,
-				lwidth-1,lheight-1,
-				False);
-	else
-		XPutImage (dpy, win, gc, osd_image,
-				1,
-				1,
-				x,y,
-				lwidth-1,lheight-1);
-        if (do_sync)
-          XSync(dpy, False);
-        osd_skip_counter = 0;
-        //osd_refresh_counter--;
-      } else {
-        osd_skip_counter++;
-      }
-    //}
+    if (useShm) 
+      XShmPutImage (dpy, win, gc, osd_image,
+          1,1,
+          x,y,
+          lwidth-1,lheight-1,
+          False);
+    else
+      XPutImage (dpy, win, gc, osd_image,
+          1,
+          1,
+          x,y,
+          lwidth-1,lheight-1);
   }
 }
 
@@ -1424,7 +1379,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
       cutRight != setupStore->cropRightCols)
   {
     XClearArea (dpy, win, 0, 0, 0, 0, False);
-    ShowOSD(0,false);
+    ShowOSD();
     aspect_changed = 0;
     cutTop = setupStore->cropTopLines;
     cutBottom = setupStore->cropBottomLines;
@@ -1509,7 +1464,6 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                 lxoff,  lyoff,     /* dx, dy */
                 lwidth, lheight,   /* dw, dh */
                 False);
-          //ShowOSD (1, False);
   }
   ProcessEvents ();
   events_not_done = 0;

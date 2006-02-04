@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.12 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-xv.h,v 1.13 2006/02/04 17:33:31 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -110,31 +110,22 @@ private:
   int               initialized,
                     toggleInProgress,
                     xv_initialized,
-                    osd_refresh_counter,
-                    osd_skip_counter,
-                    osd_x, osd_y,
-                    osd_w, osd_h,
-
                     /* -------------------------------------------------------
                      * could be specified via argv or parameters
                      */
                     xvWidth, xvHeight,
                     width, height,
-                    attr,
-                    len,
-                    scale_size,
                     format;
 
-  GC                gc, osd_gc;
-  XEvent            event;
+  GC                gc;
   XvPortID          port;
   bool              useShm;
 public:
   XShmSegmentInfo   shminfo, osd_shminfo;
   XvImage           *xv_image;
   XImage            *osd_image;
-private:
   int               osd_max_width,osd_max_height;
+private:
   unsigned char     *outbuffer,
                     *osd_buffer,
                     *pixels[3];
@@ -154,7 +145,7 @@ public:
   cXvVideoOut(cSetupStore *setupStore);
   virtual ~cXvVideoOut();
   void ProcessEvents ();
-  void ShowOSD (int skip, int do_sync);
+  void ShowOSD ();
 
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();
@@ -173,7 +164,6 @@ public:
   virtual bool Reconfigure (int format = FOURCC_YUY2);
   virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
   virtual void Pause(void);
-  virtual bool GetInfo(int *fmt, unsigned char **dest,int *w, int *h);
 
   virtual void Suspend();
   virtual bool Resume();
