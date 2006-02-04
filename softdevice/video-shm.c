@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.3 2006/02/04 10:25:39 wachm Exp $
+ * $Id: video-shm.c,v 1.4 2006/02/04 14:40:04 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -273,8 +273,8 @@ void cShmVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                                return;
                        } 
                        pixels[0]=curr_pict;
-                       pixels[1]=curr_pict+ctl->height*ctl->stride0;
-                       pixels[2]=pixels[1]+ctl->height/2*ctl->stride1;
+                       pixels[1]=curr_pict+ctl->max_height*ctl->stride0;
+                       pixels[2]=pixels[1]+ctl->max_height/2*ctl->stride1;
                        curr_pict_shmid=ctl->pict_shmid;
                 };
         };

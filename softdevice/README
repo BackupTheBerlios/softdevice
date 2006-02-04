@@ -118,6 +118,13 @@ can use Vdr just like you are used to from the Xv-out will open up. When
 this window is closed the Softdevice will automatically suspend the decoding.
 It is possible to make a client for the other video-out methods too, but
 I found the Xv-Client the most usefull for combined desktop/vdr machines :-)
+The softdevice doesn't always remove the shared memory segment which is
+used for comunication with the client, if you have troubles with that (or
+you get an error message that the client/server can't connect to the shm ctl)
+you can remove the shared memory segment with "ipcrm". First you have to
+find out the shared memory id, type the command "ipcs" and look for the
+key "0x0000162" the shared memory id is next to it. Them remove the
+shared memory segment with "ipcrm shm shared_memory_id".
 
 
 Problems/todo:

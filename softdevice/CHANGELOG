@@ -1,5 +1,7 @@
 Changelog
 2006-03-03:
+   - add more documentation to the readme
+   - fix ShmClient pixel[] array initialisation
    - compile fix for video-shm.h
    - some fixes in the osd handling of video-shm
    - added NoVScaleCopyToBitmap() vor YUV mode
@@ -10,7 +12,7 @@ Changelog
      Mode changes are now handled by a thread from cSoftOsd.
    - introduce separate OSD layer in ShmClient/video-shm
 2006-01-19:
-   - now correct fix for CheckArea() not updateing the aspect ratio
+   - now correct fix for CheckArea() not updating the aspect ratio
 2006-01-17:
    - add video-shm and ShmClient, a simple server/client model for the 
      softdevice. See the file README for details.

@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.3 2006/02/04 10:25:39 wachm Exp $
+ * $Id: ShmClient.c,v 1.4 2006/02/04 14:40:04 wachm Exp $
  */
 
 #include <signal.h>
@@ -111,8 +111,8 @@ int main(int argc, char **argv) {
                 shmctl (ctl->pict_shmid, IPC_RMID, 0);
  
         pixel[0]=curr_pict;
-        pixel[1]=curr_pict+ctl->height*ctl->stride0;
-        pixel[2]=pixel[1]+ctl->height/2*ctl->stride1;
+        pixel[1]=curr_pict+ctl->max_height*ctl->stride0;
+        pixel[2]=pixel[1]+ctl->max_height/2*ctl->stride1;
 
         ctl->attached=1;
         
