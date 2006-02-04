@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: shm-common.h,v 1.2 2006/02/03 22:34:54 wachm Exp $
+ * $Id: shm-common.h,v 1.3 2006/02/04 10:25:39 wachm Exp $
  */
 #ifndef __SHM_COMMON_H__
 #define __SHM_COMMON_H__
@@ -58,6 +58,8 @@ struct ShmCtlBlock {
         int osd_shmid;
         int osd_width;
         int osd_height;
+        int osd_max_width;
+        int osd_max_height;
         int osd_depth;
         int osd_stride;
         int new_osd;

@@ -1,5 +1,7 @@
 Changelog
 2006-03-03:
+   - compile fix for video-shm.h
+   - some fixes in the osd handling of video-shm
    - added NoVScaleCopyToBitmap() vor YUV mode
    - fix thread termination in cSoftOsd
    - make sure that strides are multiples of 16 in cSoftOsd

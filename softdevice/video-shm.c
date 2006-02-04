@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.2 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-shm.c,v 1.3 2006/02/04 10:25:39 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -82,6 +82,7 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore)
         if (Clear_Ctl) {
                 ctl->semid=-1;
                 ctl->pict_shmid=-1;
+                ctl->osd_shmid=-1;
                 ctl->attached = 0;
         };
 
@@ -150,8 +151,10 @@ void cShmVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
    switch (setupStore->osdMode) {
    //switch (current_osdMode) {
       case OSDMODE_PSEUDO :
-                OsdWidth=ctl->osd_width;
-                OsdHeight=ctl->osd_height;
+                OsdWidth=ctl->osd_width>ctl->osd_max_width?
+                        ctl->osd_max_width:ctl->osd_width;
+                OsdHeight=ctl->osd_height>ctl->osd_max_height?
+                        ctl->osd_max_height:ctl->osd_height;
              break;
       case OSDMODE_SOFTWARE:
                 OsdWidth=swidth;
@@ -176,6 +179,7 @@ void cShmVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
 
 void cShmVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
                   bool *&dirtyLines) {
+	SHMDEB("GetLockOsdSurface osd_surface %p\n",osd_surface);
         if ( ctl->osd_shmid != curr_osd_shmid ) {
                 if (osd_surface) {
                         shmdt(osd_surface);
@@ -184,20 +188,23 @@ void cShmVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
                 };
                 
                 if ( ctl->osd_shmid != -1 ) {
+                       SHMDEB("get new osd_surface %p\n",osd_surface);
                        if ( (osd_surface = (uint8_t *)shmat(ctl->osd_shmid,NULL,0)) 
                                        == (uint8_t*) -1 ) {
                                fprintf(stderr,"error attatching osd pict(%d)! Assuming no client connected\n",
                                                ctl->osd_shmid);
+                               ctl->pict_shmid = -1;
                                ctl->osd_shmid = -1;
                                ctl->attached = 0;
                                osd_surface=NULL;
                                osd=NULL;
                                return;
-                       } 
+                       }
+                       curr_osd_shmid=ctl->osd_shmid;
                 };
+	        SHMDEB("got new osd_surface %p\n",osd_surface);
         };
 
-        
         osd=osd_surface;
         stride=ctl->osd_stride;
         dirtyLines=NULL;
@@ -205,6 +212,7 @@ void cShmVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
 
 void cShmVideoOut::ClearOSD()
 {
+  SHMDEB("ClearOsd\n");
   cVideoOut::ClearOSD();
   if ( ctl->osd_shmid != curr_osd_shmid ) {
           if (osd_surface) {
@@ -225,12 +233,13 @@ void cShmVideoOut::ClearOSD()
           };
   };
   if (osd_surface)
-          memset (osd_surface, 0, ctl->osd_stride *ctl->osd_height);
+          memset (osd_surface, 0, ctl->osd_stride *ctl->osd_max_height);
   ctl->new_osd++;
-        sem_sig_unlock(ctl->semid,PICT_SIG);
+  sem_sig_unlock(ctl->semid,PICT_SIG);
 };
 
 void cShmVideoOut::CommitUnlockOsdSurface() {
+        SHMDEB("CommitOsd\n");
         ctl->new_osd++;        
         sem_sig_unlock(ctl->semid,PICT_SIG);
 };

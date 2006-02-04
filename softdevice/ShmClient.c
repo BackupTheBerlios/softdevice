@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.2 2006/02/03 22:34:54 wachm Exp $
+ * $Id: ShmClient.c,v 1.3 2006/02/04 10:25:39 wachm Exp $
  */
 
 #include <signal.h>
@@ -125,6 +125,8 @@ int main(int argc, char **argv) {
         ctl->osd_shmid= vout->osd_shminfo.shmid;
         ctl->osd_stride=vout->osd_image->bytes_per_line;
         ctl->osd_depth=vout->osd_image->bits_per_pixel;
+        ctl->osd_max_width=vout->osd_max_width;
+        ctl->osd_max_height=vout->osd_max_height;
         vout->GetOSDDimension(ctl->osd_width,ctl->osd_height);
         printf("osd_shmid %d stride %d\n",ctl->osd_shmid,ctl->osd_stride);
         
@@ -153,6 +155,7 @@ int main(int argc, char **argv) {
                         ctl->new_pict=0;
                 };
                 if (ctl->new_osd) {
+                        SHMDEB("new osd picture\n");
                         vout->CommitUnlockOsdSurface();
                         ctl->new_osd=0;
                 };

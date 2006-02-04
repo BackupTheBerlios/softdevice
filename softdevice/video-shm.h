@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.h,v 1.2 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-shm.h,v 1.3 2006/02/04 10:25:39 wachm Exp $
  */
 
 #ifndef __VIDEO_SHM_H__
@@ -21,6 +21,8 @@
 #include <sys/sem.h> 
 
 #include <vdr/remote.h>
+
+class cShmRemote;
 
 /*-------------------------------------------------------------------------*/
 class cShmVideoOut : public cVideoOut {
