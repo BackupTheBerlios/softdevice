@@ -1,4 +1,8 @@
 Changelog
+2006-03-03:
+   - added NoVScaleCopyToBitmap() vor YUV mode
+   - fix thread termination in cSoftOsd
+   - make sure that strides are multiples of 16 in cSoftOsd
 2006-02-03:
    - remove cSoftOsd and cOsd dependency from cVideoOut. Size and
      Mode changes are now handled by a thread from cSoftOsd.

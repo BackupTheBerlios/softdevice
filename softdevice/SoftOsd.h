@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.3 2006/02/03 22:34:54 wachm Exp $
+ * $Id: SoftOsd.h,v 1.4 2006/02/04 10:05:09 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -75,6 +75,7 @@ protected:
 		    int maxColors);
    
     bool active;
+    bool close;
     int ScreenOsdWidth;
     int ScreenOsdHeight;
 public:
@@ -113,6 +114,17 @@ public:
 		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll=false);
+  
+    void NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
+		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    int Ystride, int UVstride,
+                    int dest_Width, int dest_Height, bool RefreshAll=false);
+
+    void ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
+		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    int Ystride, int UVstride,
+                    int dest_Width, int dest_Height, bool RefreshAll=false);
+    
 
     // ARGB packed modes
     void CopyToBitmap(uint8_t * dest, int linesize,
@@ -128,6 +140,7 @@ public:
 
     
  private:
+    void NoScaleHoriz_MMX(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
     void ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
     void ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
     void ScaleDownVert_MMX(uint8_t * dest, int linesize, int32_t new_pixel_height, 

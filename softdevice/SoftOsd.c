@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.5 2006/02/03 22:34:54 wachm Exp $
+ * $Id: SoftOsd.c,v 1.6 2006/02/04 10:05:09 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -32,7 +32,7 @@ static uint64_t pseudo_transparent = COLOR_64BIT(COLOR_KEY);
  */
 
 cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y) 
-	: cOsd(X, Y),active(false) {
+	: cOsd(X, Y),active(false),close(false) {
         OSDDEB("cSoftOsd constructor\n");
         OutputConvert=&cSoftOsd::ARGB_to_ARGB32;
         pixelMask=NULL;
@@ -68,6 +68,7 @@ void cSoftOsd::Clear() {
 /* --------------------------------------------------------------------------*/
 cSoftOsd::~cSoftOsd() {
         OSDDEB("cSoftOsd destructor\n");
+        close=true;
         active=false;
         Cancel(3);
         if (videoOut) {
@@ -81,7 +82,7 @@ cSoftOsd::~cSoftOsd() {
 void cSoftOsd::Action() {
         OSDDEB("OSD thread started\n");
         active=true;
-        while(active && videoOut) {
+        while(active && videoOut && !close) {
                 int newOsdWidth;
                 int newOsdHeight;
 
@@ -114,6 +115,7 @@ void cSoftOsd::Action() {
 
 /*--------------------------------------------------------------------------*/
 void cSoftOsd::OsdCommit() {
+        OSDDEB("OsdCommit()\n");
         int newX;
         int newY;
         bool RefreshAll=false;
@@ -225,7 +227,7 @@ void cSoftOsd::Flush(void) {
 
 	// give priority to the other threads
 	pthread_yield();
-        if (!active)
+        if (!active && !close)
                 Start();
 }
 
@@ -612,8 +614,68 @@ void cSoftOsd::CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel) {
 };
 
 //---------------------------YUV modes ----------------------
-#define SCALEH_IDX(x) ((scaleH_strtIdx+(x))%lines_count)
 void cSoftOsd::CopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
+		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    int Ystride, int UVstride,
+                    int dest_Width, int dest_Height, bool RefreshAll) {
+        OSDDEB("CopyToBitmap destsize: %d,%d\n",dest_Width,dest_Height);
+        if (dest_Height==OSD_HEIGHT)
+                NoVScaleCopyToBitmap(PY,PU,PV,PAlphaY,PAlphaUV,Ystride,UVstride,
+                                dest_Width,dest_Height,RefreshAll);
+        else 
+                ScaleVDownCopyToBitmap(PY,PU,PV,PAlphaY,PAlphaUV,Ystride,UVstride,
+                                dest_Width,dest_Height,RefreshAll);
+};
+                
+void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
+		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    int Ystride, int UVstride,
+                    int dest_Width, int dest_Height, bool RefreshAll) {
+        OSDDEB("CopyToBitmap YUV no Vscale\n");
+ 	cMutexLock dirty(&dirty_Mutex);
+        color *pixmap=(color*) OSD_Bitmap;
+        int dest_Stride=(dest_Width+32) & ~0xf;
+        color tmp_pixmap[2*dest_Stride];
+        uint8_t *pY;uint8_t *pU;uint8_t *pV;
+        uint8_t *pAlphaY; uint8_t *pAlphaUV;
+ 	void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
+	ScaleHoriz = ( dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
+                      ( dest_Width==OSD_WIDTH ? &cSoftOsd::NoScaleHoriz_MMX :
+                        &cSoftOsd::ScaleUpHoriz_MMX));
+      
+        for (int y=0; y<dest_Height; y+=2) {
+
+                int is_dirty=RefreshAll;
+                is_dirty |= dirty_lines[y] || dirty_lines[y+1];
+
+                if (!is_dirty) 
+                        continue;
+
+                //printf("Horiz scaling line %d\n",start_row+i);
+                (this->*ScaleHoriz)((uint8_t *)tmp_pixmap,dest_Width,
+                                &pixmap[y*OSD_STRIDE],OSD_WIDTH-1); 
+                (this->*ScaleHoriz)((uint8_t *)&tmp_pixmap[dest_Stride],
+                                dest_Width,
+                                &pixmap[(y+1)*OSD_STRIDE],OSD_WIDTH-1); 
+
+                // convert and copy to video out OSD layer
+                pY=PY+y*Ystride;
+                pU=PU+y*UVstride/2;
+                pV=PV+y*UVstride/2;
+                pAlphaY=PAlphaY+y*Ystride;
+                pAlphaUV=PAlphaUV+y*UVstride/2;
+                AYUV_to_AYUV420P(pY,pY+Ystride,pU,pV,
+                                pAlphaY,pAlphaY+Ystride,pAlphaUV,
+                                //              &pixmap[y*OSD_STRIDE],&pixmap[(y+1)*OSD_STRIDE],
+                                //              dest_Width);
+                        tmp_pixmap,&tmp_pixmap[dest_Stride],dest_Width);
+        };
+        memset(dirty_lines,false,sizeof(dirty_lines));
+        OSDDEB("CopyToBitmap YUV no Vscale end \n");
+};
+       
+#define SCALEH_IDX(x) ((scaleH_strtIdx+(x))%lines_count)
+void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
 		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll) {
@@ -738,7 +800,7 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
 	};
 	
 	cMutexLock dirty(&dirty_Mutex);
-	const int dest_stride=dest_Width+16;
+	const int dest_stride=(dest_Width+32)&~0xF;
 	void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
 	ScaleHoriz= dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
 		&cSoftOsd::ScaleUpHoriz_MMX;
@@ -842,7 +904,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
 	cMutexLock dirty(&dirty_Mutex);
         uint8_t *buf;
         color *pixmap=(color*) OSD_Bitmap;
-	const int dest_stride=dest_Width+16;
+	const int dest_stride=(dest_Width+32)&~0xF;
         color tmp_pixmap[2*dest_stride];
 
        void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
@@ -1038,6 +1100,10 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
         EMMS;
 };
 
+void cSoftOsd::NoScaleHoriz_MMX(uint8_t * dest, int dest_Width, 
+                color * pixmap, int Pixel) {
+        memcpy(dest,pixmap,Pixel*sizeof(color));
+};
 
 //-----------------------------------------------------------------
 #define SCALEDEBH(out...) 
