@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.40 2006/02/04 17:33:31 wachm Exp $
+ * $Id: video-xv.c,v 1.41 2006/02/05 11:55:54 lucke Exp $
  */
 
 #include <unistd.h>
@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "2005-11-06"
+#define PATCH_VERSION "2006-02-05"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 cXvRemote        *xvRemote = NULL;
@@ -1344,8 +1344,8 @@ void cXvVideoOut::ShowOSD ()
     int x= lwidth > osd_max_width ?(lwidth - osd_max_width)/2+lxoff:lxoff;
     int y= lheight > osd_max_height ? (lheight - osd_max_height) / 2+lyoff:lyoff;
 #else
-    int x=lwidth > OSD_WIDTH ?(lwidth - OSD_WIDTH)/2+lxoff:lxoff;
-    int y=lheight > OSD_HEIGHT?(lheight - OSD_HEIGHT) / 2+lyoff:lyoff;
+    int x=lwidth > OSD_FULL_WIDTH ?(lwidth - OSD_FULL_WIDTH)/2+lxoff:lxoff;
+    int y=lheight > OSD_FULL_HEIGHT?(lheight - OSD_FULL_HEIGHT) / 2+lyoff:lyoff;
 #endif
     if (useShm) 
       XShmPutImage (dpy, win, gc, osd_image,
