@@ -1,13 +1,13 @@
 Changelog
-2006-06-03:
+2006-02-06:
    - don't start ShmClient in fullscreen mode by default
    - some more documentation
    - disable debuging information
    - fix linking of ShmClient with vdr-1.3.42
-   - add usleep to ShmClient (to avoid busy loop in case there are no 
+   - add usleep to ShmClient (to avoid busy loop in case there are no
      semaphores)
-2006-03-03:
    - fix for vdr-1.3.42 compatibility
+   - disable some trace messages
 2006-02-03:
    - remove unused code, variables and parameters from video-xv
    - add more documentation to the readme
