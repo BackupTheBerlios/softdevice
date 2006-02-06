@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.46 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-dfb.c,v 1.47 2006/02/06 19:44:06 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1030,7 +1030,7 @@ void cDFBVideoOut::OSDStart()
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride, 
+void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
                                      bool *&DirtyLines) {
   int               pitch;
   uint8_t           *dst;
@@ -1050,13 +1050,15 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
         ex->GetAction(), ex->GetResult());
     delete ex;
   }
-};
+}
 
+/* ---------------------------------------------------------------------------
+ */
 void cDFBVideoOut::CommitUnlockOsdSurface() {
   if (!tmpOsdSurface)
     return;
 
-  printf("CommitUnlockOsdSurface %p\n",tmpOsdSurface);fflush(stdout);
+  //printf("CommitUnlockOsdSurface %p\n",tmpOsdSurface);fflush(stdout);
   try 
   {
     DFBRectangle      osdsrc;
@@ -1083,7 +1085,7 @@ void cDFBVideoOut::CommitUnlockOsdSurface() {
       osdsrc.h = maxy-miny + 1;
       tmpOsdSurface->Blit(tmpOsdSurface,&osdsrc,0,miny);
 
-  printf("CommitUnlockOsdSurface3 %p\n",tmpOsdSurface);fflush(stdout);
+      //printf("CommitUnlockOsdSurface3 %p\n",tmpOsdSurface);fflush(stdout);
       miny=maxy;
 
     } while ( miny<Yres);
@@ -1095,12 +1097,13 @@ void cDFBVideoOut::CommitUnlockOsdSurface() {
         ex->GetAction(), ex->GetResult());
     delete ex;
   }
-  printf("CommitUnlockOsdSurface %p 4\n",tmpOsdSurface);fflush(stdout);
+  //printf("CommitUnlockOsdSurface %p 4\n",tmpOsdSurface);fflush(stdout);
   free(dirtyLines);
   dirtyLines=NULL;
   tmpOsdSurface=NULL;
   cVideoOut::CommitUnlockOsdSurface();
 }
+
 /*
 void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll) 
 {
