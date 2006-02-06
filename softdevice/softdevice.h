@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.7 2005/11/12 15:47:34 lucke Exp $
+ * $Id: softdevice.h,v 1.8 2006/02/06 06:58:49 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -114,8 +114,14 @@ public:
   virtual void SetAudioChannelDevice(int AudioChannel);
   virtual int  GetAudioChannelDevice(void);
   virtual void SetDigitalAudioDevice(bool On);
-  virtual void SetAudioTrackDevice(eTrackType Type);  
+  virtual void SetAudioTrackDevice(eTrackType Type);
+
+# if VDRVERSNUM >= 10342
+  virtual int  PlayAudio(const uchar *Data, int Length, uchar Id);
+# else
   virtual int  PlayAudio(const uchar *Data, int Length);
+# endif
+
 #endif
 #if VDRVERSNUM >= 10307
   virtual int ProvidesCa(const cChannel *Channel) const;

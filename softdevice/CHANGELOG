@@ -1,5 +1,7 @@
 Changelog
-2006-03-03:
+2006-02-06:
+   - fix for vdr-1.3.42 compatibility
+2006-02-03:
    - remove unused code, variables and parameters from video-xv
    - add more documentation to the readme
    - fix ShmClient pixel[] array initialisation

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.51 2006/01/17 20:45:46 wachm Exp $
+ * $Id: softdevice.c,v 1.52 2006/02/06 06:58:49 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -526,9 +526,16 @@ void cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
 }
 #else
+
+# if VDRVERSNUM >= 10342
+/* ----------------------------------------------------------------------------
+ */
+int cSoftDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
+# else
 /* ----------------------------------------------------------------------------
  */
 int cSoftDevice::PlayAudio(const uchar *Data, int Length)
+# endif
 {
   //fprintf(stderr,"PlayAudio...\n");
   if (! packetMode)
