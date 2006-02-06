@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.5 2006/02/06 19:59:34 wachm Exp $
+ * $Id: ShmClient.c,v 1.6 2006/02/06 20:32:00 wachm Exp $
  */
 
 #include <signal.h>
@@ -62,6 +62,7 @@ void cShmXvRemote::PutKey(KeySym key) {
 
 int main(int argc, char **argv) {
         cSetupStore SetupStore;
+        SetupStore.xvFullscreen=0;
         cXvVideoOut *vout=new cXvVideoOut(&SetupStore);
         xvRemote= new cShmXvRemote ("softdevice-xv",vout);
         

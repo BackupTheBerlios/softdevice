@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.60 2005/11/12 08:07:21 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.61 2006/02/06 20:32:00 wachm Exp $
  */
 
 #include <math.h>
@@ -23,7 +23,7 @@
 #define MPGDEB(out...)
 #endif
 
-#define CMDDEB(out...) {printf("CMD[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+//#define CMDDEB(out...) {printf("CMD[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef CMDDEB
 #define CMDDEB(out...)

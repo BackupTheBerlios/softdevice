@@ -125,7 +125,9 @@ you can remove the shared memory segment with "ipcrm". First you have to
 find out the shared memory id, type the command "ipcs" and look for the
 key "0x0000162" the shared memory id is next to it. Them remove the
 shared memory segment with "ipcrm shm shared_memory_id".
-
+There is currently one limitation to the ShmClient: it has no access to the
+SetupStore, this means that some settings, for example hue, contrast and others
+are not available.
 
 Problems/todo:
 --------------
