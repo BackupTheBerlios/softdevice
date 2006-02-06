@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.52 2006/02/06 06:58:49 lucke Exp $
+ * $Id: softdevice.c,v 1.53 2006/02/06 19:38:56 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -139,7 +139,7 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
     videoOut=VideoOut;
     xOfs=X; // this position should be recalculated
     yOfs=Y;
-    fprintf(stderr,"[softdevice] OSD-Position at %d x %d\n",X,Y);
+    //fprintf(stderr,"[softdevice] OSD-Position at %d x %d\n",X,Y);
     videoOut->OpenOSD(X, Y);
 }
 cSoftOsd::~cSoftOsd() {
@@ -147,7 +147,7 @@ cSoftOsd::~cSoftOsd() {
       videoOut->CloseOSD();
       videoOut=0;
     }
-    fprintf(stderr,"[softdevice] OSD is off now\n");
+    //fprintf(stderr,"[softdevice] OSD is off now\n");
 }
 
 bool cSoftOsd::OpenWindow(cWindow *Window) {

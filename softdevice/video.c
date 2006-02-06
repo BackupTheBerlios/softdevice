@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.42 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video.c,v 1.43 2006/02/06 19:38:56 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -609,7 +609,7 @@ cWindowLayer::cWindowLayer(int X, int Y, int W, int H, int Bpp,
     visible=false;
     OSDpseudo_alpha = alpha;
     imagedata=(unsigned char *)malloc(W*H*4); // RGBA Screen memory
-    printf("[video] Creating WindowLayer at %d x %d, (%d x %d)\n",X,Y,W,H);
+    //printf("[video] Creating WindowLayer at %d x %d, (%d x %d)\n",X,Y,W,H);
 }
 
 void cWindowLayer::Region (int *x, int *y, int *w, int *h) {
