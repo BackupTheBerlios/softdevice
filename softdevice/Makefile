@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.23 2006/02/03 22:34:54 wachm Exp $
+# $Id: Makefile,v 1.24 2006/02/06 19:59:34 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -344,4 +344,4 @@ SHM_CLIENT_OBJS  = video.o video-xv.o setup-softdevice.o xscreensaver.o \
 		   utils.o 
 
 ShmClient: ShmClient.o $(SHM_CLIENT_OBJS)
-	$(CXX) $(CXXFLAGS) $(XV_LIBS) $(VDR_SHM_CLIENT_OBJS) $(SHM_CLIENT_OBJS) -lpthread $< -o $@
+	$(CXX) $(CXXFLAGS) $(XV_LIBS) $(VDR_SHM_CLIENT_OBJS) $(SHM_CLIENT_OBJS) -lpthread -ljpeg $< -o $@

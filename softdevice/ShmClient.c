@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.4 2006/02/04 14:40:04 wachm Exp $
+ * $Id: ShmClient.c,v 1.5 2006/02/06 19:59:34 wachm Exp $
  */
 
 #include <signal.h>
@@ -166,7 +166,8 @@ int main(int argc, char **argv) {
                 // unlock picture ctl
                 sem_sig_unlock(ctl->semid,PICT_MUT,SEM_UNDO);
                 //SHMDEB("released the lock\n");
-                
+                // in case there are no semaphores (no vdr connected)
+                usleep(13000); 
         };
         ctl->attached=0;
         ctl->pict_shmid=-1;
