@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.48 2006/02/10 17:22:11 lucke Exp $
+ * $Id: video-dfb.c,v 1.49 2006/02/10 17:33:49 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1104,8 +1104,28 @@ void cDFBVideoOut::CommitUnlockOsdSurface() {
   cVideoOut::CommitUnlockOsdSurface();
 }
 
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
+                              bool &IsYUV, uint8_t *&PixelMask)
+{
+  Depth=Bpp;
+  HasAlpha=!OSDpseudo_alpha;
+  AlphaInversed=isVIAUnichrome;
+  IsYUV=false;
+  PixelMask=NULL;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::GetOSDDimension( int &Width, int &Height)
+{
+  Width=Xres;
+  Height=Yres;
+}
+
 /*
-void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll) 
+void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
 {
     int               pitch;
     uint8_t           *dst;
