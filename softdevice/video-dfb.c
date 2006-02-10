@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.47 2006/02/06 19:44:06 lucke Exp $
+ * $Id: video-dfb.c,v 1.48 2006/02/10 17:22:11 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1059,15 +1059,16 @@ void cDFBVideoOut::CommitUnlockOsdSurface() {
     return;
 
   //printf("CommitUnlockOsdSurface %p\n",tmpOsdSurface);fflush(stdout);
-  try 
+  try
   {
     DFBRectangle      osdsrc;
-    
+
     tmpOsdSurface->Unlock();
     tmpOsdSurface->Flip();
 
     int miny=0;
     int maxy=0;
+    tmpOsdSurface->SetBlittingFlags(DSBLIT_NOFX);
     do {
       while (!dirtyLines[miny] && miny < Yres)
         miny++;
@@ -1089,7 +1090,6 @@ void cDFBVideoOut::CommitUnlockOsdSurface() {
       miny=maxy;
 
     } while ( miny<Yres);
-
   }
   catch (DFBException *ex)
   {
