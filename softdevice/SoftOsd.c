@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.6 2006/02/04 10:05:09 wachm Exp $
+ * $Id: SoftOsd.c,v 1.7 2006/02/11 18:28:39 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -900,7 +900,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
 		Clear();
 		FlushBitmaps(false);
 	};
-	
+
 	cMutexLock dirty(&dirty_Mutex);
         uint8_t *buf;
         color *pixmap=(color*) OSD_Bitmap;
@@ -1046,7 +1046,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
                                " paddw %%mm1,%%mm0 \n"
                                : : "r" (&pixmap[row][Pixel])  );
 #endif
-                       
+
                         pos -=ScaleFactor;
                         row++;
                 };
@@ -1348,10 +1348,10 @@ void cSoftOsd::ScaleUpVert_MMX(uint8_t *dest, int linesize,
         int16_t r2=0;
 #else
         __asm__(
-                 " pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
-                 : :   );	
+                " pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
+                : : : "memory" );
 #endif
-        
+
         int32_t pos=start_pos;
 	int currPixel=0;
         SCALEUPDEBV("Scale up OSD_WIDTH: %d  new_pixel_height: %d\n",
@@ -1372,7 +1372,7 @@ void cSoftOsd::ScaleUpVert_MMX(uint8_t *dest, int linesize,
                       " movd (%0),%%mm1 \n"
                       " movd (%1),%%mm2 \n"
                       " punpcklbw %%mm7, %%mm1 \n"  // mm1 pixel1
-                      " punpcklbw %%mm7, %%mm2 \n"  
+                      " punpcklbw %%mm7, %%mm2 \n"
 		      //" psubw %%mm1, %%mm2 \n"// mm2 pixel2-pixel1
 		      " psubsw %%mm1, %%mm2 \n"// mm2 pixel2-pixel1
                       : : "r" (&pixmap[0][currPixel]),
