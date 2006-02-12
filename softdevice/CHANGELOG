@@ -1,4 +1,9 @@
 Changelog
+2006-02-12: softdevice-0.2.2
+2006-02-11:
+   - some minor fixes:
+       - OSD redrawing with dfb-out when switching from StretchBlit to BES mode
+       - compiling with SoftOsd.c with gcc 2.95.3
 2006-02-06:
    - don't start ShmClient in fullscreen mode by default
    - some more documentation
@@ -24,7 +29,7 @@ Changelog
 2006-01-19:
    - now correct fix for CheckArea() not updating the aspect ratio
 2006-01-17:
-   - add video-shm and ShmClient, a simple server/client model for the 
+   - add video-shm and ShmClient, a simple server/client model for the
      softdevice. See the file README for details.
 2006-01-15:
    - compile fix for vdr-1.2.6

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.53 2006/02/06 19:38:56 lucke Exp $
+ * $Id: softdevice.c,v 1.54 2006/02/12 17:59:12 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -76,7 +76,7 @@
 #include "audio.h"
 #include "mpeg2decoder.h"
 #include "utils.h"
-static const char *VERSION        = "0.2.1";
+static const char *VERSION        = "0.2.2";
 static const char *DESCRIPTION    = "A software emulated MPEG2 device";
 static const char *MAINMENUENTRY  = "Softdevice";
 
@@ -352,7 +352,7 @@ int64_t cSoftDevice::GetSTC(void) {
 
 void cSoftDevice::MakePrimaryDevice(bool On)
 {
-  fprintf(stderr,"cSoftDevice::MakePrimaryDevice\n");
+  //fprintf(stderr,"cSoftDevice::MakePrimaryDevice\n");
 
   new cSoftOsdProvider(videoOut);
 }
