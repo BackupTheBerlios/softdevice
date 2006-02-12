@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.41 2006/02/05 11:55:54 lucke Exp $
+ * $Id: video-xv.c,v 1.42 2006/02/12 17:24:28 lucke Exp $
  */
 
 #include <unistd.h>
@@ -841,7 +841,7 @@ bool cXvVideoOut::Initialize (void)
                           osd_image->bytes_per_line*osd_max_height,
                           //osd_image->bytes_per_line*height,
                           IPC_CREAT | 0777);
-          printf("osd_image allocated: %d\n",osd_shminfo.shmid);
+          fprintf(stderr,"[XvVideoOut]: osd_image shmid = %d\n",osd_shminfo.shmid);
           if (osd_shminfo.shmid == -1) {
                   dsyslog("[XvVideoOut]: Initialize ERROR: shmget FAILED !");
           } else {
@@ -878,8 +878,9 @@ bool cXvVideoOut::Initialize (void)
           }
   };
   Bpp=osd_image->bits_per_pixel;
-  printf("got osd_image: width %d height %d, bytes per line %d\n",
-                  osd_max_width, osd_max_height,osd_image->bytes_per_line);
+  fprintf(stderr,
+          "[XvVideoOut]: got osd_image: width %d height %d, bytes per line %d\n",
+          osd_max_width, osd_max_height,osd_image->bytes_per_line);
   
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
 
