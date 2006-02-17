@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.43 2006/02/06 19:38:56 lucke Exp $
+ * $Id: video.c,v 1.44 2006/02/17 21:31:10 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -48,6 +48,8 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   for (int i = 0; i < MAX_PAR; ++i)
     parValues [i] = 1.0;
 
+  init_OsdBuffers();
+
   //start osd thread
   active=true;
   Start();
@@ -85,15 +87,19 @@ void cVideoOut::init_OsdBuffers()
 /*----------------------------------------------------------------------------*/
 void cVideoOut::Action()
 {
-  init_OsdBuffers();
   ClearOSD();
 #if VDRVERSNUM >= 10307
   while(active)
   {
     OsdRefreshCounter++;
-    if (OsdRefreshCounter > 80 ||
+    if (
+        //
+        // Don't do an unconditional redraw. TV-out cannot handle higher
+        // diplay rates than 25Hz.
+        //
+        //OsdRefreshCounter > 80 ||
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
-         OsdRefreshCounter>10 && Osd_changed))
+         OsdRefreshCounter>1 && Osd_changed))
     {
       osdMutex.Lock();
       if (old_picture)
@@ -450,6 +456,13 @@ void cVideoOut::CloseOSD()
   Osd_changed=1;
   osdMutex.Unlock();
   OSDDEB("CloseOSD\n");
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::AdjustOSDMode()
+{
+  current_osdMode = OSDMODE_PSEUDO;
 }
 
 void cVideoOut::AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,

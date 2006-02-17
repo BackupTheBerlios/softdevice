@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.13 2006/02/04 17:33:31 wachm Exp $
+ * $Id: video-xv.h,v 1.14 2006/02/17 21:31:10 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -149,6 +149,7 @@ public:
 
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();
+  virtual void AdjustOSDMode();
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
                   bool &IsYUV, uint8_t *&PixelMask);

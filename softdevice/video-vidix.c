@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.14 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-vidix.c,v 1.15 2006/02/17 21:31:09 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -564,6 +564,13 @@ void cVidixVideoOut::ClearOSD()
   if (current_osdMode==OSDMODE_PSEUDO)
     memset(fb, 0, fb_line_len * Yres);
 };
+
+/* ---------------------------------------------------------------------------
+ */
+void cVidixVideoOut::AdjustOSDMode()
+{
+  current_osdMode = setupStore->osdMode;
+}
 
 /* ---------------------------------------------------------------------------
  */

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.28 2006/02/04 17:33:31 wachm Exp $
+ * $Id: video.h,v 1.29 2006/02/17 21:31:10 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -176,6 +176,8 @@ public:
     virtual void OpenOSD();
     virtual void CloseOSD();
 
+    virtual void AdjustOSDMode();
+
     virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight)
     // called whenever OSD is to be displayed
     // every video-out should implement a method which desired osd dimension
@@ -193,19 +195,19 @@ public:
                     bool *&dirtyLines)
     { osd=NULL; stride=0; dirtyLines=NULL;};
     virtual void CommitUnlockOsdSurface()
-    { current_osdMode=OSDMODE_PSEUDO;OSDpresent=true; };
+    { OSDpresent=true; };
 
     // Software YUV mode
     virtual void GetLockSoftOsdSurface(
                         uint8_t *&osdPy, uint8_t *&osdPu, uint8_t *&osdPv,
                         uint8_t *&osdPAlphaY, uint8_t *&osdPAlphaUV,
                         int &strideY, int &strideUV)
-    { osdPy=OsdPy; osdPu=OsdPu; osdPv=OsdPv; 
+    { osdPy=OsdPy; osdPu=OsdPu; osdPv=OsdPv;
             osdPAlphaY=OsdPAlphaY; osdPAlphaUV=OsdPAlphaUV;
             strideY=OSD_FULL_WIDTH; strideUV=OSD_FULL_WIDTH/2;};
 
     virtual void CommitUnlockSoftOsdSurface()
-    { current_osdMode=OSDMODE_SOFTWARE; OSDpresent=true; };
+    { OSDpresent=true; };
       
    void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        uint8_t *alpha,uint16_t count);

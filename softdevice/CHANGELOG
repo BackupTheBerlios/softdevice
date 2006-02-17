@@ -1,4 +1,8 @@
 Changelog
+2006-02-17:
+   - fix bug #6409 (OSD not refreshed fast enough in software OSD blending mode
+     when video is paused)
+   - fix crash / deadlocks at startup in 16:9 mode in software OSD blending mode
 2006-02-12: softdevice-0.2.2
 2006-02-11:
    - some minor fixes:

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.42 2006/02/12 17:24:28 lucke Exp $
+ * $Id: video-xv.c,v 1.43 2006/02/17 21:31:10 lucke Exp $
  */
 
 #include <unistd.h>
@@ -891,6 +891,7 @@ bool cXvVideoOut::Initialize (void)
     xScreensaver = new cScreensaver(dpy);
   }
 
+  pthread_mutex_lock(&xv_mutex);
   /* -------------------------------------------------------------------------
    * get up our remote running
    */
@@ -907,8 +908,9 @@ bool cXvVideoOut::Initialize (void)
   {
     toggleFullScreen();
     setupStore->xvFullscreen=0;
-  };
+  }
 
+  pthread_mutex_unlock(&xv_mutex);
   initialized=true;
   return true;
 }
@@ -1208,7 +1210,13 @@ void cXvVideoOut::ClearOSD()
 
 /* ---------------------------------------------------------------------------
  */
+void cXvVideoOut::AdjustOSDMode()
+{
+  current_osdMode = setupStore->osdMode;
+}
 
+/* ---------------------------------------------------------------------------
+ */
 void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
    switch (current_osdMode) {
       case OSDMODE_PSEUDO :
@@ -1222,20 +1230,24 @@ void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
     };
 };
 
-void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
+/* ---------------------------------------------------------------------------
+ */
+void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                   bool &IsYUV, uint8_t *&PixelMask) {
-        if (setupStore->osdMode==OSDMODE_SOFTWARE) {
+        if (current_osdMode==OSDMODE_SOFTWARE) {
                 IsYUV=true;
                 PixelMask=NULL;
                 return;
         };
 
-        IsYUV=false; 
+        IsYUV=false;
         Depth=osd_image->bits_per_pixel;
         HasAlpha=false;
         PixelMask=NULL;
 };       
 
+/* ---------------------------------------------------------------------------
+ */
 void cXvVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
                   bool *&dirtyLines) {
         osd=osd_buffer;
@@ -1243,6 +1255,8 @@ void cXvVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
         dirtyLines=NULL;
 };
 
+/* ---------------------------------------------------------------------------
+ */
 void cXvVideoOut::CommitUnlockOsdSurface() {
         cVideoOut::CommitUnlockOsdSurface();
         pthread_mutex_lock(&xv_mutex);
@@ -1348,7 +1362,7 @@ void cXvVideoOut::ShowOSD ()
     int x=lwidth > OSD_FULL_WIDTH ?(lwidth - OSD_FULL_WIDTH)/2+lxoff:lxoff;
     int y=lheight > OSD_FULL_HEIGHT?(lheight - OSD_FULL_HEIGHT) / 2+lyoff:lyoff;
 #endif
-    if (useShm) 
+    if (useShm)
       XShmPutImage (dpy, win, gc, osd_image,
           1,1,
           x,y,
@@ -1393,7 +1407,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 
 #if VDRVERSNUM >= 10307
   OsdRefreshCounter=0;
-  
+
   /* -------------------------------------------------------------------------
    * don't know where those funny stride values (752,376) come from.
    * therefor  we have to copy line by line :-( .
@@ -1440,7 +1454,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                 False);
 
   }
-  else 
+  else
 #endif
  {
 

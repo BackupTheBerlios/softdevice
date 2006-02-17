@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.7 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-vidix.h,v 1.8 2006/02/17 21:31:10 lucke Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -46,6 +46,7 @@ public:
 
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();
+  virtual void AdjustOSDMode();  
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight); 
   virtual void GetOSDMode(int &Depth,bool &HasAlpha, bool &AlphaInversed,
 		  bool &IsYUV,uint8_t *&PixelMask)

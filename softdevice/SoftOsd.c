@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.7 2006/02/11 18:28:39 lucke Exp $
+ * $Id: SoftOsd.c,v 1.8 2006/02/17 21:31:09 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -38,12 +38,13 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         pixelMask=NULL;
 	bitmap_Format=PF_None; // forces a clear after first SetMode
         OSD_Bitmap=new uint32_t[OSD_STRIDE*(OSD_HEIGHT+2)];
-        
+
         videoOut = VideoOut;
 	videoOut->OpenOSD();
 	xOfs=X;yOfs=Y;
         int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
         uint8_t *PixelMask;
+        videoOut->AdjustOSDMode();
         videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
                         IsYUV,PixelMask);
         SetMode(Depth,HasAlpha,AlphaInversed,
@@ -86,6 +87,7 @@ void cSoftOsd::Action() {
                 int newOsdWidth;
                 int newOsdHeight;
 
+                videoOut->AdjustOSDMode();
                 videoOut->GetOSDDimension(newOsdWidth,newOsdHeight);
                 if ( newOsdWidth==-1 || newOsdHeight==-1 )
                 {
@@ -119,6 +121,8 @@ void cSoftOsd::OsdCommit() {
         int newX;
         int newY;
         bool RefreshAll=false;
+
+        videoOut->AdjustOSDMode();
         videoOut->GetOSDDimension(newX,newY);
         if ( newX==-1 || newY==-1 ) {
                 newX=OSD_FULL_WIDTH;
@@ -222,8 +226,10 @@ void cSoftOsd::Flush(void) {
         OSDDEB("SoftOsd::Flush \n");
 	bool OSD_changed=FlushBitmaps(true);
 	
-	if (OSD_changed)
-		OsdCommit();
+        if (OSD_changed) {
+                OsdCommit();
+                videoOut->Osd_changed = true;
+        }
 
 	// give priority to the other threads
 	pthread_yield();
