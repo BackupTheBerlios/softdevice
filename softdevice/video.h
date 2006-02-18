@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.29 2006/02/17 21:31:10 lucke Exp $
+ * $Id: video.h,v 1.30 2006/02/18 22:20:30 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -178,11 +178,12 @@ public:
 
     virtual void AdjustOSDMode();
 
-    virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight)
+    virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                                 int &xPan, int &yPan)
     // called whenever OSD is to be displayed
     // every video-out should implement a method which desired osd dimension
     // for scaling, if -1,-1 is returned no scaling is done.
-    { OsdWidth=-1;OsdHeight=-1;};
+    { OsdWidth=-1;OsdHeight=-1; xPan = yPan = 0;};
      
     virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
                     bool &IsYUV, uint8_t *&PixelMask)

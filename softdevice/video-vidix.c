@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.15 2006/02/17 21:31:09 lucke Exp $
+ * $Id: video-vidix.c,v 1.16 2006/02/18 22:20:29 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -574,15 +574,19 @@ void cVidixVideoOut::AdjustOSDMode()
 
 /* ---------------------------------------------------------------------------
  */
-void cVidixVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
+void cVidixVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                                     int &xPan, int &yPan) {
    switch (current_osdMode) {
       case OSDMODE_PSEUDO :
                 OsdWidth=Xres;//*9/10;
                 OsdHeight=Yres;//*9/10;
+                xPan = yPan = 0;
              break;
       case OSDMODE_SOFTWARE:
                 OsdWidth=swidth;//*9/10;
                 OsdHeight=sheight;//*9/10;
+                xPan = sxoff;
+                yPan = syoff;
              break;
     };
 };

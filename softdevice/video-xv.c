@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.43 2006/02/17 21:31:10 lucke Exp $
+ * $Id: video-xv.c,v 1.44 2006/02/18 22:20:30 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1217,15 +1217,19 @@ void cXvVideoOut::AdjustOSDMode()
 
 /* ---------------------------------------------------------------------------
  */
-void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
+void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                                  int &xPan, int &yPan) {
    switch (current_osdMode) {
       case OSDMODE_PSEUDO :
                 OsdWidth=lwidth<osd_max_width?lwidth:osd_max_width;
                 OsdHeight=lheight<osd_max_height?lheight:osd_max_height;
+                xPan = yPan = 0;
              break;
       case OSDMODE_SOFTWARE:
                 OsdWidth=swidth;//*9/10;
                 OsdHeight=sheight;//*9/10;
+                xPan = sxoff;
+                yPan = syoff;
              break;
     };
 };

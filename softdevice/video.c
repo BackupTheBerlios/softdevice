@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.44 2006/02/17 21:31:10 lucke Exp $
+ * $Id: video.c,v 1.45 2006/02/18 22:20:30 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -415,6 +415,7 @@ void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
 {
   areaMutex. Lock();
   OsdRefreshCounter=0;
+  RecalculateAspect();
   CheckArea(w, h);
   // display picture
   YUV (pY, pU, pV, w, h, yPitch, uvPitch);

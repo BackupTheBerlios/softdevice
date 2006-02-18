@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.12 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-fb.c,v 1.13 2006/02/18 22:20:29 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -171,11 +171,13 @@ void cFBVideoOut::ClearOSD()
 
 /* ---------------------------------------------------------------------------
  */
-void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
+void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                                  int &xPan, int &yPan) {
    switch (current_osdMode) {
       case OSDMODE_PSEUDO :
                 OsdWidth=Xres;
                 OsdHeight=Yres;
+                xPan = yPan = 0;
              break;
     }
 }

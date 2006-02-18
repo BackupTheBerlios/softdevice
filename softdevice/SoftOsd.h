@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.4 2006/02/04 10:05:09 wachm Exp $
+ * $Id: SoftOsd.h,v 1.5 2006/02/18 22:20:29 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -55,7 +55,8 @@ class cSoftOsd : public cOsd,cThread {
 private:
     cVideoOut *videoOut;
 protected:
-    int xOfs,yOfs;
+    int      xOfs, yOfs;
+    int      xPan, yPan;
     uint32_t *OSD_Bitmap;
     bool dirty_lines[OSD_HEIGHT+10];
     cMutex dirty_Mutex;

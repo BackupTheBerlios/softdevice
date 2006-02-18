@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.6 2006/02/03 22:34:54 wachm Exp $
+ * $Id: video-fb.h,v 1.7 2006/02/18 22:20:29 lucke Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -37,7 +37,8 @@ public:
   virtual void GetLockOsdSurface(uint8_t *&osd, int &stride, 
                   bool *&dirtyLines);
   virtual void CommitUnlockOsdSurface();
-  virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
+  virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                               int &xPan, int &yPan);
 #else
   virtual void Refresh();
 #endif

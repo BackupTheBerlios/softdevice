@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.49 2006/02/10 17:33:49 lucke Exp $
+ * $Id: video-dfb.c,v 1.50 2006/02/18 22:20:29 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1118,10 +1118,11 @@ void cDFBVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::GetOSDDimension( int &Width, int &Height)
+void cDFBVideoOut::GetOSDDimension( int &Width, int &Height, int &xPan, int &yPan)
 {
   Width=Xres;
   Height=Yres;
+  xPan = yPan = 0;
 }
 
 /*

@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.8 2006/02/17 21:31:09 lucke Exp $
+ * $Id: SoftOsd.c,v 1.9 2006/02/18 22:20:29 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -40,6 +40,7 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         OSD_Bitmap=new uint32_t[OSD_STRIDE*(OSD_HEIGHT+2)];
 
         videoOut = VideoOut;
+        xPan = yPan = 0;
 	videoOut->OpenOSD();
 	xOfs=X;yOfs=Y;
         int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
@@ -86,24 +87,31 @@ void cSoftOsd::Action() {
         while(active && videoOut && !close) {
                 int newOsdWidth;
                 int newOsdHeight;
+                int newXPan, newYPan;
 
                 videoOut->AdjustOSDMode();
-                videoOut->GetOSDDimension(newOsdWidth,newOsdHeight);
+                videoOut->GetOSDDimension(newOsdWidth,newOsdHeight,newXPan,newYPan);
                 if ( newOsdWidth==-1 || newOsdHeight==-1 )
                 {
                         newOsdWidth=OSD_FULL_WIDTH;
                         newOsdHeight=OSD_FULL_HEIGHT;
                 }
-                
-                int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
+
+                int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV;
                 uint8_t *PixelMask;
                 videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
                                 IsYUV,PixelMask);
                 bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,
                                 IsYUV,PixelMask);
 
-                if ( ScreenOsdWidth!=newOsdWidth  || 
-                                ScreenOsdHeight!=newOsdHeight  || 
+                if (newXPan != xPan || newYPan != yPan) {
+                        xPan = newXPan;
+                        yPan = newYPan;
+                        modeChanged = true;
+                }
+
+                if ( ScreenOsdWidth!=newOsdWidth  ||
+                                ScreenOsdHeight!=newOsdHeight  ||
                                 modeChanged ) {
                         OSDDEB("Resolution or mode changed!\n");
                         if (modeChanged)
@@ -120,10 +128,11 @@ void cSoftOsd::OsdCommit() {
         OSDDEB("OsdCommit()\n");
         int newX;
         int newY;
+        int newXPan, newYPan;
         bool RefreshAll=false;
 
         videoOut->AdjustOSDMode();
-        videoOut->GetOSDDimension(newX,newY);
+        videoOut->GetOSDDimension(newX,newY,newXPan,newYPan);
         if ( newX==-1 || newY==-1 ) {
                 newX=OSD_FULL_WIDTH;
                 newY=OSD_FULL_HEIGHT;
@@ -134,10 +143,18 @@ void cSoftOsd::OsdCommit() {
                 RefreshAll=true;
         };
 
-        int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
+        int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV;
         uint8_t *PixelMask;
         videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
         bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+
+        if (newXPan != xPan || newYPan != yPan) {
+                xPan = newXPan;
+                yPan = newYPan;
+                RefreshAll = true;
+                modeChanged = true;
+        }
+
         if (modeChanged)
                 videoOut->ClearOSD();
 
@@ -162,6 +179,7 @@ void cSoftOsd::OsdCommit() {
                                         RefreshAll,dirtyLines);
                 videoOut->CommitUnlockOsdSurface();
         }
+        videoOut->Osd_changed = true;
 };
 
 /* --------------------------------------------------------------------------*/
@@ -226,10 +244,8 @@ void cSoftOsd::Flush(void) {
         OSDDEB("SoftOsd::Flush \n");
 	bool OSD_changed=FlushBitmaps(true);
 	
-        if (OSD_changed) {
+        if (OSD_changed)
                 OsdCommit();
-                videoOut->Osd_changed = true;
-        }
 
 	// give priority to the other threads
 	pthread_yield();
@@ -310,6 +326,7 @@ bool cSoftOsd::DrawConvertBitmap(cBitmap *bitmap, bool OnlyDirty)  {
 	  */
 	OSDDEB("drawing bitmap %p at P0 (%d,%d) from (%d,%d) to (%d,%d) \n",
 			bitmap,bitmap->X0(),bitmap->Y0(),x1,y1,x2,y2);
+
 	y2++;
 	x2++;
         y2= yOfs+y2+bitmap->Y0() > OSD_HEIGHT ? 
@@ -665,11 +682,11 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                                 &pixmap[(y+1)*OSD_STRIDE],OSD_WIDTH-1); 
 
                 // convert and copy to video out OSD layer
-                pY=PY+y*Ystride;
-                pU=PU+y*UVstride/2;
-                pV=PV+y*UVstride/2;
-                pAlphaY=PAlphaY+y*Ystride;
-                pAlphaUV=PAlphaUV+y*UVstride/2;
+                pY=PY+(y+yPan)*Ystride+xPan;
+                pU=PU+((y+yPan)*UVstride+xPan)/2;
+                pV=PV+((y+yPan)*UVstride+xPan)/2;
+                pAlphaY=PAlphaY+(y+yPan)*Ystride+xPan;
+                pAlphaUV=PAlphaUV+((y+yPan)*UVstride+xPan)/2;
                 AYUV_to_AYUV420P(pY,pY+Ystride,pU,pV,
                                 pAlphaY,pAlphaY+Ystride,pAlphaUV,
                                 //              &pixmap[y*OSD_STRIDE],&pixmap[(y+1)*OSD_STRIDE],
@@ -763,11 +780,11 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                                 OSD_WIDTH-1);
 
                 // convert and copy to video out OSD layer
-                pY=PY+y*Ystride;
-                pU=PU+y*UVstride/2;
-                pV=PV+y*UVstride/2;
-                pAlphaY=PAlphaY+y*Ystride;
-                pAlphaUV=PAlphaUV+y*UVstride/2;
+                pY=PY+(y+yPan)*Ystride+xPan;
+                pU=PU+((y+yPan)*UVstride+xPan)/2;
+                pV=PV+((y+yPan)*UVstride+xPan)/2;
+                pAlphaY=PAlphaY+(y+yPan)*Ystride+xPan;
+                pAlphaUV=PAlphaUV+((y+yPan)*UVstride+xPan)/2;
                 AYUV_to_AYUV420P(pY,pY+Ystride,pU,pV,
                               pAlphaY,pAlphaY+Ystride,pAlphaUV,
                 //              &pixmap[y*OSD_STRIDE],&pixmap[(y+1)*OSD_STRIDE],
@@ -780,10 +797,10 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
 
 //---------------------------RGB modes ----------------------
 
-void cSoftOsd::CopyToBitmap(uint8_t *dest, int linesize, 
+void cSoftOsd::CopyToBitmap(uint8_t *dest, int linesize,
                 int dest_Width, int dest_Height, bool RefreshAll,
                 bool *dirtyLines) {
-	if (dest_Height>=OSD_HEIGHT) 
+	if (dest_Height>=OSD_HEIGHT)
 		ScaleVUpCopyToBitmap(dest,linesize,dest_Width,dest_Height,
                                 RefreshAll,dirtyLines);
 	else ScaleVDownCopyToBitmap(dest,linesize,dest_Width,dest_Height,

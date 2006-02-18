@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.16 2006/02/10 17:33:49 lucke Exp $
+ * $Id: video-dfb.h,v 1.17 2006/02/18 22:20:29 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -60,7 +60,8 @@ class cDFBVideoOut : public cVideoOut {
     virtual void OpenOSD();
     virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                             bool &IsYUV, uint8_t *&PixelMask);
-    virtual void GetOSDDimension( int &Width, int &Height);
+    virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                                 int &xPan, int &yPan);
     virtual void OSDStart();
     virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
                                    bool *&dirtyLines);
