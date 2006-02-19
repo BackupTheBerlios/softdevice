@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.6 2006/02/06 20:32:00 wachm Exp $
+ * $Id: ShmClient.c,v 1.7 2006/02/19 16:58:35 lucke Exp $
  */
 
 #include <signal.h>
@@ -128,7 +128,8 @@ int main(int argc, char **argv) {
         ctl->osd_depth=vout->osd_image->bits_per_pixel;
         ctl->osd_max_width=vout->osd_max_width;
         ctl->osd_max_height=vout->osd_max_height;
-        vout->GetOSDDimension(ctl->osd_width,ctl->osd_height);
+        vout->GetOSDDimension(ctl->osd_width,ctl->osd_height,
+                              ctl->osd_xPan,ctl->osd_yPan);
         printf("osd_shmid %d stride %d\n",ctl->osd_shmid,ctl->osd_stride);
         
         ctl->key=NO_KEY;
@@ -161,7 +162,8 @@ int main(int argc, char **argv) {
                         ctl->new_osd=0;
                 };
                 
-                vout->GetOSDDimension(ctl->osd_width,ctl->osd_height);
+                vout->GetOSDDimension(ctl->osd_width,ctl->osd_height,
+                                      ctl->osd_xPan,ctl->osd_yPan);
                 // consumed all pictures - set semaphore to 0
                 sem_zero(ctl->semid,PICT_SIG);
                 // unlock picture ctl

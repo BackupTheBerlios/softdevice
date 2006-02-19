@@ -1,4 +1,7 @@
 Changelog
+2006-02-19:
+   - some german translations
+   - fix compilation of shm-client
 2006-02-18:
    - fix OSD drawn at wrong location in software OSD blending mode when
      cropping is active
