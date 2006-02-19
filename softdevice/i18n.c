@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.16 2005/11/12 15:45:39 lucke Exp $
+ * $Id: i18n.c,v 1.17 2006/02/19 10:38:30 lucke Exp $
  */
 
 #include "i18n.h"
@@ -102,7 +102,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Deinterlace Method",   //  1
-    "Deinterlace Methode",   //  2
+    "Deinterlace-Methode",   //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -355,7 +355,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "CropModeToggleKey",                  //  1
-    "Bildausschnitt-Taste",               //  2
+    "Bildausschnitts-Taste",               //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -470,7 +470,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Postprocessing Method",              //  1
-    "Bildnachbearbeitungsmethode",        //  2
+    "Nachbearbeitungs-Methode",        //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -493,7 +493,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Postprocessing Quality",             //  1
-    "Nachbearbeitungs Qualität",          //  2
+    "Nachbearbeitungs-Qualität",          //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -837,8 +837,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Cropping",     //  1
-    "",             //  2 TODO
+  { "Cropping",      //  1
+    "Bildausschnitt",//  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -861,7 +861,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Post processing",//  1
-    "",             //  2 TODO
+    "Bildnachbearbeitung",  //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -883,8 +883,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "Sync Mode",//  1
-    "",             //  2 TODO
+  { "Sync Mode",    //  1
+    "Sync Modus",   //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -930,7 +930,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Brightness",   //  1
-    "",             //  2 TODO
+    "Helligkeit",   //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -953,7 +953,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Contrast",     //  1
-    "",             //  2 TODO
+    "Kontrast",     //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
