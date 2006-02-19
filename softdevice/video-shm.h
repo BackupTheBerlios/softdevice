@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.h,v 1.3 2006/02/04 10:25:39 wachm Exp $
+ * $Id: video-shm.h,v 1.4 2006/02/19 18:40:28 lucke Exp $
  */
 
 #ifndef __VIDEO_SHM_H__
@@ -43,8 +43,11 @@ class cShmVideoOut : public cVideoOut {
         cShmVideoOut(cSetupStore *setupStore);
         ~cShmVideoOut();
         
-        virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight);
-        
+        virtual void AdjustOSDMode();
+
+        virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                                     int &xPan, int &yPan);
+
         virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                     bool &IsYUV, uint8_t *&PixelMask);
 

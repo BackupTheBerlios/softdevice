@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.4 2006/02/04 14:40:04 wachm Exp $
+ * $Id: video-shm.c,v 1.5 2006/02/19 18:40:28 lucke Exp $
  */
 
 #include "video-shm.h"
@@ -147,25 +147,32 @@ cShmVideoOut::~cShmVideoOut() {
 */
 };
 
-void cShmVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight) {
-   switch (setupStore->osdMode) {
-   //switch (current_osdMode) {
+void cShmVideoOut::AdjustOSDMode() {
+  current_osdMode = setupStore->osdMode;
+}
+
+void cShmVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
+                                   int &xPan, int &yPan) {
+   switch (current_osdMode) {
       case OSDMODE_PSEUDO :
                 OsdWidth=ctl->osd_width>ctl->osd_max_width?
                         ctl->osd_max_width:ctl->osd_width;
                 OsdHeight=ctl->osd_height>ctl->osd_max_height?
                         ctl->osd_max_height:ctl->osd_height;
+                xPan = yPan = 0;
              break;
       case OSDMODE_SOFTWARE:
                 OsdWidth=swidth;
                 OsdHeight=sheight;
+                xPan = sxoff;
+                yPan = syoff;
              break;
     };
 };
 
 void cShmVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                 bool &IsYUV, uint8_t *&PixelMask) {
-        if (setupStore->osdMode==OSDMODE_SOFTWARE) {
+        if (current_osdMode==OSDMODE_SOFTWARE) {
                 IsYUV=true;
                 PixelMask=NULL;
                 return;
