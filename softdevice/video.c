@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.45 2006/02/18 22:20:30 lucke Exp $
+ * $Id: video.c,v 1.46 2006/03/10 20:36:30 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -29,8 +29,8 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   OsdHeight=OSD_FULL_HEIGHT;
 #endif
   // set some reasonable defaults
-  fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
-  fheight = lheight = old_dheight = dheight = sheight = 536;
+  old_width = fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
+  old_height = fheight = lheight = old_dheight = dheight = sheight = 536;
   sxoff = syoff = lxoff = lyoff = 0;
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
@@ -99,11 +99,12 @@ void cVideoOut::Action()
         //
         //OsdRefreshCounter > 80 ||
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
-         OsdRefreshCounter>1 && Osd_changed))
+         OsdRefreshCounter>5 && Osd_changed))
     {
       osdMutex.Lock();
       if (old_picture)
       {
+        OSDDEB("redrawing old_picture\n");
         DrawStill_420pl (old_picture->data[0],
                          old_picture->data[1],
                          old_picture->data[2],
@@ -113,7 +114,10 @@ void cVideoOut::Action()
       }
       else
       {
-        DrawStill_420pl (OsdPy,OsdPu, OsdPv,OSD_FULL_WIDTH, OSD_FULL_HEIGHT,
+        OSDDEB("drawing osd_layer\n");
+        DrawStill_420pl (OsdPy,OsdPu, OsdPv,
+                        old_width,old_height,
+                        //OSD_FULL_WIDTH, OSD_FULL_HEIGHT,
                          OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
       }
       Osd_changed=0;
@@ -454,7 +458,7 @@ void cVideoOut::CloseOSD()
   osdMutex.Lock();
   ClearOSD();
   OSDpresent=false;
-  Osd_changed=1;
+  Osd_changed=0;
   osdMutex.Unlock();
   OSDDEB("CloseOSD\n");
 }
