@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.9 2006/02/18 22:20:29 lucke Exp $
+ * $Id: SoftOsd.c,v 1.10 2006/03/11 09:18:22 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -462,6 +462,191 @@ void cSoftOsd::AYUV_to_AYUV420P(uint8_t *PY1, uint8_t *PY2,
 		    uint8_t *PAlphaY1,uint8_t *PAlphaY2,
 		    uint8_t *PAlphaUV,
 		    color * pixmap1, color * pixmap2, int Pixel) {
+       
+#ifdef USE_MMX2  
+        __asm__(
+                " pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
+                : : : "memory" ); 
+        // "memory" is not really needed but g++-2.95 wants to have it :-(
+                                 
+        
+	while (Pixel>8*30) {
+                __asm__ (
+                    " prefetchnta 96(%0) \n"
+                    " prefetchnta 96(%1) \n"
+                    : : "r" (pixmap1), "r" (pixmap2) );
+
+                __asm__(
+                    " movd  (%0),%%mm0\n"    
+                    " punpcklbw 4(%0),%%mm0\n"// mm0: 1A 2A 1Y 2Y 1U 2U 1V 2V 
+                    " movd  8(%0),%%mm1\n"  
+                    " punpcklbw 12(%0),%%mm1\n"// mm1: 3A 4A 3Y 4Y 3U 4U 3V 4V 
+                   
+                    " movq %%mm0, %%mm2 \n"
+                    " punpckhwd %%mm1, %%mm2 \n" //mm2: 1A 2A 3A 4A 1Y 2Y 3Y 4Y
+                    " movd %%mm2, (%2) \n" // store alpha  values 1-4 first line
+                    " punpckhdq %%mm2, %%mm2 \n"
+                    " movd %%mm2, (%1) \n" // store luminance values 1-4 first line
+                    " punpcklwd %%mm1, %%mm0 \n" //mm0: 1U 2U 3U 4U 1V 2V 3V 4V
+                    " movq %%mm0, %%mm1  \n"
+                    " punpckhbw %%mm7, %%mm0 \n" //mm0: 1V 00 2V 00 3V 00 4V 00
+                    " punpcklbw %%mm7, %%mm1 \n" //mm1: 1U 00 2U 00 3U 00 4U 00
+                    : : "r" (pixmap1),
+                        "r" (PAlphaY1),
+                        "r" (PY1) : "memory");
+                
+                __asm__(
+                    // second line
+                    " movd  (%0),%%mm3\n"    
+                    " punpcklbw 4(%0),%%mm3\n"// mm3: 1A 2A 1Y 2Y 1U 2U 1V 2V 
+                    " movd  8(%0),%%mm4\n"  
+                    " punpcklbw 12(%0),%%mm4\n"//mm4: 3A 4A 3Y 4Y 3U 4U 3V 4V  
+                    
+                    " movq %%mm3, %%mm2 \n"
+                    " punpckhwd %%mm4, %%mm2 \n" //mm2: 1A 2A 3A 4A 1Y 2Y 3Y 4Y
+                    " movd %%mm2, (%2) \n" // store alpha 1-4 second line
+                    " punpckhdq %%mm2, %%mm2 \n"
+                    " movd %%mm2, (%1) \n" // store luminance 1-4 second line
+ 
+                    " punpcklwd %%mm4, %%mm3 \n" //mm3: 1U 2U 3U 4U 1V 2V 3V 4V
+
+                    " movq %%mm3, %%mm4  \n"
+                    " punpckhbw %%mm7, %%mm3 \n" //mm0: 1V 00 2V 00 3V 00 4V 00
+                    " punpcklbw %%mm7, %%mm4 \n" //mm1: 1U 00 2U 00 3U 00 4U 00
+
+                    // add U and V component of first and second line
+                    " paddusw %%mm3, %%mm0 \n"
+                    " paddusw %%mm4, %%mm1 \n"
+                    
+                    " pshufw $0b11011101,%%mm0,%%mm2 \n" //mm2: 2V 00 4V 00
+                    " pshufw $0b10001000,%%mm0,%%mm6 \n" //mm6: 1V 00 3V 00
+                    " paddusw %%mm2, %%mm6 \n" // mm6: 1V+2V  3V+4V
+                    " psraw $2, %%mm6 \n" // mm6 div 4
+                    
+                    " pshufw $0b11011101,%%mm1,%%mm2 \n" //mm2: 2U 00 4U 00
+                    " pshufw $0b10001000,%%mm1,%%mm1 \n" //mm1: 1U 00 3U 00
+                    " paddusw %%mm2, %%mm1 \n" // mm1: 1U+2U 3U+4U
+                    " psraw $2, %%mm1 \n" // mm1 div 4
+                    
+                    " packuswb %%mm1,%%mm6 \n" // mm6: 1u+2u 3u+4u XX XX 1v+2v 3v+4v XX XX
+                    : : "r" (pixmap2),
+                        "r" (PAlphaY2),
+                        "r" (PY2): "memory");
+
+                // next 4 pixels
+                __asm__(   
+                    // inventory: mm6: 2 pixels u and v values    
+                    " movd  16(%0),%%mm0\n"    
+                    " punpcklbw 20(%0),%%mm0\n"// mm0: 1A 2A 1Y 2Y 1U 2U 1V 2V 
+                    " movd  24(%0),%%mm1\n"  
+                    " punpcklbw 28(%0),%%mm1\n"// mm1: 3A 4A 3Y 4Y 3U 4U 3V 4V 
+                   
+                    " movq %%mm0, %%mm2 \n"
+                    " punpckhwd %%mm1, %%mm2 \n" //mm2: 1A 2A 3A 4A 1Y 2Y 3Y 4Y
+                    " movd %%mm2, 4(%2) \n" // store alpha  values 1-4 first line
+                    " punpckhdq %%mm2, %%mm2 \n"
+                    " movd %%mm2, 4(%1) \n" // store luminance values 1-4 first line
+                    " punpcklwd %%mm1, %%mm0 \n" //mm0: 1U 2U 3U 4U 1V 2V 3V 4V
+                    " movq %%mm0, %%mm1  \n"
+                    " punpckhbw %%mm7, %%mm0 \n" //mm0: 1V 00 2V 00 3V 00 4V 00
+                    " punpcklbw %%mm7, %%mm1 \n" //mm1: 1U 00 2U 00 3U 00 4U 00
+                    : : "r" (pixmap1),
+                        "r" (PAlphaY1),
+                        "r" (PY1) : "memory");
+                
+                __asm__(
+                    // second line
+                    " movd  16(%0),%%mm3\n"    
+                    " punpcklbw 20(%0),%%mm3\n"//mm3: 1A 2A 1Y 2Y 1U 2U 1V 2V 
+                    " movd  24(%0),%%mm4\n"  
+                    " punpcklbw 28(%0),%%mm4\n"//mm4: 3A 4A 3Y 4Y 3U 4U 3V 4V  
+                    
+                    " movq %%mm3, %%mm2 \n"
+                    " punpckhwd %%mm4, %%mm2 \n" //mm2: 1A 2A 3A 4A 1Y 2Y 3Y 4Y
+                    " movd %%mm2, 4(%2) \n" // store alpha 1-4 second line
+                    " punpckhdq %%mm2, %%mm2 \n"
+                    " movd %%mm2, 4(%1) \n" // store luminance 1-4 second line
+ 
+                    " punpcklwd %%mm4, %%mm3 \n" //mm3: 1U 2U 3U 4U 1V 2V 3V 4V
+
+                    " movq %%mm3, %%mm4  \n"
+                    " punpckhbw %%mm7, %%mm3 \n" //mm0: 1V 00 2V 00 3V 00 4V 00
+                    " punpcklbw %%mm7, %%mm4 \n" //mm1: 1U 00 2U 00 3U 00 4U 00
+
+                    // add U and V component of first and second line
+                    " paddusw %%mm3, %%mm0 \n"
+                    " paddusw %%mm4, %%mm1 \n"
+                    
+                    " pshufw $0b11011101,%%mm0,%%mm2 \n" //mm2: 2V 00 4V 00
+                    " pshufw $0b10001000,%%mm0,%%mm0 \n" //mm0: 1V 00 3V 00
+                    " paddusw %%mm2, %%mm0 \n" // mm0: 1V+2V  3V+4V
+                    " psraw $2, %%mm0 \n" // mm0 div 4
+                    
+                    " pshufw $0b11011101,%%mm1,%%mm2 \n" //mm2: 2U 00 4U 00
+                    " pshufw $0b10001000,%%mm1,%%mm1 \n" //mm1: 1U 00 3U 00
+                    " paddusw %%mm2, %%mm1 \n" // mm1: 1U+2U 3U+4U
+                    " psraw $2, %%mm1 \n" // mm1 div 4
+                    
+                    " packuswb %%mm1,%%mm0 \n" // mm0: 1u+2u 3u+4u XX XX 1v+2v 3v+4v XX XX
+                    : : "r" (pixmap2),
+                        "r" (PAlphaY2),
+                        "r" (PY2): "memory");
+               
+                // now care about the missing u and v components
+                __asm__(   
+                    // inventory: 
+                    // mm6: first 2 pixels u and v values    
+                    // mm0: second 2 pixels u and v values
+                    " movq %%mm6, %%mm2 \n"
+                    " punpckhwd %%mm0, %%mm6\n"
+                    " punpcklwd %%mm0, %%mm2\n"
+                    " movd %%mm2, (%1)\n"
+                    " movd %%mm6, (%0) \n"
+                    : : "r" (PU), "r" (PV) : "memory" );
+
+                // and calculate PAlphaUV from PAlphaY1 and PAlphaY2
+                __asm__(
+                    " movd (%0), %%mm0 \n"
+                    " punpcklbw %%mm7, %%mm0 \n"
+                    " movd (%1), %%mm1 \n"
+                    " punpcklbw %%mm7, %%mm1 \n"
+                    " paddusw %%mm1, %%mm0 \n" // mm1: PAlphaY1+PAlphaY2
+                    
+                    " pshufw $0b11011101,%%mm0,%%mm1 \n" //mm2: 2A 00 4A 00
+                    " pshufw $0b10001000,%%mm0,%%mm0 \n" //mm0: 1A 00 3A 00
+                    " paddusw %%mm1, %%mm0 \n" // mm0: 1A+2A  3A+4A
+                    " psraw $2, %%mm0 \n" // mm0 div 4
+                    " packuswb %%mm0,%%mm0 \n"
+
+                    " movd 4(%0), %%mm2 \n"
+                    " punpcklbw %%mm7, %%mm2 \n"
+                    " movd 4(%1), %%mm3 \n"
+                    " punpcklbw %%mm7,%%mm3 \n"
+                    " paddusw %%mm3, %%mm2 \n" // mm2: PAlphaY1+PAlphaY2
+
+                    " pshufw $0b11011101,%%mm2,%%mm1 \n" //mm2: 6A 00 8A 00
+                    " pshufw $0b10001000,%%mm2,%%mm3 \n" //mm0: 5A 00 7A 00
+                    " paddusw %%mm1, %%mm3 \n" // mm0: 5A+6A  7A+8A
+                    " psraw $2, %%mm3 \n" // mm0 div 4
+                    " packuswb %%mm3,%%mm3 \n"
+
+                    " punpckhwd %%mm3, %%mm0\n"
+                    " movd %%mm0, (%2)\n"
+                     
+                     : : "r" (PAlphaY1), "r" (PAlphaY2),
+                         "r" (PAlphaUV)
+                                 : "memory" );
+
+                pixmap1+=8;
+                pixmap2+=8;
+                PAlphaY1+=8;PAlphaY2+=8;
+                PY1+=8;PY2+=8;
+                PU+=4;PV+=4;
+                PAlphaUV+=4;
+                Pixel-=8;
+        };       
+	EMMS;
+#endif
 	while (Pixel>1) {
 		*(PAlphaY1++)=pixmap1[0].a; *(PAlphaY1++)=pixmap1[1].a;
 		*(PAlphaY2++)=pixmap2[0].a; *(PAlphaY2++)=pixmap2[1].a;
@@ -635,7 +820,6 @@ void cSoftOsd::CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel) {
                 CurrPixel++;
         };
 };
-
 //---------------------------YUV modes ----------------------
 void cSoftOsd::CopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
 		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
@@ -658,14 +842,18 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
  	cMutexLock dirty(&dirty_Mutex);
         color *pixmap=(color*) OSD_Bitmap;
         int dest_Stride=(dest_Width+32) & ~0xf;
-        color tmp_pixmap[2*dest_Stride];
+        color tmp_pixmap1[2*dest_Stride];
+        color *tmp_pixmap=tmp_pixmap1;
         uint8_t *pY;uint8_t *pU;uint8_t *pV;
         uint8_t *pAlphaY; uint8_t *pAlphaUV;
  	void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
 	ScaleHoriz = ( dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
                       ( dest_Width==OSD_WIDTH ? &cSoftOsd::NoScaleHoriz_MMX :
                         &cSoftOsd::ScaleUpHoriz_MMX));
-      
+        
+        if (dest_Width==OSD_WIDTH) 
+                dest_Stride=OSD_STRIDE;
+ 
         for (int y=0; y<dest_Height; y+=2) {
 
                 int is_dirty=RefreshAll;
@@ -674,13 +862,16 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                 if (!is_dirty) 
                         continue;
 
-                //printf("Horiz scaling line %d\n",start_row+i);
-                (this->*ScaleHoriz)((uint8_t *)tmp_pixmap,dest_Width,
-                                &pixmap[y*OSD_STRIDE],OSD_WIDTH-1); 
-                (this->*ScaleHoriz)((uint8_t *)&tmp_pixmap[dest_Stride],
-                                dest_Width,
-                                &pixmap[(y+1)*OSD_STRIDE],OSD_WIDTH-1); 
-
+                if (dest_Width==OSD_WIDTH) {
+                        tmp_pixmap=&pixmap[y*OSD_STRIDE];
+                } else {
+                        //printf("Horiz scaling line %d\n",start_row+i);
+                        (this->*ScaleHoriz)((uint8_t *)tmp_pixmap,dest_Width,
+                                            &pixmap[y*OSD_STRIDE],OSD_WIDTH-1); 
+                        (this->*ScaleHoriz)((uint8_t *)&tmp_pixmap[dest_Stride],
+                                            dest_Width,
+                                            &pixmap[(y+1)*OSD_STRIDE],OSD_WIDTH-1); 
+                };
                 // convert and copy to video out OSD layer
                 pY=PY+(y+yPan)*Ystride+xPan;
                 pU=PU+((y+yPan)*UVstride+xPan)/2;
@@ -722,7 +913,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
         color tmp_pixmap[2*OSD_STRIDE];
         uint8_t *pY;uint8_t *pU;uint8_t *pV;
         uint8_t *pAlphaY; uint8_t *pAlphaUV;
-       
+    
         //printf("Scale to %d,%d\n",dest_Width,dest_Height);
         const int ScaleFactor=1<<6;
         uint32_t new_pixel_height=(OSD_HEIGHT*ScaleFactor)/dest_Height;
@@ -840,9 +1031,10 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
         int scaleH_strtIdx=0;
         memset(scaleH_lines,-1,sizeof(scaleH_lines));
         
+        // FIXME why 20*dest_stride?
         color tmp_pixmap[20*dest_stride];//dest_Width];
         //color tmp_pixmap[ScaleFactor/dest_Height*dest_stride];//dest_Width];
-        
+
 	for (int y=0; y<dest_Height; y++) {
                 int start_row=new_pixel_height*y/ScaleFactor;
                 

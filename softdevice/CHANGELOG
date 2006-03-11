@@ -1,4 +1,7 @@
 Changelog
+2005-03-11:
+   - MMX version of AYUV_to_AYUV420P()
+   - shortcut for AYUV no scale OSD modes
 2005-03-10:
    - tune some parameters to avoid unecessary rescaling/redrawing of the OSD
 2006-02-19:
