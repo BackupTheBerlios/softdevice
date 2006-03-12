@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.50 2006/02/18 22:20:29 lucke Exp $
+ * $Id: video-dfb.c,v 1.51 2006/03/12 09:43:28 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -1357,7 +1357,6 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     int pitch;
     int hi;
 
-  OsdRefreshCounter=0;
   events_not_done = 0;
   SetParams();
 

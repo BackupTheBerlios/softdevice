@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.46 2006/03/10 20:36:30 wachm Exp $
+ * $Id: video.c,v 1.47 2006/03/12 09:43:28 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -92,14 +92,11 @@ void cVideoOut::Action()
   while(active)
   {
     OsdRefreshCounter++;
+    usleep(50000);
     if (
-        //
-        // Don't do an unconditional redraw. TV-out cannot handle higher
-        // diplay rates than 25Hz.
-        //
-        //OsdRefreshCounter > 80 ||
+        OsdRefreshCounter > 80 || // blanks the screen after inactivity (4s)
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
-         OsdRefreshCounter>5 && Osd_changed))
+         OsdRefreshCounter>2 && Osd_changed))
     {
       osdMutex.Lock();
       if (old_picture)
@@ -116,14 +113,12 @@ void cVideoOut::Action()
       {
         OSDDEB("drawing osd_layer\n");
         DrawStill_420pl (OsdPy,OsdPu, OsdPv,
-                        old_width,old_height,
+                        OsdWidth,OsdHeight,
                         //OSD_FULL_WIDTH, OSD_FULL_HEIGHT,
                          OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
       }
-      Osd_changed=0;
       osdMutex.Unlock();
     }
-    usleep(50000);
   }
 #endif
 }
@@ -396,6 +391,7 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
 {
   areaMutex. Lock();
   OsdRefreshCounter=0;
+  Osd_changed=0;
   CheckAspectDimensions(picture,context);
   SetOldPicture(picture,context->width,context->height);
   Sync(syncTimer, delay);
@@ -419,6 +415,7 @@ void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
 {
   areaMutex. Lock();
   OsdRefreshCounter=0;
+  Osd_changed=0;
   RecalculateAspect();
   CheckArea(w, h);
   // display picture
@@ -431,6 +428,7 @@ void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
 void cVideoOut::ClearOSD()
 {
   OSDDEB("ClearOSD\n");
+  OSDpresent=false; // will automaticly be set to true on redraw ;-)
   //if (current_osdMode==OSDMODE_SOFTWARE)
   {
     if (OsdPy)
@@ -444,6 +442,7 @@ void cVideoOut::ClearOSD()
     if (OsdPAlphaUV)
        memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
    };
+  Osd_changed=1;
 };
 
 #if VDRVERSNUM >= 10307
@@ -458,7 +457,6 @@ void cVideoOut::CloseOSD()
   osdMutex.Lock();
   ClearOSD();
   OSDpresent=false;
-  Osd_changed=0;
   osdMutex.Unlock();
   OSDDEB("CloseOSD\n");
 }

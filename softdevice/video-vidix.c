@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.16 2006/02/18 22:20:29 lucke Exp $
+ * $Id: video-vidix.c,v 1.17 2006/03/12 09:43:28 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -414,8 +414,6 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   Py += (Ystride * syoff);
   Pv += (UVstride * syoff/2);
   Pu += (UVstride * syoff/2);
-
-  OsdRefreshCounter=0;
 
   if (currentPixelFormat == 0 || currentPixelFormat == 1)
   {

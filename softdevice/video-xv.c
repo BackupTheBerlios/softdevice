@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.44 2006/02/18 22:20:30 lucke Exp $
+ * $Id: video-xv.c,v 1.45 2006/03/12 09:43:28 wachm Exp $
  */
 
 #include <unistd.h>
@@ -819,10 +819,10 @@ bool cXvVideoOut::Initialize (void)
   if ( dispName && atoi(dispName + 1) > 9 )
           isLocal = false;
 
+  osd_max_width=DisplayWidth(dpy,DefaultScreen(dpy));
+  osd_max_height=DisplayHeight(dpy,DefaultScreen(dpy));
   useShm=XShmQueryExtension(dpy) && isLocal;
   if (useShm) {
-	  osd_max_width=DisplayWidth(dpy,DefaultScreen(dpy));
-          osd_max_height=DisplayHeight(dpy,DefaultScreen(dpy));
 
           osd_image = XShmCreateImage (dpy,
                           XDefaultVisual (dpy, scn_id),
@@ -1410,8 +1410,6 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   }
 
 #if VDRVERSNUM >= 10307
-  OsdRefreshCounter=0;
-
   /* -------------------------------------------------------------------------
    * don't know where those funny stride values (752,376) come from.
    * therefor  we have to copy line by line :-( .

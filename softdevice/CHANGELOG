@@ -1,4 +1,7 @@
 Changelog
+2005-03-12:
+   - redraw video layer on OSD close in software mode
+   - use OsdWidth and OsdHeight for drawing osd layer
 2005-03-11:
    - MMX version of AYUV_to_AYUV420P()
    - shortcut for AYUV no scale OSD modes
