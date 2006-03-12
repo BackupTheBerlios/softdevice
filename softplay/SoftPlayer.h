@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.5 2005/05/16 19:07:54 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.6 2006/03/12 20:28:52 wachm Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -17,11 +17,13 @@
 
 #include <avformat.h>
 
-#include "../softdevice/softdevice.h"
+#include "SoftHandles.h"
 #include "PlayList.h"
+#include "Receiver.h"
 
 class cSoftPlayer : public cPlayer, cThread {
  private:
+       friend class cSoftControl;
        bool running;
        bool reading;
        bool pause;
@@ -35,12 +37,22 @@ class cSoftPlayer : public cPlayer, cThread {
        int64_t fast_STC;
        
        int pollTimeouts;
-	cSoftDevice *SoftDevice;
+       cDevice *SoftDevice;
+       PacketHandlesV100 SoftHandles;
        AVFormatContext *ic;
        AVFormatParameters ap;
-   	char title[120];
-   
-       ePlayMode softPlayMode;
+       cSoftplayReceiver *Receiver;
+
+       char curr_filename[200];
+       char title[60];
+       char author[60];
+       char album[60];
+       int duration;
+       int start_time;
+       
+       char filename[200];
+       bool newFile;
+       int Streams;
  public:
        cSoftPlayer();  
        ~cSoftPlayer();
@@ -49,7 +61,7 @@ class cSoftPlayer : public cPlayer, cThread {
 
        virtual void Action();
 
-       inline bool IsRunning() {return running;};
+       inline bool IsRunning() {return reading || newFile ;};
 	
        inline void SkipSeconds(int Skip) 
        {skip=Skip;};
@@ -67,8 +79,12 @@ class cSoftPlayer : public cPlayer, cThread {
 
        void OpenFile(const char *filename);
        void PlayFile(const char *filename);
-       
-       ePlayMode GetPlayMode(AVFormatContext *IC); 
+      
+       void FileReplay();
+
+       void RemuxAndQueue( AVPacket &pkt);
+
+       int GetPlayMode(AVFormatContext *IC); 
        
        void Stop();
 
@@ -80,18 +96,50 @@ class cSoftPlayer : public cPlayer, cThread {
        inline void Play()
        { pause=false; new_speed=-1;new_forward=true; };
 
-       char * GetTitle(); 
+       inline const char * GetTitle()
+       { return title; };
+       inline const char * GetAuthor()
+       { return author; };
+       inline const char * GetAlbum()
+       { return album; };
+       inline const char * GetFilename()
+       { return curr_filename; };
+      
+       inline int GetDuration()
+       { return duration/AV_TIME_BASE; };
+       
+       int GetCurrPos();
+       
        virtual bool GetIndex(int &Current, int &Total, 
         	bool SnapToIFrame = false);
+		
        virtual bool GetReplayMode(bool &Play, bool &Forward, int &Speed)
        {Play=!pause;Forward=forward;Speed=speed;return true;};
-       int GetDuration(); 
-       int GetCurrPos();
+
+       inline bool GetPlay() 
+       { return !pause; };
+
+       inline bool GetForward()
+       { return forward; };
+
+       inline int GetSpeed()
+       { return speed; };
+
+       // -- Receiver controls ----------------------------------
+       void ChannelUpDown(int i);
+
+ protected:
+       void ResetDevice( int Streams);
+       bool PollDevice( int Streams);
+       void FlushDevice( int Streams);
+       void FreezeDevice( int Streams, bool Freeze);
+
  };
 
 class cSoftControl: public cControl {
   private:
       cSoftPlayer *SoftPlayer;
+      cSoftplayReceiver *Receiver;
       
       cSkinDisplayReplay *displayReplay;
       cOsdMenu *privateMenu;
@@ -103,7 +151,9 @@ class cSoftControl: public cControl {
 
       bool shouldStop;
       cPlayList *playList;
-      int32_t currTitleHash;
+
+      // to notice when the next file starts
+      bool newFile; 
   public:
      cSoftControl( const char * filename );
      cSoftControl( cPlayList *PlayList );
@@ -111,6 +161,7 @@ class cSoftControl: public cControl {
      virtual void Hide();
      virtual eOSState ProcessKey(eKeys Key);
      void ShowProgress();
+     void SendStatus();
 };
 
 

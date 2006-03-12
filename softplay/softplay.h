@@ -3,15 +3,20 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.h,v 1.3 2005/08/15 07:27:42 wachm Exp $
+ * $Id: softplay.h,v 1.4 2006/03/12 20:28:52 wachm Exp $
  */
 #ifndef __SOFTPLAY_H__
 #define __SOFTPLAY_H__
 
 #include <vdr/plugin.h>
 
+#include "Setup.h"
 
 class cPlayList;
+class cIndexIdx;
+
+extern cIndexIdx *FileIndex;
+
 //#define STR_LENGTH  120
 #define STR_LENGTH  200
 #define SHORT_STR   60
@@ -26,7 +31,6 @@ class cSoftPlay : public cPlugin {
 private:
   // Add any member variables or functions you may need here.
   char start_path[60];
-  int start_path_len;
 
 public:
   struct sPlayLists {
@@ -42,7 +46,7 @@ public:
   bool currListIsTmp;
   char currListName[STR_LENGTH];
   
-  const char *configDir;
+  char configDir[300];
  
 public:
   cSoftPlay(void);
@@ -60,22 +64,79 @@ public:
   virtual bool SetupParse(const char *Name, const char *Value);
 
   void SetTmpCurrList(cPlayList *List);
-  void SaveList(cPlayList *List);
-  cPlayList *OpenList();
-
+  void SaveList(cPlayList *List, const char *Name=NULL);
+  cPlayList *OpenList(const char *Name);
+  void ScanForPlaylists();
+  
   inline cPlayList *GetCurrList() 
   { return currList; };
   inline char *MediaPath() {return start_path;};
-  inline int MediaPathLen() {return start_path_len;};
+};
+// --- cMenuDirectory -------------------------------------------
+
+class cMenuDirectory : public cOsdMenu {
+private:
+  char start_path[STR_LENGTH];
+  struct DirEntry {
+      char name[STR_LENGTH];
+      char title[STR_LENGTH];
+      int type;
+  } * Entries;
+  int nEntries;
+  int keySelNo;
+  cPlayList *editList;
+  void PrintItemName(char *Name, const struct DirEntry &Entry,int i);
+  eOSState SelectEntry(int No, bool play);
+  
+public:
+  bool PrepareDirectory(const char * path);
+  cMenuDirectory(const char * path, cPlayList *EditList=NULL, const char *ToPos=NULL);
+  virtual ~cMenuDirectory();
+  virtual eOSState ProcessKey(eKeys Key);
+  static cMenuDirectory * OpenLastBrowsedDir();
 };
 
 extern cSoftPlay *Softplay;
 
-int32_t SimpleHash( char const* str);
+int SimpleHash( char const* str);
 
-void PrintCutDownString(char *str,char *orig,int len);
+void PrintCutDownString(char *str, const char *orig, int len);
 
 bool IsM3UFile(const char *const Filename);
+bool IsStream(const char *const Filename);
 
 void chomp(const char *const str);
+
+void stripTrailingSpaces(char *str);
+void stripTrailingNonLetters(char *str);
+
+
+static inline void strlcpy(char *dest, const char *src, size_t n) {
+        while ( *src && --n )
+                *(dest++)=*(src++);
+        *(dest)=0;
+};
+
+static inline void skipSpaces(const char *&pos) {
+	while ( *pos==' ' )
+		pos++;
+};
+
+static inline void nextField(const char *&pos) {        
+	//skip whitespaces and the comma
+	skipSpaces(pos);
+
+	if ( *pos!=',' ) {
+		pos=NULL;
+		return;
+	} else pos++;
+
+	skipSpaces(pos);
+};
+
+const char *ReadQuotedString(char *out, 
+		const char *Str);
+// out should be at least STR_LENGTH large
+
+
 #endif

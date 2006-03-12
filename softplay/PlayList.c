@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.12 2005/08/15 13:13:14 wachm Exp $
+ * $Id: PlayList.c,v 1.13 2006/03/12 20:28:52 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -16,6 +16,8 @@
 #include <stdlib.h>
 
 #include "vdr/player.h"
+
+#include "FileIndex.h"
 
 #define LISTDEB(out...) {printf("LISTDEB: ");printf(out);}
 
@@ -254,13 +256,46 @@ void cItemIdx::Shuffle() {
 */
 };
 
+void cItemIdx::Move(int From, int To) {
+        LISTDEB("Move From %d to %d currIdx %d\n",From,To,currShuffleIdx);
+//        for (int i=(To>From?From:To)-1; i < (To>From?To:From) +1; i++ ) 
+//                if ( i > 0 && i <  nIdx )
+//                        LISTDEB("Item %d '%s'\n",i,Idx[i].Item->GetFilename());
+
+        if ( From == To )
+                return;
+        
+	if ( From >= 0 && From <  nIdx
+             && To >= 0 && To <  nIdx ) {
+                sIdx dummy=Idx[From];
+                if ( From < To ) {
+                        memmove(&Idx[From],&Idx[From+1],
+                                        sizeof(Idx[To])*(To-From));
+                        if ( currShuffleIdx == From)
+                                currShuffleIdx = To;
+                        else if ( currShuffleIdx > From && 
+                                        currShuffleIdx <= To )
+                                currShuffleIdx--;
+                } else {
+                        memmove(&Idx[To+1],&Idx[To],
+                                        sizeof(Idx[To])*(From-To));
+                        if ( currShuffleIdx == From )
+                                currShuffleIdx = To;
+                        else if ( currShuffleIdx >= To && 
+                                        currShuffleIdx < From )
+                                currShuffleIdx++;
+                };
+                Idx[To]=dummy;
+        };
+        LISTDEB("After Move From %d to %d currIdx %d\n",From,To,currShuffleIdx);
+        for (int i=(To>From?From:To)-1; i < (To>From?To:From) +2; i++ ) 
+                if ( i >= 0 && i <  nIdx )
+                        LISTDEB("Item %d '%s'\n",i,Idx[i].Item->GetFilename());
+};
+
 
 // ---cPlayListItem--------------------------------------------------------
-cPlayListItem::cPlayListItem(const char *Filename, const char *Name) {
-        if (Name) {
-                SetName(Name);
-        } else name[0]=0;
-
+cPlayListItem::cPlayListItem(const char *Filename) {
         if (Filename) {
                 SetFilename(Filename);
         } else filename[0]=0;
@@ -280,13 +315,23 @@ void cPlayListItem::InsertSelfIntoList(cPlayListItem *Next,
                 previous->next=this;
 };
 
+void cPlayListItem::RemoveSelfFromList() {
+        if (next) 
+                next->previous=previous;
+        if (previous)
+                previous->next=next;
+};
+
 
 void cPlayListItem::BuildIdx(cItemIdx *ShuffleIdx) {
 };
 
-const char *cPlayListItem::ParseTypeFilenameName(const char *pos, 
-                char *Type, char *Filename, char *Name) {
+const char *cPlayListItem::ParseTypeFilename(const char *pos, 
+                char *Type, char *Filename) {
         int len;
+	if (!*pos)
+		return NULL;
+
         // read entry type
         if ( sscanf(pos,"%20[^:]:%n",Type,&len) == 0 ) {
                 LISTDEB("Ignoring invalid line in list file: \"%s\"!\n",pos);
@@ -294,51 +339,26 @@ const char *cPlayListItem::ParseTypeFilenameName(const char *pos,
         };
         pos = &pos[len];
 
-        //skip whitespaces
-        while (pos[0] && pos[0]==' ')
-                pos++;
+
+        skipSpaces(pos);
         // read file name (should be always present)
-        if ( !strncmp(pos,"\"\",",3) ) {
-                filename[0]=0;
-                len=3;
-        } else if ( sscanf(pos,"\"%" TO_STRING(STR_LENGTH) 
-                                "[^\"]\",%n",Filename,&len) == 0 ) {
+        if ( !(pos = ReadQuotedString(Filename,pos) ) ) {
                 LISTDEB("Could not parse filename at pos \"%s\". Ignoring.\n",pos);
                 return NULL;
         };
-        pos = &pos[len];
 
-        // skip whitespaces
-        while (pos[0] && pos[0]==' ')
-                pos++;
-
-        // read name (should be always present)
-        if ( !strncmp(pos,"\"\",",3) ) {
-                name[0]=0;
-                len=3;
-        } else if ( sscanf(pos,"\"%" TO_STRING(SHORT_STR) 
-                                "[^\"]\",%n",Name,&len) == 0 ) {
-                LISTDEB("Could not parse name at pos \"%s\". Ignoring.\n",pos);
-                return NULL;
-        };
-        pos = &pos[len];
-
+	nextField(pos);
         return pos;
 };
- 
-//-----cPlayListRegular-----------------------------------------------------
 
-void cPlayListRegular::Save(FILE *out) {
+void cPlayListItem::Save(FILE *out) {
 	fprintf(out,"File: ");
         fprintf(out,"\"%s\",",GetFilename());
-        fprintf(out,"\"%s\",",GetName());
-        fprintf(out,"\n");
 };
-
+	
 // -----cPlayList------------------------------------------------------------
-cPlayList::cPlayList(const char *Filename, const char *Name,
-                cItemIdx *ShuffleIdx) 
-                : cPlayListItem(Filename,(Name ? Name : tr("Playlist 1"))) {
+cPlayList::cPlayList(const char *Filename, cItemIdx *ShuffleIdx) 
+                : cPlayListItem( (Filename? Filename : tr("Playlist 1")) ) {
         first=NULL;
         last=NULL;
         options.shuffle=false;
@@ -364,20 +384,16 @@ cPlayList::~cPlayList() {
 
 bool cPlayList::RemoveItemFromList(cPlayListItem *Item) {
         LISTDEB("RemoveItemFromList %p, first %p last %p\n",Item,first,last);
-	
-        // is it the first or the last item?
+
+	// is it the first or the last item?
         if (first && Item == first)
-                first = first->next;
+                first = first->GetNext();
         if (last && Item == last) 
-                last = last->previous;
+                last = last->GetPrev();
 	// remove from list
-        if (Item->next) 
-                Item->next->previous=Item->previous;
-        if (Item->previous) 
-                Item->previous->next=Item->next;
-        Item->previous=NULL;
-        Item->next=NULL;
-        delete Item;
+        Item->RemoveSelfFromList();
+	delete Item;
+
 	return true;
 };
 
@@ -386,9 +402,7 @@ void cPlayList::AddItemAtEndToList(cPlayListItem *Item) {
                 Item->InsertSelfIntoList(NULL,NULL);
                 first = last = Item;
         } else {
-                last->next = Item;
-                Item->previous = last;
-                Item->next = NULL;
+                Item->InsertSelfIntoList(NULL,last);
                 last = Item;
         };
 };
@@ -411,9 +425,9 @@ bool cPlayList::RemoveItem(cPlayListItem *Item) {
 void cPlayList::BuildIdx(cItemIdx *ShuffleIdx) {
 };
 
-bool cPlayList::AddFile(char * filename, char *title) {
+bool cPlayList::AddFile(char * filename) {
         LISTDEB("AddFile %s\n",filename);
-        cPlayListItem *Item= new cPlayListRegular(filename,title);
+        cPlayListItem *Item= new cPlayListItem(filename);
         LISTDEB("Item created %p\n",Item);
         AddItemAtEnd(Item);
         LISTDEB("Item added first %p last %p\n",first,last);
@@ -421,19 +435,19 @@ bool cPlayList::AddFile(char * filename, char *title) {
         return true;
 };
 
-bool cPlayList::AddDir(char * dirname, char * title, bool recursive) {
+bool cPlayList::AddDir(char * dirname, bool recursive) {
         LISTDEB("AddDir %s\n",dirname);
-        cPlayList *Item= new cPlayList(dirname,title,shuffleIdx);
+        cPlayList *Item= new cPlayList(dirname,shuffleIdx);
         Item->ScanDir(dirname,recursive);
         AddItemAtEnd(Item);
 
         return true;
 };
 
-bool cPlayList::AddM3U(char * Filename, char * title) {
+bool cPlayList::AddM3U(char * Filename) {
         LISTDEB("AddM3U %s\n",Filename);
-        cPlayList *Item= new cPlayList(Filename,title,shuffleIdx);
-        Item->LoadM3U(Filename,title);
+        cPlayList *Item= new cPlayList(Filename,shuffleIdx);
+        Item->LoadM3U(Filename);
         AddItemAtEnd(Item);
 
         return true;
@@ -465,8 +479,15 @@ void cPlayList::SetOptions( sPlayListOptions &Options) {
                 shuffleIdx->Shuffle();
 
         options=Options;
+        SetFilename(Options.name);
 };
 
+void cPlayList::GetOptions( sPlayListOptions &Options) {
+        Options=options;
+        strncpy(Options.name,GetFilename(),40);
+        Options.name[40-1]=0;
+};
+        
 bool cPlayList::ScanDir(char * dirname, bool recursive) {
         struct dirent **namelist;
         int n;
@@ -505,8 +526,8 @@ bool cPlayList::ScanDir(char * dirname, bool recursive) {
                 };
 
                 if (namelist[i]->d_type == DT_DIR && recursive )  
-                        ret=AddDir(Name,namelist[i]->d_name,recursive);
-                else  ret=AddFile(Name,namelist[i]->d_name);
+                        ret=AddDir(Name,recursive);
+                else  ret=AddFile(Name);
 
                 free(namelist[i]);	  
         }
@@ -514,25 +535,22 @@ bool cPlayList::ScanDir(char * dirname, bool recursive) {
         return true;
 };
 
-
 void cPlayList::Save(FILE *out) {
         cPlayListItem *Item;
         
         fprintf(out,"Start_List: ");
-        fprintf(out,"\"%s\",",filename);
-        fprintf(out,"\"%s\",",name);
+        fprintf(out,"\"%s\",",GetFilename());
         fprintf(out,"\n");
         
         Item=first;
         while (Item) {
-                Item->Save(out);
-                Item=Item->next;
+                Item->Save(out);fprintf(out,"\n");
+                Item=Item->GetNext();
         };
 
         fprintf(out,"End_List: ");
-        fprintf(out,"\"%s\",",filename);
-        fprintf(out,"\"%s\",",name);
-        fprintf(out,"\n");
+        fprintf(out,"\"%s\",",GetFilename());
+        //fprintf(out,"\n");
 };
         
       
@@ -541,10 +559,9 @@ int cPlayList::Load(FILE *in, const char *StartLine) {
         const char *pos;
         char Type[STR_LENGTH];
         char Filename[STR_LENGTH];
-        char Name[SHORT_STR];
        
         if (StartLine) {
-                if ( !(pos=ParseTypeFilenameName(StartLine,Type,Filename,Name)) ) {
+                if ( !(pos=ParseTypeFilename(StartLine,Type,Filename)) ) {
                         LISTDEB("Could not parse Startline. Returning. \n");
                         return -1;
                 };
@@ -554,38 +571,36 @@ int cPlayList::Load(FILE *in, const char *StartLine) {
                         return -1;
                 };
                 
-                SetName(Name);
                 SetFilename(Filename);
         };              
                 
         while( !feof(in) && fgets(line,500,in)) {
                 chomp(line);
 
-                LISTDEB("read line %s \n",line); 
+                LISTDEB("read line '%s' \n",line); 
 
-                if ( !(pos=ParseTypeFilenameName(line,Type,Filename,Name)) )
+                if ( !(pos=ParseTypeFilename(line,Type,Filename)) )
                         continue;
                        
-                LISTDEB("filename \"%s\" name \"%s\" \n",Filename,Name); 
+                LISTDEB("filename \"%s\"\n",Filename); 
                 if ( !strcmp(Type,"Start_List") ) {
                         LISTDEB("Found start of list\n");
-                        cPlayList *Item = new cPlayList(Filename,Name,shuffleIdx);
+                        cPlayList *Item = new cPlayList(Filename,shuffleIdx);
                         if ( Item->Load(in,line)<0 )
                                 return -1;
 
                         AddItemAtEnd(Item);
                 } else if ( !strcmp(Type,"End_List") ) {
                         LISTDEB("Found end of list \n");
-                        if ( strcmp(Filename,GetFilename()) ||
-                                        strcmp(Name,GetName()) ) {
+                        if ( strcmp(Filename,GetFilename()) ) { 
                                 LISTDEB("End of list doesn't match! Returning!\n");
                                 return -1; 
                         };
                         return 0;
                 } else if ( !strcmp(Type,"File") ) {
                         LISTDEB("Found file \n");
-                        cPlayListItem *Item = new cPlayListRegular(Filename,Name);
-                        Item->ParseSaveLine(line);
+                        cPlayListItem *Item = new cPlayListItem(Filename);
+                        Item->ParseSaveLine(pos);
                         AddItemAtEnd(Item);
                 } else {
                         LISTDEB("Unknown type \"%s\"\n",Type);
@@ -594,11 +609,14 @@ int cPlayList::Load(FILE *in, const char *StartLine) {
         return 0;
 };
 
-int cPlayList::LoadM3U(const char *Filename, const char *Name) {
+int cPlayList::LoadM3U(const char *Filename) {
         FILE *list;
-        char line[500];
+        char line[2][500];
         char dir[STR_LENGTH];
-        LISTDEB("LoadM3U: %s\n",Filename);
+	int swapLine=0;
+	line[0][0]=line[1][0]=0;
+	
+	LISTDEB("LoadM3U: %s\n",Filename);
         
         list = fopen( Filename, "r");
         
@@ -607,7 +625,6 @@ int cPlayList::LoadM3U(const char *Filename, const char *Name) {
                 return -1;
         };
         
-        SetName(Name);
         SetFilename(Filename);
         char *ncopy=rindex(Filename,'/');
         int count=(int) (ncopy-Filename);
@@ -619,36 +636,50 @@ int cPlayList::LoadM3U(const char *Filename, const char *Name) {
         dir[count]=0;
         LISTDEB("dir: %s\n",dir);
 
-        while ( !feof(list)  && fgets(line,500,list) ) {
-                chomp(line);
-                printf("read line \"%s\"\n",line);
-                if (line[0]=='#')
+	
+        while ( fgets(line[swapLine],500,list) ) {
+                chomp(line[swapLine]);
+                LISTDEB("read line \"%s\"\n",line[swapLine]);
+                char *pos=line[swapLine];
+                
+                
+		//skip leading white spaces
+		skipSpaces((const char *) pos);
+
+		if ( *pos=='#' ) {
+			// either a comment or EXTINF
+			swapLine=!swapLine;
                         continue;
+		};
 
-                // poor man's windows to linux filename transformation
-                char *pos=line;
-                while ( (pos=index(pos,'\\')) )
-                        *pos='/';
-    
-                ncopy=line;
-                // don't copy leading "./"
-                if (ncopy[0]=='.' && ncopy[1]=='/')
-                        ncopy+=2;
-                
-                char ItemName[SHORT_STR];
                 char ItemFile[STR_LENGTH];
-                snprintf(ItemFile,STR_LENGTH,"%s/%s",dir,ncopy);
+                if ( IsStream(pos) ) {
+                        snprintf(ItemFile,STR_LENGTH,"%s",pos);
+                } else {
+                        // regular file
+                        // poor man's windows to linux filename transformation
+                        char *tmp=pos;
+                        while ( (tmp=index(tmp,'\\')) )
+                                *tmp='/';
 
-                // strip off all directories to extract the name
-                ncopy = rindex(line,'/');
-                if (!ncopy)
-                        ncopy=line;
-                else ncopy++;
-                snprintf(ItemName,SHORT_STR,"%s",ncopy);
-                printf("Name %s \n",ncopy);
+                        // don't copy leading "./"
+                        if (pos[0]=='.' && pos[1]=='/')
+                                pos+=2;
+
+                        snprintf(ItemFile,STR_LENGTH,"%s/%s",dir,pos);
+                };
                 
-                cPlayListItem *Item = new cPlayListRegular(ItemFile,ItemName);
-                AddItemAtEnd(Item);
+		// check for extinfos...
+		char *extInfoPos=line[!swapLine];
+		skipSpaces((const char *)extInfoPos);
+		if ( *extInfoPos=='#' && FileIndex ) {
+			cIndex *Idx=FileIndex->GetOrAddIndex(ItemFile);
+			if (Idx)
+				Idx->ParseM3uExtInf(extInfoPos);
+		};
+
+                AddItemAtEnd(new cPlayListItem(ItemFile));
+		swapLine=!swapLine;
         };
 
         return 0;

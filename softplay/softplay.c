@@ -3,19 +3,19 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.9 2005/08/15 09:07:30 wachm Exp $
+ * $Id: softplay.c,v 1.10 2006/03/12 20:28:52 wachm Exp $
  */
 
+
+#include <dirent.h>
 
 #include "softplay.h"
 #include "SoftPlayer.h"
 #include "PlayList.h"
 #include "PlayListMenu.h"
 #include "i18n.h"
+#include "FileIndex.h"
 
-#include <dirent.h>
-
-#define NAME_LENGTH 200
 
 static const char *VERSION        = "0.0.2";
 static const char *DESCRIPTION    = "SoftPlay play media files with the softdevice";
@@ -23,7 +23,7 @@ static const char *MAINMENUENTRY  = "SoftPlay";
 
 static const char *DIR_NAME ="softplay";
 
-//#define PLUGDEB(out...)     {printf("PLUGDEB: ");printf(out...);}
+//#define PLUGDEB(out...)     {printf("PLUGDEB: ");printf(out);}
 
 #ifndef PLUGDEB
 #define PLUGDEB(out...)
@@ -31,28 +31,8 @@ static const char *DIR_NAME ="softplay";
 
 // --- cMenuDirectory -------------------------------------------
 
-class cMenuDirectory : public cOsdMenu {
-private:
-  char start_path[NAME_LENGTH];
-  struct DirEntry {
-      char name[NAME_LENGTH];
-      char title[NAME_LENGTH];
-      int type;
-  } * Entries;
-  int nEntries;
-  int keySelNo;
-  cPlayList *editList;
-  void PrintItemName(char *Name, const struct DirEntry &Entry,int i);
-  eOSState SelectEntry(int No, bool play);
-  
-public:
-  void PrepareDirectory(char * path);
-  cMenuDirectory(char * path, cPlayList *EditList=NULL);
-  virtual ~cMenuDirectory();
-  virtual eOSState ProcessKey(eKeys Key);
-};
-
-cMenuDirectory::cMenuDirectory(char * path, cPlayList *EditList) 
+cMenuDirectory::cMenuDirectory(const char * path, cPlayList *EditList, 
+		const char *ToPos) 
         : cOsdMenu(tr("Files"),4,2,8) 
 {
   Entries=NULL;
@@ -60,13 +40,36 @@ cMenuDirectory::cMenuDirectory(char * path, cPlayList *EditList)
   keySelNo=0;
   SetHelp(NULL,tr("Play"),tr("Toggle List"),tr("Play List"));
   editList=EditList;
-  PrepareDirectory(path);
+  if (ToPos) {
+	  printf("Opening dir '%s' until '%s'\n",path,ToPos);
+	  char myDir[120];
+	  char *myToPos;
+	  strlcpy(myDir,path,
+	      ((unsigned int)(ToPos-path+1))>(unsigned int)sizeof(myDir)?
+	      sizeof(myDir): (unsigned int)(ToPos-path+1));
+	  printf("MyDir '%s'\n",myDir);
+	  PrepareDirectory(myDir);
+	  myToPos=index(ToPos+1,'/');
+	  AddSubMenu(new cMenuDirectory(path,EditList,myToPos));
+  } else  {
+	  printf("Open only directory '%s'.\n",path);
+	  PrepareDirectory(path);
+	  SoftplaySetup.SetLastDir(path);
+  };
+	  
 };
 
 cMenuDirectory::~cMenuDirectory()
 {
   delete Entries;
   nEntries=0;
+};
+
+cMenuDirectory * cMenuDirectory::OpenLastBrowsedDir() {
+	const char *lastDir=SoftplaySetup.GetLastDir();
+	const char *startFrom=lastDir+strlen(Softplay->MediaPath());
+	printf("OpenLastBrowsedDir: '%s' startFrom '%s'\n",lastDir,startFrom);
+	return new cMenuDirectory(lastDir,Softplay->GetCurrList(),startFrom);
 };
 
 void cMenuDirectory::PrintItemName(char *Name, const struct DirEntry &Entry,int i) {
@@ -90,7 +93,7 @@ void cMenuDirectory::PrintItemName(char *Name, const struct DirEntry &Entry,int 
         };
 };
 
-void cMenuDirectory::PrepareDirectory(char *path) 
+bool cMenuDirectory::PrepareDirectory(const char *path) 
 {
   struct dirent **namelist;
   int n;
@@ -103,18 +106,17 @@ void cMenuDirectory::PrepareDirectory(char *path)
 	nEntries=0;
   };
 
-  strncpy(start_path,path,NAME_LENGTH);
-  start_path[NAME_LENGTH-1]=0;
+  strlcpy(start_path,path,sizeof(start_path));
 
   //FIXME find a clever way to cut down the directory name
-  PrintCutDownString(Name,&start_path[Softplay->MediaPathLen()],30);
+  PrintCutDownString(Name,start_path,30);
   snprintf(Title,60,tr("Files: %s"),Name);
   SetTitle(Title);
 
   n = scandir(path, &namelist, 0, alphasort);
   if (n<0) {
 	  printf("scandir error\n");
-	  return;
+	  return false;
   };
   Entries=new DirEntry[n];
   nEntries=0;
@@ -127,11 +129,11 @@ void cMenuDirectory::PrepareDirectory(char *path)
 	  };
 
 	  // fill Entries array and resolve symlinks
-	  snprintf(Entries[nEntries].name,NAME_LENGTH,"%s/%s",
+	  snprintf(Entries[nEntries].name,STR_LENGTH,"%s/%s",
 	            start_path,namelist[i]->d_name);
-	  Entries[nEntries].name[NAME_LENGTH-1]=0;
-          strncpy(Entries[nEntries].title,namelist[i]->d_name,NAME_LENGTH);
-          Entries[nEntries].title[NAME_LENGTH-1]=0;
+	  Entries[nEntries].name[STR_LENGTH-1]=0;
+          strlcpy(Entries[nEntries].title,namelist[i]->d_name,STR_LENGTH);
+          Entries[nEntries].title[STR_LENGTH-1]=0;
 
 	  Entries[nEntries].type=namelist[i]->d_type;
           // check type (non ext2/3 and symlinks)
@@ -157,6 +159,7 @@ void cMenuDirectory::PrepareDirectory(char *path)
           free(namelist[i]);	  
   }
   free(namelist);
+  return true;
 };
 
 eOSState cMenuDirectory::SelectEntry(int No, bool play) {
@@ -181,28 +184,23 @@ eOSState cMenuDirectory::SelectEntry(int No, bool play) {
                 Item=PlayList->GetAlbumByFilename(Entries[No].name);
                 PLUGDEB("Item %p\n",Item);
                 if (!Item)
-                        PlayList->AddDir(Entries[No].name,
-                                        Entries[No].title,true);
+                        PlayList->AddDir(Entries[No].name,true);
                 else PlayList->RemoveItem(Item);
         } else if (Entries[No].type == DT_REG && 
                         IsM3UFile(Entries[No].name) ) {
                 Item=PlayList->GetAlbumByFilename(Entries[No].name);
                 PLUGDEB("Item %p\n",Item);
                 if (!Item)
-                        PlayList->AddM3U(Entries[No].name,
-                                        Entries[No].title);
+                        PlayList->AddM3U(Entries[No].name);
                 else PlayList->RemoveItem(Item);   
                 refreshAll=true;
         } else if (Entries[No].type == DT_REG){
                 Item=PlayList->GetItemByFilename(Entries[No].name);
                 if (!Item)
-                        PlayList->AddFile(Entries[No].name,
-                                        Entries[No].title);
+                        PlayList->AddFile(Entries[No].name);
                 else PlayList->RemoveItem(Item);
         };
         if (play) {
-                // FIXME remove
-               // Softplay->SaveList(PlayList);
                cControl::Launch(new cSoftControl(PlayList));
                return osEnd;
         };
@@ -231,7 +229,6 @@ eOSState cMenuDirectory::SelectEntry(int No, bool play) {
 
 eOSState cMenuDirectory::ProcessKey(eKeys Key) {
 	eOSState state = cOsdMenu::ProcessKey(Key);
-        cPlayListItem *Item;
 	int No=0;
 
 	if (state != osUnknown) 
@@ -322,8 +319,10 @@ eOSState cMainMenu::ProcessKey(eKeys Key) {
   
   switch (state) {
     case PLAY_FILES:  
-            return AddSubMenu(new cMenuDirectory(Softplay->MediaPath(),
-                                    Softplay->GetCurrList()));
+            return  ( SoftplaySetup.OpenLastDir() ?
+		    AddSubMenu(cMenuDirectory::OpenLastBrowsedDir()) :
+		    AddSubMenu(new cMenuDirectory(Softplay->MediaPath(),
+                                    Softplay->GetCurrList())) );
             break;
 
     case CURR_PLAYLIST: return AddSubMenu(new cAlbumList(*currList));
@@ -356,16 +355,32 @@ cSoftPlay::cSoftPlay(void){
 }
 
 bool cSoftPlay::Initialize(void) {
-	configDir=ConfigDirectory(DIR_NAME);
-        currList=OpenList();
+	strlcpy(configDir,ConfigDirectory(DIR_NAME),sizeof(configDir));
+        currList=OpenList("current");
+	if (!FileIndex)
+                FileIndex=new cIndexIdx;
+
+        FileIndex->ReadIndex("/video/plugins/softplay/index");
+        
+        ScanForPlaylists();
 	return true;
 };
 	
 cSoftPlay::~cSoftPlay() {
+        if (currList)
+                // FIXME remove
+              SaveList(currList,"current");
+
         // Clean up after yourself!
         if (currList && currListIsTmp)
                 delete currList;
-}
+
+        if (FileIndex){
+		// FIXME remove
+		FileIndex->SaveIndex("/video/plugins/softplay/index");
+                delete FileIndex;
+	};
+};
 
 const char *cSoftPlay::Version(void) { 
         return VERSION; 
@@ -395,9 +410,7 @@ bool cSoftPlay::ProcessArgs(int argc, char *argv[])
 		argc--;
 		i++;
 		if (argc>0) {
-			strncpy(start_path,argv[i],60);
-			start_path[59]=0;
-                        start_path_len=strlen(start_path)+1;
+			strlcpy(start_path,argv[i],sizeof(start_path));
 			argc--;
 			i++;
 		};
@@ -411,6 +424,7 @@ bool cSoftPlay::Start(void)
 {
   // Start any background activities the plugin shall perform.
   RegisterI18n(Phrases);
+  SoftplaySetup.SetPlugin(this);
   return true;
 }
 
@@ -433,13 +447,13 @@ cOsdObject *cSoftPlay::MainMenuAction(void)
 cMenuSetupPage *cSoftPlay::SetupMenu(void)
 {
   // Return a setup menu in case the plugin supports one.
-  return NULL;
+  return new cSoftplaySetupMenu(this,&SoftplaySetup);
 }
 
 bool cSoftPlay::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
-  return false;
+  return SoftplaySetup.Parse(Name,Value);
 }
 
 void cSoftPlay::SetTmpCurrList(cPlayList *List) {
@@ -448,9 +462,12 @@ void cSoftPlay::SetTmpCurrList(cPlayList *List) {
         currList=List;
 };
 
-void cSoftPlay::SaveList(cPlayList *List) {
+void cSoftPlay::SaveList(cPlayList *List, const char* Name) {
 	char filename[60];
-	sprintf(filename,"%s/%s",configDir,List->GetName());
+	if (Name)
+                sprintf(filename,"%s/%s.playlist",configDir,Name);
+	else
+                sprintf(filename,"%s/%s.playlist",configDir,List->GetName());
 
 	printf("Save list as %s\n",filename);
 	FILE *out=fopen(filename,"w");
@@ -460,15 +477,29 @@ void cSoftPlay::SaveList(cPlayList *List) {
 	fclose(out);
 };
 
-cPlayList *cSoftPlay::OpenList() {
-        char filename[60];
+cPlayList *cSoftPlay::OpenList(const char *Name) {
+        char filename[120];
         char line[500];
-	sprintf(filename,"%s/%s",configDir,"Liste 1");
-
+       
+        const char *extension=rindex(Name,'.');
+        if ( !extension || strcmp(".playlist",extension ) ) 
+                extension=".playlist";
+        else extension=NULL;
+                
+                        
+	if (extension)
+                snprintf(filename,sizeof(filename),
+			"%s/%s%s",configDir,Name,extension);
+        else
+                snprintf(filename,sizeof(filename),
+                                "%s/%s",configDir,Name);
+  
 	printf("Read list from %s\n",filename);
 	FILE *out=fopen(filename,"r");
-        if (!out)
+        if (!out) {
+                printf("could not open %s for reading!\n",filename);
                 return NULL;
+        };
         fgets(line,500,out);
         
         cPlayList *List=new cPlayList();
@@ -477,26 +508,64 @@ cPlayList *cSoftPlay::OpenList() {
         return List;
 };
 
+void cSoftPlay::ScanForPlaylists() {
+        struct dirent **namelist;
+        int n;
+        char Name[60];
+        char Title[60];
+
+
+        n = scandir(configDir, &namelist, 0, alphasort);
+        if (n<0) {
+                printf("scandir error. Could not scan for playlists\n");
+                return;
+        };
+
+        for (int i=0; i<n; i++) {
+                if ( !strcmp("..",namelist[i]->d_name) ||
+                     !strcmp(".",namelist[i]->d_name) ) {
+                        PLUGDEB("ignore %s\n",namelist[i]->d_name);
+                        continue;
+                };
+
+                char *extension=rindex(namelist[i]->d_name,'.');
+                if ( !extension || strcmp(".playlist",extension) ) {
+                        PLUGDEB("%s is not a playlist\n",namelist[i]->d_name);
+                        continue;
+                };
+
+                PLUGDEB("found playlist %s!\n",namelist[i]->d_name);
+                free(namelist[i]);	  
+        }
+        free(namelist);
+};
+
+
+
 VDRPLUGINCREATOR(cSoftPlay); // Don't touch this!
 
 //------------------------------------------------------------------------
-const int32_t Divisor=0xfda9743d;
+const int Divisor=0xfda9743d;
 //const int32_t Divisor=0xfda97431;
 
-int32_t SimpleHash( char const* str) {
+int SimpleHash( char const* str) {
         // just used to fast identify strings. 
         // I guess this can be made much better.
         // FIXME buggy?
+        if (!str)
+                return 0;
+
         //printf("String: %s",str);
         int result=0;
-        do {
+        while ( *(str) ) {
                 result=((result<<8)+*str) % Divisor;
-        } while ( *(++str) );
+                str++;
+        };
         //printf(" Hash: 0x%x\n",result);
         return result;
 };
 
-void PrintCutDownString(char *str,char *orig,int len) {
+void PrintCutDownString(char *str, const char *orig, int len) {
 #define STARTCPY 4 
 // length of the copy at the beginning
         int Pos=STARTCPY;
@@ -531,6 +600,16 @@ bool IsM3UFile( const char * const Filename) {
         return false;
 };
 
+bool IsStream( const char * const Filename) {
+        const char * const pos=Filename;
+        printf("isstream %s: %d\n",pos,strncmp(pos,"http://",7));
+        if ( !strncmp(pos,"http://",7) ) {
+                return true;
+        };
+
+        return false;
+};
+
 void chomp(const char *const str) {
         char *pos;
         pos = index(str,'\n');
@@ -540,4 +619,43 @@ void chomp(const char *const str) {
         if (pos)
                 *pos=0;
 };
+
+void stripTrailingSpaces(char *str) {
+        char *pos=str+strlen(str);
+        while ( pos>str && *pos == ' ')
+                *pos--=0;
+};
+
+void stripTrailingNonLetters(char *str) {
+        char *pos=str+strlen(str);
+        //printf("start at '%c'(0x%x) ",*pos,*pos);
+        while ( pos>str &&
+                 !(*pos >= '!' && *pos <= '~' ) ) {
+                //printf(" del '%c'(0x%x) ",*pos,*pos);
+                *pos--=0;
+        };
+        //printf("\n");
+};
+
+cIndexIdx *FileIndex=NULL;
+
+
+const char *ReadQuotedString(char *out, const char *Str) {
+        int len;
+	if ( !Str || !*Str)
+		return NULL;
+
+        // empty string case
+        if ( !strncmp(Str,"\"\"",2) ) {
+                out[0]=0;
+                len=2;
+        } else if ( sscanf(Str,"\"%" TO_STRING(STR_LENGTH) "[^\"]\"%n",
+                                out,&len) == 0 ) {
+                fprintf(stderr,"Could not parse quoted string at position '%s'. Ignoring.\n",Str);
+                out[0]=0;
+                return NULL;
+        };
+        return &Str[len];
+};
+
 
