@@ -59,6 +59,12 @@ In playlist mode you can additionally use the following keys to change
 titles/albums (they are similar to vdr cutting and dvd-plugin navigation
 keys):
 
+(If you have enabled LiveTV during audio playback:
+        (1)                  (2)
+       Chan.                Chan.
+       down                  up
+)
+       
         (4)       (5)        (6)
        Prev.    Playlist     Next
        Album   Album View    Album
@@ -79,19 +85,39 @@ If you select a directoy to be played a new playlist containing all files
 (including the subdirectories) will be created and the playback of this list
 will start.
 To add/remove a file or directory to the current playlist use the yellow
-button, files included in the current playlist will be marked with 'P'. To
+button, files included in the current playlist will be marked with '*'. To
 start the playback of the current playlist press the blue button.
 
+The Setup Menu
+==============
 
+Use Fileindex:
+ if switched to yes, sofplay uses extended information for example
+ mp3-id tags and saves the information in a separate file for easier 
+ access
+
+Watch live TV while audio replay:
+  I guess that's self-explanatory. Nice for commercial breaks :-)
+  
+Remember last directory:
+  opens the last browsed directory in the File Menu by default.
+  
+Return to live TV after replay:
+  Also self-explanatory. 
+  
+  
 TODO
 ----
 - fix all the remaining bugs ;-)
 - fast forward / backward
 - selection of audio tracks for videos
-- playlist saving
-- add .m3u-playlist support
-- read ID 3 tags for playlists
+X playlist saving 
+X add .m3u-playlist support
+X read ID 3 tags for playlists (introduced file index)
 - get playtime of playlists
+x introduce a setup menu (with option saving)
+- playlist reading at startup
+- add files in playlists
 
 Problems
 --------
