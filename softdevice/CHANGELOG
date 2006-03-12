@@ -1,5 +1,7 @@
 Changelog
 2005-03-12:
+   - Fix StillPicture handling when no PES header is sent 
+     (for example streamdev-server-plugin)
    - redraw video layer on OSD close in software mode
    - use OsdWidth and OsdHeight for drawing osd layer
 2005-03-11:

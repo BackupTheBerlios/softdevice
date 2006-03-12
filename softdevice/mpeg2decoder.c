@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.61 2006/02/06 20:32:00 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.62 2006/03/12 09:47:43 wachm Exp $
  */
 
 #include <math.h>
@@ -144,7 +144,8 @@ cStreamDecoder::cStreamDecoder(AVCodecContext *Context, bool packetMode)
   initCodec();
   syncTimer=NULL;
 
-//  Context->debug |=FF_DEBUG_STARTCODE;
+//  Context->debug |=0xF|FF_DEBUG_STARTCODE|FF_DEBUG_PTS;
+//  av_log_set_level(AV_LOG_DEBUG);
   active=true;
   Start(); // starte thread
 }
@@ -1557,32 +1558,42 @@ void cMpeg2Decoder::Stop(bool GetMutex)
 
 /* ----------------------------------------------------------------------------
  */
+
+static uint8_t pes_packet_header[] = {
+     0x00,0x00,0x01, 0xe0,           0x00,0x00,   0x84, 0x00, 0x00,0x00};
+     // startcode,  video-stream 0, packet length,      no pts
 int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
 {
-  //Clear();
-  mutex.Lock();
-  CMDDEB("StillPicture \n");
+  bool has_pesheader=false;
+  CMDDEB("StillPicture %p length %d \n",Data,Length);
   // XXX hack to ingore audio junk sent by vdr in the still picture
   AudioIdx=DONT_PLAY;
+
+  // check if data contains a valid pes header
+#define SEARCH_LENGTH 64
+  if (Length>SEARCH_LENGTH) {
+    uchar *start=Data+1;
+    do {
+      start++;
+      start=(uchar *)memchr(start,0x01,Data+SEARCH_LENGTH-start);
+      if ( start && start[-1]==0 && start[-2] == 0
+          && ((start[1] &0xF0)==0xe0) ) { // video stream pes header
+        has_pesheader=true;
+        break;
+      };
+    } while (start<Data+SEARCH_LENGTH && start);
+  };
+
   for (int i=0; 4>i;i++) {
-    int P;
-    uchar *data=Data;
-    int Size=Length;
-    BUFDEB("StillPicture StreamBuffer Put %d\n",Size);
-    while ( (P = StreamBuffer->Put(data, Size)) != Size ) {
-      BUFDEB("StillPicture StreamBuffer->Put only accepted %d bytes\n",P);
-      data+=P;
-      Size-=P;
-      BUFDEB("StillPicture EnableGet.Signal(), EnablePut.Sleep start\n");
-      EnableGetSignal.Signal();
-      EnablePutSignal.Sleep(50000);
-      BUFDEB("StillPicture EnablePut.Sleep end\n");
-    }
-    BUFDEB("StillPicture EnableGetSignal.Signal() wrote %d bytes\n",Length);
-    EnableGetSignal.Signal();
+    if (!has_pesheader) {
+      // send a fake pes header
+      pes_packet_header[4]=(Length+2)>>8 & 0xFF;
+      pes_packet_header[5]=(Length+2) & 0xFF;
+      Decode(pes_packet_header,9);
+    };
+    Decode(Data,Length);
   }
   CMDDEB("StillPicture end \n");
-  mutex.Unlock();
   return Length;
 }
 
@@ -1683,7 +1694,7 @@ int cMpeg2Decoder::BufferFill(int Stream)
  */
 int cMpeg2Decoder::Decode(const uchar *Data, int Length)
 {
-  BUFDEB("Decode %x, Length %d\n",Data,Length);
+  BUFDEB("Decode %p, Length %d\n",Data,Length);
   
   if (running && !IsSuspended && setupStore.shouldSuspend)
      // still running and should suspend
