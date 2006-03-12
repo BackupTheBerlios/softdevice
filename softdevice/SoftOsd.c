@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.10 2006/03/11 09:18:22 wachm Exp $
+ * $Id: SoftOsd.c,v 1.11 2006/03/12 11:41:50 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -170,7 +170,8 @@ void cSoftOsd::OsdCommit() {
                                         strideY,strideUV,
                                         ScreenOsdWidth,ScreenOsdHeight,
                                         RefreshAll);
-                videoOut->CommitUnlockSoftOsdSurface();
+                videoOut->CommitUnlockSoftOsdSurface(ScreenOsdWidth,
+                                ScreenOsdHeight);
         } else {
                 uint8_t *osd; int stride; bool *dirtyLines;
                 videoOut->GetLockOsdSurface(osd,stride,dirtyLines);
@@ -179,7 +180,6 @@ void cSoftOsd::OsdCommit() {
                                         RefreshAll,dirtyLines);
                 videoOut->CommitUnlockOsdSurface();
         }
-        videoOut->Osd_changed = true;
 };
 
 /* --------------------------------------------------------------------------*/
