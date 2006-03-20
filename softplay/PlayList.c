@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.13 2006/03/12 20:28:52 wachm Exp $
+ * $Id: PlayList.c,v 1.14 2006/03/20 20:04:30 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -243,8 +243,7 @@ void cItemIdx::Shuffle() {
                 if (xchange2 >=nIdx)
                         LISTDEB("Martin, depp!! %d\n",xchange2);
                 
-		LISTDEB("Shuffle %4d(%4d) - %4d(%4d) \n",
-                   xchange1,Idx[xchange1],xchange2,Idx[xchange2]);
+		LISTDEB("Shuffle %4d - %4d \n",xchange1,xchange2);
                 index=Idx[xchange1];
                 Idx[xchange1]=Idx[xchange2];
                 Idx[xchange2]=index;
@@ -644,7 +643,9 @@ int cPlayList::LoadM3U(const char *Filename) {
                 
                 
 		//skip leading white spaces
-		skipSpaces((const char *) pos);
+		//skipSpaces(pos);
+		while ( *pos==' ' )
+                        pos++;
 
 		if ( *pos=='#' ) {
 			// either a comment or EXTINF
