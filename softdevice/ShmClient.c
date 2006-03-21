@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.7 2006/02/19 16:58:35 lucke Exp $
+ * $Id: ShmClient.c,v 1.8 2006/03/21 18:45:14 wachm Exp $
  */
 
 #include <signal.h>
@@ -73,7 +73,8 @@ int main(int argc, char **argv) {
         key_t ctl_key=CTL_KEY;
  
         int curr_pict_shmid;
-        uint8_t *curr_pict;
+        uint8_t *curr_pict=0;
+        uint8_t *curr_osd=0;
         uint8_t *pixel[4];
        
         if ((ctl_shmid = shmget(ctl_key, sizeof( ShmCtlBlock ), 0666)) < 0) {
@@ -87,50 +88,76 @@ int main(int argc, char **argv) {
                 exit(-1);
         };
 
-        
-        // create a picture in shm
-        ctl->max_width=736;
-        ctl->max_height=576;
-        ctl->stride0=ctl->max_width;
-        ctl->stride2=ctl->stride1=ctl->max_width/2;
-        
-        if ( (ctl->pict_shmid = shmget(IPC_PRIVATE,
-                          ctl->max_width*ctl->max_height*2, 
-                          IPC_CREAT | 0666)) < 0 ) {
-                fprintf(stderr,"error creating  pict_shm!\n");
-                exit(-1);
-        };
-        
-        if ( (curr_pict = (uint8_t*)shmat(ctl->pict_shmid,NULL,0)) 
-                        == (uint8_t*) -1 ) {
-                fprintf(stderr,"error attatching shm ctl!\n");
-                exit(-1);
-        };
-
-        // request removeing after detaching
-        if ( ctl->pict_shmid > 0)
-                shmctl (ctl->pict_shmid, IPC_RMID, 0);
- 
-        pixel[0]=curr_pict;
-        pixel[1]=curr_pict+ctl->max_height*ctl->stride0;
-        pixel[2]=pixel[1]+ctl->max_height/2*ctl->stride1;
-
-        ctl->attached=1;
-        
         if ( !vout->Initialize() || !vout->Reconfigure(FOURCC_YV12) ) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
         };
         xvRemote->XvRemoteStart();
+        
+        if (vout->useShm) {
+                ctl->pict_shmid= vout->shminfo.shmid;  
+                ctl->max_width=vout->xv_image->width;
+                ctl->max_height=vout->xv_image->height;
+                ctl->stride0=vout->xv_image->pitches[0];
+                ctl->stride1=vout->xv_image->pitches[1];
+                ctl->stride2=vout->xv_image->pitches[2];
+        } else {
+                // create a picture in shm
+                ctl->max_width=736;
+                ctl->max_height=576;
+                ctl->stride0=ctl->max_width;
+                ctl->stride2=ctl->stride1=ctl->max_width/2;
 
-        ctl->osd_shmid= vout->osd_shminfo.shmid;
+                if ( (ctl->pict_shmid = shmget(IPC_PRIVATE,
+                                  ctl->max_width*ctl->max_height*2, 
+                                  IPC_CREAT | 0666)) < 0 ) {
+                        fprintf(stderr,"error creating  pict_shm!\n");
+                        exit(-1);
+                };
+
+                if ( (curr_pict = (uint8_t*)shmat(ctl->pict_shmid,NULL,0)) 
+                                == (uint8_t*) -1 ) {
+                        fprintf(stderr,"error attatching shm ctl!\n");
+                        exit(-1);
+                };
+
+                // request removing after detaching
+                if ( ctl->pict_shmid > 0)
+                        shmctl (ctl->pict_shmid, IPC_RMID, 0);
+
+                pixel[0]=curr_pict;
+                pixel[1]=curr_pict+ctl->max_height*ctl->stride0;
+                pixel[2]=pixel[1]+ctl->max_height/2*ctl->stride1;
+        }
+        ctl->attached=1;
+        //printf("pict_shmid: %d max: (%d,%d), stride0: %d, stride2: %d\n",
+        //                       ctl->pict_shmid, ctl->max_width,ctl->max_height,
+        //                       ctl->stride0,ctl->stride2);
+
+        if (vout->useShm) {
+                ctl->osd_shmid= vout->osd_shminfo.shmid;
+        } else {
+                if ( (ctl->osd_shmid = shmget(IPC_PRIVATE,
+                                 vout->osd_image->bytes_per_line*
+                                 vout->osd_max_width, 
+                                                IPC_CREAT | 0666)) < 0 ) {
+                        fprintf(stderr,"error creating  osd_shm!\n");
+                        exit(-1);
+                };
+
+                if ( (curr_osd = (uint8_t*)shmat(ctl->osd_shmid,NULL,0)) 
+                                == (uint8_t*) -1 ) {
+                        fprintf(stderr,"error attatching osd shm!\n");
+                        exit(-1);
+                };
+        };
         ctl->osd_stride=vout->osd_image->bytes_per_line;
         ctl->osd_depth=vout->osd_image->bits_per_pixel;
         ctl->osd_max_width=vout->osd_max_width;
         ctl->osd_max_height=vout->osd_max_height;
         vout->GetOSDDimension(ctl->osd_width,ctl->osd_height,
                               ctl->osd_xPan,ctl->osd_yPan);
-        printf("osd_shmid %d stride %d\n",ctl->osd_shmid,ctl->osd_stride);
+        //printf("osd_shmid %d stride %d\n",ctl->osd_shmid,ctl->osd_stride);
         
         ctl->key=NO_KEY;
         // wakeup remote thread to unsuspend video/audio
@@ -151,13 +178,27 @@ int main(int argc, char **argv) {
 
                         vout->CheckArea(width,height);
                         vout->CheckAspect(ctl->new_afd,ctl->new_asp);
-                        vout->YUV(pixel[0],pixel[1],pixel[2],
+                        if ( vout->useShm ) {
+                                vout->YUV(NULL,NULL,NULL,
+                                                width,height,
+                                                ctl->stride0,ctl->stride1);
+                        } else {    
+                                vout->YUV(pixel[0],pixel[2],pixel[1],
                                         width,height,
                                         ctl->stride0,ctl->stride1);
+                        };
                         ctl->new_pict=0;
                 };
                 if (ctl->new_osd) {
                         SHMDEB("new osd picture\n");
+                        if ( !vout->useShm ) { 
+                                uint8_t *dest_osd;
+                                int osd_stride;
+                                bool *dirtyLines;
+                                vout->GetLockOsdSurface(dest_osd,osd_stride,
+                                                dirtyLines);
+                                memcpy(dest_osd,curr_osd,ctl->osd_height*osd_stride);
+                        };
                         vout->CommitUnlockOsdSurface();
                         ctl->new_osd=0;
                 };

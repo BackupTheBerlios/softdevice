@@ -1,4 +1,8 @@
 Changelog
+2005-03-21:
+   - remove the image copy overhead from the ShmClient
+   - catch errors on osd and xv image creation
+   - support for non-shared memory xv
 2005-03-12:
    - Fix StillPicture handling when no PES header is sent 
      (for example streamdev-server-plugin)

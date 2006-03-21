@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.5 2006/02/19 18:40:28 lucke Exp $
+ * $Id: video-shm.c,v 1.6 2006/03/21 18:45:14 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -310,13 +310,13 @@ void cShmVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                                        OsdPAlphaY+i*OSD_FULL_WIDTH,
                                        width );
                 for (int i = 0; i < height / 2; i++)
-                        AlphaBlend(pixels [1] + i * ctl->stride1,
+                        AlphaBlend(pixels [2] + i * ctl->stride1,
                                         OsdPu+i*OSD_FULL_WIDTH/2,
                                         Pu + i * UVstride ,
                                         OsdPAlphaUV+i*OSD_FULL_WIDTH/2,
                                         width/2);
                 for (int i = 0; i < height / 2 ; i++)
-                        AlphaBlend(pixels [2] + i * ctl->stride2 ,
+                        AlphaBlend(pixels [1] + i * ctl->stride2 ,
                                         OsdPv+i*OSD_FULL_WIDTH/2,
                                         Pv + i * UVstride,
                                         OsdPAlphaUV+i*OSD_FULL_WIDTH/2,
@@ -328,11 +328,11 @@ void cShmVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                                         Py + i * Ystride,
                                         width );
                 for (int i = 0; i < height / 2; i++)
-                        fast_memcpy (pixels [1] + i * ctl->stride1,
+                        fast_memcpy (pixels [2] + i * ctl->stride1,
                                         Pu + i * UVstride,
                                         width / 2);
                 for (int i = 0; i < height / 2 ; i++)
-                        fast_memcpy (pixels [2] + i * ctl->stride2 ,
+                        fast_memcpy (pixels [1] + i * ctl->stride2 ,
                                         Pv + i * UVstride,
                                         width / 2);
 
