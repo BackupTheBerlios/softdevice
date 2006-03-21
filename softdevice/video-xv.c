@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.45 2006/03/12 09:43:28 wachm Exp $
+ * $Id: video-xv.c,v 1.46 2006/03/21 18:34:53 wachm Exp $
  */
 
 #include <unistd.h>
@@ -34,6 +34,22 @@ static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 cXvRemote        *xvRemote = NULL;
 static cScreensaver     *xScreensaver = NULL;
 static int              events_not_done = 0;
+
+static XErrorHandler old_handler = 0;
+static Bool got_error = False;
+
+static int XvError_Handler(Display *dpy, XErrorEvent *error) {
+  esyslog("got error code: %d \n",error->error_code);
+  got_error=true;
+  if ( error->error_code == BadMatch
+       || error->error_code== BadAlloc ) {
+          return 0;
+  };
+
+  if (old_handler)
+    return (*old_handler)(dpy,error);
+  else return 0;
+};
 
 /* ---------------------------------------------------------------------------
  */
@@ -635,14 +651,7 @@ void cXvVideoOut::ProcessEvents ()
     if (map_count) {
       XClearArea (dpy, win, 0, 0, 0, 0, False);
       ShowOSD();
-      XvShmPutImage(dpy, port,
-                    win, gc,
-                    xv_image,
-                    sxoff, syoff,      /* sx, sy */
-                    swidth, sheight,   /* sw, sh */
-                    lxoff,  lyoff,     /* dx, dy */
-                    lwidth, lheight,   /* dw, dh */
-                    False);
+      PutXvImage();
       XSync(dpy, False);
     }
     attributeStore.CheckVideoParmChange();
@@ -678,7 +687,6 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
 
   format = FOURCC_YV12;
   use_xv_port = 0;
-  outbuffer = NULL;
   w_name = "vdr";
   i_name = "vdr";
 
@@ -711,6 +719,7 @@ bool cXvVideoOut::Initialize (void)
     XTextProperty       x_wname, x_iname;
     struct timeval      current_time;
     double              displayAspect, displayRatio;
+    int                 retry = 0;
 
   dsyslog("[XvVideoOut]: patch version (%s)", PATCH_VERSION);
 
@@ -822,6 +831,10 @@ bool cXvVideoOut::Initialize (void)
   osd_max_width=DisplayWidth(dpy,DefaultScreen(dpy));
   osd_max_height=DisplayHeight(dpy,DefaultScreen(dpy));
   useShm=XShmQueryExtension(dpy) && isLocal;
+
+  old_handler = XSetErrorHandler(XvError_Handler);
+  
+init_osd: 
   if (useShm) {
 
           osd_image = XShmCreateImage (dpy,
@@ -877,14 +890,34 @@ bool cXvVideoOut::Initialize (void)
 		  osd_buffer = NULL;
           }
   };
-  Bpp=osd_image->bits_per_pixel;
-  fprintf(stderr,
-          "[XvVideoOut]: got osd_image: width %d height %d, bytes per line %d\n",
-          osd_max_width, osd_max_height,osd_image->bytes_per_line);
-  
+  if (osd_image) {
+          Bpp=osd_image->bits_per_pixel;
+          fprintf(stderr, "[XvVideoOut]: got osd_image: width"
+                          " %d height %d, bytes per line %d\n",
+                          osd_max_width, osd_max_height,
+                          osd_image->bytes_per_line);
+  }; 
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
 
   rc = XSync(dpy, False);
+
+  if (got_error)
+  {
+    got_error=0;retry++;
+    osd_max_width=720;
+    osd_max_height=536;
+    if (retry<2) {
+            fprintf(stderr,"Error initializing osd image. Retry.\n");
+            goto init_osd;
+    };
+    fprintf(stderr,"Error initializing osd image. Exit.\n");
+    exit(-1);
+  };
+  if (old_handler) {
+          XSetErrorHandler(old_handler);
+          old_handler = NULL;
+  };
+
 
   if (!xScreensaver)
   {
@@ -1053,66 +1086,43 @@ bool cXvVideoOut::Reconfigure(int format)
   /*
    * Now we do shared memory allocation etc..
    */
-  xv_image = XvShmCreateImage(dpy, port,
-                              format, (char *) outbuffer,
-                              xvWidth, xvHeight,
-                              &shminfo);
+  int retry=0;
+  old_handler = XSetErrorHandler(XvError_Handler);
+retry_image: 
+  CreateXvImage(dpy,port,xv_image,shminfo,
+                  format,xvWidth, xvHeight); 
 
-  if (xv_image) {
-    dsyslog("[XvVideoOut]: XvShmCreateImage Successful (%p)", xv_image);
-  } else {
-    dsyslog("[XvVideoOut]: ERROR: XvShmCreateImage FAILED !");
-  }
-
-  shminfo.shmid = shmget(IPC_PRIVATE,
-                         len,
-                         IPC_CREAT | 0777);
-
-  if (shminfo.shmid == -1) {
-    dsyslog("[XvVideoOut]: ERROR: shmget FAILED !");
-  } else {
-    dsyslog("[XvVideoOut]: shmget Successful (%d bytes)",len);
-  }
-
-  /* compile fix for gcc 3.4.3
-   */
-  shminfo.shmaddr = (char *) shmat(shminfo.shmid, NULL, 0);
-  outbuffer = (unsigned char *) shminfo.shmaddr;
-  xv_image->data = (char *) outbuffer;
-
-  if (xv_image->data == (char *) -1L) {
-    dsyslog("[XvVideoOut]: ERROR: shmat FAILED !");
-  } else {
-    dsyslog("[XvVideoOut]: shmat Successful");
-  }
-  shminfo.readOnly = False;
-
-  pixels [0] = outbuffer;
-  pixels [1] = outbuffer + xvWidth * xvHeight;
-  pixels [2] = pixels [1] + xvWidth * xvHeight / 4;
-  
-  rc = XShmAttach(dpy, &shminfo);
-  dsyslog("[XvVideoOut]: XShmAttach    rc = %d %s",
-          rc,(rc == 1) ? "(should be OK)":"(thats NOT OK!)");
-
-  if (shminfo. shmid > 0)
-    shmctl (shminfo. shmid, IPC_RMID, 0);
+  pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
+  pixels[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
+  pixels[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
 
   memset (pixels [0], 0, xvWidth*xvHeight);
   memset (pixels [1], 128, xvWidth*xvHeight/4);
   memset (pixels [2], 128, xvWidth*xvHeight/4);
-//    dv_display_event(dv_dpy);
-  rc = XvShmPutImage(dpy, port,
-                     win, gc,
-                     xv_image,
-                     0, 0,              /* sx, sy */
-                     swidth, sheight,   /* sw, sh */
-                     lxoff,  lyoff,     /* dx, dy */
-                     lwidth, lheight,   /* dw, dh */
-                     False);
+
+  rc = PutXvImage();
+  
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
    
   rc = XSync(dpy, False);
+
+  if (got_error)
+  {
+    got_error=0;retry++;
+    xvWidth=XV_SRC_WIDTH;
+    xvHeight = XV_SRC_HEIGHT;
+    if (retry<2) {
+            fprintf(stderr,"Error initializing Xv. Retry.\n");
+            goto retry_image;
+    };
+    fprintf(stderr,"Error intializing Xv. Exit.\n");
+    exit(-1);
+  };
+  if (old_handler) {
+          XSetErrorHandler(old_handler);
+          old_handler=NULL;
+  };
+
   
   pthread_mutex_unlock(&xv_mutex);
 
@@ -1121,6 +1131,94 @@ bool cXvVideoOut::Reconfigure(int format)
   xv_initialized = 1;
   return true;
 }
+
+void cXvVideoOut::CreateXvImage(Display *dpy,XvPortID port,
+                  XvImage *&xv_image,
+                  XShmSegmentInfo &shminfo,
+                  int format, int &width, int &height) {
+  int len=0;
+  if (useShm)
+  {
+    xv_image = XvShmCreateImage(dpy, port,
+        format, NULL,
+        width, height,
+        &shminfo);
+    if (xv_image) {
+      dsyslog("[XvVideoOut]: XvShmCreateImage Successful (%p)", xv_image);
+    } else {
+      dsyslog("[XvVideoOut]: ERROR: XvShmCreateImage FAILED !");
+      exit(-1);
+    }
+
+    shminfo.shmid = shmget(IPC_PRIVATE,
+        xv_image->data_size,
+        IPC_CREAT | 0777);
+
+    if (shminfo.shmid == -1) {
+      dsyslog("[XvVideoOut]: ERROR: shmget FAILED !");
+    } else {
+      dsyslog("[XvVideoOut]: shmget Successful (%d bytes)",len);
+    }
+
+    /* compile fix for gcc 3.4.3
+    */
+    shminfo.shmaddr = (char *) shmat(shminfo.shmid, NULL, 0);
+    xv_image->data = (char *) shminfo.shmaddr;
+
+    if (xv_image->data == (char *) -1L) {
+      dsyslog("[XvVideoOut]: ERROR: shmat FAILED !");
+      exit(-1);
+    } else {
+      dsyslog("[XvVideoOut]: shmat Successful");
+    }
+    shminfo.readOnly = False;
+    int rc = XShmAttach(dpy, &shminfo);
+    dsyslog("[XvVideoOut]: XShmAttach    rc = %d %s",
+        rc,(rc == 1) ? "(should be OK)":"(thats NOT OK!)");
+
+    // request remove after detaching
+    if (shminfo. shmid > 0)
+      shmctl (shminfo. shmid, IPC_RMID, 0);
+  }else 
+  {
+    xv_image = XvCreateImage(dpy, port,format, NULL,
+        width, height);
+    if (!xv_image) {
+      dsyslog("[XvVideoOut]: ERROR: XvCreateImage FAILED !");
+      exit(-1);
+    };
+      
+    xv_image->data = (char*)malloc(xv_image->data_size);
+    if (!xv_image->data) {
+      dsyslog("[XvVideoOut]: ERROR: malloc xv_image FAILED !");
+      exit(-1);
+    };
+  };
+};
+
+/*----------------------------------------------------------------------------
+ */
+
+int cXvVideoOut::PutXvImage() {
+  if (useShm)
+    return XvShmPutImage(dpy, port,
+                     win, gc,
+                     xv_image,
+                     0, 0,              /* sx, sy */
+                     swidth, sheight,   /* sw, sh */
+                     lxoff,  lyoff,     /* dx, dy */
+                     lwidth, lheight,   /* dw, dh */
+                     False);
+  else 
+    return XvPutImage(dpy, port,
+                     win, gc,
+                     xv_image,
+                     0, 0,              /* sx, sy */
+                     swidth, sheight,   /* sw, sh */
+                     lxoff,  lyoff,     /* dx, dy */
+                     lwidth, lheight   /* dw, dh */
+                     );
+};
 
 /* ---------------------------------------------------------------------------
  */
@@ -1140,13 +1238,20 @@ void cXvVideoOut::Suspend(void)
   XvStopVideo(dpy, port, win);
   XvUngrabPort(dpy, port, CurrentTime);
   
-  pthread_mutex_unlock(&xv_mutex);
 
-  if(shminfo.shmaddr)
-  {
-    shmdt(shminfo.shmaddr);
-    shminfo.shmaddr = NULL;
-  }
+  if (xv_image->data) {
+    if(useShm && shminfo.shmaddr)
+    {
+      shmdt(shminfo.shmaddr);
+      shminfo.shmaddr = NULL;
+      XShmDetach(dpy, &shminfo);
+    }
+    if (!useShm) {
+      free(xv_image->data);
+    };
+    xv_image->data = NULL;
+  };
+  pthread_mutex_unlock(&xv_mutex);
 
   if (xv_image)
   {
@@ -1212,7 +1317,9 @@ void cXvVideoOut::ClearOSD()
  */
 void cXvVideoOut::AdjustOSDMode()
 {
-  current_osdMode = setupStore->osdMode;
+  if (xv_initialized)
+          current_osdMode = setupStore->osdMode;
+  else current_osdMode = OSDMODE_PSEUDO;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1409,6 +1516,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     memset (pixels [2], 128, xvWidth*xvHeight/4);
   }
 
+  if ( Py && Pu && Pv ) {
 #if VDRVERSNUM >= 10307
   /* -------------------------------------------------------------------------
    * don't know where those funny stride values (752,376) come from.
@@ -1446,15 +1554,6 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                      fwidth/2-(cutLeft+cutRight));
         }
 
-        XvShmPutImage(dpy, port,
-                win, gc,
-                xv_image,
-                sxoff, syoff,      /* sx, sy */
-                swidth, sheight,   /* sw, sh */
-                lxoff,  lyoff,     /* dx, dy */
-                lwidth, lheight,   /* dw, dh */
-                False);
-
   }
   else
 #endif
@@ -1472,16 +1571,9 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
              fast_memcpy (pixels [2] + i * xvWidth / 2 + cutLeft,
                           Pu + i * UVstride + cutLeft,
                           fwidth / 2 - (cutLeft + cutRight));
-
-          XvShmPutImage(dpy, port,
-                win, gc,
-                xv_image,
-                sxoff, syoff,      /* sx, sy */
-                swidth, sheight,   /* sw, sh */
-                lxoff,  lyoff,     /* dx, dy */
-                lwidth, lheight,   /* dw, dh */
-                False);
   }
+  }
+  PutXvImage();
   ProcessEvents ();
   events_not_done = 0;
   XSync(dpy, False);
@@ -1505,6 +1597,7 @@ cXvVideoOut::~cXvVideoOut()
     {
       shmdt(shminfo.shmaddr);
       shminfo.shmaddr = NULL;
+      shminfo.shmid = -1;
     }
   
     if (xv_image)

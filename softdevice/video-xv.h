@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.15 2006/02/18 22:20:30 lucke Exp $
+ * $Id: video-xv.h,v 1.16 2006/03/21 18:34:53 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -119,22 +119,19 @@ private:
 
   GC                gc;
   XvPortID          port;
-  bool              useShm;
 public:
+  bool              useShm;
   XShmSegmentInfo   shminfo, osd_shminfo;
   XvImage           *xv_image;
   XImage            *osd_image;
   int               osd_max_width,osd_max_height;
 private:
-  unsigned char     *outbuffer,
-                    *osd_buffer,
+  unsigned char     *osd_buffer,
                     *pixels[3];
   char              *w_name, *i_name;
   unsigned int      use_xv_port;
   cXvPortAttributeStore   attributeStore;
 
-  size_t size;
-  int xres, yres;
   uint64_t lastUpdate;
 
   bool              fullScreen;
@@ -164,6 +161,9 @@ public:
   virtual void CloseOSD();
   virtual bool Initialize (void);
   virtual bool Reconfigure (int format = FOURCC_YUY2);
+  void CreateXvImage(Display *dpy,XvPortID port,XvImage *&xv_image,
+                  XShmSegmentInfo &shminfo,int format, int &width, int &height);
+  int PutXvImage();
   virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
   virtual void Pause(void);
 
