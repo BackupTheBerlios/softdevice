@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayList.c,v 1.14 2006/03/20 20:04:30 wachm Exp $
+ * $Id: PlayList.c,v 1.15 2006/03/22 22:51:34 wachm Exp $
  */
 #include "softplay.h"
 #include "PlayList.h"
@@ -672,7 +672,10 @@ int cPlayList::LoadM3U(const char *Filename) {
                 
 		// check for extinfos...
 		char *extInfoPos=line[!swapLine];
-		skipSpaces((const char *)extInfoPos);
+		//skipSpaces((const char *)extInfoPos);
+                while ( *extInfoPos==' ' )
+                        extInfoPos++;
+
 		if ( *extInfoPos=='#' && FileIndex ) {
 			cIndex *Idx=FileIndex->GetOrAddIndex(ItemFile);
 			if (Idx)
