@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.47 2006/03/31 19:21:32 lucke Exp $
+ * $Id: video-xv.c,v 1.48 2006/03/31 20:40:31 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1328,7 +1328,7 @@ int cXvVideoOut::PutXvImage() {
     return XvShmPutImage(dpy, port,
                      win, gc,
                      xv_image,
-                     0, 0,              /* sx, sy */
+                     sxoff, syoff,      /* sx, sy */
                      swidth, sheight,   /* sw, sh */
                      lxoff,  lyoff,     /* dx, dy */
                      lwidth, lheight,   /* dw, dh */
@@ -1337,10 +1337,10 @@ int cXvVideoOut::PutXvImage() {
     return XvPutImage(dpy, port,
                      win, gc,
                      xv_image,
-                     0, 0,              /* sx, sy */
+                     sxoff, syoff,      /* sx, sy */
                      swidth, sheight,   /* sw, sh */
                      lxoff,  lyoff,     /* dx, dy */
-                     lwidth, lheight   /* dw, dh */
+                     lwidth, lheight    /* dw, dh */
                      );
 };
 

@@ -1,19 +1,21 @@
 Changelog
 2006-03-31:
    - Xinerama support (detection and build requires to run configure).
-2005-03-21:
+   - reactivate use of source x/y offsets for Xv*PutImage(..) operations.
+   - date fix of Changelog
+2006-03-21:
    - remove the image copy overhead from the ShmClient
    - catch errors on osd and xv image creation
    - support for non-shared memory xv
-2005-03-12:
+2006-03-12:
    - Fix StillPicture handling when no PES header is sent 
      (for example streamdev-server-plugin)
    - redraw video layer on OSD close in software mode
    - use OsdWidth and OsdHeight for drawing osd layer
-2005-03-11:
+2006-03-11:
    - MMX version of AYUV_to_AYUV420P()
    - shortcut for AYUV no scale OSD modes
-2005-03-10:
+2006-03-10:
    - tune some parameters to avoid unecessary rescaling/redrawing of the OSD
 2006-02-19:
    - some german translations
