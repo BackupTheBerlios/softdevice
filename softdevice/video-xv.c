@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.46 2006/03/21 18:34:53 wachm Exp $
+ * $Id: video-xv.c,v 1.47 2006/03/31 19:21:32 lucke Exp $
  */
 
 #include <unistd.h>
@@ -407,9 +407,22 @@ void cXvVideoOut::toggleFullScreen(void)
     old_dwidth  = dwidth;
     old_dheight = dheight;
 
-    x = y = 0;
-    w = DisplayWidth(dpy,DefaultScreen(dpy));
-    h = DisplayHeight(dpy,DefaultScreen(dpy));
+    if (xin_mode)
+    {
+        int i;
+
+      i = (xin_screen != -1) ? xin_screen : 0;
+      x = xin_screen_info[i]. x_org;
+      y = xin_screen_info[i]. y_org;
+      w = xin_screen_info[i]. width;
+      h = xin_screen_info[i]. height;
+    }
+    else
+    {
+      x = y = 0;
+      w = DisplayWidth(dpy,DefaultScreen(dpy));
+      h = DisplayHeight(dpy,DefaultScreen(dpy));
+    }
   }
   else
   {
@@ -467,6 +480,96 @@ void cXvVideoOut::toggleFullScreen(void)
   xScreensaver->DisableScreensaver(fullScreen); // enable of disable based on fullScreen state
 }
 
+/* ---------------------------------------------------------------------------
+ */
+void cXvVideoOut::AdjustDisplayRatio()
+{
+    double              displayAspect, displayRatio;
+
+  /* --------------------------------------------------------------------------
+   * set PAR values
+   */
+  displayAspect = (double) DisplayWidthMM(dpy, DefaultScreen(dpy)) /
+                    (double) DisplayHeightMM(dpy, DefaultScreen(dpy));
+  if (xin_mode)
+    displayRatio  = (double) GetScreenWidth() / (double) GetScreenHeight();
+  else
+    displayRatio  = (double) DisplayWidth(dpy, DefaultScreen(dpy)) /
+                      (double) DisplayHeight(dpy, DefaultScreen(dpy));
+
+  SetParValues(displayAspect, displayRatio);
+
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cXvVideoOut::AdjustXineramaScreen()
+{
+#if XINERAMA_SUPPORT
+    XineramaScreenInfo  *new_screen_info;
+    int                 new_num_screens;
+
+  if (!xin_mode)
+    return;
+
+  new_screen_info = XineramaQueryScreens (dpy, &new_num_screens);
+  if (new_screen_info)
+  {
+    if (xin_screen_info)
+      XFree(xin_screen_info);
+
+    xin_screen_info = new_screen_info;
+    xin_num_screens = new_num_screens;
+  }
+
+  for (int i = 0; i < xin_num_screens; ++i)
+  {
+    if (dx >= xin_screen_info[i]. x_org &&
+        dx <= (xin_screen_info[i]. x_org +
+                xin_screen_info[i]. width) &&
+        dy >= xin_screen_info[i]. y_org &&
+        dy <= (xin_screen_info[i]. y_org +
+                xin_screen_info[i]. height))
+    {
+      if (i != xin_screen)
+      {
+        fprintf(stderr,
+                "[XvVideoOut]: Xinerama-Screen changed to %d\n", i);
+        xin_screen = i;
+      }
+      break;
+    }
+  }
+
+  AdjustDisplayRatio();
+
+#endif
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cXvVideoOut::GetScreenWidth()
+{
+#if XINERAMA_SUPPORT
+  if (xin_mode)
+    return xin_screen_info[(xin_screen != -1) ? xin_screen : 0]. width;
+#endif
+
+  return DisplayWidth(dpy,DefaultScreen(dpy));
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cXvVideoOut::GetScreenHeight()
+{
+#if XINERAMA_SUPPORT
+  if (xin_mode)
+    return xin_screen_info[(xin_screen != -1) ? xin_screen : 0]. height;
+#endif
+
+  return DisplayHeight(dpy,DefaultScreen(dpy));
+}
+
 //#define EVDEB(out...) {printf("EVDEB:");printf(out);}
 #define EVDEB(out...)
 
@@ -515,12 +618,13 @@ void cXvVideoOut::ProcessEvents ()
         dy = event.xconfigure.y;
         dwidth = event.xconfigure.width;
         dheight = event.xconfigure.height;
+        AdjustXineramaScreen();
         RecalculateAspect();
 
         if (toggleInProgress &&
             ((fullScreen &&
-               dwidth == DisplayWidth(dpy,DefaultScreen(dpy)) &&
-               dheight == DisplayHeight(dpy,DefaultScreen(dpy))) ||
+               dwidth == GetScreenWidth() &&
+               dheight == GetScreenHeight()) ||
               (!fullScreen &&
                dwidth == old_dwidth &&
                dheight == old_dheight))) {
@@ -693,6 +797,13 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
   Xres=width;
   Yres=height;
 
+  xin_mode = false;
+  xin_screen = -1;
+
+#if XINERAMA_SUPPORT
+  xin_screen_info = NULL;
+#endif
+
   /*
    * default settings: source, destination and logical widht/height
    * are set to our well known dimensions.
@@ -718,13 +829,12 @@ bool cXvVideoOut::Initialize (void)
     XGCValues           values;
     XTextProperty       x_wname, x_iname;
     struct timeval      current_time;
-    double              displayAspect, displayRatio;
     int                 retry = 0;
 
   dsyslog("[XvVideoOut]: patch version (%s)", PATCH_VERSION);
 
   if(!(dpy = XOpenDisplay(NULL))) {
-	fprintf(stderr, "[XvVideoOut]: Could not connect to X-server");
+    fprintf(stderr, "[XvVideoOut]: Could not connect to X-server");
     dsyslog("[XvVideoOut]: Could not connect to X-server");
     return false;
   } /* if */
@@ -732,7 +842,33 @@ bool cXvVideoOut::Initialize (void)
   rwin = DefaultRootWindow(dpy);
   scn_id = DefaultScreen(dpy);
 
+  /* -------------------------------------------------------------------------
+   * Check if xinerama is active
+   */
+#if XINERAMA_SUPPORT
+  if (XineramaIsActive(dpy))
+  {
+      int                 i;
 
+    xin_screen_info = XineramaQueryScreens (dpy, &xin_num_screens);
+    if (xin_screen_info)
+    {
+      for (i = 0; i < xin_num_screens; ++i)
+      {
+        fprintf(stderr,
+                "[XvVideoOut]: Xinerama Screen %d: %d,%d  %dx%d\n",
+                i,
+                xin_screen_info[i]. x_org,
+                xin_screen_info[i]. y_org,
+                xin_screen_info[i]. width,
+                xin_screen_info[i]. height);
+      }
+      xin_mode = xin_num_screens > 0;
+    } else {
+      fprintf (stderr, "[XvVideoOut]: NO Xinerama Screens present\n");
+    }
+  }
+#endif
   /* -------------------------------------------------------------------------
    * default settings which allow arbitraray resizing of the window
    */
@@ -751,19 +887,7 @@ bool cXvVideoOut::Initialize (void)
   XStringListToTextProperty(&w_name, 1 ,&x_wname);
   XStringListToTextProperty(&i_name, 1 ,&x_iname);
 
-  /* --------------------------------------------------------------------------
-   * set PAR values
-   */
-  displayAspect = (double) DisplayWidthMM(dpy, scn_id) /
-                    (double) DisplayHeightMM(dpy, scn_id);
-  displayRatio  = (double) DisplayWidth(dpy, scn_id) /
-                    (double) DisplayHeight(dpy, scn_id);
-
-  SetParValues(displayAspect, displayRatio);
-
-  fprintf(stderr,
-          "[XvVideoOut]: displayAspect = %f, displayRatio = %f, PAR = %f\n",
-          displayAspect, displayRatio, parValues[0]);
+  AdjustDisplayRatio();
 
   if (flags & XV_FORMAT_MASK) {
     hints.flags |= PAspect;
@@ -801,9 +925,9 @@ bool cXvVideoOut::Initialize (void)
    */
   Pixmap cursor_mask;
   XColor dummy_col;
-  
+
   const char cursor_data[] = { 0x0 };
-  
+
   cursor_mask = XCreateBitmapFromData(dpy, win, cursor_data, 1, 1);
   hidden_cursor = XCreatePixmapCursor(dpy, cursor_mask, cursor_mask,
                                       &dummy_col, &dummy_col, 0, 0);
@@ -833,8 +957,8 @@ bool cXvVideoOut::Initialize (void)
   useShm=XShmQueryExtension(dpy) && isLocal;
 
   old_handler = XSetErrorHandler(XvError_Handler);
-  
-init_osd: 
+
+init_osd:
   if (useShm) {
 
           osd_image = XShmCreateImage (dpy,
@@ -842,7 +966,7 @@ init_osd:
                           XDefaultDepth (dpy, scn_id),
                           ZPixmap,NULL,
                           &osd_shminfo,
-			  osd_max_width,osd_max_height);
+                          osd_max_width,osd_max_height);
                           //width, height);
           if (osd_image) {
                   dsyslog("[XvVideoOut]: Initialize XShmCreateImage Successful (%p)", osd_image);
@@ -1088,9 +1212,9 @@ bool cXvVideoOut::Reconfigure(int format)
    */
   int retry=0;
   old_handler = XSetErrorHandler(XvError_Handler);
-retry_image: 
+retry_image:
   CreateXvImage(dpy,port,xv_image,shminfo,
-                  format,xvWidth, xvHeight); 
+                  format,xvWidth, xvHeight);
 
   pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
   pixels[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
@@ -1101,9 +1225,9 @@ retry_image:
   memset (pixels [2], 128, xvWidth*xvHeight/4);
 
   rc = PutXvImage();
-  
+
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
-   
+
   rc = XSync(dpy, False);
 
   if (got_error)
@@ -1123,7 +1247,7 @@ retry_image:
           old_handler=NULL;
   };
 
-  
+
   pthread_mutex_unlock(&xv_mutex);
 
   this->format = format;
@@ -1599,7 +1723,7 @@ cXvVideoOut::~cXvVideoOut()
       shminfo.shmaddr = NULL;
       shminfo.shmid = -1;
     }
-  
+
     if (xv_image)
     {
       free(xv_image);
@@ -1615,6 +1739,9 @@ cXvVideoOut::~cXvVideoOut()
   }
 
 
+#if XINERAMA_SUPPORT
+  XFree(xin_screen_info);
+#endif
   if (osd_image)
   {
     free(osd_image);

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.16 2006/03/21 18:34:53 wachm Exp $
+ * $Id: video-xv.h,v 1.17 2006/03/31 19:21:32 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -33,6 +33,10 @@
 #include <X11/keysym.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xvlib.h>
+
+#if XINERAMA_SUPPORT
+# include <X11/extensions/Xinerama.h>
+#endif
 
 #define FOURCC_YV12       0x32315659   /* 4:2:0 Planar: Y + V + U  (3 planes) */
 #define FOURCC_YUY2       0x32595559   /* 4:2:2 Packed: Y0+U0+Y1+V0 (1 plane) */
@@ -111,11 +115,20 @@ private:
                     toggleInProgress,
                     xv_initialized,
                     /* -------------------------------------------------------
-                     * could be specified via argv or parameters
-                     */
+                        * could be specified via argv or parameters
+                        */
                     xvWidth, xvHeight,
                     width, height,
                     format;
+  /* -------------------------------------------------------------------------
+   * Xinerama specific members (not all depend on Xinerame available)
+   */
+  int               xin_screen,
+                    xin_num_screens;
+  bool              xin_mode;
+#if XINERAMA_SUPPORT
+  XineramaScreenInfo  *xin_screen_info;
+#endif
 
   GC                gc;
   XvPortID          port;
@@ -135,8 +148,12 @@ private:
   uint64_t lastUpdate;
 
   bool              fullScreen;
-  void toggleFullScreen(void);
 
+  void  toggleFullScreen(void),
+        AdjustDisplayRatio(void),
+        AdjustXineramaScreen(void);
+  int   GetScreenWidth(void),
+        GetScreenHeight();
 
 public:
   cXvVideoOut(cSetupStore *setupStore);

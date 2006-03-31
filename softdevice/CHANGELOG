@@ -1,4 +1,6 @@
 Changelog
+2006-03-31:
+   - Xinerama support (detection and build requires to run configure).
 2005-03-21:
    - remove the image copy overhead from the ShmClient
    - catch errors on osd and xv image creation
