@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.9 2005/11/10 06:54:07 lucke Exp $
+# $Id: configure,v 1.10 2006/03/31 19:15:26 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -25,6 +25,7 @@ dfb="yes"
 libpostproc="no"
 cc="g++"
 xv="yes"
+xinerama="yes"
 vidix="yes"
 vidix_path="/usr/local"
 with_fb="yes"
@@ -183,6 +184,27 @@ $cc $CFLAGS $xv_libs -o $TMPE $TMPC > /dev/null 2>&1 || xv="no"
 fi
 
 #########################################################
+# X11: check if we can use Xinerama extension
+#
+if test "${xv}" = "yes" -a "${xinerama}" = "yes" ; then
+  xinerama_libs="-lXinerama"
+  cat > ${TMPC} << EOF
+#include <stdio.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xinerama.h>
+int main(void) {
+    Display             *dpy;
+    XineramaScreenInfo  *screens;
+    int                 numScreens;
+  dpy = XOpenDisplay(NULL);
+  screens = XineramaQueryScreens (dpy, &numScreens);
+  return 0;
+}
+EOF
+$cc $CFLAGS $xv_libs $xinerama_libs -o $TMPE $TMPC > /dev/null 2>&1 || xinerama="no"
+fi
+
+#########################################################
 broken_gcc_cpp="no"
 cat > ${TMPC} << EOF
 
@@ -299,6 +321,11 @@ fi
 #
 if test "${xv}" = "yes" ; then
   echo "XV_SUPPORT       = 1" >> $TMPM
+  if test "${xinerama}" = "yes" ; then
+    echo "XINERAMA_SUPPORT = 1" >> $TMPM
+    echo "#define XINERAMA_SUPPORT       1" >> $TMPH
+    xv_libs="${xv_libs} ${xinerama_libs}"
+  fi
   echo "LIBXDPMS_SUPPORT = 1" >> $TMPM
   echo "XV_LIBS          = ${xv_libs}"  >> $TMPM
   echo "#define XV_SUPPORT       1" >> $TMPH
