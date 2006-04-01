@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.48 2006/03/31 20:40:31 lucke Exp $
+ * $Id: video-xv.c,v 1.49 2006/04/01 08:45:35 wachm Exp $
  */
 
 #include <unistd.h>
@@ -407,6 +407,7 @@ void cXvVideoOut::toggleFullScreen(void)
     old_dwidth  = dwidth;
     old_dheight = dheight;
 
+#if XINERAMA_SUPPORT
     if (xin_mode)
     {
         int i;
@@ -418,6 +419,7 @@ void cXvVideoOut::toggleFullScreen(void)
       h = xin_screen_info[i]. height;
     }
     else
+#endif
     {
       x = y = 0;
       w = DisplayWidth(dpy,DefaultScreen(dpy));
