@@ -1,18 +1,18 @@
 Changelog
 2006-04-01:
+   - applied Makefile patch from Antti Seppälä
    - apply slightly modified patch by Thomas Günter which fixes improper
      includes of vdr header files
    - fix compilation without Xinerama support
 2006-03-31:
    - Xinerama support (detection and build requires to run configure).
    - reactivate use of source x/y offsets for Xv*PutImage(..) operations.
-   - date fix of Changelog
 2006-03-21:
    - remove the image copy overhead from the ShmClient
    - catch errors on osd and xv image creation
    - support for non-shared memory xv
 2006-03-12:
-   - Fix StillPicture handling when no PES header is sent 
+   - Fix StillPicture handling when no PES header is sent
      (for example streamdev-server-plugin)
    - redraw video layer on OSD close in software mode
    - use OsdWidth and OsdHeight for drawing osd layer
@@ -114,7 +114,7 @@ work now as well and the OSD mode is set properly
     - french translations (by Nicolas Huillard)
     - packet playback: assume we get complete frames via packet interface.
                        This fixes playing divx via softplay.
-    - fix frame dropping with IEEE1394 read.                       
+    - fix frame dropping with IEEE1394 read.
 2005-10-26:
     - fix cropmode handling via OSD
     - set some vars for aspect calculation to reasonable defaults
@@ -154,7 +154,7 @@ work now as well and the OSD mode is set properly
 2005-09-04: softdevice-0.1.3
     - dfb-out: applied dfb-key-repeat handling patch (by Marko Mäkelä)
 2005-08-19:
-    - change #ifdefs to contain closing brackets 
+    - change #ifdefs to contain closing brackets
         (stops my editor from complaining...)
     - fix possible segfault in ToYUV()
 2005-08-17:
@@ -167,7 +167,7 @@ work now as well and the OSD mode is set properly
     - stop playback in Clear() while clearing the packet buffer
     - introduce SOFTDEB, more checks agains NULL dereferences
     - call decoder->Clear in Clear
-    - return NULL in getPPValue when compiled without postproc lib 
+    - return NULL in getPPValue when compiled without postproc lib
       (suggested by Antonio)
 2005-07-29:
     - some small changes on finnish translations by Rolf Ahrenberg
@@ -233,7 +233,7 @@ work now as well and the OSD mode is set properly
 2005-06-18:
     - provide error message on stderr when Xv plugin cannot connect to X server.
 2005-06-12:
-    - no new audio frame has been decoded when audio_size <= 0 
+    - no new audio frame has been decoded when audio_size <= 0
        (reported by Antonio O.)
     - introduce fast_memcpy (gives 20-30% speed increase on copying)
     - switch xv-out to fast_memcpy
@@ -249,7 +249,7 @@ work now as well and the OSD mode is set properly
 2005-05-29:
     - changed screen aspect ratio selection (based on suggestion by Nicolas Huillard)
     - fix some segfaults on bad signal
-    - fix possible segfault when called without arguments 
+    - fix possible segfault when called without arguments
       (thanks to Marko Mäkelä)
     - buffering is now complety signal triggered
     - made buffersizes variable
@@ -259,7 +259,7 @@ work now as well and the OSD mode is set properly
       OSD default size
     - fix pplib deinterlacing
     - check libavcodec build of library against header
-    - some more error messages 
+    - some more error messages
 2005-05-18:
     - fix for aspect ratio calculation if sample_aspect_ratio.num == 0
     - README update for use of -L DIR usage
@@ -296,7 +296,7 @@ work now as well and the OSD mode is set properly
     - dfb-out: added dfb version check for struct access
     - replace unneeded usleep<10000usec with >=10000usec
     - add SIG_TIMING option (default: disabled, enable in mpeg2decoder.c)
-    - introduce meaningful return values in packet mode. 
+    - introduce meaningful return values in packet mode.
     - disable debugging output.
 2005-04-09:
     - xv-out: new command line option max-area to use the maximum
@@ -345,7 +345,7 @@ work now as well and the OSD mode is set properly
               fix locking during video and OSD drawing
  2005-03-02:
     - increased osd fallback timeout
-    - removed syoff and sxoff from Draw(...) 
+    - removed syoff and sxoff from Draw(...)
  2005-02-27:
     - save "vo" and "ao" calling args in setup store.
     - new runtime arg "-L path_name". Default set in Makefile to: "./PLUGINS/lib"
@@ -372,7 +372,7 @@ work now as well and the OSD mode is set properly
     - dfb-out: fix for field parity in tv-out mode
     - xv-out: fix compile warnings on amd64 (reported by Konrad Naumann)
  2005-01-23:
-    - added suspend video playback patch. 
+    - added suspend video playback patch.
  2005-01-15:
     - fix OSD drawing when multiple areas are used (with text2skin plugin)
     - dfb out: reverted top-field first setting as it may crash
@@ -413,7 +413,7 @@ work now as well and the OSD mode is set properly
      Thus OSD option "A/V Sync" is obsolete.
   2004-11-14:
    - new A-V sync with linux RTC support
-   - changed audio buffering 
+   - changed audio buffering
    - implemented serveral missing cDevice methods:
      TrickSpeed(),Clear(),Freeze()...
    - process smaller packets at one time to improve
@@ -421,7 +421,7 @@ work now as well and the OSD mode is set properly
    - sleep in Poll if buffer is full
   2004-11-04: softdevice-0.0.7
    - audio-out: don't exit when we get EINTR upon write
-  2004-10-30: softdevice-0.0.7pre4 
+  2004-10-30: softdevice-0.0.7pre4
   2004-10-29:
    - xv-out: changed fullscreen mode. works now with more wms (bug: #2265)
    - xv-out: fix possible race condition causing segfault during init (bug: #2699)
@@ -509,7 +509,7 @@ work now as well and the OSD mode is set properly
 
   2004-05-20 : softdevice-0.0.6pre2
     - xv output now works with vdr-1.3.7 too
-    
+
   2004-05-19 : softdevice-0.0.6pre1
     - audio.c: dropped round() call
     - (f)printf() replaced by dsyslog()

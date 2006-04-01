@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.24 2006/02/06 19:59:34 wachm Exp $
+# $Id: Makefile,v 1.25 2006/04/01 09:33:41 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -25,11 +25,12 @@ DVBDIR 	   = ../../../../DVB
 VDRDIR     = ../../..
 LIBDIR     = ../../lib
 TMPDIR     = /tmp
+PLUGINLIBDIR = ./PLUGINS/lib
 
 -include config.mak
 
 # uncomment to build the shared memory video server
-# 
+#
 #SHM_SUPPORT = 1
 
 
@@ -209,7 +210,7 @@ PACKAGE = vdr-$(ARCHIVE)
 INCLUDES += -I$(VDRDIR)/include -I$(DVBDIR)/include $(FFMPEGCFLAGS)
 
 DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"' -D_GNU_SOURCE
-DEFINES += -DPLUGINLIBDIR='"./PLUGINS/lib"'
+DEFINES += -DPLUGINLIBDIR='"$(PLUGINLIBDIR)"'
 
 ### The object files (add further files here):
 
@@ -220,7 +221,7 @@ ALL_OBJS = $(OBJS)
 
 ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
-    DFB_OBJS  = utils.o video.o video-dfb.o 
+    DFB_OBJS  = utils.o video.o video-dfb.o
     ALL_OBJS += $(DFB_OBJS)
     TARGETS  += libsubvdr-$(PLUGIN)-dfb.so
   else
@@ -233,7 +234,7 @@ endif
 ifdef FB_SUPPORT
   ifdef USE_SUBPLUGINS
     FB_LIBS   =
-    FB_OBJS   = utils.o video.o video-fb.o 
+    FB_OBJS   = utils.o video.o video-fb.o
     ALL_OBJS  += $(FB_OBJS)
     TARGETS   += libsubvdr-$(PLUGIN)-fb.so
   else
@@ -243,7 +244,7 @@ endif
 
 ifdef XV_SUPPORT
   ifdef USE_SUBPLUGINS
-    XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o 
+    XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o
     ALL_OBJS  += $(XV_OBJS)
     TARGETS   += libsubvdr-$(PLUGIN)-xv.so
   else
@@ -254,7 +255,7 @@ endif
 
 ifdef VIDIX_SUPPORT
   ifdef USE_SUBPLUGINS
-    VIDIX_OBJS  = utils.o video.o video-vidix.o 
+    VIDIX_OBJS  = utils.o video.o video-vidix.o
     ALL_OBJS    += $(VIDIX_OBJS)
     TARGETS     += libsubvdr-$(PLUGIN)-vidix.so
   else
@@ -266,7 +267,7 @@ endif
 
 ifdef SHM_SUPPORT
   ifdef USE_SUBPLUGINS
-    SHM_OBJS  = utils.o video.o video-shm.o 
+    SHM_OBJS  = utils.o video.o video-shm.o
     ALL_OBJS    += $(SHM_OBJS)
     TARGETS     += libsubvdr-$(PLUGIN)-shm.so
   else
@@ -341,7 +342,7 @@ VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../config.o ../../../plugin.o\
 		      ../../../sources.o
 SHM_CLIENT_OBJS  = video.o video-xv.o setup-softdevice.o xscreensaver.o \
-		   utils.o 
+		   utils.o
 
 ShmClient: ShmClient.o $(SHM_CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) $(XV_LIBS) $(VDR_SHM_CLIENT_OBJS) $(SHM_CLIENT_OBJS) -lpthread -ljpeg $< -o $@

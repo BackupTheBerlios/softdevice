@@ -86,8 +86,8 @@ To get a full list of options try "vdr -h"
 
 Set the PrimaryDVB value to the last device if you own a FF-Card.
 
-Note that we strongly recommend to use Xv, DirectFB or Vidix for output. 
-Framebuffer mode is not well maintained and  _completly_ unaccelerated. 
+Note that we strongly recommend to use Xv, DirectFB or Vidix for output.
+Framebuffer mode is not well maintained and  _completly_ unaccelerated.
 
 
 AC3 pass through:
@@ -142,6 +142,7 @@ The code in the plugin is based on parts of:
 
 Many thanks to:
 - Andre Neumann
+- Antti Seppälä
 - Colin Paton
 - Herbert Attenberger
 - Holger Waechtler
@@ -156,6 +157,7 @@ Many thanks to:
 - Roland Praml
 - Rolf Ahrenberg
 - Stefan Lucke
+- Thomas Günter
 - Torgeir Veimo
 - Vadim Catana
 
