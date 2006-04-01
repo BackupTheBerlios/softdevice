@@ -1,4 +1,7 @@
 Changelog
+2006-04-01:
+   - apply slightly modified patch by Thomas Günter which fixes improper
+     includes of vdr header files
 2006-03-31:
    - Xinerama support (detection and build requires to run configure).
    - reactivate use of source x/y offsets for Xv*PutImage(..) operations.

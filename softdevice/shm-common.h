@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: shm-common.h,v 1.4 2006/02/19 16:58:35 lucke Exp $
+ * $Id: shm-common.h,v 1.5 2006/04/01 08:26:56 wachm Exp $
  */
 #ifndef __SHM_COMMON_H__
 #define __SHM_COMMON_H__
@@ -17,7 +17,6 @@
 #include <sys/shm.h> 
 #include <sys/sem.h> 
 
-#include "vdr/keys.h"
 
 #define CTL_KEY 5678 
 

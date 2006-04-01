@@ -6,14 +6,13 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.8 2006/03/21 18:45:14 wachm Exp $
+ * $Id: ShmClient.c,v 1.9 2006/04/01 08:26:56 wachm Exp $
  */
 
 #include <signal.h>
 
 #include "video-xv.h"
 #include "shm-common.h"
-#include "vdr/keys.h"
 #include "utils.h"
 
 #define SHMDEB(out...) {printf("SHMCLIENT[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}

@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.5 2006/02/18 22:20:29 lucke Exp $
+ * $Id: SoftOsd.h,v 1.6 2006/04/01 08:26:56 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -24,12 +24,12 @@
 #define IS_TRANSPARENT(a) ((a) < TRANSPARENT_THRESHOLD)
 #define IS_OPAQUE(a) ((a) > OPACITY_THRESHOLD)
 
-#include "vdr/config.h"
+#include <vdr/config.h>
 
 #if VDRVERSNUM >= 10307 // only for the new osd interface...
 
-#include "vdr/osd.h"
-#include "vdr/thread.h"
+#include <vdr/osd.h>
+#include <vdr/thread.h>
 #include "video.h"
 
 #define X_OFFSET 0 
