@@ -6,12 +6,16 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: FileIndex.c,v 1.1 2006/03/12 20:23:23 wachm Exp $
+ * $Id: FileIndex.c,v 1.2 2006/04/02 20:19:12 wachm Exp $
  */
 
 #include "FileIndex.h"
 
-#define INDEXDEB(out...) printf("INDEXDEB: " out)
+//#define INDEXDEB(out...) printf("INDEXDEB: " out)
+
+#ifndef INDEXDEB
+#define INDEXDEB(out...)
+#endif
 
 
 //--cIndex------------------------------------------------------------------
@@ -94,13 +98,13 @@ void cIndex::ParseM3uExtInf(const char *pos) {
 	pos++;
 	
 	skipSpaces(pos);
-        printf("duration '%s' \n",pos);
-        if ( !*pos || sscanf(pos,"%100[0-9]%n",&tmp,&len) == 0 ) {
+        //INDEXDEB("duration '%s' \n",pos);
+        if ( !*pos || sscanf(pos,"%100[0-9]%n",tmp,&len) == 0 ) {
                 printf("EXTINF Could not parse duration \"%s\". Ignoring.\n",pos);
                 return;
         };
         duration=atoi(tmp);
-        printf("duration parsed '%s'= %d\n",tmp,duration);
+        //INDEXDEB("duration parsed '%s'= %d\n",tmp,duration);
         pos=pos + len;
 
 	skipSpaces(pos);

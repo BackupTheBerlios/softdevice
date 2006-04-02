@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.10 2006/03/12 20:28:52 wachm Exp $
+ * $Id: softplay.c,v 1.11 2006/04/02 20:19:12 wachm Exp $
  */
 
 
@@ -511,8 +511,8 @@ cPlayList *cSoftPlay::OpenList(const char *Name) {
 void cSoftPlay::ScanForPlaylists() {
         struct dirent **namelist;
         int n;
-        char Name[60];
-        char Title[60];
+        //char Name[60];
+        //char Title[60];
 
 
         n = scandir(configDir, &namelist, 0, alphasort);

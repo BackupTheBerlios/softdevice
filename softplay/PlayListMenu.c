@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PlayListMenu.c,v 1.3 2006/03/12 20:28:52 wachm Exp $
+ * $Id: PlayListMenu.c,v 1.4 2006/04/02 20:19:12 wachm Exp $
  */
 #include "vdr/player.h"
 
@@ -240,7 +240,7 @@ eOSState cReplayList::ProcessKey(eKeys Key) {
                         time(NULL) - lastActivity > 40
                         && !hold ) {
                 MENUDEB("SetCurrent current title %d  time %d lastActivity %d\n",
-                                playList->GetCurrIdx(),time(NULL),lastActivity);
+                                playList->GetCurrIdx(),int(time(NULL)),int(lastActivity));
                 SetCurrent(Get(playList->GetCurrIdx()));
                 Display();
         };
