@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.35 2005/11/12 15:49:33 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.36 2006/04/14 21:25:44 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -28,18 +28,18 @@
 #include <vdr/ringbuffer.h>
 
 #define DEFAULT_FRAMETIME 400   // for PAL in 0.1ms
-#define MIN_BUF_SIZE  (16*1024) 
+#define MIN_BUF_SIZE  (16*1024)
 
 // this combination gives good results when seeking
-#define DVB_BUF_SIZE   (32*1024)  
+#define DVB_BUF_SIZE   (32*1024)
 #define PACKET_BUF_SIZE 150
 
-// this combination is save 
-//#define DVB_BUF_SIZE   (64*1024)  
+// this combination is save
+//#define DVB_BUF_SIZE   (64*1024)
 //#define PACKET_BUF_SIZE 300
 
-// this combination works for HDTV 
-//#define DVB_BUF_SIZE   (64*1024)  
+// this combination works for HDTV
+//#define DVB_BUF_SIZE   (64*1024)
 //#define PACKET_BUF_SIZE 2000
 
 
@@ -48,16 +48,16 @@
 
 #define SOFTDEVICE_VIDEO_STREAM  1
 #define SOFTDEVICE_AUDIO_STREAM  2
-#define SOFTDEVICE_BOTH_STREAMS (SOFTDEVICE_VIDEO_STREAM | SOFTDEVICE_AUDIO_STREAM ) 
+#define SOFTDEVICE_BOTH_STREAMS (SOFTDEVICE_VIDEO_STREAM | SOFTDEVICE_AUDIO_STREAM )
 
 
-class cAudioStreamDecoder; 
-class cVideoStreamDecoder; 
+class cAudioStreamDecoder;
+class cVideoStreamDecoder;
 
 // -----------------cClock --------------------------------------------
 class cClock {
 private:
-    
+
     static int64_t audioOffset;
     static int64_t audioPTS;
     static int64_t videoOffset;
@@ -70,33 +70,33 @@ public:
     virtual ~cClock() {};
 
     static int64_t GetTime()
-    {  
+    {
       struct timeval tv;
       struct timezone tz;
       gettimeofday(&tv,&tz);
       return tv.tv_sec*10000+tv.tv_usec/100;
     };
-    
+
     static inline void AdjustAudioPTS(int64_t aPTS) {
-      if (aPTS) 
+      if (aPTS)
         audioOffset=aPTS-GetTime();
       else audioOffset=0;
       audioPTS=aPTS;
     };
-     
+
     static inline void AdjustVideoPTS(int64_t vPTS) {
       if (vPTS)
         videoOffset=vPTS-GetTime();
       else videoOffset=0;
       videoPTS=vPTS;
     };
-   
+
     static inline void SetFreezeMode(bool FreezeMode) {
       freezeMode=FreezeMode;
     };
 
     int64_t GetPTS();
-};	
+};
 
 // -----------------cPacketQueue -----------------------------------------
 class cPacketQueue {
@@ -106,12 +106,12 @@ private:
     AVPacket *queue;
     int FirstPacket,LastPacket;
 
-    inline int Next(int Packet) 
+    inline int Next(int Packet)
     { return (Packet+1)%MaxPackets; };
 
     cSigTimer EnablePut;
     cSigTimer EnableGet;
-    
+
 public:
     cPacketQueue(int maxPackets=PACKET_BUF_SIZE);
     ~cPacketQueue();
@@ -120,7 +120,7 @@ public:
 
     inline void EnablePutSignal()
     { EnablePut.Signal();};
-    
+
     AVPacket * GetReadPacket();
     void FreeReadPacket(AVPacket *Packet);
 
@@ -135,7 +135,7 @@ public:
 // wrapper class to access protected methods
 class cSoftRingBufferLinear : public cRingBufferLinear {
 public:
-  cSoftRingBufferLinear(int Size, int Margin = 0, bool Statistics = false) 
+  cSoftRingBufferLinear(int Size, int Margin = 0, bool Statistics = false)
      : cRingBufferLinear(Size,Margin,Statistics) {};
   ~cSoftRingBufferLinear() {};
 
@@ -163,7 +163,7 @@ protected:
     cMutex            mutex;
     volatile bool     active;
     bool              running;
-    
+
     virtual void      Action(void);
     virtual int       DecodePacket(AVPacket *pkt) = 0;
 
@@ -180,7 +180,7 @@ public:
     bool              initCodec(void);
     void              resetCodec(void);
     virtual uint64_t  GetPTS()  {return pts;};
-    
+
     cStreamDecoder(AVCodecContext * Context, bool packetMode);
     virtual ~cStreamDecoder();
 };
@@ -199,6 +199,9 @@ private:
 
     void OnlyRight(uint8_t *samples,int Length);
     // copy right data to left channel
+
+    bool UpmixMono(uint8_t *samples, int Length);
+    // upmix mono channel to stereo
 
 protected:
 public:
@@ -241,12 +244,12 @@ class cVideoStreamDecoder : public cStreamDecoder {
     cVideoOut           *videoOut;
 
     // A-V syncing stuff
-    int                hurry_up; 
+    int                hurry_up;
     int                offset;
     int                delay;
     int                trickspeed;
     int                default_frametime;
-    inline int frametime() 
+    inline int frametime()
     {return trickspeed*default_frametime;};
 
     uchar   *allocatePicBuf(uchar *pic_buf, PixelFormat pix_fmt);
@@ -283,7 +286,7 @@ private:
     bool IsSuspended;
     bool decoding;
     bool freezeMode;
-    
+
     AVFormatContext *ic;
     int LastSize;
     cMutex  mutex;
@@ -319,7 +322,7 @@ public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);
     ~cMpeg2Decoder();
 
-    void QueuePacket(const AVFormatContext *ic,AVPacket &pkt, 
+    void QueuePacket(const AVFormatContext *ic,AVPacket &pkt,
 		    bool PacketMode);
     void ResetDecoder( int Stream = SOFTDEVICE_BOTH_STREAMS );
     int Decode(const uchar *Data, int Length);
@@ -332,19 +335,19 @@ public:
     void Suspend(void);
     void Resume(void);
     void TrickSpeed(int Speed);
-   
+
     void SetPlayMode(softPlayMode playMode, bool packetMode);
     void PlayAudioVideo(bool playAudio,bool playVideo)
     { AudioIdx=playAudio?NO_STREAM:DONT_PLAY;
       VideoIdx=playVideo?NO_STREAM:DONT_PLAY;}
 
-    void SetAudioMode(int AudioMode); 
+    void SetAudioMode(int AudioMode);
     inline int GetAudioMode()
     { return audioMode; };
-    
+
     int BufferFill( int Stream = SOFTDEVICE_BOTH_STREAMS );
-    // in percent 
-    
+    // in percent
+
     int64_t GetSTC(void);
 };
 

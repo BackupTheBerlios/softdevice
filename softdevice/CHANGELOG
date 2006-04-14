@@ -7,6 +7,7 @@ Changelog
    - some preparations for some more XvImage formats (not yet selectable).
    - Restricted OSD alpha blend option to XV and VIDIX out.
    - started some documentation of our various OSD options.
+   - applied patch for mono upmix from Lucian Muresan
 2006-04-01:
    - applied Makefile patch from Antti Seppälä
    - apply slightly modified patch by Thomas Günter which fixes improper
