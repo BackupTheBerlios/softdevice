@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.49 2006/04/01 08:45:35 wachm Exp $
+ * $Id: video-xv.c,v 1.50 2006/04/14 15:56:17 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1022,7 +1022,7 @@ init_osd:
                           " %d height %d, bytes per line %d\n",
                           osd_max_width, osd_max_height,
                           osd_image->bytes_per_line);
-  }; 
+  };
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
 
   rc = XSync(dpy, False);
@@ -1063,7 +1063,7 @@ init_osd:
 
   dsyslog("[XvVideoOut]: initialized OK");
 
-  if (setupStore->xvFullscreen) 
+  if (setupStore->xvFullscreen)
   {
     toggleFullScreen();
     setupStore->xvFullscreen=0;
@@ -1218,18 +1218,25 @@ retry_image:
   CreateXvImage(dpy,port,xv_image,shminfo,
                   format,xvWidth, xvHeight);
 
-  pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
-  pixels[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
-  pixels[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
+  switch (format) {
+    case FOURCC_YV12:
+    case FOURCC_I420:
+      pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
+      pixels[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
+      pixels[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
+      break;
+    case FOURCC_YUY2:
+      pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
+      break;
+    default:
+      break;
+  }
 
-  memset (pixels [0], 0, xvWidth*xvHeight);
-  memset (pixels [1], 128, xvWidth*xvHeight/4);
-  memset (pixels [2], 128, xvWidth*xvHeight/4);
+  this->format = format;
 
+  ClearXvArea (0, 128, 128);
   rc = PutXvImage();
-
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
-
   rc = XSync(dpy, False);
 
   if (got_error)
@@ -1252,12 +1259,47 @@ retry_image:
 
   pthread_mutex_unlock(&xv_mutex);
 
-  this->format = format;
   initialized = 1;
   xv_initialized = 1;
   return true;
 }
 
+/* ---------------------------------------------------------------------------
+ */
+void cXvVideoOut::ClearXvArea(uint8_t y, uint8_t u, uint8_t v)
+{
+    uint8_t   tu;
+    uint32_t  tyuy2, *pyuy2;
+
+  switch (format) {
+    case FOURCC_I420:
+      tu = u;
+      u = v;
+      v = tu;
+    case FOURCC_YV12:
+      memset (pixels [0], y, xvWidth*xvHeight);
+      memset (pixels [1], u, xvWidth*xvHeight/4);
+      memset (pixels [2], v, xvWidth*xvHeight/4);
+      break;
+    case FOURCC_YUY2:
+      tyuy2 = y + (u << 8) + (y << 16) + (v << 24);
+      pyuy2 = (uint32_t *) pixels[0];
+
+      for (int i = 0; i < xvWidth / 2; ++i)
+        *pyuy2++ = tyuy2;
+
+      for (int i = 1; i < xvHeight; ++i, pyuy2 += xvWidth / 2)
+        fast_memcpy(pyuy2, pixels[0], xvWidth*2);
+
+      break;
+    default:
+      break;
+  }
+
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cXvVideoOut::CreateXvImage(Display *dpy,XvPortID port,
                   XvImage *&xv_image,
                   XShmSegmentInfo &shminfo,
@@ -1305,7 +1347,7 @@ void cXvVideoOut::CreateXvImage(Display *dpy,XvPortID port,
     // request remove after detaching
     if (shminfo. shmid > 0)
       shmctl (shminfo. shmid, IPC_RMID, 0);
-  }else 
+  }else
   {
     xv_image = XvCreateImage(dpy, port,format, NULL,
         width, height);
@@ -1313,7 +1355,7 @@ void cXvVideoOut::CreateXvImage(Display *dpy,XvPortID port,
       dsyslog("[XvVideoOut]: ERROR: XvCreateImage FAILED !");
       exit(-1);
     };
-      
+
     xv_image->data = (char*)malloc(xv_image->data_size);
     if (!xv_image->data) {
       dsyslog("[XvVideoOut]: ERROR: malloc xv_image FAILED !");
@@ -1335,7 +1377,7 @@ int cXvVideoOut::PutXvImage() {
                      lxoff,  lyoff,     /* dx, dy */
                      lwidth, lheight,   /* dw, dh */
                      False);
-  else 
+  else
     return XvPutImage(dpy, port,
                      win, gc,
                      xv_image,
@@ -1363,7 +1405,7 @@ void cXvVideoOut::Suspend(void)
 
   XvStopVideo(dpy, port, win);
   XvUngrabPort(dpy, port, CurrentTime);
-  
+
 
   if (xv_image->data) {
     if(useShm && shminfo.shmaddr)
@@ -1384,7 +1426,7 @@ void cXvVideoOut::Suspend(void)
     free(xv_image);
     xv_image = NULL;
   }
-  
+
   xv_initialized = 0;
 }
 
@@ -1481,7 +1523,7 @@ void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
         Depth=osd_image->bits_per_pixel;
         HasAlpha=false;
         PixelMask=NULL;
-};       
+};
 
 /* ---------------------------------------------------------------------------
  */
@@ -1520,7 +1562,7 @@ void cXvVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
                             OSD_FULL_WIDTH,OSD_FULL_WIDTH/2,
 			    OsdWidth,OsdHeight,RefreshAll);
 	    break;
- 
+
     }
     pthread_mutex_lock(&xv_mutex);
     ShowOSD(0,1);
@@ -1637,9 +1679,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     cutBottom = setupStore->cropBottomLines;
     cutLeft = setupStore->cropLeftCols;
     cutRight = setupStore->cropRightCols;
-    memset (pixels [0], 0, xvWidth*xvHeight);
-    memset (pixels [1], 128, xvWidth*xvHeight/4);
-    memset (pixels [2], 128, xvWidth*xvHeight/4);
+    ClearXvArea (0, 128, 128);
   }
 
   if ( Py && Pu && Pv ) {
@@ -1681,10 +1721,13 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
         }
 
   }
-  else
+    else
 #endif
- {
+    {
 
+      switch (format) {
+        case FOURCC_YV12:
+        case FOURCC_I420:
           for (int i = cutTop * 2; i < fheight - cutBottom * 2; i++)
              fast_memcpy(pixels [0] + i * xvWidth + 2 * cutLeft,
                          Py + i * Ystride + 2 * cutLeft,
@@ -1697,7 +1740,19 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
              fast_memcpy (pixels [2] + i * xvWidth / 2 + cutLeft,
                           Pu + i * UVstride + cutLeft,
                           fwidth / 2 - (cutLeft + cutRight));
-  }
+          break;
+        case FOURCC_YUY2:
+          //yv12_to_yuy2_il_c(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+          yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                       Pu + UVstride * cutTop + cutLeft,
+                       Pv + UVstride * cutTop + cutLeft,
+                       pixels[0] + 2*xvWidth * cutTop * 2 + cutLeft * 4,
+                       Width - 2 * (cutLeft + cutRight),
+                       Height - 2 * (cutTop + cutBottom),
+                       Ystride, UVstride, 2*xvWidth);
+          break;
+      }
+    }
   }
   PutXvImage();
   ProcessEvents ();
@@ -1711,7 +1766,7 @@ cXvVideoOut::~cXvVideoOut()
   if (!initialized)
     return;
 
-  if (xv_initialized) 
+  if (xv_initialized)
   {
     pthread_mutex_lock(&xv_mutex);
 

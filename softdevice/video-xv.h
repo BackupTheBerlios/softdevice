@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.17 2006/03/31 19:21:32 lucke Exp $
+ * $Id: video-xv.h,v 1.18 2006/04/14 15:56:17 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -39,6 +39,7 @@
 #endif
 
 #define FOURCC_YV12       0x32315659   /* 4:2:0 Planar: Y + V + U  (3 planes) */
+#define FOURCC_I420       0x30323449   /* 4:2:0 Planar: Y + U + V  (3 planes) */
 #define FOURCC_YUY2       0x32595559   /* 4:2:2 Packed: Y0+U0+Y1+V0 (1 plane) */
 
 #define XV_FORMAT_MASK    0x03
@@ -154,6 +155,7 @@ private:
         AdjustXineramaScreen(void);
   int   GetScreenWidth(void),
         GetScreenHeight();
+  void  ClearXvArea(uint8_t y, uint8_t u, uint8_t v);
 
 public:
   cXvVideoOut(cSetupStore *setupStore);
