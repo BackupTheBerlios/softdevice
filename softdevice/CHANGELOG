@@ -1,4 +1,12 @@
 Changelog
+2006-04-14:
+   - Expand top/bottom line and left/right coloumns (from vdr-portal).
+   - Zoom feature, zoomed area may be shifted around.
+   - yv12 -> yuy2 converter for field based chroma.
+   - remember interlaced mode of current frame.
+   - some preparations for some more XvImage formats (not yet selectable).
+   - Restricted OSD alpha blend option to XV and VIDIX out.
+   - started some documentation of our various OSD options.
 2006-04-01:
    - applied Makefile patch from Antti Seppälä
    - apply slightly modified patch by Thomas Günter which fixes improper

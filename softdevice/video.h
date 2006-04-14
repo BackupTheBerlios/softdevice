@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.31 2006/03/12 09:43:28 wachm Exp $
+ * $Id: video.h,v 1.32 2006/04/14 18:56:34 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -79,6 +79,11 @@ class cVideoOut: public cThread {
 private:
     int     aspect_I;
     double  aspect_F;
+
+    void    AdjustToZoomFactor(int *tw, int *th),
+            AdjustSourceArea(int tw, int th),
+            AdjustToDisplayGeometry(double afd_aspect);
+
 protected:
     inline double GetAspect_F()
     { return aspect_F;};
@@ -90,10 +95,14 @@ protected:
             OSDpseudo_alpha;
     int     current_osdMode;
     int     Xres, Yres, Bpp; // the child class MUST set these params (for OSD Drawing)
-    int     dx, dy, 
+    int     dx, dy,
             dwidth, dheight,
             old_x, old_y, old_dwidth, old_dheight,
-            screenPixelAspect;
+            screenPixelAspect,
+            prevZoomFactor,
+            zoomCenterX,
+            zoomCenterY;
+    double  realZoomFactor;
     volatile int        fwidth, fheight;
     int     swidth, sheight,
             sxoff, syoff,
@@ -105,8 +114,11 @@ protected:
             currentPixelFormat,
             cutTop, cutBottom,
             cutLeft, cutRight,
+            expandTopBottom,
+            expandLeftRight,
             aspect_changed,
             current_afd,
+            interlaceMode,
             displayTimeUS;
     double  parValues[MAX_PAR];
 
@@ -122,7 +134,7 @@ protected:
 public:
     cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
-    
+
     virtual void Sync(cSyncTimer *syncTimer, int *delay);
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
     virtual void Pause(void) {return;};
@@ -153,22 +165,22 @@ public:
 
     uint8_t *PixelMask;
     uint8_t *OsdPy;
-    uint8_t *OsdPu; 
+    uint8_t *OsdPu;
     uint8_t *OsdPv;
-    uint8_t *OsdPAlphaY; 
+    uint8_t *OsdPAlphaY;
     uint8_t *OsdPAlphaUV;
-    // buffers for software osd alpha blending 
+    // buffers for software osd alpha blending
     void init_OsdBuffers();
-    
+
     int OsdHeight;
     int OsdWidth;
     // current dimensions of the software OSD
 private:
     int     Osd_changed;
-   
+
     uint16_t OsdRefreshCounter;
-    // should be setted to null everytime OSD is shown 
-    // (software alpha blending mode).  
+    // should be setted to null everytime OSD is shown
+    // (software alpha blending mode).
 public:
     virtual void ClearOSD();
     // clear the OSD buffer
@@ -185,15 +197,15 @@ public:
     // every video-out should implement a method which desired osd dimension
     // for scaling, if -1,-1 is returned no scaling is done.
     { OsdWidth=-1;OsdHeight=-1; xPan = yPan = 0;};
-     
-    virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed, 
+
+    virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                     bool &IsYUV, uint8_t *&PixelMask)
-    { Depth=32; HasAlpha=true; AlphaInversed=false; IsYUV=false; 
+    { Depth=32; HasAlpha=true; AlphaInversed=false; IsYUV=false;
             PixelMask=NULL;};
     // should be implemented by all video out method to set the OSD pixel mode
 
     // RGB modes
-    virtual void GetLockOsdSurface(uint8_t *&osd, int &stride, 
+    virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
                     bool *&dirtyLines)
     { osd=NULL; stride=0; dirtyLines=NULL;};
     virtual void CommitUnlockOsdSurface()
@@ -210,7 +222,7 @@ public:
 
     virtual void CommitUnlockSoftOsdSurface( int osdwidth, int osdheight)
     { OSDpresent=true; OsdWidth=osdwidth; OsdHeight=osdheight; Osd_changed=1;};
-      
+
    void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        uint8_t *alpha,uint16_t count);
    // performes alpha blending in software

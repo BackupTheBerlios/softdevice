@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.47 2006/03/12 09:43:28 wachm Exp $
+ * $Id: video.c,v 1.48 2006/04/14 18:56:34 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -38,6 +38,9 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   aspect_F = 4.1 / 3.0;
   aspect_I = 0;
   current_aspect = -1;
+  interlaceMode = -1;
+  prevZoomFactor = 0;
+  realZoomFactor = 1.0;
   PixelMask=NULL;
   OsdRefreshCounter=0;
   displayTimeUS = 0;
@@ -68,7 +71,7 @@ void cVideoOut::init_OsdBuffers()
     int Ysize=(OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
     if (!OsdPy)
        OsdPy=(uint8_t*)malloc(Ysize+8);
-    if (!OsdPAlphaY) 
+    if (!OsdPAlphaY)
     {
        OsdPAlphaY=(uint8_t*)malloc(Ysize+8);
        memset(OsdPAlphaY,0,Ysize);
@@ -156,10 +159,116 @@ void cVideoOut::SetParValues(double displayAspect, double displayRatio)
 
 /* ---------------------------------------------------------------------------
  */
+void cVideoOut::AdjustToZoomFactor(int *tw, int *th)
+{
+  if (prevZoomFactor != setupStore->zoomFactor ||
+      zoomCenterX != setupStore->zoomCenterX ||
+      zoomCenterY != setupStore->zoomCenterY ||
+      expandTopBottom != setupStore->expandTopBottomLines ||
+      expandLeftRight != setupStore->expandLeftRightCols)
+  {
+    prevZoomFactor = setupStore->zoomFactor;
+    zoomCenterX = setupStore->zoomCenterX;
+    zoomCenterY = setupStore->zoomCenterY;
+    realZoomFactor = (1.0 +
+                      (((double) prevZoomFactor * (double) prevZoomFactor) / 2)
+                        / 512.0);
+    expandTopBottom = setupStore->expandTopBottomLines;
+    expandLeftRight = setupStore->expandLeftRightCols;
+    /* -----------------------------------------------------------------------
+     * force recalculation for aspect ration handling
+     */
+    current_aspect = -1;
+  }
+
+  *th = (int) ((double) fheight / realZoomFactor);
+  *tw = (int) ((double) fwidth / realZoomFactor);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::AdjustSourceArea(int tw, int th)
+{
+    int dx, dy;
+
+  sxoff = (fwidth - swidth) / 2;
+  syoff = (fheight - sheight) / 2;
+
+  sxoff += (int) ((double) sxoff * ((double) zoomCenterX / 100.0));
+  syoff += (int) ((double) syoff * ((double) zoomCenterY / 100.0));
+
+  /* -------------------------------------------------------------------------
+   * handle user selected row/coloumn expansion
+   */
+  if ((dy = expandTopBottom * 2 - syoff) > 0) {
+    syoff += dy;
+    sheight -= 2 * dy;
+  }
+  if ((dx = expandLeftRight * 2 - sxoff) > 0) {
+    sxoff += dx;
+    swidth -= 2 * dx;
+  }
+
+  /* --------------------------------------------------------------------------
+   * adjust possible rounding errors. as we are in YV12 or similar mode,
+   * line offsets and coloumn offsets must be even.
+   */
+  if (syoff & 1) {
+    syoff--;
+    if ((th - sheight) > 1)
+      sheight += 2;
+  }
+
+  if (sxoff & 1) {
+    sxoff--;
+    if ((tw - swidth) > 1)
+      swidth += 2;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::AdjustToDisplayGeometry(double afd_aspect)
+{
+    double        d_asp, p_asp;
+
+  /* --------------------------------------------------------------------------
+   * handle screen aspect support now
+   */
+  p_asp = parValues [screenPixelAspect];
+  d_asp = (double) dwidth / (double) dheight;
+
+  if ((d_asp * p_asp) > afd_aspect) {
+    /* ------------------------------------------------------------------------
+     * display aspect is wider than frame aspect
+     * so we have to pillar-box
+     */
+    lheight = dheight;
+    lwidth = (int) (0.5 + ((double) dheight * afd_aspect / p_asp));
+  } else {
+    /* ------------------------------------------------------------------------
+     * display aspect is taller or equal than frame aspect
+     * so we have to letter-box
+     */
+    lwidth = dwidth;
+    lheight = (int) (0.5 + ((double) dwidth * p_asp / afd_aspect));
+  }
+
+  /* -------------------------------------------------------------------------
+   * center result on display
+   */
+  lxoff = (dwidth - lwidth) / 2;
+  lyoff = (dheight - lheight) / 2;
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cVideoOut::CheckAspect(int new_afd, double new_asp)
 {
-    int           new_aspect;
-    double        d_asp, afd_asp, p_asp;
+    int           new_aspect,
+                  tmpWidth,
+                  tmpHeight;
+    double        afd_asp;
 
   /* -------------------------------------------------------------------------
    * check if there are some aspect ratio constraints
@@ -187,6 +296,8 @@ void cVideoOut::CheckAspect(int new_afd, double new_asp)
     current_aspect = -1;
   }
 
+  AdjustToZoomFactor(&tmpWidth, &tmpHeight);
+
   if (new_aspect == current_aspect && new_afd == current_afd )
   {
     aspect_changed = 0;
@@ -195,7 +306,6 @@ void cVideoOut::CheckAspect(int new_afd, double new_asp)
 
   aspect_changed = 1;
 
-  d_asp = (double) dwidth / (double) dheight;
   switch (new_afd) {
   /* --------------------------------------------------------------------------
    * these are still TODOs. in general I focus on 2 cases where there
@@ -212,55 +322,17 @@ void cVideoOut::CheckAspect(int new_afd, double new_asp)
     default: afd_asp = new_asp; break;
   }
 
-  sheight = fheight;
-  swidth = fwidth;
+  sheight = tmpHeight;
+  swidth = tmpWidth;
+
   if (afd_asp <= new_asp) {
-    swidth = (int) (0.5 + ((double) fwidth * afd_asp / new_asp));
+    swidth = (int) (0.5 + ((double) tmpWidth * afd_asp / new_asp));
   } else {
-    sheight = (int) (0.5 + ((double) fheight * new_asp / afd_asp));
-  }
-  sxoff = (fwidth - swidth) / 2;
-  syoff = (fheight - sheight) / 2;
-
-  /* --------------------------------------------------------------------------
-   * adjust possible rounding errors. as we are in YV12 or similar mode,
-   * line offsets and coloumn offsets must be even.
-   */
-  if (syoff & 1) {
-    syoff--;
-    if ((fheight - sheight) > 1)
-      sheight += 2;
+    sheight = (int) (0.5 + ((double) tmpHeight * new_asp / afd_asp));
   }
 
-  if (sxoff & 1) {
-    sxoff--;
-    if ((fwidth - swidth) > 1)
-      swidth += 2;
-  }
-
-  /* --------------------------------------------------------------------------
-   * handle screen aspect support now
-   */
-  p_asp = parValues [screenPixelAspect];
-
-  if ((d_asp * p_asp) > afd_asp) {
-    /* ------------------------------------------------------------------------
-     * display aspect is wider than frame aspect
-     * so we have to pillar-box
-     */
-    lheight = dheight;
-    lwidth = (int) (0.5 + ((double) dheight * afd_asp / p_asp));
-  } else {
-    /* ------------------------------------------------------------------------
-     * display aspect is taller or equal than frame aspect
-     * so we have to letter-box
-     */
-    lwidth = dwidth;
-    lheight = (int) (0.5 + ((double) dwidth * p_asp / afd_asp));
-  }
-
-  lxoff = (dwidth - lwidth) / 2;
-  lyoff = (dheight - lheight) / 2;
+  AdjustSourceArea (tmpWidth, tmpHeight);
+  AdjustToDisplayGeometry (afd_asp);
 
   dsyslog("[VideoOut]: %dx%d [%d,%d %dx%d] -> %dx%d [%d,%d %dx%d]",
           fwidth, fheight, sxoff, syoff, swidth, sheight,
@@ -297,6 +369,12 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
     current_aspect = -1;
   }
 
+  if (interlaceMode != picture->interlaced_frame)
+  {
+    dsyslog("[VideoOut]: interlaced mode now: %sinterlaced",
+            (picture->interlaced_frame) ? "" : "non-");
+    interlaceMode = picture->interlaced_frame;
+  }
 #if LIBAVCODEC_BUILD > 4686
   /* --------------------------------------------------------------------------
    * removed aspect ratio calculation based on picture->pan_scan->width
@@ -471,7 +549,7 @@ void cVideoOut::AdjustOSDMode()
 void cVideoOut::AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
           uint8_t *alpha,uint16_t count) {
      // printf("%x %x %x \n",P1,P2,alpha);
- 
+
 #ifdef USE_MMX
         __asm__(" pxor %%mm3,%%mm3\n"
 #ifdef USE_MMX2

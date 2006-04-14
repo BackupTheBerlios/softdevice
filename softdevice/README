@@ -129,6 +129,55 @@ There is currently one limitation to the ShmClient: it has no access to the
 SetupStore, this means that some settings, for example hue, contrast and others
 are not available.
 
+OSD setup options:
+------------------
+  Cropping:
+  Post processing:
+  Video out:
+
+  XV startup aspect
+    Possible values: 4:3 normal, 16:9 wide
+
+  Screen aspect
+    Possible values: default, 5:4, 4:3, 16:9, 16:10
+
+  OSD alpha blending
+    Possible values: pseudo, software
+
+  Buffer mode
+    Possible values: safe, good seeking, HDTV
+
+  Playback
+    Possible values: playing, suspended
+
+  A/V Delay
+    Possible values: 0 .. 250
+
+  AC3 Mode
+    Possible values: Stereo (2CH), 5.1 S/P-DIF,
+                     5.1 Analog (4CH), 5.1 Analog (6CH)
+    This specifies what should be done when we get AC3 audio frames.
+    When set to 5.1 S/P-DIF no software decoding is used. AC3 frames
+    are passed directly from your sound card to your audio processing
+    equipment.
+    If you choose any of (xCH) modes, it depends on the capabilities of
+    the decoding libary for getting any output. We request a 2, 4 or 6
+    channel downmix of the AC3 data. If your libary (ffmpeg) does not
+    support downmixing, you'll get silence. In such a situation you'll
+    have to select an other audio track/channel of your selected source.
+
+  Sync Mode
+    Possible values: usleep, rtc, sig
+    The method for syncing video output to audio output is determined by
+    this option.
+
+  Hide main menu entry
+    Possible values: yes, no .
+    When set to yes, softdevice setup menu is not shown in vdr's main
+    menu. Softdevice developers usually set this to no, normal end user
+    tend to set this to yes. If softdevice setup menu is hidden, it is
+    still accessible via vdr -> setup -> plugins -> softdevice .
+
 Problems/todo:
 --------------
 What does NOT work:

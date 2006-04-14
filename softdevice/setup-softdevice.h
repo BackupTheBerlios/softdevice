@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.25 2006/01/17 20:45:46 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.26 2006/04/14 18:56:34 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -118,6 +118,8 @@ class cSetupStore {
     int   cropBottomLines;
     int   cropLeftCols;
     int   cropRightCols;
+    int   expandTopBottomLines;
+    int   expandLeftRightCols;
     int   deintMethod;
     int   ppMethod;
     int   ppQuality;
@@ -125,6 +127,10 @@ class cSetupStore {
     int   syncOnFrames;
     int   avOffset;
     int   screenPixelAspect;
+    int   zoom;
+    int   zoomFactor;
+    int   zoomCenterX;
+    int   zoomCenterY;
     int   useMGAtv;
     int   viaTv;
     int   tripleBuffering;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.17 2006/02/19 10:38:30 lucke Exp $
+ * $Id: i18n.c,v 1.18 2006/04/14 18:56:34 lucke Exp $
  */
 
 #include "i18n.h"
@@ -36,14 +36,14 @@ const tI18nPhrase Phrases[] = {
     "Software-Ausgabegerät",              //  2
     "",             //  3 TODO
     "",             //  4 TODO
-    "",             //  5 TODO   
+    "",             //  5 TODO
     "",             //  6 TODO
     "Affichage vidéo sur carte graphique", //  7
     "",             //  8 TODO
     "Ohjelmistopohjainen näyttölaite",  //  9
     "",             // 10 TODO
-    "",             // 11 TODO   
-    "",             // 12 TODO   
+    "",             // 11 TODO
+    "",             // 12 TODO
     "",             // 13 TODO
     "",             // 14 TODO
     "",             // 15 TODO
@@ -52,7 +52,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 17 TODO
     "",             // 18 TODO
     "",             // 19 TODO
-    "",             // 20 TODO   
+    "",             // 20 TODO
 #endif
   },
   { "Xv startup aspect",   //  1
@@ -348,7 +348,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO 
+    "",             // 17 TODO
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -486,7 +486,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO   
+    "",             // 17 TODO
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -866,7 +866,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  4 TODO
     "",             //  5 TODO
     "",             //  6 TODO
-    "",             //  7 TODO                                                              
+    "",             //  7 TODO
     "",             //  8 TODO
     "Kuvan jälkikäsittely", //  9
     "",             // 10 TODO
@@ -1007,6 +1007,121 @@ const tI18nPhrase Phrases[] = {
     "",             //  7 TODO
     "",             //  8 TODO
     "Värikylläisyys",//  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Zoom factor",   //  1
+    "Zoomfaktor",    //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",//  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Zoom area shift (left/right)",   //  1
+    "Zoomausschnitt (links/rechts)",  //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",//  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Zoom area shift (up/down)",   //  1
+    "Zoomausschnitt (oben/unten)", //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",//  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Expand top/bottom lines",   //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",//  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Expand left/right columns",   //  1
+    "",             //  2 TODO
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",//  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO

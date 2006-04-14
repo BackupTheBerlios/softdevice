@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.54 2006/02/12 17:59:12 lucke Exp $
+ * $Id: softdevice.c,v 1.55 2006/04/14 18:56:34 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -192,6 +192,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       case VOUT_XV:
 #ifdef XV_SUPPORT
         LoadSubPlugin ("xv", FOURCC_YV12, pluginPath);
+        //LoadSubPlugin ("xv", FOURCC_YUY2, pluginPath);
 #endif
         break;
       case VOUT_FB:
@@ -228,6 +229,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 #ifdef XV_SUPPORT
         videoOut = new cXvVideoOut (&setupStore);
         if (videoOut->Initialize () && videoOut->Reconfigure (FOURCC_YV12)) {
+        //if (videoOut->Initialize () && videoOut->Reconfigure (FOURCC_YUY2)) {
           fprintf (stderr, "[softdevice] Xv out OK !\n");
         } else {
           fprintf (stderr, "[softdevice] Xv out failure !\n");
@@ -362,7 +364,7 @@ int cSoftDevice::ProvidesCa(const cChannel *Channel) const
     return 0;
 }
 
-cSpuDecoder *cSoftDevice::GetSpuDecoder(void) 
+cSpuDecoder *cSoftDevice::GetSpuDecoder(void)
 {
   //printf("GetSpuDecoder %x\n",spuDecoder);
   if (IsPrimaryDevice() && !spuDecoder)
@@ -398,7 +400,7 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
 {
     if (!decoder)
        return false;
-    
+
     packetMode=PlayMode < 0;
     PlayMode=(ePlayMode) abs(PlayMode);
     ic=NULL;
@@ -440,7 +442,7 @@ void cSoftDevice::Clear(void)
     SOFTDEB("Clear ...\n");
     if ( ! decoder )
       return;
-      
+
     if ( !packetMode ) {
       cDevice::Clear();
       decoder->Clear();
@@ -493,12 +495,12 @@ bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
      int64_t TimeoutUs=TimeoutMs*1000;
      cRelTimer Timer;
      Timer.Reset();
-  
+
      while ( TimeoutUs > 0 ) {
        usleep(10000);
        TimeoutUs-=Timer.GetRelTime();
      };
-     
+
      return decoder->BufferFill() < 99;
   }
 
@@ -510,12 +512,12 @@ bool cSoftDevice::Flush(int TimeoutMs)
   int64_t TimeoutUs=TimeoutMs*1000;
   cRelTimer Timer;
   Timer.Reset();
-  
+
   while ( TimeoutUs > 0 && decoder->BufferFill() > 0 ) {
        usleep(10000);
        TimeoutUs-=Timer.GetRelTime();
   };
-      
+
   return  decoder->BufferFill() == 0;
 };
 
@@ -628,10 +630,10 @@ cPluginSoftDevice::~cPluginSoftDevice()
   // Clean up after yourself!
 }
 
-const char *cPluginSoftDevice::Version(void) 
+const char *cPluginSoftDevice::Version(void)
 { return VERSION; }
 
-const char *cPluginSoftDevice::Description(void) 
+const char *cPluginSoftDevice::Description(void)
 { return tr(DESCRIPTION); }
 
 const char *cPluginSoftDevice::MainMenuEntry(void)
@@ -729,7 +731,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               fprintf (stderr,
                        "[ProcessArgs] xv: start up fullscreen\n");
               vo_argv += 4;
-            } else {  
+            } else {
                     fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
                     esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
               break;
@@ -903,7 +905,7 @@ static int ResetDecoderFct(cDevice *Device, int Stream, int value =-1) {
         else printf("Device is not the softdevice!!\n");
         return 0;
 };
- 
+
 bool cPluginSoftDevice::Service(const char *Id, void *Data ) {
         printf("Service '%s'\n",Id);
         struct PacketHandlesV100 *Handles=(struct PacketHandlesV100 *) Data;

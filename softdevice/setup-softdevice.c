@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.40 2006/01/17 20:45:46 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.41 2006/04/14 18:56:34 lucke Exp $
  */
 
 #include "video.h"
@@ -23,7 +23,7 @@ const char *deint_str[SETUP_DEINTMODES] = {
         "lavc",      // no need to translate
 #ifdef FB_SUPPORT
         "FB-intern", // no need to translate
-#endif        
+#endif
 #ifdef PP_LIBAVCODEC
         "linblend",  // no need to translate
         "linipol",   // no need to translate
@@ -99,6 +99,8 @@ cSetupStore::cSetupStore ()
   cropBottomLines   = 0;
   cropLeftCols      = 0;
   cropRightCols     = 0;
+  expandTopBottomLines = 0;
+  expandLeftRightCols = 0;
   deintMethod   = 0;
   ppMethod   = 0;
   ppQuality   = 0;
@@ -121,6 +123,10 @@ cSetupStore::cSetupStore ()
    * for non square pixel mode should be set via osd to 720/576
    */
   screenPixelAspect   = 0;
+  zoom                = 0;
+  zoomFactor          = 0;
+  zoomCenterX         = 0;
+  zoomCenterY         = 0;
 
   strcpy (alsaDevice, "");
   strcpy (alsaAC3Device, "");
@@ -218,10 +224,10 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   }
 #ifdef PP_LIBAVCODEC
   else if (!strcasecmp(Name,"Postprocess Method")) {
-            ppMethod=atoi(Value); 
+            ppMethod=atoi(Value);
             ppMethod=clamp(0,ppMethod,2);
   }  else if (!strcasecmp(Name,"Postprocess Quality")) {
-            ppQuality=atoi(Value); 
+            ppQuality=atoi(Value);
             ppQuality=clamp(0,ppQuality,6);
   }
 #endif
@@ -262,6 +268,16 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     cropRightCols = clamp (0, cropRightCols, MAX_CROP_COLS);
     fprintf(stderr,"[setup-softdevice] Cropping %d columns from right\n",
             cropRightCols);
+  } else if(!strcasecmp(Name,"ExpandTopBottomLines")) {
+    expandTopBottomLines = atoi(Value);
+    expandTopBottomLines = clamp (0, expandTopBottomLines, MAX_CROP_LINES/2);
+    fprintf(stderr,"[setup-softdevice] Expanding %d columns at top and bottom\n",
+            expandTopBottomLines);
+  } else if(!strcasecmp(Name,"ExpandLeftRightCols")) {
+    expandLeftRightCols = atoi(Value);
+    expandLeftRightCols = clamp (0, expandLeftRightCols, MAX_CROP_COLS/2);
+    fprintf(stderr,"[setup-softdevice] Expanding %d columns at left and right\n",
+            expandLeftRightCols);
   } else if (!strcasecmp(Name,"PixelFormat")) {
     pixelFormat = atoi(Value);
     pixelFormat = clamp (0, pixelFormat, 2);

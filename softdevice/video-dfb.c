@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.51 2006/03/12 09:43:28 wachm Exp $
+ * $Id: video-dfb.c,v 1.52 2006/04/14 18:56:34 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1145,7 +1145,7 @@ void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
       tmpSurface->Unlock();
 
       tmpSurface->Flip();
-              
+
       int miny=0;
       int maxy=0;
       do {
@@ -1158,17 +1158,17 @@ void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
               maxy=miny;
               while (dirtyLines[maxy] && maxy < Yres)
                       maxy++;
-	      
+
               osdsrc.x = 0;
               osdsrc.y = miny;
               osdsrc.w = Xres;
               osdsrc.h = maxy-miny + 1;
               tmpSurface->Blit(tmpSurface,&osdsrc,0,miny);
-              
+
               miny=maxy;
-             
+
       } while ( miny<Yres);
-      
+
     }
     catch (DFBException *ex)
     {
@@ -1426,6 +1426,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     } else if (pixelformat == DSPF_YUY2) {
 
       yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+      //yv12_to_yuy2_il_c(Py + Ystride  * cutTop * 2 + cutLeft * 2,
                    Pu + UVstride * cutTop + cutLeft,
                    Pv + UVstride * cutTop + cutLeft,
                    dst + pitch * cutTop * 2 + cutLeft * 4,

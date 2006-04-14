@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.1 2006/01/17 20:45:46 wachm Exp $
+ * $Id: setup-softdevice-menu.c,v 1.2 2006/04/14 18:56:34 lucke Exp $
  */
 
 #include "video.h"
@@ -93,6 +93,24 @@ cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
                             (SETUP_USERKEYS-1),
                             userKeyUsage));
 
+#if VDRVERSNUM >= 10334
+  Add(new cOsdItem(" ", osUnknown, false));
+#else
+  Add(new cOsdItem(" ", osUnknown));
+#endif
+  Add(new cMenuEditIntItem(tr("Zoom factor"),
+                           &data->zoomFactor,
+                           0,
+                           128));
+  Add(new cMenuEditIntItem(tr("Zoom area shift (left/right)"),
+                           &data->zoomCenterX,
+                           -100,
+                           100));
+  Add(new cMenuEditIntItem(tr("Zoom area shift (up/down)"),
+                           &data->zoomCenterY,
+                           -100,
+                           100));
+
   if (data->outputMethod != VOUT_FB)
   {
 #if VDRVERSNUM >= 10334
@@ -123,6 +141,21 @@ cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
                              0,
                              MAX_CROP_COLS));
   }
+
+#if VDRVERSNUM >= 10334
+  Add(new cOsdItem(" ", osUnknown, false));
+#else
+  Add(new cOsdItem(" ", osUnknown));
+#endif
+
+  Add(new cMenuEditIntItem(tr("Expand top/bottom lines"),
+                           &data->expandTopBottomLines,
+                           0,
+                           MAX_CROP_LINES/2));
+  Add(new cMenuEditIntItem(tr("Expand left/right columns"),
+                           &data->expandLeftRightCols,
+                           0,
+                           MAX_CROP_COLS/2));
 }
 
 /* ---------------------------------------------------------------------------
@@ -267,12 +300,15 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_VIDEOASPECTNAMES-1),
                             videoAspectNames));
 
-  osdModeNames[0] = tr("pseudo");
-  osdModeNames[1] = tr("software");
-  Add(new cMenuEditStraItem(tr("OSD alpha blending"),
-                            &data->osdMode,
-                            (SETUP_OSDMODES-1),
-                            osdModeNames));
+  if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_VIDIX)
+  {
+    osdModeNames[0] = tr("pseudo");
+    osdModeNames[1] = tr("software");
+    Add(new cMenuEditStraItem(tr("OSD alpha blending"),
+                              &data->osdMode,
+                              (SETUP_OSDMODES-1),
+                              osdModeNames));
+  }
 
 #if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
