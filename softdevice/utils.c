@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.10 2006/01/07 13:26:43 wachm Exp $
+ * $Id: utils.c,v 1.11 2006/04/14 15:45:43 lucke Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -25,6 +25,164 @@
 #else
 # define  HAVE_BROKEN_GCC_CPP  0
 #endif
+
+/* ---------------------------------------------------------------------------
+ * chroma: field based
+ * lang: C
+ */
+void yv12_to_yuy2_il_c(const uint8_t *py,
+                       const uint8_t *pu, const uint8_t *pv,
+                       uint8_t *dst, int width, int height,
+                       int lumStride, int chromStride, int dstStride)
+{
+    const unsigned  chromWidth = width >> 1;
+    uint32_t        *idst1, *idst2;
+    const uint8_t   *yc1, *yc2, *uc, *vc;
+
+  for(int y=0; y<height/4; y++)
+  {
+    /* -----------------------------------------------------------------------
+     * take chroma line x (it's from field A) for packing with
+     * luma lines x * 2 and x * 2 + 2
+     */
+    idst1 = (uint32_t *) (dst + 0 * dstStride);
+    idst2 = (uint32_t *) (dst + 2 * dstStride);
+    yc1 = py;
+    yc2 = py + 2 * lumStride;
+    uc = pu;
+    vc = pv;
+
+    for(unsigned i = 0; i < chromWidth; i++)
+    {
+      *idst1++ = (yc1[0] << 0)+ (uc[0] << 8) + (yc1[1] << 16) + (vc[0] << 24);
+      *idst2++ = (yc2[0] << 0)+ (uc[0] << 8) + (yc2[1] << 16) + (vc[0] << 24);
+      yc1 += 2;
+      yc2 += 2;
+      uc++;
+      vc++;
+    }
+
+    /* -----------------------------------------------------------------------
+     * take chroma line x+1 (it's from field B) for packing with
+     * luma lines x * 2 + 1 and x * 2 + 3
+     */
+    py += lumStride;
+    pu += chromStride;
+    pv += chromStride;
+
+    yc1 = py;
+    yc2 = py + 2 * lumStride;
+    uc = pu;
+    vc = pv;
+    idst1 = (uint32_t *) (dst + 1 * dstStride);
+    idst2 = (uint32_t *) (dst + 3 * dstStride);
+
+    for(unsigned i = 0; i < chromWidth; i++)
+    {
+      *idst1++ = (yc1[0] << 0)+ (uc[0] << 8) + (yc1[1] << 16) + (vc[0] << 24);
+      *idst2++ = (yc2[0] << 0)+ (uc[0] << 8) + (yc2[1] << 16) + (vc[0] << 24);
+      yc1 += 2;
+      yc2 += 2;
+      uc++;
+      vc++;
+    }
+
+    py += 3*lumStride;
+    pu += chromStride;
+    pv += chromStride;
+
+    dst  += 4 * dstStride;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * chroma: frame based
+ * lang: C
+ */
+void yv12_to_yuy2_fr_c(const uint8_t *ysrc,
+                       const uint8_t *usrc, const uint8_t *vsrc,
+                       uint8_t *dst, int width, int height,
+                       int lumStride, int chromStride, int dstStride)
+{
+    const unsigned chromWidth = width >> 1;
+
+  for(int y=0; y<height; y++)
+  {
+      uint32_t *idst = (uint32_t *) dst;
+      const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
+
+    for(unsigned i = 0; i < chromWidth; i++)
+    {
+      *idst++ = (yc[0] << 0)+ (uc[0] << 8) + (yc[1] << 16) + (vc[0] << 24);
+      yc += 2;
+      uc++;
+      vc++;
+    }
+
+    if( (y&1) == 1)
+    {
+      usrc += chromStride;
+      vsrc += chromStride;
+    }
+
+    ysrc += lumStride;
+    dst  += dstStride;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * chroma: frame based
+ * lang: MMX2
+ */
+void yv12_to_yuy2_fr_mmx2(const uint8_t *ysrc,
+                          const uint8_t *usrc, const uint8_t *vsrc,
+                          uint8_t *dst, int width, int height,
+                          int lumStride, int chromStride, int dstStride)
+{
+  for (int i=0; i<height; i++)
+  {
+      const uint8_t *pu, *pv, *py;
+      uint8_t  *srfc;
+
+    pu = usrc;
+    pv = vsrc;
+    py = ysrc;
+
+    srfc = dst;
+
+    for (int j =0; j < width/8; j++)
+    {
+      movd_m2r(*pu, mm1);       // mm1 = 00 00 00 00 U3 U2 U1 U0
+      movd_m2r(*pv, mm2);       // mm2 = 00 00 00 00 V3 V2 V1 V0
+      movq_m2r(*py, mm0);       // mm0 = Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0
+      punpcklbw_r2r(mm2, mm1);  // mm1 = V3 U3 V2 U2 V1 U1 V0 U0
+      movq_r2r(mm0,mm3);        // mm3 = Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0
+      movq_r2r(mm1,mm4);        // mm4 = V3 U3 V2 U2 V1 U1 V0 U0
+      punpcklbw_r2r(mm1, mm0);  // mm0 = V1 Y3 U1 Y2 V0 Y1 U0 Y0
+      punpckhbw_r2r(mm4, mm3);  // mm3 = V3 Y7 U3 Y6 V2 Y5 U2 Y4
+
+      movntq(mm0,*srfc);        // Am Meisten brauchen die Speicherzugriffe
+      srfc+=8;
+      py+=8;
+      pu+=4;
+      pv+=4;
+      movntq(mm3,*srfc);      // wenn movntq nicht geht, dann movq verwenden
+      srfc+=8;
+    }
+
+    ysrc += lumStride;;
+
+    if (i % 2 == 1)
+    {
+      usrc += chromStride;
+      vsrc += chromStride;
+    }
+
+    dst += dstStride;
+  }
+  __asm__ __volatile__ ("sfence \n"
+		        "emms \n" : : : "memory");
+}
 
 void yv12_to_yuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
                   uint8_t *dst, int width, int height,
@@ -218,13 +376,13 @@ void mmx_unpack_16rgb (uint8_t * image, int lines, int stride)
 
     psllq_i2r (3, mm7);
 
-    
+
     // jetzt muss ich die an bestimmten Stellen verdoppeln.
     movntq (mm0, *(image));
 
     punpckhbw_r2r (mm1, mm5);
     por_r2r (mm7, mm5);
-    
+
     movntq (mm5, *(image+8));
     while(--lines) { // write the same in the line above
       image -= stride;
@@ -267,14 +425,14 @@ void mmx_unpack_15rgb (uint8_t * image, int lines, int stride)
     por_r2r (mm2, mm0);
 
     psllq_i2r (3, mm7);
-    
+
     // jetzt muss ich die an bestimmten Stellen verdoppeln.
-    psrlq_i2r(1,mm0);//MW 
+    psrlq_i2r(1,mm0);//MW
     movntq (mm0, *(image));
 
     punpckhbw_r2r (mm1, mm5);
     por_r2r (mm7, mm5);
-    
+
     psrlq_i2r(1,mm5); //MW
     movntq (mm5, *(image+8));
     while(--lines) { // write the same in the line above

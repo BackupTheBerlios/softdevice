@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.5 2005/07/15 20:42:16 lucke Exp $
+ * $Id: utils.h,v 1.6 2006/04/14 15:45:43 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -18,6 +18,30 @@
 // use this instead if you don't have a MMX2 CPU:
 #define movntq(src,dest) do { movq_r2m (src, dest); } while (0);
 #endif
+
+void yv12_to_yuy2_il_c(const uint8_t *py,
+                       const uint8_t *pu,
+                       const uint8_t *pv,
+                       uint8_t *dst,
+                       int width,int height,
+                       int lumStride,int chromStride,
+                       int dstStride);
+
+void yv12_to_yuy2_fr_c(const uint8_t *py,
+                       const uint8_t *pu,
+                       const uint8_t *pv,
+                       uint8_t *dst,
+                       int width,int height,
+                       int lumStride,int chromStride,
+                       int dstStride);
+
+void yv12_to_yuy2_fr_mmx2(const uint8_t *py,
+                          const uint8_t *pu,
+                          const uint8_t *pv,
+                          uint8_t *dst,
+                          int width,int height,
+                          int lumStride,int chromStride,
+                          int dstStride);
 
 void yv12_to_yuy2( const uint8_t *ysrc,
                    const uint8_t *usrc,
