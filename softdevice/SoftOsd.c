@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.11 2006/03/12 11:41:50 wachm Exp $
+ * $Id: SoftOsd.c,v 1.12 2006/04/17 20:06:30 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -826,6 +826,10 @@ void cSoftOsd::CopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll) {
         OSDDEB("CopyToBitmap destsize: %d,%d\n",dest_Width,dest_Height);
+        if (dest_Height & 0x1 !=0) {
+                printf("warning dest_Height not even!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                dest_Height &= ~0x1;
+        };
         if (dest_Height==OSD_HEIGHT)
                 NoVScaleCopyToBitmap(PY,PU,PV,PAlphaY,PAlphaUV,Ystride,UVstride,
                                 dest_Width,dest_Height,RefreshAll);
@@ -1073,10 +1077,10 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
 		
 		//printf("Copy to destination y: %d\n",y);
 		buf=dest+y*linesize;
-		(*OutputConvert)(buf,tmp_pixmap,dest_Width);
+		(*OutputConvert)(buf,tmp_pixmap+1,dest_Width-2);
                 if (pixelMask)
                         CreatePixelMask(pixelMask+y*linesize/16,
-                                        tmp_pixmap,dest_Width);
+                                        tmp_pixmap+1,dest_Width-2);
                 if (dest_dirtyLines)
                         dest_dirtyLines[y]=true;
                 
@@ -1086,10 +1090,10 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
 			//printf("Copy to destination y: %d\n",y);
 			y++;
 			buf=dest+y*linesize;
-			(*OutputConvert)(buf,(color*)src,dest_Width);
+			(*OutputConvert)(buf,((color*)src)+1,dest_Width-2);
                         if (pixelMask)
                                 CreatePixelMask(pixelMask+y*linesize/16,
-                                                tmp_pixmap,dest_Width);
+                                                ((color*)src)+1,dest_Width-2);
                         if (dest_dirtyLines)
                                 dest_dirtyLines[y]=true;
 			start_pos+=new_pixel_height;
@@ -1165,10 +1169,10 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
                                 scaleH_Reference,dest_Width);
                 buf=dest+y*linesize;
                 //printf("copy to destination %d\n",y);
-                (*OutputConvert)(buf,tmp_pixmap,dest_Width);
+                (*OutputConvert)(buf,tmp_pixmap+1,dest_Width-2);
                 if (pixelMask)
                         CreatePixelMask(pixelMask+y*linesize/16,
-                                        tmp_pixmap,dest_Width);
+                                        tmp_pixmap+1,dest_Width-2);
                 if (dest_dirtyLines)
                         dest_dirtyLines[y]=true;
 

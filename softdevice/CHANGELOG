@@ -1,4 +1,6 @@
 Changelog
+2006-04-17:
+   - cut away the left- and rightmost column of the osd
 2006-04-14:
    - Expand top/bottom line and left/right coloumns (from vdr-portal).
    - Zoom feature, zoomed area may be shifted around.
