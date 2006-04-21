@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.18 2006/04/14 18:56:34 lucke Exp $
+ * $Id: i18n.c,v 1.19 2006/04/21 05:47:24 lucke Exp $
  */
 
 #include "i18n.h"
@@ -1029,7 +1029,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "",//  9
+    "Zoomauskerroin",//  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -1052,7 +1052,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "",//  9
+    "Zoomauksen siirto (vasen/oikea)",//  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -1075,7 +1075,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "",//  9
+    "Zoomauksen siirto (ylös/alas)",//  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -1098,7 +1098,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "",//  9
+    "Levitä laitimmaiset rivit",//  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
@@ -1121,7 +1121,7 @@ const tI18nPhrase Phrases[] = {
     "",             //  6 TODO
     "",             //  7 TODO
     "",             //  8 TODO
-    "",//  9
+    "Levitä reunimmaiset sarakkeet",//  9
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
