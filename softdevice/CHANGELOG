@@ -1,4 +1,7 @@
 Changelog
+2006-04-21:
+   - updated finnish translations (by Rolf Ahrenberg)
+   - video-dfb: fix for crash at startup when software OSD blending was active
 2006-04-17:
    - cut away the left- and rightmost column of the osd
 2006-04-14:
