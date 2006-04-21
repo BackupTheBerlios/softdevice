@@ -132,16 +132,30 @@ are not available.
 OSD setup options:
 ------------------
   Cropping:
-  Post processing:
-  Video out:
 
-  XV startup aspect
+  Post processing:
+
+  Video out:
+    Output methods : X11-XV
+    The following subselections are available if the driver of
+    current video card supports it:
+
+    Brightness, Contrast, Hue, Saturation:
+      Possible Values: 0 .. 100
+      Center and default value of all is 50.
+
+  Xv startup aspect
+    Output methods : X11-XV
     Possible values: 4:3 normal, 16:9 wide
+    You may choose the startup window aspect for next time starting
+    vdr. It either in 4:3 format with video size of 768x576 or a
+    in 16:9 format with size of 1024x576 .
 
   Screen aspect
     Possible values: default, 5:4, 4:3, 16:9, 16:10
 
   OSD alpha blending
+    Output methods : X11-XV, Vidix
     Possible values: pseudo, software
 
   Buffer mode
@@ -157,7 +171,7 @@ OSD setup options:
     Possible values: Stereo (2CH), 5.1 S/P-DIF,
                      5.1 Analog (4CH), 5.1 Analog (6CH)
     This specifies what should be done when we get AC3 audio frames.
-    When set to 5.1 S/P-DIF no software decoding is used. AC3 frames
+    When set to 5.1 S/P-DIF no software decoding is done. AC3 frames
     are passed directly from your sound card to your audio processing
     equipment.
     If you choose any of (xCH) modes, it depends on the capabilities of
@@ -171,8 +185,16 @@ OSD setup options:
     The method for syncing video output to audio output is determined by
     this option.
 
+  Pixel Format
+    Output methods : DirectFB, Vidix
+    Possible Values: YV12, I420, YUY2
+
+  Use StretchBlit
+    Output methods : DirectFB
+    Possible Values: off, on
+
   Hide main menu entry
-    Possible values: yes, no .
+    Possible values: yes, no
     When set to yes, softdevice setup menu is not shown in vdr's main
     menu. Softdevice developers usually set this to no, normal end user
     tend to set this to yes. If softdevice setup menu is hidden, it is
