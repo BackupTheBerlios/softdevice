@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.48 2006/04/14 18:56:34 lucke Exp $
+ * $Id: video.c,v 1.49 2006/04/21 06:47:10 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -46,6 +46,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   displayTimeUS = 0;
   this->setupStore=setupStore;
   freezeMode=false;
+  videoInitialized = false;
   old_picture = NULL;
 
   for (int i = 0; i < MAX_PAR; ++i)

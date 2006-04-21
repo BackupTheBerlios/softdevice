@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.52 2006/04/14 18:56:34 lucke Exp $
+ * $Id: video-dfb.c,v 1.53 2006/04/21 06:47:10 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -294,6 +294,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
   screenPixelAspect = -1;
   currentPixelFormat = setupStore->pixelFormat;
+  prevOsdMode = setupStore->osdMode;
+  setupStore->osdMode = 0;
   isVIAUnichrome = false;
   clearAlpha = 0x00;
   clearBackground = 0;
@@ -625,6 +627,8 @@ bool cDFBVideoOut::Initialize (void)
     dfbRemote = new cDFBRemote ("softdevice-dfb", this);
     dfbRemote->DFBRemoteStart();
   }
+  videoInitialized = true;
+
   return true;
 }
 
@@ -993,6 +997,9 @@ void cDFBVideoOut::OpenOSD ()
 {
     IDirectFBSurface  *tmpSurface;
 
+  if (!videoInitialized)
+    return;
+
   cVideoOut::OpenOSD();
   try
   {
@@ -1015,6 +1022,9 @@ void cDFBVideoOut::OSDStart()
 {
     IDirectFBSurface  *tmpSurface;
 
+  if (!videoInitialized)
+    return;
+
   try
   {
     tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
@@ -1031,9 +1041,17 @@ void cDFBVideoOut::OSDStart()
 /* ---------------------------------------------------------------------------
  */
 void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
-                                     bool *&DirtyLines) {
+                                     bool *&DirtyLines)
+{
   int               pitch;
   uint8_t           *dst;
+
+  dirtyLines = DirtyLines = NULL;
+  osd = NULL;
+  stride = 0;
+
+  if (!videoInitialized)
+    return;
 
   try
   {
@@ -1054,8 +1072,9 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::CommitUnlockOsdSurface() {
-  if (!tmpOsdSurface)
+void cDFBVideoOut::CommitUnlockOsdSurface()
+{
+  if (!videoInitialized || !dirtyLines || !tmpOsdSurface)
     return;
 
   //printf("CommitUnlockOsdSurface %p\n",tmpOsdSurface);fflush(stdout);
@@ -1232,6 +1251,9 @@ void cDFBVideoOut::Refresh()
     uint8_t           *dst;
     IDirectFBSurface  *tmpSurface;
 
+  if (!videoInitialized)
+    return;
+
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
 
   try
@@ -1264,6 +1286,9 @@ void cDFBVideoOut::Refresh()
 void cDFBVideoOut::CloseOSD()
 {
     IDirectFBSurface  *tmpSurface;
+
+  if (!videoInitialized)
+    return;
 
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
 
@@ -1300,6 +1325,9 @@ void cDFBVideoOut::CloseOSD()
  */
 void cDFBVideoOut::ShowOSD ()
 {
+  if (!videoInitialized)
+    return;
+
   if (useStretchBlit && (OSDpresent || osdClrBack)) {
     // do image and OSD mix here
       DFBRectangle  src, dst, osdsrc;
@@ -1356,6 +1384,9 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     uint8_t *dst;
     int pitch;
     int hi;
+
+  if (!videoInitialized)
+    return;
 
   events_not_done = 0;
   SetParams();
@@ -1513,6 +1544,8 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 cDFBVideoOut::~cDFBVideoOut()
 {
   fprintf(stderr,"Releasing DFB\n");
+
+  setupStore->osdMode = prevOsdMode;
 
   if (videoSurface) videoSurface->Release();
   if (osdSurface)   osdSurface->Release();

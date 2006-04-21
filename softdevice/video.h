@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.32 2006/04/14 18:56:34 lucke Exp $
+ * $Id: video.h,v 1.33 2006/04/21 06:47:10 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -121,6 +121,8 @@ protected:
             interlaceMode,
             displayTimeUS;
     double  parValues[MAX_PAR];
+
+    bool    videoInitialized;
 
     AVFrame *old_picture;
     int     old_width, old_height;

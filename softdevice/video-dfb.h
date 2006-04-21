@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.17 2006/02/18 22:20:29 lucke Exp $
+ * $Id: video-dfb.h,v 1.18 2006/04/21 06:47:10 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -42,6 +42,7 @@ class cDFBVideoOut : public cVideoOut {
     int   clearBackCount,
           clearBackground,
           fieldParity;
+    int   prevOsdMode;
 
     void SetParams();
     void EnableFieldParity(IDirectFBDisplayLayer *layer);
