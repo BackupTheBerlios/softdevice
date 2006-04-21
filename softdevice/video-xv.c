@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.50 2006/04/14 15:56:17 lucke Exp $
+ * $Id: video-xv.c,v 1.51 2006/04/21 18:20:45 lucke Exp $
  */
 
 #include <unistd.h>
@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "2006-02-05"
+#define PATCH_VERSION "2006-04-21"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 cXvRemote        *xvRemote = NULL;
@@ -727,7 +727,7 @@ void cXvVideoOut::ProcessEvents ()
       case MapNotify:
         EVDEB("MapNotify\n");
         map_count++;
-        if (initialized) {
+        if (videoInitialized) {
           XSetInputFocus(dpy,
                    win,
                    RevertToParent,
@@ -780,7 +780,6 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
 {
   OSDpresent = false;
   OSDpseudo_alpha = true;
-  initialized = 0;
   toggleInProgress = 0;
   xv_initialized=false;
   /* -------------------------------------------------------------------------
@@ -1010,10 +1009,10 @@ init_osd:
                           ZPixmap);
           if (osd_image) {
                   dsyslog("[XvVideoOut]: Initialize XGetImage Successful (%p)", osd_image);
-		  osd_buffer = (unsigned char *) osd_image->data;
+		              osd_buffer = (unsigned char *) osd_image->data;
           } else {
                   dsyslog("[XvVideoOut]: Initialize ERROR: XGetImage FAILED !");
-		  osd_buffer = NULL;
+		              osd_buffer = NULL;
           }
   };
   if (osd_image) {
@@ -1070,7 +1069,7 @@ init_osd:
   }
 
   pthread_mutex_unlock(&xv_mutex);
-  initialized=true;
+  videoInitialized = true;
   return true;
 }
 
@@ -1259,7 +1258,7 @@ retry_image:
 
   pthread_mutex_unlock(&xv_mutex);
 
-  initialized = 1;
+  videoInitialized = true;
   xv_initialized = 1;
   return true;
 }
@@ -1454,7 +1453,7 @@ void cXvVideoOut::CloseOSD()
     }
   }
 #endif
-  if (initialized)
+  if (videoInitialized)
   {
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
     pthread_mutex_lock(&xv_mutex);
@@ -1472,7 +1471,7 @@ void cXvVideoOut::CloseOSD()
 void cXvVideoOut::ClearOSD()
 {
   cVideoOut::ClearOSD();
-  if (initialized && current_osdMode==OSDMODE_PSEUDO) {
+  if (videoInitialized && current_osdMode==OSDMODE_PSEUDO) {
     pthread_mutex_lock(&xv_mutex);
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
     ShowOSD();
@@ -1528,27 +1527,38 @@ void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
 /* ---------------------------------------------------------------------------
  */
 void cXvVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
-                  bool *&dirtyLines) {
+                  bool *&dirtyLines)
+{
+        osd = NULL;
+
+        if (!videoInitialized)
+                return;
+
         osd=osd_buffer;
         stride=osd_image->bytes_per_line;
         dirtyLines=NULL;
-};
+}
 
 /* ---------------------------------------------------------------------------
  */
-void cXvVideoOut::CommitUnlockOsdSurface() {
+void cXvVideoOut::CommitUnlockOsdSurface()
+{
+        if (!videoInitialized)
+                return;
+
         cVideoOut::CommitUnlockOsdSurface();
         pthread_mutex_lock(&xv_mutex);
         ShowOSD();
         XSync(dpy, False);
         pthread_mutex_unlock(&xv_mutex);
-};
+}
+
 /*
 void cXvVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
 {
   // refreshes the screen
   // copy video Data
-  if (!initialized)
+  if (!videoInitialized)
     return;
 //  if (OSDpresent)
   {
@@ -1578,7 +1588,7 @@ void cXvVideoOut::Refresh()
 {
   // refreshes the screen
   // copy video Data
-  if (!initialized)
+  if (!videoInitialized)
     return;
   //if (OSDpresent)
   {
@@ -1662,7 +1672,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
                       int Width, int Height,
                       int Ystride, int UVstride)
 {
-  if (!initialized || !xv_initialized)
+  if (!videoInitialized || !xv_initialized)
     return;
 
   pthread_mutex_lock(&xv_mutex);
@@ -1763,7 +1773,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 
 cXvVideoOut::~cXvVideoOut()
 {
-  if (!initialized)
+  if (!videoInitialized)
     return;
 
   if (xv_initialized)
@@ -1804,7 +1814,7 @@ cXvVideoOut::~cXvVideoOut()
     free(osd_image);
     osd_image = NULL;
   }
-  initialized = 0;
+  videoInitialized = false;
   pthread_mutex_unlock(&xv_mutex);
 
 #if VDRVERSNUM < 10307

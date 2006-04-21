@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.18 2006/04/14 15:56:17 lucke Exp $
+ * $Id: video-xv.h,v 1.19 2006/04/21 18:20:45 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -112,12 +112,11 @@ private:
                     net_wm_STATE_STAYS_ON_TOP,
                     net_wm_STATE_ABOVE,
                     net_wm_STATE;
-  int               initialized,
-                    toggleInProgress,
+  int               toggleInProgress,
                     xv_initialized,
                     /* -------------------------------------------------------
-                        * could be specified via argv or parameters
-                        */
+                     * could be specified via argv or parameters
+                     */
                     xvWidth, xvHeight,
                     width, height,
                     format;
