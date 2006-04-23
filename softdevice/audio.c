@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.23 2006/01/07 13:20:24 wachm Exp $
+ * $Id: audio.c,v 1.24 2006/04/23 15:58:49 wachm Exp $
  */
 
 #include <unistd.h>
@@ -54,6 +54,7 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
     oldContext.channels = currContext.channels=0;
     oldContext.samplerate = currContext.samplerate=48000;
     dsyslog("[softdevice-audio] Device opened! Ready to play");
+    volume=255;
 }
 
 /* ----------------------------------------------------------------------------
@@ -91,6 +92,17 @@ bool cAlsaAudioOut::Resume() {
 
 /* ----------------------------------------------------------------------------
  */
+
+void Scale(int16_t *Data, int size,int Volume) 
+{
+  while (size>0) {
+    register int32_t tmp=(int32_t)(*Data) * Volume;
+    *Data=(int16_t) (tmp>>8);
+    Data++;
+    size--;
+  };
+};
+  
 void cAlsaAudioOut::Write(uchar *Data, int Length)
 {
     int     err;
@@ -110,6 +122,11 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
     size = Length / (2 * 2);
   else
     size = Length/(2*currContext.channels);
+
+#ifdef NO_MIXER
+  // change the volume
+  Scale((int16_t*)Data,Length/2,volume);
+#endif
 
   while (size) {
     while (paused) usleep(1000); // block
@@ -388,6 +405,9 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
  */
 void cAlsaAudioOut::SetVolume (int vol)
 {
+#ifdef NO_MIXER
+  volume = vol;
+#else
     int                   err;
     long                  mixerMin, mixerMax,
                           setVol;
@@ -433,6 +453,7 @@ void cAlsaAudioOut::SetVolume (int vol)
   }
 
   snd_mixer_close(mHandle);
+#endif
 }
 
 /* ---------------------------------------------------------------------------

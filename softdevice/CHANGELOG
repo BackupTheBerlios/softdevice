@@ -1,4 +1,7 @@
 Changelog
+2006-04-23:
+   - added volume changing with changing the  mixer control ( to use it add 
+     -DNO_MIXER, currently experimental
 2006-04-21:
    - updated finnish translations (by Rolf Ahrenberg).
    - video-dfb: fix for crash at startup when software OSD blending was active.
