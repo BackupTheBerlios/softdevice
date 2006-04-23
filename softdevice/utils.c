@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.12 2006/04/23 19:55:53 wachm Exp $
+ * $Id: utils.c,v 1.13 2006/04/23 20:32:45 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -563,7 +563,11 @@ uint64_t getTimeMilis(void) {
 #define MIN_LEN 0x40
 #define PREFETCH "prefetchnta"
 #define EMMS     "emms"
+#ifdef USE_MMX2
 #define MOVNTQ "movntq"
+#else
+#define MOVNTQ "movq"
+#endif
 #define MMREG_SIZE 64
 #define BLOCK_SIZE 4096
 

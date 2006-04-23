@@ -7,6 +7,7 @@ Changelog
      and remove the RC thread
    - no longer link ShmClient to vdr objects
    - fix some includes
+   - probably fix for processors not supporting mmx2
 2006-04-21:
    - updated finnish translations (by Rolf Ahrenberg).
    - video-dfb: fix for crash at startup when software OSD blending was active.

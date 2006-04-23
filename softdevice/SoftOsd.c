@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.12 2006/04/17 20:06:30 wachm Exp $
+ * $Id: SoftOsd.c,v 1.13 2006/04/23 20:35:53 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -386,7 +386,7 @@ void cSoftOsd::ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel) {
 
 void cSoftOsd::ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel) {
 	uint8_t *end_dest=dest+4*Pixel;
-#ifdef USE_MMX 
+#ifdef USE_MMX2 
 	end_dest-=16;
         __asm__( 
 			"movq (%0),%%mm5 \n"
