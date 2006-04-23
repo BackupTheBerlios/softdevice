@@ -6,16 +6,19 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.9 2006/04/01 08:26:56 wachm Exp $
+ * $Id: ShmClient.c,v 1.10 2006/04/23 19:55:53 wachm Exp $
  */
 
 #include <signal.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #include "video-xv.h"
 #include "shm-common.h"
 #include "utils.h"
 
-#define SHMDEB(out...) {printf("SHMCLIENT[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+//#define SHMDEB(out...) {printf("SHMCLIENT[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef SHMDEB
 #define SHMDEB(out...)
@@ -29,26 +32,28 @@ void sig_handler(int signal) {
         active=false;
 };
 
-class cShmXvRemote : public cXvRemote {
+class cShmRemote : public cSoftRemote {
         public:  
-                cShmXvRemote(const char *Name, cXvVideoOut *vout)
-                        : cXvRemote(Name,vout) 
+                cShmRemote(const char *Name)
+                        : cSoftRemote(Name) 
                         {};
                         
-                ~cShmXvRemote()
+                ~cShmRemote()
                 {};
 
-                virtual void   PutKey (KeySym key);
+                virtual bool PutKey(uint64 Code, bool Repeat = false, 
+                                bool Release = false);
 };
 
-void cShmXvRemote::PutKey(KeySym key) {
+bool cShmRemote::PutKey(uint64 Code, bool Repeat, 
+                                bool Release) {
         if (ctl) 
         {
                 SHMDEB("get lock for the key\n");
                 sem_wait_lock(ctl->semid,KEY_MUT);
                 SHMDEB("got lock for the key\n");
                 
-                ctl->key=(uint64_t) key;
+                ctl->key=Code;
 
                 // release lock
                 sem_sig_unlock(ctl->semid,KEY_MUT);
@@ -56,14 +61,14 @@ void cShmXvRemote::PutKey(KeySym key) {
                 sem_sig_unlock(ctl->semid,KEY_SIG);
                 SHMDEB("signal new key\n");
         };
-
+        return true;
 };
 
 int main(int argc, char **argv) {
         cSetupStore SetupStore;
         SetupStore.xvFullscreen=0;
         cXvVideoOut *vout=new cXvVideoOut(&SetupStore);
-        xvRemote= new cShmXvRemote ("softdevice-xv",vout);
+        xvRemote= new cShmRemote("softdevice-xv");
         
         signal(SIGINT,sig_handler);
         signal(SIGQUIT,sig_handler);
@@ -91,9 +96,8 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
         };
-        xvRemote->XvRemoteStart();
-        
-        if (vout->useShm) {
+       
+        if ( vout->useShm && vout->xv_image ) {
                 ctl->pict_shmid= vout->shminfo.shmid;  
                 ctl->max_width=vout->xv_image->width;
                 ctl->max_height=vout->xv_image->height;

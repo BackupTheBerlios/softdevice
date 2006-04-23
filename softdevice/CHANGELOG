@@ -3,6 +3,10 @@ Changelog
    - added volume changing with changing the  mixer control ( to use it add
      -DNO_MIXER, currently experimental
    - fix for vdr-1.3.48
+   - remove duplicate remote code, call ProcessEvents() from the video thread
+     and remove the RC thread
+   - no longer link ShmClient to vdr objects
+   - fix some includes
 2006-04-21:
    - updated finnish translations (by Rolf Ahrenberg).
    - video-dfb: fix for crash at startup when software OSD blending was active.

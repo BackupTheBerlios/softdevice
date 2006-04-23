@@ -3,11 +3,18 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.26 2006/04/14 18:56:34 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.27 2006/04/23 19:55:53 wachm Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
 #define __SETUP_SOFTDEVICE_H
+#include <stdint.h>
+
+#ifndef STAND_ALONE
+#include <vdr/menu.h>
+#else
+#include "VdrReplacements.h"
+#endif
 
 #define VOUT_XV       1
 #define VOUT_FB       2
@@ -105,7 +112,7 @@ class cSetupStore {
     char          *getPPValue(void);
     void          CropModeNext(void);
 
-    virtual bool  CatchRemoteKey(const char *remoteName, uint64 key);
+    virtual bool  CatchRemoteKey(const char *remoteName, uint64_t key);
 
     int   xvAspect;
     int   xvMaxArea;
@@ -154,62 +161,6 @@ class cSetupStore {
 
 #define OSDMODE_PSEUDO    0
 #define OSDMODE_SOFTWARE  1
-
-/* ---------------------------------------------------------------------------
- */
-class cMenuSetupVideoParm : public cOsdMenu
-{
-  private:
-    cSetupStore *data, copyData;
-
-  protected:
-    virtual eOSState ProcessKey(eKeys Key);
-
-  public:
-    cMenuSetupVideoParm(const char *name);
-};
-
-/* ---------------------------------------------------------------------------
- */
-class cMenuSetupCropping : public cOsdMenu
-{
-  private:
-    cSetupStore *data, copyData;
-
-  protected:
-    virtual eOSState ProcessKey(eKeys Key);
-
-  public:
-    cMenuSetupCropping(const char *name);
-};
-
-/* ---------------------------------------------------------------------------
- */
-class cMenuSetupPostproc : public cOsdMenu
-{
-  private:
-    cSetupStore *data, copyData;
-
-  protected:
-    virtual eOSState ProcessKey(eKeys Key);
-
-  public:
-    cMenuSetupPostproc(const char *name);
-};
-
-/* ---------------------------------------------------------------------------
- */
-class cMenuSetupSoftdevice : public cMenuSetupPage {
-  private:
-    cSetupStore *data, copyData;
-
-  protected:
-    virtual eOSState ProcessKey(eKeys Key);
-    virtual void Store(void);
-
-  public:
-    cMenuSetupSoftdevice(cPlugin *plugin = NULL);
-};
 
 extern cSetupStore setupStore;
 

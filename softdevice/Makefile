@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.26 2006/04/23 17:56:12 lucke Exp $
+# $Id: Makefile,v 1.27 2006/04/23 19:55:53 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -350,8 +350,12 @@ VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../remote.o ../../../i18n.o ../../../keys.o \
 		      ../../../config.o ../../../plugin.o\
 		      ../../../sources.o
-SHM_CLIENT_OBJS  = video.o video-xv.o setup-softdevice.o xscreensaver.o \
-		   utils.o
+SHM_CLIENT_OBJS  = video_shm.o video-xv_shm.o setup-softdevice_shm.o\
+		   xscreensaver_shm.o utils_shm.o VdrReplacements_shm.o\
+		   ShmClient_shm.o
 
-ShmClient: ShmClient.o $(SHM_CLIENT_OBJS)
-	$(CXX) $(CXXFLAGS) $(XV_LIBS) $(VDR_SHM_CLIENT_OBJS) $(SHM_CLIENT_OBJS) -lpthread -ljpeg $< -o $@
+%_shm.o: %.c
+	$(CXX) $(CXXFLAGS) -c $(DEFINES) -DSTAND_ALONE $(INCLUDES) $< -o $@
+		   
+ShmClient: $(SHM_CLIENT_OBJS)
+	$(CXX) $(CXXFLAGS) $(XV_LIBS)  $(SHM_CLIENT_OBJS) -lpthread -o $@

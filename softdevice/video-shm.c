@@ -6,13 +6,13 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.6 2006/03/21 18:45:14 wachm Exp $
+ * $Id: video-shm.c,v 1.7 2006/04/23 19:55:53 wachm Exp $
  */
 
 #include "video-shm.h"
 #include "utils.h"
 
-#define SHMDEB(out...) {printf("SHMSERV[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+//#define SHMDEB(out...) {printf("SHMSERV[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef SHMDEB
 #define SHMDEB(out...)

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.11 2006/04/14 15:45:43 lucke Exp $
+ * $Id: utils.c,v 1.12 2006/04/23 19:55:53 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -16,6 +16,7 @@
  *
  * Author: Olie Lho <ollie@sis.com.tw>
 */
+#include <stdlib.h>
 
 #include "utils.h"
 #include "setup-softdevice.h"

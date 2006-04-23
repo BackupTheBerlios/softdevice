@@ -3,11 +3,12 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.6 2006/04/14 15:45:43 lucke Exp $
+ * $Id: utils.h,v 1.7 2006/04/23 19:55:53 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
-#include <vdr/plugin.h>
+//#include <vdr/plugin.h>
+#include <stdint.h>
 #include <sys/time.h>
 #include "mmx.h"
 

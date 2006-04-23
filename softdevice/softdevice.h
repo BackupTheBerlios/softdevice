@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.8 2006/02/06 06:58:49 lucke Exp $
+ * $Id: softdevice.h,v 1.9 2006/04/23 19:55:53 wachm Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -13,10 +13,9 @@
 #include <vdr/player.h>
 
 #include "i18n.h"
-#include "setup-softdevice.h"
 #include "audio.h"
 #include "mpeg2decoder.h"
-#include "utils.h"
+//#include "utils.h"
 
 // ---- Service interface ----------------------------------------------------
 

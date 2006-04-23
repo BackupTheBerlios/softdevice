@@ -3,11 +3,11 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.2 2006/04/14 18:56:34 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.3 2006/04/23 19:55:53 wachm Exp $
  */
 
-#include "video.h"
-#include "setup-softdevice.h"
+//#include "video.h"
+#include "setup-softdevice-menu.h"
 
 /* ---------------------------------------------------------------------------
  */

@@ -18,10 +18,16 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  * 
- * $Id: xscreensaver.c,v 1.3 2004/10/25 02:36:18 lucke Exp $
+ * $Id: xscreensaver.c,v 1.4 2006/04/23 19:55:53 wachm Exp $
  */
 
+#ifndef STAND_ALONE
 #include <vdr/plugin.h>
+#else
+#include "VdrReplacements.h"
+#endif
+
+#include <string.h>
 #include "xscreensaver.h"
 #include "utils.h"
 
