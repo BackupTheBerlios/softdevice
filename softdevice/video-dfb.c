@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.54 2006/04/23 19:38:29 wachm Exp $
+ * $Id: video-dfb.c,v 1.55 2006/04/23 21:23:21 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -584,6 +584,9 @@ bool cDFBVideoOut::Initialize (void)
 void cDFBVideoOut::ProcessEvents ()
 {
     DFBInputEvent event;
+
+  if (!videoInitialized)
+    return;
 
   while (events->GetEvent( DFB_EVENT(&event) ))
   {
