@@ -3,13 +3,12 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.41 2006/04/14 18:56:34 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.42 2006/04/23 20:21:27 wachm Exp $
  */
 
-#include "video.h"
+#include <string.h>
+#include <stdlib.h>
 #include "setup-softdevice.h"
-#include "mpeg2decoder.h"
-
 
 /* ----------------------------------------------------------------------------
  * index to this array correspond to AFD values
@@ -411,6 +410,7 @@ void cSetupStore::CropModeNext(void)
  */
 bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64 key)
 {
+#ifndef STAND_ALONE
     char  buffer[32];
     eKeys keySym;
 
@@ -425,6 +425,7 @@ bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64 key)
       return true;
     }
   }
+#endif
   return false;
 }
 
