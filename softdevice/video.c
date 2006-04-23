@@ -3,18 +3,21 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.49 2006/04/21 06:47:10 lucke Exp $
+ * $Id: video.c,v 1.50 2006/04/23 19:38:29 wachm Exp $
  */
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <vdr/plugin.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+//#include <vdr/plugin.h>
 #include "video.h"
 #include "utils.h"
 #include "setup-softdevice.h"
 #include "sync-timer.h"
-#include "SoftOsd.h"
 
 //#define OSDDEB(out...) {printf("vout_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -96,11 +99,12 @@ void cVideoOut::Action()
   while(active)
   {
     OsdRefreshCounter++;
-    usleep(50000);
+    usleep(20000);
+    ProcessEvents();
     if (
-        OsdRefreshCounter > 80 || // blanks the screen after inactivity (4s)
+        OsdRefreshCounter > 120 || // blanks the screen after inactivity (4s)
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
-         OsdRefreshCounter>2 && Osd_changed))
+         OsdRefreshCounter>5 && Osd_changed))
     {
       osdMutex.Lock();
       if (old_picture)
@@ -485,6 +489,7 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
    * Same applies for DrawStill_420pl() below.
    */
   areaMutex. Unlock();
+  ProcessEvents();  
 }
 
 /* ---------------------------------------------------------------------------
@@ -500,6 +505,7 @@ void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
   // display picture
   YUV (pY, pU, pV, w, h, yPitch, uvPitch);
   areaMutex. Unlock();
+  ProcessEvents();  
 }
 
 /* ---------------------------------------------------------------------------

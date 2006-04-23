@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.18 2006/04/21 06:47:10 lucke Exp $
+ * $Id: video-dfb.h,v 1.19 2006/04/23 19:38:29 wachm Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -20,7 +20,6 @@
 #include <vdr/remote.h>
 #include <vdr/thread.h>
 
-class cDFBRemote;
 
 class cDFBVideoOut : public cVideoOut {
   private:
@@ -29,7 +28,7 @@ class cDFBVideoOut : public cVideoOut {
     IDirectFBSurface      *osdSurface, *videoSurface, *scrSurface;
 
     DFBSurfacePixelFormat pixelformat;
-    cDFBRemote            *dfbRemote;
+    cSoftRemote            *dfbRemote;
 
     IDirectFBEventBuffer  *events;
 

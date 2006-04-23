@@ -3,13 +3,18 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.33 2006/04/21 06:47:10 lucke Exp $
+ * $Id: video.h,v 1.34 2006/04/23 19:38:29 wachm Exp $
  */
 
 #ifndef VIDEO_H
 #define VIDEO_H
 
+#ifndef STAND_ALONE
 #include <vdr/plugin.h>
+#include <vdr/remote.h>
+#else
+#include "VdrReplacements.h"
+#endif
 
 #ifdef HAVE_CONFIG
 # include "config.h"
@@ -17,6 +22,7 @@
 
 #include "setup-softdevice.h"
 #include "sync-timer.h"
+
 
 #include <avcodec.h>
 
@@ -73,7 +79,16 @@ class cWindowLayer {
 
 #endif
 
-class cSoftOsd;
+#ifndef STAND_ALONE
+class cSoftRemote : public cRemote {
+  public:
+          cSoftRemote(const char *Name) : cRemote(Name) {};
+          virtual ~cSoftRemote() {};
+          virtual bool PutKey(uint64 Code, bool Repeat = false, 
+                          bool Release = false)
+          { return Put(Code,Repeat,Release); };
+};
+#endif
 
 class cVideoOut: public cThread {
 private:
@@ -136,6 +151,11 @@ protected:
 public:
     cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
+     
+    virtual void ProcessEvents ()
+    {};
+    // will be called every xx ms, at a minimum after each frame.
+    // Can be used to process for example keypress events
 
     virtual void Sync(cSyncTimer *syncTimer, int *delay);
     virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };

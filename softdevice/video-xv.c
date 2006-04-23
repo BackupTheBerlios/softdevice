@@ -12,17 +12,18 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.51 2006/04/21 18:20:45 lucke Exp $
+ * $Id: video-xv.c,v 1.52 2006/04/23 19:38:29 wachm Exp $
  */
 
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <vdr/plugin.h>
+//#include <vdr/plugin.h>
 #include "video-xv.h"
 #include "xscreensaver.h"
 #include "utils.h"
@@ -31,9 +32,8 @@
 #define PATCH_VERSION "2006-04-21"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
-cXvRemote        *xvRemote = NULL;
+cSoftRemote        *xvRemote = NULL;
 static cScreensaver     *xScreensaver = NULL;
-static int              events_not_done = 0;
 
 static XErrorHandler old_handler = 0;
 static Bool got_error = False;
@@ -311,65 +311,6 @@ void cXvPortAttributeStore::Restore()
   if (portAttributes)
     XSync(dpy,False);
 }
-
-/* ---------------------------------------------------------------------------
- */
-cXvRemote::cXvRemote(const char *Name, cXvVideoOut *vout) : cRemote(Name)
-{
-  video_out = vout;
-}
-
-/* ---------------------------------------------------------------------------
- */
-cXvRemote::~cXvRemote()
-{
-  active = false;
-  Cancel(2);
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cXvRemote::PutKey(KeySym key)
-{
-  Put (key);
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cXvRemote::Action(void)
-{
-  dsyslog("Xv remote control thread started (pid=%d)", getpid());
-  active = true;
-  while (active)
-  {
-    usleep (25000);
-    pthread_mutex_lock(&xv_mutex);
-    if (events_not_done > 2) {
-      video_out->ProcessEvents ();
-      events_not_done = 0;
-    } else {
-      events_not_done++;
-    }
-    pthread_mutex_unlock(&xv_mutex);
-  }
-  dsyslog("Xv remote control thread ended (pid=%d)", getpid());
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cXvRemote::SetX11Info(Display *d, Window w)
-{
-  dpy = d;
-  win = w;
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cXvRemote::XvRemoteStart(void)
-{
-  Start();
-}
-
 /* ---------------------------------------------------------------------------
  */
 void cXvVideoOut::toggleFullScreen(void)
@@ -586,6 +527,12 @@ void cXvVideoOut::ProcessEvents ()
     KeySym          keysym;
     struct timeval  current_time;
     XEvent            event;
+    
+  pthread_mutex_lock(&xv_mutex);
+  if (!videoInitialized) {
+          pthread_mutex_unlock(&xv_mutex);
+          return;
+  };
 
   while (XCheckMaskEvent (dpy, /* win, */
                                  PointerMotionMask |
@@ -771,6 +718,7 @@ void cXvVideoOut::ProcessEvents ()
     }
   }
   xScreensaver->MaybeSendDeactivate();
+  pthread_mutex_unlock(&xv_mutex);  
 }
 
 /* ---------------------------------------------------------------------------
@@ -1055,9 +1003,7 @@ init_osd:
    */
   if (!xvRemote)
   {
-    xvRemote = new cXvRemote ("softdevice-xv", this);
-    xvRemote->SetX11Info(dpy,win);
-    xvRemote->XvRemoteStart();
+    xvRemote = new cSoftRemote ("softdevice-xv");
   }
 
   dsyslog("[XvVideoOut]: initialized OK");
@@ -1765,8 +1711,7 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     }
   }
   PutXvImage();
-  ProcessEvents ();
-  events_not_done = 0;
+  //ProcessEvents ();
   XSync(dpy, False);
   pthread_mutex_unlock(&xv_mutex);
 }

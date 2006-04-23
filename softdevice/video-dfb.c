@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.53 2006/04/21 06:47:10 lucke Exp $
+ * $Id: video-dfb.c,v 1.54 2006/04/23 19:38:29 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -68,58 +68,6 @@ tLayerSelectItem  layerList [5] =
     {"spic",  "Matrox CRTC2 Sub-Picture", NULL, DFB_UNSUPPORTED},
     {NULL,    NULL,                       NULL, DFB_UNSUPPORTED}
   };
-
-static int              events_not_done = 0;
-
-// --- cDFBRemote ---------------------------------------------------
-/* ---------------------------------------------------------------------------
- */
-cDFBRemote::cDFBRemote(const char *Name, cDFBVideoOut *vout) : cRemote(Name)
-{
-  video_out = vout;
-}
-
-/* ---------------------------------------------------------------------------
- */
-cDFBRemote::~cDFBRemote()
-{
-  active = false;
-  Cancel(2);
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBRemote::PutKey(DFBInputDeviceKeySymbol key, bool repeat)
-{
-  Put ((int) key, repeat, false);
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBRemote::Action(void)
-{
-  dsyslog("DFB remote control thread started (pid=%d)", getpid());
-  active = true;
-  while (active)
-  {
-    usleep (25000);
-    if (events_not_done > 1) {
-      video_out->ProcessEvents ();
-      video_out->ShowOSD ();
-      events_not_done = 0;
-    } else {
-      events_not_done++;
-    }
-  }
-  dsyslog("DFB remote control thread ended (pid=%d)", getpid());
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBRemote::DFBRemoteStart(void)
-{
-  Start();
-}
 
 // --- cDFBVideoOut -------------------------------------------------
 IDirectFB *DFBWrapper;
@@ -624,8 +572,7 @@ bool cDFBVideoOut::Initialize (void)
    */
   if (!dfbRemote)
   {
-    dfbRemote = new cDFBRemote ("softdevice-dfb", this);
-    dfbRemote->DFBRemoteStart();
+    dfbRemote = new cSoftRemote ("softdevice-dfb");
   }
   videoInitialized = true;
 
@@ -1388,7 +1335,6 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
   if (!videoInitialized)
     return;
 
-  events_not_done = 0;
   SetParams();
 
   //fprintf(stderr,"[dfb] draw frame (%d x %d) Y: %d UV: %d\n", Width, Height, Ystride, UVstride);
@@ -1535,8 +1481,8 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
              ex->GetAction(), ex->GetResult());
     delete ex;
   }
-  ProcessEvents ();
-  events_not_done = 0;
+  //ProcessEvents ();
+  //events_not_done = 0;
 }
 
 /* ---------------------------------------------------------------------------

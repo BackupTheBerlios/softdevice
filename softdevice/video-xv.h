@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.19 2006/04/21 18:20:45 lucke Exp $
+ * $Id: video-xv.h,v 1.20 2006/04/23 19:38:29 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -21,9 +21,6 @@
 
 #include <pthread.h>
 
-// ?? remote.h thread.h why previous without include
-#include <vdr/remote.h>
-#include <vdr/thread.h>
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -36,6 +33,13 @@
 
 #if XINERAMA_SUPPORT
 # include <X11/extensions/Xinerama.h>
+#endif
+
+#ifndef STAND_ALONE
+#include <vdr/remote.h>
+#include <vdr/thread.h>
+#else
+#include "VdrReplacements.h"
 #endif
 
 #define FOURCC_YV12       0x32315659   /* 4:2:0 Planar: Y + V + U  (3 planes) */
@@ -159,7 +163,7 @@ private:
 public:
   cXvVideoOut(cSetupStore *setupStore);
   virtual ~cXvVideoOut();
-  void ProcessEvents ();
+  virtual void ProcessEvents ();
   void ShowOSD ();
 
 #if VDRVERSNUM >= 10307
@@ -189,24 +193,6 @@ public:
   virtual bool Resume();
 };
 
-/* ---------------------------------------------------------------------------
- */
-class cXvRemote : public cRemote, private cThread {
-  private:
-    bool        active;
-    Display     *dpy;
-    Window      win;
-    cXvVideoOut *video_out;
-
-    virtual void  Action(void);
-  public:
-                  cXvRemote(const char *Name, cXvVideoOut *vout);
-                  ~cXvRemote();
-    void          SetX11Info (Display *d, Window w);
-    void          XvRemoteStart (void);
-    virtual void  PutKey (KeySym key);
-//    virtual bool  Initialize(void);
-};
-extern cXvRemote        *xvRemote;
+extern cSoftRemote        *xvRemote;
 
 #endif // VIDEO_XV_H
