@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.25 2006/04/01 09:33:41 lucke Exp $
+# $Id: Makefile,v 1.26 2006/04/23 17:56:12 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -199,6 +199,15 @@ CXXFLAGS ?= -O2 -g -Wall -fPIC -Woverloaded-virtual
 ### The version number of VDR (taken from VDR's "config.h"):
 
 VDRVERSION = $(shell grep 'define VDRVERSION ' $(VDRDIR)/config.h | awk '{ print $$3 }' | sed -e 's/"//g')
+APIVERSION = $(shell sed -ne '/define APIVERSION/ { s/^.*"\(.*\)".*$$/\1/; p }' $(VDRDIR)/config.h)
+
+INST_VERSION = $(APIVERSION)
+
+ifeq ($(APIVERSION),)
+	INST_VERSION = $(VDRVERSION)
+endif
+
+#DUMMY=$(LIBDIR)/fake.vdr.Makefile.check.$(APIVERSION)
 
 ### The name of the distribution archive:
 
@@ -297,29 +306,29 @@ all: $(TARGETS)
 
 libvdr-$(PLUGIN).so: $(OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
 
 ifdef USE_SUBPLUGINS
 
 libsubvdr-$(PLUGIN)-dfb.so: $(DFB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(DFB_OBJS) $(DFB_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
 
 libsubvdr-$(PLUGIN)-fb.so: $(FB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(FB_OBJS) $(FB_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
 
 libsubvdr-$(PLUGIN)-xv.so: $(XV_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(XV_OBJS) $(XV_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
 
 libsubvdr-$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(VIDIX_OBJS) $(VIDIX_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
 
 libsubvdr-$(PLUGIN)-shm.so: $(SHM_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(SHM_OBJS) $(SHM_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
 
 endif
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.55 2006/04/14 18:56:34 lucke Exp $
+ * $Id: softdevice.c,v 1.56 2006/04/23 17:56:12 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -297,12 +297,21 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
 {
     char  *subPluginFileName = NULL;
 
+#ifdef APIVERSION
+  asprintf (&subPluginFileName,
+            "%s/%s%s.so.%s",
+            pluginPath,
+            "libsubvdr-softdevice-",
+            outMethodName,
+            APIVERSION);
+#else
   asprintf (&subPluginFileName,
             "%s/%s%s.so.%s",
             pluginPath,
             "libsubvdr-softdevice-",
             outMethodName,
             VDRVERSION);
+#endif
   void *handle = dlopen (subPluginFileName, RTLD_NOW);
   char *err = dlerror();
   if (!err)
