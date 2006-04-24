@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.57 2006/04/23 19:55:53 wachm Exp $
+ * $Id: softdevice.c,v 1.58 2006/04/24 20:36:21 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -243,11 +243,13 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       case VOUT_FB:
 #ifdef FB_SUPPORT
         videoOut=new cFBVideoOut(&setupStore);
+        videoOut->Initialize();
 #endif
         break;
       case VOUT_SHM:
 #ifdef SHM_SUPPORT
         videoOut=new cShmVideoOut(&setupStore);
+        videoOut->Initialize();
 #endif
         break;
       case VOUT_DFB:
@@ -259,10 +261,12 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       case VOUT_VIDIX:
 #ifdef VIDIX_SUPPORT
         videoOut=new cVidixVideoOut(&setupStore);
+        videoOut->Initialize();
 #endif
         break;
       case VOUT_DUMMY:
         videoOut=new cDummyVideoOut(&setupStore);
+        videoOut->Initialize();
         break;
       default:
         esyslog("[softdevice] NO video out specified exiting\n");

@@ -3,12 +3,12 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.17 2006/03/12 09:43:28 wachm Exp $
+ * $Id: video-vidix.c,v 1.18 2006/04/24 20:36:21 lucke Exp $
  */
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <fcntl.h> 
+#include <fcntl.h>
 #include <vdr/plugin.h>
 #include "video-vidix.h"
 #include "utils.h"
@@ -401,6 +401,9 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     uint8_t *dst;
     int hi, wi;
 
+  if (!videoInitialized)
+    return;
+
   START;
   TIMINGS("start...\n");
   SetParams(Ystride, UVstride);
@@ -558,10 +561,13 @@ void cVidixVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
  */
 void cVidixVideoOut::ClearOSD()
 {
-  cVideoOut::ClearOSD();
-  if (current_osdMode==OSDMODE_PSEUDO)
-    memset(fb, 0, fb_line_len * Yres);
-};
+    if (!videoInitialized)
+        return;
+
+    cVideoOut::ClearOSD();
+    if (current_osdMode==OSDMODE_PSEUDO)
+        memset(fb, 0, fb_line_len * Yres);
+}
 
 /* ---------------------------------------------------------------------------
  */
@@ -592,12 +598,19 @@ void cVidixVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
 
 /* ---------------------------------------------------------------------------
  */
-void cVidixVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride, 
-                bool *&dirtyLines) {
-        osd=fb;
-        stride=fb_line_len;
-        dirtyLines=NULL;
-};
+void cVidixVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
+                bool *&dirtyLines)
+{
+    osd = NULL;
+    stride = 0;
+
+    if (!videoInitialized)
+        return;
+
+    osd=fb;
+    stride=fb_line_len;
+    dirtyLines=NULL;
+}
 
 #else
 
@@ -619,6 +632,9 @@ void cVidixVideoOut::Refresh()
  */
 void cVidixVideoOut::CloseOSD()
 {
+    if (!videoInitialized)
+        return;
+
     cVideoOut::CloseOSD();
     memset(fb, 0, fb_line_len * Yres);
 }

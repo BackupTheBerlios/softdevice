@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.13 2006/02/18 22:20:29 lucke Exp $
+ * $Id: video-fb.c,v 1.14 2006/04/24 20:36:21 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -12,7 +12,7 @@
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <fcntl.h> 
+#include <fcntl.h>
 #include <vdr/plugin.h>
 #include "video-fb.h"
 #include "utils.h"
@@ -118,7 +118,7 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
 
     // set rgb unpack method
     mmx_unpack=mmx_unpack_16rgb;
-    if (fb_vinfo.red.length==5 && fb_vinfo.green.length==5 
+    if (fb_vinfo.red.length==5 && fb_vinfo.green.length==5
          && fb_vinfo.blue.length==5 ) {
       mmx_unpack=mmx_unpack_15rgb;
       printf("[video-fb] Using mmx_unpack_15rgb\n");
@@ -146,7 +146,9 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
     screenPixelAspect = -1;
 }
 
-void cFBVideoOut::Pause(void) 
+/* ---------------------------------------------------------------------------
+ */
+void cFBVideoOut::Pause(void)
 {
 }
 
@@ -165,7 +167,7 @@ void cFBVideoOut::OpenOSD()
 void cFBVideoOut::ClearOSD()
 {
   cVideoOut::ClearOSD();
-  if (PixelMask)
+  if (videoInitialized && PixelMask)
     memset(PixelMask, 0, Xres * Yres/8);
 };
 
@@ -182,21 +184,35 @@ void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
     }
 }
 
-void cFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride, 
-                  bool *&dirtyLines) {
+/* ---------------------------------------------------------------------------
+ */
+void cFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
+                  bool *&dirtyLines)
+{
   pthread_mutex_lock(&fb_mutex);
-  osd=fb; 
+
+  osd = NULL;
+  stride = 0;
+  if (!videoInitialized)
+    return;
+
+  osd=fb;
   stride=line_len;
   dirtyLines=NULL;
-};
+}
 
-void cFBVideoOut::CommitUnlockOsdSurface() {      
+/* ---------------------------------------------------------------------------
+ */
+void cFBVideoOut::CommitUnlockOsdSurface()
+{
   pthread_mutex_unlock(&fb_mutex);
   cVideoOut::CommitUnlockOsdSurface();
-};
+}
 
 #else
 
+/* ---------------------------------------------------------------------------
+ */
 void cFBVideoOut::Refresh()
 {
   // refreshes the OSD screen
@@ -219,8 +235,13 @@ void cFBVideoOut::Refresh()
 }
 #endif
 
+/* ---------------------------------------------------------------------------
+ */
 void cFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride)
 {
+  if (!videoInitialized)
+    return;
+
   pthread_mutex_lock(&fb_mutex);
   if (OSDpresent) {
     yuv_to_rgb (fb, Py, Pu, Pv,
@@ -238,6 +259,8 @@ void cFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Heig
   pthread_mutex_unlock(&fb_mutex);
 }
 
+/* ---------------------------------------------------------------------------
+ */
 cFBVideoOut::~cFBVideoOut()
 {
     switch (fb_finfo.visual) {
