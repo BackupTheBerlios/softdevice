@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.53 2006/04/24 18:52:53 lucke Exp $
+ * $Id: video-xv.c,v 1.54 2006/04/24 22:56:47 lucke Exp $
  */
 
 #include <unistd.h>
@@ -29,7 +29,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "2006-04-21"
+#define PATCH_VERSION "2006-04-24"
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 cSoftRemote        *xvRemote = NULL;
@@ -528,12 +528,10 @@ void cXvVideoOut::ProcessEvents ()
     struct timeval  current_time;
     XEvent            event;
 
-  pthread_mutex_lock(&xv_mutex);
-  if (!videoInitialized) {
-          pthread_mutex_unlock(&xv_mutex);
-          return;
-  };
+  if (!videoInitialized)
+    return;
 
+  pthread_mutex_lock(&xv_mutex);
   while (XCheckMaskEvent (dpy, /* win, */
                                  PointerMotionMask |
                                  ButtonPressMask |
