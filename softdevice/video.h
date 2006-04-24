@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.34 2006/04/23 19:38:29 wachm Exp $
+ * $Id: video.h,v 1.35 2006/04/24 19:23:09 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -84,7 +84,7 @@ class cSoftRemote : public cRemote {
   public:
           cSoftRemote(const char *Name) : cRemote(Name) {};
           virtual ~cSoftRemote() {};
-          virtual bool PutKey(uint64 Code, bool Repeat = false, 
+          virtual bool PutKey(uint64 Code, bool Repeat = false,
                           bool Release = false)
           { return Put(Code,Repeat,Release); };
 };
@@ -151,7 +151,7 @@ protected:
 public:
     cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
-     
+
     virtual void ProcessEvents ()
     {};
     // will be called every xx ms, at a minimum after each frame.
@@ -168,7 +168,7 @@ public:
                                   AVFrame *picture, AVCodecContext *context);
     virtual void DrawStill_420pl (uint8_t *pY, uint8_t *pU, uint8_t *pV,
                                   int w, int h, int yPitch, int uvPitch);
-    virtual bool Initialize(void) {return 1;};
+    virtual bool Initialize(void) {videoInitialized = true; return 1;};
     virtual bool Reconfigure (int format) {return 1;};
 
     virtual void Suspend(void) { return;};
