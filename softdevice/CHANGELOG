@@ -1,4 +1,9 @@
 Changelog
+2006-04-24:
+   - xv + dfb: removed some unused code.
+   - vidix + fb: adjusted to use videoInitialized.
+   - call Initialize() after all video constructors.
+   - dfb: OSD responsivness in paused mode.
 2006-04-23:
    - added volume changing with changing the  mixer control ( to use it add
      -DNO_MIXER, currently experimental

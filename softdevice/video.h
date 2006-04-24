@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.35 2006/04/24 19:23:09 lucke Exp $
+ * $Id: video.h,v 1.36 2006/04/24 22:59:23 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -145,6 +145,9 @@ protected:
     cSetupStore *setupStore;
 
     bool active;
+    uint16_t OsdRefreshCounter;
+    // should be setted to null everytime OSD is shown
+    // (software alpha blending mode).
 
     virtual void RecalculateAspect(void);
 
@@ -200,9 +203,6 @@ public:
 private:
     int     Osd_changed;
 
-    uint16_t OsdRefreshCounter;
-    // should be setted to null everytime OSD is shown
-    // (software alpha blending mode).
 public:
     virtual void ClearOSD();
     // clear the OSD buffer

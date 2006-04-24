@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.50 2006/04/23 19:38:29 wachm Exp $
+ * $Id: video.c,v 1.51 2006/04/24 22:59:23 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -100,7 +100,10 @@ void cVideoOut::Action()
   {
     OsdRefreshCounter++;
     usleep(20000);
-    ProcessEvents();
+
+    if (OsdRefreshCounter > 2)
+      ProcessEvents();
+
     if (
         OsdRefreshCounter > 120 || // blanks the screen after inactivity (4s)
         (setupStore->osdMode == OSDMODE_SOFTWARE &&
@@ -489,7 +492,7 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
    * Same applies for DrawStill_420pl() below.
    */
   areaMutex. Unlock();
-  ProcessEvents();  
+  ProcessEvents();
 }
 
 /* ---------------------------------------------------------------------------
@@ -505,7 +508,7 @@ void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
   // display picture
   YUV (pY, pU, pV, w, h, yPitch, uvPitch);
   areaMutex. Unlock();
-  ProcessEvents();  
+  ProcessEvents();
 }
 
 /* ---------------------------------------------------------------------------
