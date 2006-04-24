@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.52 2006/04/23 19:38:29 wachm Exp $
+ * $Id: video-xv.c,v 1.53 2006/04/24 18:52:53 lucke Exp $
  */
 
 #include <unistd.h>
@@ -527,7 +527,7 @@ void cXvVideoOut::ProcessEvents ()
     KeySym          keysym;
     struct timeval  current_time;
     XEvent            event;
-    
+
   pthread_mutex_lock(&xv_mutex);
   if (!videoInitialized) {
           pthread_mutex_unlock(&xv_mutex);
@@ -718,7 +718,7 @@ void cXvVideoOut::ProcessEvents ()
     }
   }
   xScreensaver->MaybeSendDeactivate();
-  pthread_mutex_unlock(&xv_mutex);  
+  pthread_mutex_unlock(&xv_mutex);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1499,34 +1499,6 @@ void cXvVideoOut::CommitUnlockOsdSurface()
         pthread_mutex_unlock(&xv_mutex);
 }
 
-/*
-void cXvVideoOut::RefreshOSD(cSoftOsd *Osd,bool RefreshAll)
-{
-  // refreshes the screen
-  // copy video Data
-  if (!videoInitialized)
-    return;
-//  if (OSDpresent)
-  {
-    switch (current_osdMode) {
-      case OSDMODE_PSEUDO :
-              Osd->CopyToBitmap(osd_buffer, osd_image->bytes_per_line,
-                              OsdWidth,OsdHeight,RefreshAll);
-            break;
-      case OSDMODE_SOFTWARE:
-	    Osd->CopyToBitmap(OsdPy,OsdPv,OsdPu,OsdPAlphaY,OsdPAlphaUV,
-                            OSD_FULL_WIDTH,OSD_FULL_WIDTH/2,
-			    OsdWidth,OsdHeight,RefreshAll);
-	    break;
-
-    }
-    pthread_mutex_lock(&xv_mutex);
-    ShowOSD(0,1);
-    //OSDpresent=true;
-    pthread_mutex_unlock(&xv_mutex);
-  };
-};
-*/
 #else
 /* ---------------------------------------------------------------------------
  */
@@ -1711,7 +1683,6 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     }
   }
   PutXvImage();
-  //ProcessEvents ();
   XSync(dpy, False);
   pthread_mutex_unlock(&xv_mutex);
 }

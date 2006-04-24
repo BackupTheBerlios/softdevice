@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.55 2006/04/23 21:23:21 lucke Exp $
+ * $Id: video-dfb.c,v 1.56 2006/04/24 18:52:53 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -362,12 +362,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
                "[dfb] got fmt = 0x%08x bpp = %d\n",
                fmt, DFB_BITS_PER_PIXEL(fmt));
       Bpp = DFB_BITS_PER_PIXEL(fmt);
-/*
-      if (Xres > OSD_FULL_WIDTH)
-        Xres = OSD_FULL_WIDTH;
-      if (Yres > OSD_FULL_HEIGHT)
-        Yres = OSD_FULL_HEIGHT;
-*/
+
       /* ------------------------------------------------------------------------
        * clear screen surface at startup
        */
@@ -1094,103 +1089,6 @@ void cDFBVideoOut::GetOSDDimension( int &Width, int &Height, int &xPan, int &yPa
   xPan = yPan = 0;
 }
 
-/*
-void cDFBVideoOut::RefreshOSD(cSoftOsd *Osd, bool RefreshAll)
-{
-    int               pitch;
-    uint8_t           *dst;
-    IDirectFBSurface  *tmpSurface;
-    DFBRectangle      osdsrc;
-
-    try
-    {
-      bool dirtyLines[Yres];
-      memset(dirtyLines,false,sizeof(dirtyLines));
-
-      tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-      tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-      Osd->CopyToBitmap(dst, pitch,
-                              Xres,Yres,RefreshAll,dirtyLines);
-      tmpSurface->Unlock();
-
-      tmpSurface->Flip();
-
-      int miny=0;
-      int maxy=0;
-      do {
-              while (!dirtyLines[miny] && miny < Yres)
-                      miny++;
-
-	      if (miny >= Yres)
-		      break;
-
-              maxy=miny;
-              while (dirtyLines[maxy] && maxy < Yres)
-                      maxy++;
-
-              osdsrc.x = 0;
-              osdsrc.y = miny;
-              osdsrc.w = Xres;
-              osdsrc.h = maxy-miny + 1;
-              tmpSurface->Blit(tmpSurface,&osdsrc,0,miny);
-
-              miny=maxy;
-
-      } while ( miny<Yres);
-
-    }
-    catch (DFBException *ex)
-    {
-      fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
-               ex->GetAction(), ex->GetResult());
-      delete ex;
-    }
-
-}
-	*/
-/* ---------------------------------------------------------------------------
- */
-/*
-void cDFBVideoOut::Refresh(cBitmap *Bitmap)
-{
-    int               pitch;
-    uint8_t           *dst;
-    IDirectFBSurface  *tmpSurface;
-    DFBRegion         modArea;
-    DFBRectangle      osdsrc;
-
-  if (Bitmap->Dirty(modArea.x1,modArea.y1,modArea.x2,modArea.y2))
-  {
-    try
-    {
-      tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-      tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-      Draw(Bitmap,dst,pitch,(isVIAUnichrome) ? true:false);
-      tmpSurface->Unlock();
-
-      modArea.x1 += OSDxOfs + Bitmap->X0();
-      modArea.y1 += OSDyOfs + Bitmap->Y0();
-      modArea.x2 += OSDxOfs + Bitmap->X0();
-      modArea.y2 += OSDyOfs + Bitmap->Y0();
-
-      tmpSurface->Flip(&modArea,DSFLIP_WAIT);
-      osdsrc.x = modArea.x1;
-      osdsrc.y = modArea.y1;
-      osdsrc.w = modArea.x2 - modArea.x1 + 1;
-      osdsrc.h = modArea.y2 - modArea.y1 + 1;
-      tmpSurface->Blit(tmpSurface, &osdsrc, modArea.x1, modArea.y1);
-    }
-    catch (DFBException *ex)
-    {
-      fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
-               ex->GetAction(), ex->GetResult());
-      delete ex;
-    }
-
-    Bitmap->Clean();
-  }
-}
-*/
 #else
 
 /* ---------------------------------------------------------------------------
@@ -1484,8 +1382,6 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
              ex->GetAction(), ex->GetResult());
     delete ex;
   }
-  //ProcessEvents ();
-  //events_not_done = 0;
 }
 
 /* ---------------------------------------------------------------------------
