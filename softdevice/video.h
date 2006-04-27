@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.36 2006/04/24 22:59:23 lucke Exp $
+ * $Id: video.h,v 1.37 2006/04/27 20:29:29 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -170,7 +170,9 @@ public:
     virtual void DrawVideo_420pl (cSyncTimer *syncTimer, int *delay,
                                   AVFrame *picture, AVCodecContext *context);
     virtual void DrawStill_420pl (uint8_t *pY, uint8_t *pU, uint8_t *pV,
-                                  int w, int h, int yPitch, int uvPitch);
+                                  int w, int h, int yPitch, int uvPitch,
+                                  int new_afd=-1, 
+                                  double new_asp=0.0);
     virtual bool Initialize(void) {videoInitialized = true; return 1;};
     virtual bool Reconfigure (int format) {return 1;};
 

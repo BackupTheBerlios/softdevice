@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.11 2006/04/25 19:49:20 wachm Exp $
+ * $Id: ShmClient.c,v 1.12 2006/04/27 20:29:30 wachm Exp $
  */
 
 #include <signal.h>
@@ -180,15 +180,17 @@ int main(int argc, char **argv) {
                                 ctl->max_height:ctl->height;
 
                         vout->CheckArea(width,height);
-                        vout->CheckAspect(ctl->new_afd,ctl->new_asp);
+                        //vout->CheckAspect(ctl->new_afd,ctl->new_asp);
                         if ( vout->useShm ) {
                                 vout->DrawStill_420pl(NULL,NULL,NULL,
                                                 width,height,
-                                                ctl->stride0,ctl->stride1);
+                                                ctl->stride0,ctl->stride1,
+                                                ctl->new_afd,ctl->new_asp);
                         } else {    
                                 vout->DrawStill_420pl(pixel[0],pixel[2],pixel[1],
                                         width,height,
-                                        ctl->stride0,ctl->stride1);
+                                        ctl->stride0,ctl->stride1,
+                                        ctl->new_afd,ctl->new_asp);
                         };
                         ctl->new_pict=0;
                 };

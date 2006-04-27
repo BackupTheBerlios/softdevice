@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: VdrReplacements.h,v 1.1 2006/04/23 19:55:53 wachm Exp $
+ * $Id: VdrReplacements.h,v 1.2 2006/04/27 20:29:30 wachm Exp $
  */
 
 #ifndef __VDRREPLACEMENTS_H__
@@ -18,15 +18,15 @@
 
 #define VDRVERSNUM 10308
 
-#define esyslog(out...) while (0) { fprintf(stderr,"esyslog:"); \
+#define esyslog(out...) do { fprintf(stderr,"esyslog:"); \
                                     fprintf(stderr,out);\
-                                    fprintf(stderr,"\n"); }
-#define dsyslog(out...) while (0) { fprintf(stderr,"dsyslog:"); \
+                                    fprintf(stderr,"\n"); } while (0)
+#define dsyslog(out...) do { fprintf(stderr,"dsyslog:"); \
                                     fprintf(stderr,out);\
-                                    fprintf(stderr,"\n"); }
-#define isyslog(out...) while (0) { fprintf(stdout,"isyslog:"); \
+                                    fprintf(stderr,"\n"); } while (0)
+#define isyslog(out...) do { fprintf(stdout,"isyslog:"); \
                                     fprintf(stdout,out);\
-                                    fprintf(stdout,"\n"); }
+                                    fprintf(stdout,"\n"); } while (0)
 
 #define tr(out) out
 

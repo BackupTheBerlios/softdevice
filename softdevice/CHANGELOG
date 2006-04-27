@@ -1,4 +1,6 @@
 Changelog
+2006-04-27:
+   - fix black screen for some aspect ratios using ShmClient
 2006-04-25:
    - fix ShmClient blank screen every 4s 
 2006-04-24:

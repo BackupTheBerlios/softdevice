@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.52 2006/04/25 19:49:20 wachm Exp $
+ * $Id: video.c,v 1.53 2006/04/27 20:29:29 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -498,13 +498,14 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
 /* ---------------------------------------------------------------------------
  */
 void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
-                                int w, int h, int yPitch, int uvPitch)
+                                int w, int h, int yPitch, int uvPitch,
+                                int new_afd,double new_asp)
 {
   areaMutex. Lock();
   OsdRefreshCounter=0;
   Osd_changed=0;
   CheckArea(w, h);
-  CheckAspect(current_afd, aspect_F);
+  CheckAspect(new_afd==-1?current_afd:new_afd, new_asp==0?aspect_F:new_asp);
   // display picture
   YUV (pY, pU, pV, w, h, yPitch, uvPitch);
   areaMutex. Unlock();
