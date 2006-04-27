@@ -1,5 +1,6 @@
 Changelog
 2006-04-27:
+   - change volume handling to no longer change the alsa-mixer settings
    - fix black screen for some aspect ratios using ShmClient
 2006-04-25:
    - fix ShmClient blank screen every 4s 
@@ -9,8 +10,8 @@ Changelog
    - call Initialize() after all video constructors.
    - dfb: OSD responsivness in paused mode.
 2006-04-23:
-   - added volume changing with changing the  mixer control ( to use it add
-     -DNO_MIXER, currently experimental
+   - added volume changing without changing the alsa-mixer control (to use it 
+     add -DNO_MIXER, currently experimental)
    - fix for vdr-1.3.48
    - remove duplicate remote code, call ProcessEvents() from the video thread
      and remove the RC thread

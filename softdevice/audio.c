@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.24 2006/04/23 15:58:49 wachm Exp $
+ * $Id: audio.c,v 1.25 2006/04/27 20:32:58 wachm Exp $
  */
 
 #include <unistd.h>
@@ -18,6 +18,7 @@
 #include "utils.h"
 
 #define PCM_FMT SND_PCM_FORMAT_S16_LE
+#define NO_MIXER
 
 //#define AUDIODEB(out...) {printf("AUDIO[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -54,7 +55,7 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
     oldContext.channels = currContext.channels=0;
     oldContext.samplerate = currContext.samplerate=48000;
     dsyslog("[softdevice-audio] Device opened! Ready to play");
-    volume=255;
+    scale_Factor=0x7FFF;
 }
 
 /* ----------------------------------------------------------------------------
@@ -93,11 +94,11 @@ bool cAlsaAudioOut::Resume() {
 /* ----------------------------------------------------------------------------
  */
 
-void Scale(int16_t *Data, int size,int Volume) 
+void Scale(int16_t *Data, int size,int scale_Factor) 
 {
   while (size>0) {
-    register int32_t tmp=(int32_t)(*Data) * Volume;
-    *Data=(int16_t) (tmp>>8);
+    register int32_t tmp=(int32_t)(*Data) * scale_Factor;
+    *Data=(int16_t) (tmp>>15);
     Data++;
     size--;
   };
@@ -125,7 +126,7 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
 
 #ifdef NO_MIXER
   // change the volume
-  Scale((int16_t*)Data,Length/2,volume);
+  Scale((int16_t*)Data,Length/2,scale_Factor);
 #endif
 
   while (size) {
@@ -406,7 +407,11 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
 void cAlsaAudioOut::SetVolume (int vol)
 {
 #ifdef NO_MIXER
-  volume = vol;
+  if (vol>0)
+          scale_Factor = (int) (pow(10.0, -2.3+2.3*vol/256.0)*0x7FFF);
+  else scale_Factor = 0;
+  //printf("vol %d scale_Factor 0x%04x\n",vol,scale_Factor);
+  //scale_Factor = vol;
 #else
     int                   err;
     long                  mixerMin, mixerMax,

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.10 2006/04/23 15:58:49 wachm Exp $
+ * $Id: audio.h,v 1.11 2006/04/27 20:32:58 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -63,7 +63,7 @@ private:
 
   bool  SetAC3PassThroughMode(bool on);
   void  Xrun(void);
-  int volume;
+  int scale_Factor;
 
 protected:
 public:
