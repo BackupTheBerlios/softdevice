@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.57 2006/04/24 22:59:23 lucke Exp $
+ * $Id: video-dfb.c,v 1.58 2006/04/29 20:25:43 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -606,10 +606,8 @@ void cDFBVideoOut::ProcessEvents ()
     }
   }
 
-  if (OsdRefreshCounter > 2) {
+  if (OsdRefreshCounter && (OsdRefreshCount % 3) == 0)
     ShowOSD();
-    OsdRefreshCounter = 0;
-  }
 }
 
 /* ---------------------------------------------------------------------------

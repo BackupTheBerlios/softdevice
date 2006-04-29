@@ -3,6 +3,7 @@ Changelog
    - enable build of ShmClient and video-shm when possible.
    - disable interlaced vs. not-interlaced (progressive) reporting
      via syslog. it's changing in seconds intervall for some stations.
+   - dfb: fix screen not blanked with audio only stream.
 2006-04-27:
    - change volume handling to no longer change the alsa-mixer settings
    - fix black screen for some aspect ratios using ShmClient
