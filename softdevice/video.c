@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.53 2006/04/27 20:29:29 wachm Exp $
+ * $Id: video.c,v 1.54 2006/04/29 06:25:58 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -634,6 +634,8 @@ void cVideoOut::AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
 
 
 #else
+
+#include "SoftOsd.h"
 
 bool cVideoOut::OpenWindow(cWindow *Window) {
     layer[Window->Handle()]= new cWindowLayer(Window->X0()+OSDxOfs,

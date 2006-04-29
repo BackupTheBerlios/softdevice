@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.27 2006/04/23 19:55:53 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.28 2006/04/29 06:25:58 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -12,6 +12,8 @@
 
 #ifndef STAND_ALONE
 #include <vdr/menu.h>
+#include <vdr/plugin.h>
+#include <vdr/i18n.h>
 #else
 #include "VdrReplacements.h"
 #endif
