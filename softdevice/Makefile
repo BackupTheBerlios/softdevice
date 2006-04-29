@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.27 2006/04/23 19:55:53 wachm Exp $
+# $Id: Makefile,v 1.28 2006/04/29 06:20:28 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -282,6 +282,7 @@ ifdef SHM_SUPPORT
   else
     OBJS += video-shm.o
   endif
+  TARGETS += ShmClient
   DEFINES += -DSHM_SUPPORT
 endif
 
@@ -344,7 +345,7 @@ dist-clean: clean
 	@-rm -f config.h config.mak
 
 clean:
-	@-rm -f $(OBJS) $(DEPFILE) *.so *.o *.tgz core* *~
+	@-rm -f $(OBJS) $(DEPFILE) ShmClient *.so *.o *.tgz core* *~
 
 VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../remote.o ../../../i18n.o ../../../keys.o \
@@ -356,6 +357,6 @@ SHM_CLIENT_OBJS  = video_shm.o video-xv_shm.o setup-softdevice_shm.o\
 
 %_shm.o: %.c
 	$(CXX) $(CXXFLAGS) -c $(DEFINES) -DSTAND_ALONE $(INCLUDES) $< -o $@
-		   
+
 ShmClient: $(SHM_CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) $(XV_LIBS)  $(SHM_CLIENT_OBJS) -lpthread -o $@

@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.10 2006/03/31 19:15:26 lucke Exp $
+# $Id: configure,v 1.11 2006/04/29 06:20:27 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -25,6 +25,7 @@ dfb="yes"
 libpostproc="no"
 cc="g++"
 xv="yes"
+with_shm="yes"
 xinerama="yes"
 vidix="yes"
 vidix_path="/usr/local"
@@ -41,6 +42,7 @@ function help () {
   echo "  --disable-fb"
   echo "  --disable-dfb"
   echo "  --disable-xv"
+  echo "  --disable-shm"
   echo "  --disable-subplugins"
   echo "  --with-vidix-path YOUR_VIDIX_PATH"
   echo "  --help"
@@ -53,6 +55,7 @@ do
     --disable-fb) shift; with_fb="no" ;;
     --disable-dfb) shift; dfb="no" ;;
     --disable-xv) shift; xv="no" ;;
+    --disable-shm) shift; with_shm="no" ;;
     --disable-subplugins) shift; with_subplugins="no" ;;
     --with-vidix-path) shift;
       vidix_path=$1 ;
@@ -84,7 +87,7 @@ ffmpeg_cflags=`pkg-config --cflags $ffmpeg_l1`
 #
 if test "${dfb}" = "yes" ; then
 
-dfb_cflags=`pkg-config --cflags directfb dfb++` || dfb="no"
+dfb_cflags=`pkg-config --cflags directfb dfb++ >/dev/null 2>&1` || dfb="no"
 
 if test "${dfb}" = "yes" ; then
 
@@ -321,6 +324,9 @@ fi
 #
 if test "${xv}" = "yes" ; then
   echo "XV_SUPPORT       = 1" >> $TMPM
+  if test "${with_shm}" = "yes" ; then
+    echo "SHM_SUPPORT = 1" >> $TMPM
+  fi
   if test "${xinerama}" = "yes" ; then
     echo "XINERAMA_SUPPORT = 1" >> $TMPM
     echo "#define XINERAMA_SUPPORT       1" >> $TMPH
