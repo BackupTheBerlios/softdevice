@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.12 2006/04/27 20:29:30 wachm Exp $
+ * $Id: ShmClient.c,v 1.13 2006/04/29 06:23:28 lucke Exp $
  */
 
 #include <signal.h>
@@ -33,26 +33,26 @@ void sig_handler(int signal) {
 };
 
 class cShmRemote : public cSoftRemote {
-        public:  
+        public:
                 cShmRemote(const char *Name)
-                        : cSoftRemote(Name) 
+                        : cSoftRemote(Name)
                         {};
-                        
+
                 ~cShmRemote()
                 {};
 
-                virtual bool PutKey(uint64 Code, bool Repeat = false, 
+                virtual bool PutKey(uint64 Code, bool Repeat = false,
                                 bool Release = false);
 };
 
-bool cShmRemote::PutKey(uint64 Code, bool Repeat, 
+bool cShmRemote::PutKey(uint64 Code, bool Repeat,
                                 bool Release) {
-        if (ctl) 
+        if (ctl)
         {
                 SHMDEB("get lock for the key\n");
                 sem_wait_lock(ctl->semid,KEY_MUT);
                 SHMDEB("got lock for the key\n");
-                
+
                 ctl->key=Code;
 
                 // release lock
@@ -69,24 +69,24 @@ int main(int argc, char **argv) {
         SetupStore.xvFullscreen=0;
         cXvVideoOut *vout=new cXvVideoOut(&SetupStore);
         xvRemote= new cShmRemote("softdevice-xv");
-        
+
         signal(SIGINT,sig_handler);
         signal(SIGQUIT,sig_handler);
-        
+
         int ctl_shmid;
         key_t ctl_key=CTL_KEY;
- 
-        int curr_pict_shmid;
+
+        //int curr_pict_shmid;
         uint8_t *curr_pict=0;
         uint8_t *curr_osd=0;
         uint8_t *pixel[4];
-       
+
         if ((ctl_shmid = shmget(ctl_key, sizeof( ShmCtlBlock ), 0666)) < 0) {
                 fprintf(stderr,"ctl_shmid error in shmget!\n");
                 exit(1);
         }
-        
-        if ( (ctl = (ShmCtlBlock *)shmat(ctl_shmid,NULL,0)) 
+
+        if ( (ctl = (ShmCtlBlock *)shmat(ctl_shmid,NULL,0))
                         == (ShmCtlBlock *) -1 ) {
                 fprintf(stderr,"ctl_shmid error attatching shm ctl!\n");
                 exit(-1);
@@ -96,9 +96,9 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
         };
-       
+
         if ( vout->useShm && vout->xv_image ) {
-                ctl->pict_shmid= vout->shminfo.shmid;  
+                ctl->pict_shmid= vout->shminfo.shmid;
                 ctl->max_width=vout->xv_image->width;
                 ctl->max_height=vout->xv_image->height;
                 ctl->stride0=vout->xv_image->pitches[0];
@@ -112,13 +112,13 @@ int main(int argc, char **argv) {
                 ctl->stride2=ctl->stride1=ctl->max_width/2;
 
                 if ( (ctl->pict_shmid = shmget(IPC_PRIVATE,
-                                  ctl->max_width*ctl->max_height*2, 
+                                  ctl->max_width*ctl->max_height*2,
                                   IPC_CREAT | 0666)) < 0 ) {
                         fprintf(stderr,"error creating  pict_shm!\n");
                         exit(-1);
                 };
 
-                if ( (curr_pict = (uint8_t*)shmat(ctl->pict_shmid,NULL,0)) 
+                if ( (curr_pict = (uint8_t*)shmat(ctl->pict_shmid,NULL,0))
                                 == (uint8_t*) -1 ) {
                         fprintf(stderr,"error attatching shm ctl!\n");
                         exit(-1);
@@ -142,13 +142,13 @@ int main(int argc, char **argv) {
         } else {
                 if ( (ctl->osd_shmid = shmget(IPC_PRIVATE,
                                  vout->osd_image->bytes_per_line*
-                                 vout->osd_max_width, 
+                                 vout->osd_max_width,
                                                 IPC_CREAT | 0666)) < 0 ) {
                         fprintf(stderr,"error creating  osd_shm!\n");
                         exit(-1);
                 };
 
-                if ( (curr_osd = (uint8_t*)shmat(ctl->osd_shmid,NULL,0)) 
+                if ( (curr_osd = (uint8_t*)shmat(ctl->osd_shmid,NULL,0))
                                 == (uint8_t*) -1 ) {
                         fprintf(stderr,"error attatching osd shm!\n");
                         exit(-1);
@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
         vout->GetOSDDimension(ctl->osd_width,ctl->osd_height,
                               ctl->osd_xPan,ctl->osd_yPan);
         //printf("osd_shmid %d stride %d\n",ctl->osd_shmid,ctl->osd_stride);
-        
+
         ctl->key=NO_KEY;
         // wakeup remote thread to unsuspend video/audio
         sem_sig_unlock(ctl->semid,KEY_SIG);
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
                 //SHMDEB("got signal\n");
                 sem_wait_lock(ctl->semid,PICT_MUT,SEM_UNDO);
                 //SHMDEB("got lock\n");
-               
+
                 if (ctl->new_pict) {
                         int width=ctl->width>ctl->max_width?
                                 ctl->max_width:ctl->width;
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
                                                 width,height,
                                                 ctl->stride0,ctl->stride1,
                                                 ctl->new_afd,ctl->new_asp);
-                        } else {    
+                        } else {
                                 vout->DrawStill_420pl(pixel[0],pixel[2],pixel[1],
                                         width,height,
                                         ctl->stride0,ctl->stride1,
@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
                 };
                 if (ctl->new_osd) {
                         SHMDEB("new osd picture\n");
-                        if ( !vout->useShm ) { 
+                        if ( !vout->useShm ) {
                                 uint8_t *dest_osd;
                                 int osd_stride;
                                 bool *dirtyLines;
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
                         vout->CommitUnlockOsdSurface();
                         ctl->new_osd=0;
                 };
-                
+
                 vout->GetOSDDimension(ctl->osd_width,ctl->osd_height,
                                       ctl->osd_xPan,ctl->osd_yPan);
                 // consumed all pictures - set semaphore to 0
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
                 sem_sig_unlock(ctl->semid,PICT_MUT,SEM_UNDO);
                 //SHMDEB("released the lock\n");
                 // in case there are no semaphores (no vdr connected)
-                usleep(13000); 
+                usleep(13000);
         };
         ctl->attached=0;
         ctl->pict_shmid=-1;
