@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.54 2006/04/29 06:25:58 lucke Exp $
+ * $Id: video.c,v 1.55 2006/04/29 15:57:27 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -379,8 +379,8 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
 
   if (interlaceMode != picture->interlaced_frame)
   {
-    dsyslog("[VideoOut]: interlaced mode now: %sinterlaced",
-            (picture->interlaced_frame) ? "" : "non-");
+    //dsyslog("[VideoOut]: interlaced mode now: %sinterlaced",
+      //      (picture->interlaced_frame) ? "" : "non-");
     interlaceMode = picture->interlaced_frame;
   }
 #if LIBAVCODEC_BUILD > 4686
