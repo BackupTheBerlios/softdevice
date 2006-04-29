@@ -3,3 +3,4 @@
 .#*.h.*
 config.mak
 config.h
+ShmClient
