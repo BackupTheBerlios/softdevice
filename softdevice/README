@@ -49,7 +49,7 @@ all accelerated video out methods (all except framebuffer).
 Installation:
 -------------
 
-This plugin is written for VDR 1.2.x and VDR 1.3.x
+This plugin is written for VDR 1.2.x, VDR 1.3.x and VDR 1.4.x
 
 As usual, unpack the plugin and make a link in the
 ./VDR/PLUGINS/src directory
@@ -57,6 +57,9 @@ As usual, unpack the plugin and make a link in the
 By default you should "cd" to softdevice directory and run "./configure" .
 This will generate config.h and config.mak files, which will guide make.
 Available parameters of configure are listed by "./configure --help" .
+
+Users of vdr-1.2.x have to disable build of shm-out by:
+./configure --disable-shm
 
 To get rid of these generated files a "make dist-clean" should be done.
 
@@ -111,10 +114,9 @@ Shared Memory Client/Server
 There is now an experimental client/server model in the softdevice. To use
 it compile the softdevice with SHM_SUPPORT enabled and start it using
 "-vo shm:". The softdevice will then start with the decoding suspended until
-a client connects to the shared memory. For now there is only an Xv client,
-to build it type "make ShmClient" in the plugin's source directory. To start
-the Xv client simply type "ShmClient", and a window will open from which you
-can use Vdr just like you are used to from the Xv-out will open up. When
+a client connects to the shared memory. For now there is only an Xv client.
+To start the Xv client simply type "ShmClient", and a window will open
+from which you can use Vdr just like you are used to from the Xv-out will open up. When
 this window is closed the Softdevice will automatically suspend the decoding.
 It is possible to make a client for the other video-out methods too, but
 I found the Xv-Client the most usefull for combined desktop/vdr machines :-)
@@ -132,6 +134,46 @@ are not available.
 OSD setup options:
 ------------------
   Cropping:
+
+    CropMode:
+      Output methods: X11-XV, DirectFB, vidix
+      Possible Values: none, 4:3, 16:9, 14:9
+      This option selects either the 4:3, 16:9, 14:9 or no specific
+      area of current video stream. No specific area value will choose
+      the video stream as is.
+
+    CropModeToggleKey:
+      Output methods: X11-XV, DirectFB
+      Possible Values: USERx (x = 1 .. 9)
+      You may specify a vdr USERx key of your remote to cycle throu
+      CropModes.
+
+    Zoom factor:
+      Output methods: X11-XV, DirectFB, vidix
+      Possible Values: 0 .. 128
+      Zoom calculation: 1 + (value² / 1024) with maximum result 17
+
+    Zoom area shift:
+      Output methods: X11-XV, DirectFB, vidix
+      Possible Values: -100 .. 100
+      Value measured in %, shifts the zoomed out part left / up (with
+      negative numbers) or right / down (with positive numbers). All zoom
+      specific values are not stored in vdr's setup.conf file.
+
+    Crop lines / columns:
+      Output methods: X11-XV, DirectFB
+      By this you may replace video line from top, bottom, left and right
+      with black lines. It may be usfull, if there is some time code
+      information or some WSS information is present in the viewable
+      area (shown as white dots). Changing these values does not effect
+      displayed aspect ratio.
+
+    Expand lines /columns:
+      Output methods: X11-XV, DirectFB, vidix
+      Intention of this option is similar to crop lines. The advantage
+      is the you don't get black lines instead of unwanted content.
+      The disadvantage is that changing these values effects displayed
+      aspect ratio.
 
   Post processing:
 
