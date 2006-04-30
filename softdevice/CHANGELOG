@@ -1,4 +1,5 @@
 Changelog
+2006-04-30: softdevice-0.2.3
 2006-04-29:
    - enable build of ShmClient and video-shm when possible.
    - disable interlaced vs. not-interlaced (progressive) reporting
