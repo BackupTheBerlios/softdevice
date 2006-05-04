@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.28 2006/04/29 06:25:58 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.29 2006/05/04 21:40:12 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -114,7 +114,7 @@ class cSetupStore {
     char          *getPPValue(void);
     void          CropModeNext(void);
 
-    virtual bool  CatchRemoteKey(const char *remoteName, uint64_t key);
+    virtual bool  CatchRemoteKey(const char *remoteName, uint64 key);
 
     int   xvAspect;
     int   xvMaxArea;
