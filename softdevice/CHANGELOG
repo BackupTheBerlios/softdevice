@@ -1,4 +1,11 @@
 Changelog
+2006-05-07:
+   - video-dfb: preparation for DSBLIT_INTERLACED which results
+     in better displaying of downscaled 16:9 on 4:3 TVs with matrox.
+   - video-dfb: make YUY2 color info reordering dependant of
+     interlaced vs. progressive video.
+2006-05-01:
+   - some fixes for DirectFB compile, configure & 64bit arch .
 2006-04-30: softdevice-0.2.3
 2006-04-29:
    - enable build of ShmClient and video-shm when possible.

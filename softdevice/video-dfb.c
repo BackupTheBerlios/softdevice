@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.59 2006/04/30 23:56:13 lucke Exp $
+ * $Id: video-dfb.c,v 1.60 2006/05/07 20:52:23 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -19,6 +19,7 @@
 # include "config.h"
 #else
 # define HAVE_SetSourceLocation 0
+# define HAVE_DSBLIT_INTERLACED 0
 # if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
 #   define HAVE_GraphicsDeviceDescription 0
 #   define HAVE_DIEF_REPEAT               0
@@ -165,6 +166,9 @@ static void reportCardInfo (IDirectFB *dfb)
   if (caps.blitting_flags & DSBLIT_DST_PREMULTIPLY ) fprintf(stderr,"DstPremultiply ");
   if (caps.blitting_flags & DSBLIT_DEMULTIPLY ) fprintf(stderr,"Demultiply ");
   if (caps.blitting_flags & DSBLIT_DEINTERLACE ) fprintf(stderr,"Deinterlace ");
+#if HAVE_DSBLIT_INTERLACED
+  if (caps.blitting_flags & DSBLIT_INTERLACED ) fprintf(stderr,"Interlaced ");
+#endif
   fprintf(stderr,"\n");
 }
 
@@ -889,6 +893,12 @@ void cDFBVideoOut::SetParams()
             videoSurface->Clear(COLORKEY,0); //clear and
             videoSurface->Release();
           }
+#if HAVE_DSBLIT_INTERLACED
+	  if (setupStore->useMGAtv)
+	  {
+	    vidDsc.caps = DFB_ADD_SURFACE_CAPS(vidDsc.caps, DSCAPS_INTERLACED);
+	  }
+#endif	  
 
           videoSurface=dfb->CreateSurface(vidDsc);
           /* --------------------------------------------------------------------
@@ -1205,8 +1215,21 @@ void cDFBVideoOut::ShowOSD ()
         clearBackground--;
       }
 
+#if HAVE_DSBLIT_INTERLACED
+      if (setupStore->useMGAtv)
+      {
+        scrSurface->SetBlittingFlags(DSBLIT_INTERLACED);
+        scrSurface->StretchBlit(videoSurface, &src, &dst);
+      }
+      else
+      {
+        scrSurface->SetBlittingFlags(DSBLIT_NOFX);
+        scrSurface->StretchBlit(videoSurface, &src, &dst);
+      }
+#else
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
+#endif      
       if (OSDpresent)
       {
         osdsrc.x = osdsrc.y = 0;
@@ -1306,14 +1329,23 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 #endif
     } else if (pixelformat == DSPF_YUY2) {
 
-      yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-      //yv12_to_yuy2_il_c(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                   Pu + UVstride * cutTop + cutLeft,
-                   Pv + UVstride * cutTop + cutLeft,
-                   dst + pitch * cutTop * 2 + cutLeft * 4,
-                   Width - 2 * (cutLeft + cutRight),
-                   Height - 2 * (cutTop + cutBottom),
-                   Ystride, UVstride, pitch);
+      if (interlaceMode) {
+        yv12_to_yuy2_il_c(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                          Pu + UVstride * cutTop + cutLeft,
+                          Pv + UVstride * cutTop + cutLeft,
+                          dst + pitch * cutTop * 2 + cutLeft * 4,
+                          Width - 2 * (cutLeft + cutRight),
+                          Height - 2 * (cutTop + cutBottom),
+                          Ystride, UVstride, pitch);
+      } else {
+        yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                     Pu + UVstride * cutTop + cutLeft,
+                     Pv + UVstride * cutTop + cutLeft,
+                     dst + pitch * cutTop * 2 + cutLeft * 4,
+                     Width - 2 * (cutLeft + cutRight),
+                     Height - 2 * (cutTop + cutBottom),
+                     Ystride, UVstride, pitch);
+      }
      }
 
     videoSurface->Unlock();
@@ -1345,8 +1377,19 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 
       osdMutex.Unlock();
 
+#if HAVE_DSBLIT_INTERLACED
+      if (setupStore->useMGAtv)
+      {
+        scrSurface->SetBlittingFlags(DSBLIT_INTERLACED);
+        scrSurface->StretchBlit(videoSurface, &src, &dst);
+      } else {
+        scrSurface->SetBlittingFlags(DSBLIT_NOFX);
+        scrSurface->StretchBlit(videoSurface, &src, &dst);
+      }
+#else
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
+#endif      
 
       if (OSDpresent)
       {

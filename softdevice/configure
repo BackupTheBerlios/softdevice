@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.12 2006/04/30 19:28:47 lucke Exp $
+# $Id: configure,v 1.13 2006/05/07 20:52:23 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -97,6 +97,7 @@ dfb_device_desc="yes"
 dfb_sourcelocation="yes"
 dfb_dscaps_double="yes"
 dfb_dief_repeat="yes"
+dfb_blit_interlaced="yes"
 
 cat > ${TMPC} << EOF
 #include <directfb.h>
@@ -147,6 +148,17 @@ int main(void) {
 }
 EOF
 $cc $CFLAGS $dfb_opts -o $TMPE $TMPC > /dev/null 2>&1 || dfb_dief_repeat="no"
+
+cat > ${TMPC} << EOF
+#include <stdio.h>
+#include <dfb++.h>
+#include <directfb.h>
+int main(void) {
+    DFBSurfaceBlittingFlags   flags = DSBLIT_INTERLACED;
+  return 0;
+}
+EOF
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC > /dev/null 2>&1 || dfb_blit_interlaced="no"
 
   fi
 fi
@@ -303,6 +315,12 @@ if test "${dfb}" = "yes" ; then
     echo "#define HAVE_DIEF_REPEAT                1" >> $TMPH
   else
     echo "#define HAVE_DIEF_REPEAT                0" >> $TMPH
+  fi
+
+  if test "${dfb_blit_interlaced}" = "yes" ; then
+    echo "#define HAVE_DSBLIT_INTERLACED          1" >> $TMPH
+  else
+    echo "#define HAVE_DSBLIT_INTERLACED          0" >> $TMPH
   fi
 fi
 
