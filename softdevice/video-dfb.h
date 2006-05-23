@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.19 2006/04/23 19:38:29 wachm Exp $
+ * $Id: video-dfb.h,v 1.20 2006/05/23 21:28:54 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -23,9 +23,12 @@
 
 class cDFBVideoOut : public cVideoOut {
   private:
-    IDirectFBDisplayLayer *osdLayer, *videoLayer;
-    DFBSurfaceDescription scrDsc, osdDsc, vidDsc;
-    IDirectFBSurface      *osdSurface, *videoSurface, *scrSurface;
+    IDirectFBDisplayLayer         *osdLayer, *videoLayer;
+    DFBSurfaceDescription         scrDsc, osdDsc, vidDsc;
+    DFBDisplayLayerDescription    osdLayerDescription,
+                                  videoLayerDescription;
+    DFBDisplayLayerConfig         osdLayerConfiguration;
+    IDirectFBSurface              *osdSurface, *videoSurface, *scrSurface;
 
     DFBSurfacePixelFormat pixelformat;
     cSoftRemote            *dfbRemote;
@@ -42,6 +45,7 @@ class cDFBVideoOut : public cVideoOut {
           clearBackground,
           fieldParity;
     int   prevOsdMode;
+    int   videoLayerLevel;
 
     void SetParams();
     void EnableFieldParity(IDirectFBDisplayLayer *layer);

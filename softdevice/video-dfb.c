@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.60 2006/05/07 20:52:23 lucke Exp $
+ * $Id: video-dfb.c,v 1.61 2006/05/23 21:28:54 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -192,6 +192,8 @@ static void reportSurfaceCapabilities (char *name, IDirectFBSurface *surf)
   if (scaps & DSCAPS_SEPARATED) fprintf(stderr,"separated ");
   if (scaps & DSCAPS_STATIC_ALLOC) fprintf(stderr,"static-alloc ");
   if (scaps & DSCAPS_TRIPLE) fprintf(stderr,"triple-buffered ");
+
+  fprintf(stderr, "PixelFormat = 0x%08x ", surf->GetPixelFormat());
   fprintf(stderr,"\n");
 }
 
@@ -230,10 +232,37 @@ static void BESColorkeyState(IDirectFBDisplayLayer *layer, bool state)
 
 /* ---------------------------------------------------------------------------
  */
+static void ReportLayerInfo(IDirectFBDisplayLayer *layer, char *name)
+{
+      DFBDisplayLayerConfig layerConfiguration;
+
+  if (!layer)
+  {
+    fprintf (stderr, "[dfb] no layer info. layer == NULL\n");
+    return;
+  }
+
+  layer->GetConfiguration(&layerConfiguration);
+  {
+    fprintf(stderr,
+            "[dfb] (%s): flags, options, pixelformat: %08x, %08x %08x\n",
+            name,
+            layerConfiguration.flags,
+            layerConfiguration.options,
+            layerConfiguration.pixelformat);
+    fprintf(stderr,
+            "[dfb] (%s): width, height:               %d %d\n",
+            name,
+            layerConfiguration.width,
+            layerConfiguration.height);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
 cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
               : cVideoOut(setupStore)
 {
-    DFBDisplayLayerDescription    desc;
     tLayerSelectItem              *layerInfo;
 
   fprintf(stderr,"[dfb] init\n");
@@ -252,6 +281,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   clearAlpha = 0x00;
   clearBackground = 0;
   clearBackCount = 2; // by default for double buffering;
+  videoLayerLevel = 1;
   OSDpresent = false;
   fieldParity = 0;    // 0 - top field first, 1 - bottom field first
 
@@ -283,6 +313,17 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       exit(EXIT_FAILURE);
     }
 
+    if (!setupStore->useMGAtv)
+    {
+      fprintf(stderr,"[dfb] Configuring CooperativeLevel for OSD\n");
+      osdLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
+    }
+
+    osdLayerDescription = osdLayer->GetDescription();
+
+    osdLayer->GetConfiguration(&osdLayerConfiguration);
+    osdLayerConfiguration.flags = DLCONF_ALL;
+
     videoLayer = NULL;
     layerInfo = &layerList [ANY_LAYER];
     if (setupStore->useMGAtv) {
@@ -304,47 +345,47 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       videoLayer = layerInfo->layer;
     }
 
-    scrDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
-                                                 DSDESC_PIXELFORMAT);
-    scrDsc.caps = DSCAPS_NONE;
-    DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_FLIPPING);
-    DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_PRIMARY);
-    DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_VIDEOONLY);
-    //DFB_ADD_SURFACE_CAPS(scrDsc.caps, DSCAPS_DOUBLE);
-    scrDsc.pixelformat = DSPF_ARGB;
-
-    if (setupStore->useMGAtv)
-    {
-      EnableFieldParity(osdLayer);
-      scrSurface = osdLayer->GetSurface();
-    }
-    else
-    {
-      if (setupStore->viaTv)
-      {
-        EnableFieldParity(videoLayer);
-      }
-
-      scrSurface = dfb->CreateSurface (scrDsc);
-    }
-
-    reportSurfaceCapabilities ("scrSurface", scrSurface);
-
     if (!videoLayer)
     {
       fprintf(stderr,"[dfb]: could not find suitable videolayer\n");
       exit(EXIT_FAILURE);
     }
 
+    videoLayerDescription = videoLayer->GetDescription();
+
     /* --------------------------------------------------------------------------
      * check for VIA Unichrome presence
      */
-    desc = videoLayer->GetDescription();
-    if (!strcmp (desc.name, "VIA Unichrome Video"))
+    if (!strcmp (videoLayerDescription.name, "VIA Unichrome Video"))
     {
       isVIAUnichrome = true;
       clearAlpha = 0xff;
+
+      ReportLayerInfo(osdLayer, "osdLayer");
+      if (osdLayerDescription.caps & DLCAPS_ALPHACHANNEL)
+      {
+
+        fprintf(stderr, "[dfb] osdLayer has alpha channel\n");
+        osdLayerConfiguration.options = DLOP_ALPHACHANNEL;
+        videoLayerLevel = -1;
+      }
+      else
+      {
+        fprintf(stderr, "[dfb] osdLayer without !! alpha channel\n");
+      }
     }
+
+    osdLayer->SetCooperativeLevel(DLSCL_EXCLUSIVE);
+    osdLayer->SetConfiguration(osdLayerConfiguration);
+
+    if (setupStore->useMGAtv)
+      EnableFieldParity(osdLayer);
+    if (setupStore->viaTv)
+      EnableFieldParity(videoLayer);
+
+    scrSurface = osdLayer->GetSurface();
+
+    reportSurfaceCapabilities ("scrSurface", scrSurface);
 
     if (scrSurface)
     {
@@ -412,10 +453,10 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       osdSurface->Flip(); // Flip the field
       osdSurface->Clear(0,0,0,clearAlpha); //clear and
 
-      desc = osdLayer->GetDescription();
       fprintf(stderr,
               "[dfb] Using this layer for OSD: (%s - [%dx%d])\n",
-              desc.name, osdSurface->GetWidth(), osdSurface->GetHeight());
+              osdLayerDescription.name,
+              osdSurface->GetWidth(), osdSurface->GetHeight());
 
       reportSurfaceCapabilities ("osdSurface", osdSurface);
 
@@ -451,17 +492,13 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
         if (!setupStore->viaTv)
           BESColorkeyState(videoLayer, true);
-
-        fprintf(stderr,"[dfb] Configuring CooperativeLevel for OSD\n");
-        osdLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
       }
 
-      desc = osdLayer->GetDescription();
-      fprintf(stderr,"[dfb] Using this layer for OSD: %s\n", desc.name);
-
-      desc = videoLayer->GetDescription();
-      fprintf(stderr,"[dfb] Using this layer for Video out: %s\n", desc.name);
-
+      fprintf(stderr,
+              "[dfb] Using this layer for OSD:        %s\n"
+              "[dfb] Using this layer for Video out:  %s\n",
+              osdLayerDescription.name,
+              videoLayerDescription.name);
     }
 
     GetDisplayFrameTime();
@@ -619,7 +656,6 @@ void cDFBVideoOut::ProcessEvents ()
 void cDFBVideoOut::SetParams()
 {
     DFBDisplayLayerConfig       dlc;
-    DFBDisplayLayerDescription  desc;
     DFBDisplayLayerConfigFlags  failed;
 
   if (videoLayer || useStretchBlit)
@@ -711,8 +747,6 @@ void cDFBVideoOut::SetParams()
 
       pixelformat = dlc.pixelformat;
 
-      desc = videoLayer->GetDescription();
-
       if (!useStretchBlit)
       {
         if (videoSurface)
@@ -724,7 +758,7 @@ void cDFBVideoOut::SetParams()
          */
         dlc.options = (DFBDisplayLayerOptions)( DLOP_NONE );
 #if 0
-        if (desc.caps & DLCAPS_DEINTERLACING)
+        if (videoLayerDescription.caps & DLCAPS_DEINTERLACING)
         {
           /* ------------------------------------------------------------------
            * if deinterlacing is supported we'll use that
@@ -732,7 +766,20 @@ void cDFBVideoOut::SetParams()
           dlc.options = (DFBDisplayLayerOptions)( DLOP_DEINTERLACING );
         }
 #endif
-        if (desc.caps & DLCAPS_ALPHACHANNEL)
+        if (isVIAUnichrome)
+        {
+          try
+          {
+            videoLayer->SetLevel(videoLayerLevel);
+          }
+          catch (DFBException *ex)
+          {
+            fprintf (stderr,"[dfb] SetParams: action=%s, result=%s Failed: SetLevel()\n",
+                     ex->GetAction(), ex->GetResult());
+            delete ex;
+          }
+        }
+        else if (videoLayerDescription.caps & DLCAPS_ALPHACHANNEL)
         {
           /* ------------------------------------------------------------------
            * use alpha channel if it is supported and disable pseudo alpha mode
@@ -742,7 +789,7 @@ void cDFBVideoOut::SetParams()
         }
         else
         {
-          if (desc.caps & DLCAPS_DST_COLORKEY)
+          if (videoLayerDescription.caps & DLCAPS_DST_COLORKEY)
           {
             /* ----------------------------------------------------------------
              * no alpha channel but destination color keying is supported
@@ -757,18 +804,6 @@ void cDFBVideoOut::SetParams()
                                                  DLOP_FIELD_PARITY);
           fprintf(stderr, "[dfb] SetParams: Enabling DLOP_FIELD_PARITY\n");
         }
-        try
-        {
-          if (isVIAUnichrome)
-            videoLayer->SetLevel(1);
-        }
-        catch (DFBException *ex)
-        {
-          fprintf (stderr,"[dfb] SetParams: action=%s, result=%s Failed: SetLevel()\n",
-                   ex->GetAction(), ex->GetResult());
-          delete ex;
-        }
-
         /*
          * --------------------------------------------------------------------
          * Try with triple or double buffering
@@ -831,8 +866,7 @@ void cDFBVideoOut::SetParams()
                    ex->GetAction(), ex->GetResult());
           delete ex;
         }
-
-        if (desc.caps & DLCAPS_SCREEN_LOCATION)
+        if (videoLayerDescription.caps & DLCAPS_SCREEN_LOCATION)
         {
           /* ------------------------------------------------------------------
            * workaround for a bug in DirectFB: force SetScreenLocation to be
@@ -864,7 +898,7 @@ void cDFBVideoOut::SetParams()
          */
         try
         {
-          if (desc.caps & DLCAPS_DST_COLORKEY)
+          if (videoLayerDescription.caps & DLCAPS_DST_COLORKEY)
             videoLayer->SetDstColorKey(COLORKEY);
 
           videoSurface=videoLayer->GetSurface();
@@ -898,7 +932,7 @@ void cDFBVideoOut::SetParams()
 	  {
 	    vidDsc.caps = DFB_ADD_SURFACE_CAPS(vidDsc.caps, DSCAPS_INTERLACED);
 	  }
-#endif	  
+#endif
 
           videoSurface=dfb->CreateSurface(vidDsc);
           /* --------------------------------------------------------------------
@@ -1229,7 +1263,7 @@ void cDFBVideoOut::ShowOSD ()
 #else
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
-#endif      
+#endif
       if (OSDpresent)
       {
         osdsrc.x = osdsrc.y = 0;
@@ -1389,7 +1423,7 @@ void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
 #else
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
-#endif      
+#endif
 
       if (OSDpresent)
       {

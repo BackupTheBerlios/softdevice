@@ -1,5 +1,9 @@
 Changelog
 2006-05-23:
+   - fix VIA OSD transparency for newer DirectFB cvs versions
+   - merged some defines which belong together
+   - added 15:9 screen aspect
+   - fix postprocessing not offered via OSD even detected by configure
    - reenable software alpha blending for video-shm
    - move AlphaBlend into utils.c, clean up MMX defines
 2006-05-07:
