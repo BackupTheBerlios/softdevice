@@ -1,5 +1,6 @@
 Changelog
 2006-05-23:
+   - reenable software alpha blending for video-shm
    - move AlphaBlend into utils.c, clean up MMX defines
 2006-05-07:
    - video-dfb: preparation for DSBLIT_INTERLACED which results
