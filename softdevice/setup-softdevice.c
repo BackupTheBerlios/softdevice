@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.42 2006/04/23 20:21:27 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.43 2006/05/23 21:11:37 lucke Exp $
  */
 
 #include <string.h>
@@ -175,7 +175,8 @@ cSetupStore::cSetupStore ()
   videoAspectNames[2] = "4:3";   // no need to translate
   videoAspectNames[3] = "16:9";  // no need to translate
   videoAspectNames[4] = "16:10"; // no need to translate
-  videoAspectNames[5] = NULL;
+  videoAspectNames[5] = "15:9";  // no need to translate
+  videoAspectNames[6] = NULL;
 
   suspendVideo[0] = tr("playing");
   suspendVideo[1] = tr("suspended");
@@ -325,7 +326,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     fprintf(stderr, "[setup-softdevice] alsa device set to: %s\n", alsaDevice);
   } else if (!strcasecmp(Name, "PixelAspect")) {
     screenPixelAspect = atoi (Value);
-    screenPixelAspect = clamp (0, screenPixelAspect, 4);
+    screenPixelAspect = clamp (0, screenPixelAspect, SETUP_VIDEOASPECTNAMES_LAST);
   } else if (!strcasecmp(Name, "OSDalphablend")) {
     osdMode = atoi (Value);
     osdMode = clamp (0, osdMode, 1);

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.38 2006/05/23 19:30:42 wachm Exp $
+ * $Id: video.h,v 1.39 2006/05/23 21:11:37 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -32,8 +32,6 @@
 
 #define OSD_FULL_WIDTH    736
 #define OSD_FULL_HEIGHT   576
-
-#define MAX_PAR 5
 
 #if VDRVERSNUM < 10307
 
@@ -112,7 +110,7 @@ protected:
             current_afd,
             interlaceMode,
             displayTimeUS;
-    double  parValues[MAX_PAR];
+    double  parValues[SETUP_VIDEOASPECTNAMES_COUNT];
 
     bool    videoInitialized;
 
@@ -148,7 +146,7 @@ public:
                                   AVFrame *picture, AVCodecContext *context);
     virtual void DrawStill_420pl (uint8_t *pY, uint8_t *pU, uint8_t *pV,
                                   int w, int h, int yPitch, int uvPitch,
-                                  int new_afd=-1, 
+                                  int new_afd=-1,
                                   double new_asp=0.0);
     virtual bool Initialize(void) {videoInitialized = true; return 1;};
     virtual bool Reconfigure (int format) {return 1;};

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.3 2006/04/23 19:55:53 wachm Exp $
+ * $Id: setup-softdevice-menu.c,v 1.4 2006/05/23 21:11:37 lucke Exp $
  */
 
 //#include "video.h"
@@ -297,7 +297,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   videoAspectNames[0] = tr("default");
   Add(new cMenuEditStraItem(tr("Screen Aspect"),
                             &data->screenPixelAspect,
-                            (SETUP_VIDEOASPECTNAMES-1),
+                            SETUP_VIDEOASPECTNAMES_COUNT,
                             videoAspectNames));
 
   if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_VIDIX)

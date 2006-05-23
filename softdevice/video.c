@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.56 2006/05/23 19:30:42 wachm Exp $
+ * $Id: video.c,v 1.57 2006/05/23 21:11:37 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -52,7 +52,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   videoInitialized = false;
   old_picture = NULL;
 
-  for (int i = 0; i < MAX_PAR; ++i)
+  for (int i = 0; i < SETUP_VIDEOASPECTNAMES_COUNT; ++i)
     parValues [i] = 1.0;
 
   init_OsdBuffers();
@@ -163,6 +163,7 @@ void cVideoOut::SetParValues(double displayAspect, double displayRatio)
   parValues [2] = ( 4.0 /  3.0) / displayRatio;
   parValues [3] = (16.0 /  9.0) / displayRatio;
   parValues [4] = (16.0 / 10.0) / displayRatio;
+  parValues [5] = (15.0 /  9.0) / displayRatio;
 }
 
 /* ---------------------------------------------------------------------------

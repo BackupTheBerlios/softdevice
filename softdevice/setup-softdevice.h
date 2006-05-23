@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.29 2006/05/04 21:40:12 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.30 2006/05/23 21:11:37 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -16,6 +16,10 @@
 #include <vdr/i18n.h>
 #else
 #include "VdrReplacements.h"
+#endif
+
+#ifdef HAVE_CONFIG
+# include "config.h"
 #endif
 
 #define VOUT_XV       1
@@ -74,7 +78,9 @@ extern const char *osdModeNames[SETUP_OSDMODES];
 
 /*-----------------------------------------------------------------------------
  */
-#define SETUP_VIDEOASPECTNAMES 6
+#define SETUP_VIDEOASPECTNAMES        7
+#define SETUP_VIDEOASPECTNAMES_COUNT  (SETUP_VIDEOASPECTNAMES-1)
+#define SETUP_VIDEOASPECTNAMES_LAST   (SETUP_VIDEOASPECTNAMES_COUNT-1)
 extern const char *videoAspectNames[SETUP_VIDEOASPECTNAMES];
 
 /*-----------------------------------------------------------------------------
