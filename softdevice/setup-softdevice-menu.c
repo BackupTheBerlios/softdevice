@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.4 2006/05/23 21:11:37 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.5 2006/05/23 21:31:40 wachm Exp $
  */
 
 //#include "video.h"
@@ -300,7 +300,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             SETUP_VIDEOASPECTNAMES_COUNT,
                             videoAspectNames));
 
-  if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_VIDIX)
+  if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_VIDIX
+      || data->outputMethod == VOUT_SHM )
   {
     osdModeNames[0] = tr("pseudo");
     osdModeNames[1] = tr("software");
