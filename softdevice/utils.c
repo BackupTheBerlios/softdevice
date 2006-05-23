@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.13 2006/04/23 20:32:45 wachm Exp $
+ * $Id: utils.c,v 1.14 2006/05/23 19:30:42 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -181,8 +181,8 @@ void yv12_to_yuy2_fr_mmx2(const uint8_t *ysrc,
 
     dst += dstStride;
   }
-  __asm__ __volatile__ ("sfence \n"
-		        "emms \n" : : : "memory");
+  SFENCE;
+  EMMS;
 }
 
 void yv12_to_yuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
@@ -256,9 +256,8 @@ void yv12_to_yuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
 
     dst += dstStride;
   }
-  __asm__ __volatile__ ("sfence \n"
-		        "emms \n" : : : "memory");
-
+  SFENCE;
+  EMMS;
 #endif
 }
 
@@ -552,6 +551,83 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
   free(scaleV);
 }
 
+
+void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
+          uint8_t *alpha,uint16_t count) {
+     // printf("%x %x %x \n",P1,P2,alpha);
+
+#ifdef USE_MMX
+        __asm__(" pxor %%mm3,%%mm3\n"
+#ifdef USE_MMX2
+                PREFETCH("(%0)\n")
+                PREFETCH("(%1)\n")
+                PREFETCH("(%2)\n")
+                PREFETCH("64(%0)\n")
+                PREFETCH("64(%1)\n")
+                PREFETCH("64(%2)\n")
+                PREFETCH("128(%0)\n")
+                PREFETCH("128(%1)\n")
+                PREFETCH("128(%2)\n")
+#endif //USE_MMX2
+                : : "r" (P1), "r" (P2), "r" (alpha) : "memory");
+
+        // I guess this can be further improved...
+	// Useing prefetch makes it slower on Athlon64,
+	// but faster on the Athlon Tbird...
+	// Why is prefetching slower on Athlon64????
+        // Because the Athlon64 does automatic block prefetching...
+        while (count>8 ) {
+#ifdef USE_MMX2
+          if (! (count%8 ) )
+               __asm__(
+                  PREFETCH(" 192(%0)\n")
+                  PREFETCH(" 192(%1)\n")
+                  PREFETCH(" 192(%2)\n")
+                  : : "r" (P1), "r" (P2), "r" (alpha) : "memory");
+
+#endif //USE_MMX2
+         __asm__(
+                "  movq  (%0),%%mm0\n"
+                "  movq  (%1),%%mm1\n"
+                "  movq  (%2),%%mm2\n"
+                "  movq  %%mm0,%%mm4\n"
+                "  movq  %%mm1,%%mm5\n"
+                "  movq  %%mm2,%%mm6\n"
+                "  punpcklbw %%mm3, %%mm0\n"
+                "  punpcklbw %%mm3, %%mm1\n"
+                "  punpcklbw %%mm3, %%mm2\n"
+                "  punpckhbw %%mm3, %%mm4\n"
+                "  punpckhbw %%mm3, %%mm5\n"
+                "  punpckhbw %%mm3, %%mm6\n"
+                "  psubw %%mm1, %%mm0 \n"
+                "  psubw %%mm5, %%mm4 \n"
+                "  psraw $1,%%mm0\n"
+                "  psraw $1,%%mm4\n"
+                "  pmullw %%mm2, %%mm0 \n"
+                "  pmullw %%mm6, %%mm4 \n"
+                "  psraw $7,%%mm0\n"
+                "  psraw $7,%%mm4\n"
+                "  paddw %%mm1, %%mm0 \n"
+                "  paddw %%mm5, %%mm4 \n"
+                "  packuswb %%mm4, %%mm0 \n"
+                MOVNTQ " %%mm0,(%3)\n"
+                : : "r" (P1), "r" (P2), "r" (alpha),"r"(dest) : "memory");
+                count-=8;
+                P1+=8;
+                P2+=8;
+                alpha+=8;
+                dest+=8;
+       }
+       EMMS;
+#endif //USE_MMX
+
+       //fallback version and the last missing bytes...
+       for (int i=0; i < count; i++){
+          dest[i]=(((uint16_t) P1[i] *(uint16_t) alpha[i]) +
+             ((uint16_t) P2[i] *(256-(uint16_t) alpha[i])))  >>8 ;
+       }
+}
+
 uint64_t getTimeMilis(void) {
     struct timeval tv;
     gettimeofday(&tv,NULL);
@@ -561,13 +637,6 @@ uint64_t getTimeMilis(void) {
 /* taken from MPlayer's aclib */
 
 #define MIN_LEN 0x40
-#define PREFETCH "prefetchnta"
-#define EMMS     "emms"
-#ifdef USE_MMX2
-#define MOVNTQ "movntq"
-#else
-#define MOVNTQ "movq"
-#endif
 #define MMREG_SIZE 64
 #define BLOCK_SIZE 4096
 
@@ -601,11 +670,11 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 #ifdef USE_MMX2
         /* PREFETCH has effect even for MOVSB instruction ;) */
 	__asm__ __volatile__ (
-	        PREFETCH" (%0)\n"
-	        PREFETCH" 64(%0)\n"
-	        PREFETCH" 128(%0)\n"
-        	PREFETCH" 192(%0)\n"
-        	PREFETCH" 256(%0)\n"
+	        PREFETCH(" (%0)\n")
+	        PREFETCH(" 64(%0)\n")
+	        PREFETCH(" 128(%0)\n")
+        	PREFETCH(" 192(%0)\n")
+        	PREFETCH(" 256(%0)\n")
 		: : "r" (from) );
 #endif
         if(len >= MIN_LEN)
@@ -636,7 +705,7 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 	{
 		__asm__ __volatile__ (
 #ifdef USE_MMX2
-        	PREFETCH" 320(%0)\n"
+        	PREFETCH(" 320(%0)\n")
 #endif
 		"movq (%0), %%mm0\n"
 		"movq 8(%0), %%mm1\n"
@@ -729,7 +798,7 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 	{
 		__asm__ __volatile__ (
 #ifdef USE_MMX2
-        	PREFETCH" 320(%0)\n"
+        	PREFETCH(" 320(%0)\n")
 #endif
 		"movq (%0), %%mm0\n"
 		"movq 8(%0), %%mm1\n"
@@ -755,11 +824,11 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 #ifdef USE_MMX2
                 /* since movntq is weakly-ordered, a "sfence"
 		 * is needed to become ordered again. */
-		__asm__ __volatile__ ("sfence" : : : "memory");
+                 SFENCE;
 #endif
 #ifdef USE_MMX
 		/* enables to use FPU */
-		__asm__ __volatile__ (EMMS : : :"memory");
+		EMMS ;
 #endif
 	}
 	/*

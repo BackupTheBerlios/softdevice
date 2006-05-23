@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.37 2006/04/27 20:29:29 wachm Exp $
+ * $Id: video.h,v 1.38 2006/05/23 19:30:42 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -34,29 +34,6 @@
 #define OSD_FULL_HEIGHT   576
 
 #define MAX_PAR 5
-
-// MMX - 3Dnow! defines
-
-#undef PREFETCH
-#undef EMMS
-
-#ifdef USE_3DNOW
-//#warning Using 3Dnow! extensions
-#define PREFETCH "prefetch "
-#define MOVQ     "movntq "
-#define EMMS     __asm__ __volatile__  (" femms \n": : : "memory"  )
-#elif defined ( USE_MMX2 )
-//#warning Using MMX2 extensions
-#define PREFETCH "prefetchnta "
-#define MOVQ     "movntq "
-#define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
-#else
-//#warning Using MMX extensions
-#define PREFETCH
-#define MOVQ     "movq "
-#define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
-#endif
-
 
 #if VDRVERSNUM < 10307
 
@@ -246,10 +223,6 @@ public:
 
     virtual void CommitUnlockSoftOsdSurface( int osdwidth, int osdheight)
     { OSDpresent=true; OsdWidth=osdwidth; OsdHeight=osdheight; Osd_changed=1;};
-
-   void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
-       uint8_t *alpha,uint16_t count);
-   // performes alpha blending in software
 
 #else
     int OSDxOfs,OSDyOfs;

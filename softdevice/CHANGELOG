@@ -1,4 +1,6 @@
 Changelog
+2006-05-23:
+   - move AlphaBlend into utils.c, clean up MMX defines
 2006-05-07:
    - video-dfb: preparation for DSBLIT_INTERLACED which results
      in better displaying of downscaled 16:9 on 4:3 TVs with matrox.

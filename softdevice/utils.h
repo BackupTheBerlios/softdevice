@@ -3,13 +3,14 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.7 2006/04/23 19:55:53 wachm Exp $
+ * $Id: utils.h,v 1.8 2006/05/23 19:30:42 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
 //#include <vdr/plugin.h>
 #include <stdint.h>
 #include <sys/time.h>
+#include "config.h"
 #include "mmx.h"
 
 // for MMX2 CPU's
@@ -19,6 +20,36 @@
 // use this instead if you don't have a MMX2 CPU:
 #define movntq(src,dest) do { movq_r2m (src, dest); } while (0);
 #endif
+
+// MMX - 3Dnow! defines
+
+#undef PREFETCH
+#undef MOVNTQ
+#undef SFENCE
+#undef EMMS
+
+#ifdef USE_3DNOW
+//#warning Using 3Dnow! extensions
+#define PREFETCH(x) "prefetchnta " x
+#define MOVNTQ   "movntq "
+#define SFENCE   __asm__ __volatile__  (" sfence \n": : : "memory"  )
+#define EMMS     __asm__ __volatile__  (" femms \n": : : "memory"  )
+
+#elif defined ( USE_MMX2 )
+//#warning Using MMX2 extensions
+#define PREFETCH(x) "prefetchnta " x
+#define MOVNTQ   "movntq "
+#define SFENCE   __asm__ __volatile__  (" sfence \n": : : "memory"  )
+#define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
+
+#else
+//#warning Using MMX extensions
+#define PREFETCH(x) 
+#define MOVNTQ   "movq "
+#define SFENCE  
+#define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
+#endif
+
 
 void yv12_to_yuy2_il_c(const uint8_t *py,
                        const uint8_t *pu,
@@ -61,6 +92,11 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
                  int rgb_stride, int y_stride, int uv_stride,
                  int dstW, int dstH,
                  int depth, unsigned char * mask, int deintMethod);
+
+void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
+       uint8_t *alpha,uint16_t count);
+   // performes alpha blending in software
+
 uint64_t getTimeMilis(void);
 
 void mmx_unpack_16rgb (uint8_t * image, int lines, int stride);

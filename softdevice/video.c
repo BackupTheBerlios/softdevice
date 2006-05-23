@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.55 2006/04/29 15:57:27 lucke Exp $
+ * $Id: video.c,v 1.56 2006/05/23 19:30:42 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -556,82 +556,6 @@ void cVideoOut::AdjustOSDMode()
 {
   current_osdMode = OSDMODE_PSEUDO;
 }
-
-void cVideoOut::AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
-          uint8_t *alpha,uint16_t count) {
-     // printf("%x %x %x \n",P1,P2,alpha);
-
-#ifdef USE_MMX
-        __asm__(" pxor %%mm3,%%mm3\n"
-#ifdef USE_MMX2
-                PREFETCH"(%0)\n"
-                PREFETCH"(%1)\n"
-                PREFETCH"(%2)\n"
-                PREFETCH"64(%0)\n"
-                PREFETCH"64(%1)\n"
-                PREFETCH"64(%2)\n"
-                PREFETCH"128(%0)\n"
-                PREFETCH"128(%1)\n"
-                PREFETCH"128(%2)\n"
-#endif //USE_MMX2
-                : : "r" (P1), "r" (P2), "r" (alpha) : "memory");
-
-        // I guess this can be further improved...
-	// Useing prefetch makes it slower on Athlon64,
-	// but faster on the Athlon Tbird...
-	// Why is prefetching slower on Athlon64????
-        while (count>8 ) {
-#ifdef USE_MMX2
-          if (! (count%8 ) )
-               __asm__(
-                  PREFETCH" 192(%0)\n"
-                  PREFETCH" 192(%1)\n"
-                  PREFETCH" 192(%2)\n"
-                  : : "r" (P1), "r" (P2), "r" (alpha) : "memory");
-
-#endif //USE_MMX2
-         __asm__(
-                "  movq  (%0),%%mm0\n"
-                "  movq  (%1),%%mm1\n"
-                "  movq  (%2),%%mm2\n"
-                "  movq  %%mm0,%%mm4\n"
-                "  movq  %%mm1,%%mm5\n"
-                "  movq  %%mm2,%%mm6\n"
-                "  punpcklbw %%mm3, %%mm0\n"
-                "  punpcklbw %%mm3, %%mm1\n"
-                "  punpcklbw %%mm3, %%mm2\n"
-                "  punpckhbw %%mm3, %%mm4\n"
-                "  punpckhbw %%mm3, %%mm5\n"
-                "  punpckhbw %%mm3, %%mm6\n"
-                "  psubw %%mm1, %%mm0 \n"
-                "  psubw %%mm5, %%mm4 \n"
-                "  psraw $1,%%mm0\n"
-                "  psraw $1,%%mm4\n"
-                "  pmullw %%mm2, %%mm0 \n"
-                "  pmullw %%mm6, %%mm4 \n"
-                "  psraw $7,%%mm0\n"
-                "  psraw $7,%%mm4\n"
-                "  paddw %%mm1, %%mm0 \n"
-                "  paddw %%mm5, %%mm4 \n"
-                "  packuswb %%mm4, %%mm0 \n"
-                MOVQ " %%mm0,(%3)\n"
-                : : "r" (P1), "r" (P2), "r" (alpha),"r"(dest) : "memory");
-                count-=8;
-                P1+=8;
-                P2+=8;
-                alpha+=8;
-                dest+=8;
-       }
-       EMMS;
-#endif //USE_MMX
-
-       //fallback version and the last missing bytes...
-       for (int i=0; i < count; i++){
-          dest[i]=(((uint16_t) P1[i] *(uint16_t) alpha[i]) +
-             ((uint16_t) P2[i] *(256-(uint16_t) alpha[i])))  >>8 ;
-       }
-}
-
 
 #else
 
