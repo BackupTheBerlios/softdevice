@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: avc-handler.c,v 1.2 2005/09/12 12:17:07 lucke Exp $
+ * $Id: avc-handler.c,v 1.3 2006/05/25 17:48:19 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -109,7 +109,8 @@ cAVCHandler::checkDevices(void)
                   tr("New FireWire Device"),newRomDirs[i].label);
         Skins.Message(mtInfo,msg);
 #endif
-        avc1394_vcr_get_mic_info (handle, i, NULL, NULL);
+        avc1394_vcr_get_mic_info (handle, i, &micData[i], &micSize[i]);
+        avc1394_vcr_parse_mic_info (micData[i], micSize[i], 1);
       }
     }
   }
@@ -347,15 +348,23 @@ cAVCPlayer::Action(void)
     cSoftDevice       *pDevice;
     AVPacket          pkt;
     int               nStreams=0;
-    static int64_t    lastPTS=0;
-
 
   dsyslog("[AVCPlayer-Action] started");
-  active = running = true;
   pDevice = (cSoftDevice *) cDevice::PrimaryDevice();
 
   fmt = av_find_input_format("dv1394");
-  rc = av_open_input_stream(&ic, NULL, "/dev/zero", fmt, ap);
+  if (!fmt) {
+    esyslog("[AVCPlayer-Action] inputformat dv1394 "
+            "not supported by your ffmpeg version");
+    return;
+  }
+
+  if ((rc = av_open_input_stream(&ic, NULL, "/dev/zero", fmt, ap)) < 0) {
+    esyslog("[AVCPlayer-Action] open input stream failed (%d)", rc);
+    return;
+  }
+
+  active = running = true;
 
   // limitation in cPlayer: we have to know the play mode at
   // start time. Workaraound set play mode again and
@@ -394,10 +403,31 @@ cAVCPlayer::Action(void)
 
     av_dup_packet(&pkt);
 
-    lastPTS=pkt.pts;
+#if LIBAVFORMAT_BUILD > 4623
+      AVRational time_base;
+
+    time_base = ic->streams[pkt.stream_index]->time_base;
+    if (pkt.pts != (int64_t) AV_NOPTS_VALUE) {
+#if 0
+      if (ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_AUDIO)
+        fprintf (stderr, "Au: %lld ->",pkt.pts);
+      else if (ic->streams[pkt.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO)
+        fprintf (stderr, "Vi: %lld ->",pkt.pts);
+      else
+        fprintf (stderr, "??: %lld ->",pkt.pts);
+#endif
+      pkt.pts = av_rescale(pkt.pts,
+                           AV_TIME_BASE * (int64_t)time_base.num,
+                           time_base.den) / 100;
+#if 0
+      fprintf (stderr, " %lld\n",pkt.pts);
+#endif
+    }
+#else
     if ( pkt.pts != (int64_t) AV_NOPTS_VALUE ) {
       pkt.pts/=100;
     }
+#endif
 
     pDevice->PlayVideo((uchar *)&pkt,-2);
 
@@ -406,7 +436,11 @@ cAVCPlayer::Action(void)
       nStreams=ic->nb_streams;
       fprintf(stderr,"Streams: %d\n",nStreams);
       for (int i=0; i <nStreams; i++ ) {
+#if LIBAVFORMAT_BUILD > 4628
+          printf("Codec %d ID: %d\n",i,ic->streams[i]->codec->codec_id);
+#else
           printf("Codec %d ID: %d\n",i,ic->streams[i]->codec.codec_id);
+#endif
       }
     }
 

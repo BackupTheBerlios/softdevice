@@ -22,10 +22,10 @@ The following vdr keys are supported:
 
 Patches:
   You need to patch libavc1394. Therefore the only supported version
-  is 0.5.0. The patch required is in directory patches. The usual procedure
+  is 0.5.3. The patch required is in directory patches. The usual procedure
   for doing this is:
   1. cd to_your_libavc1394_directory
-  2. patch --dry-run <path_to_patch_directory/patch_file
+  2. patch --dry-run -p 1 <path_to_patch_directory/patch_file
   3. if that was succesfully (no rejects or failed messages)
      patch <path_to_patch_directory/patch_file
 
@@ -36,7 +36,7 @@ Additional required software:
   softdevice-0.1.3
     http://softdevice.berlios.de
 
-  libavc1394-0.5.0
+  libavc1394-0.5.3
     http://sourceforge.net/projects/libavc1394
 
   libraw1394-1.1.0

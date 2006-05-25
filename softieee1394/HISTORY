@@ -1,5 +1,9 @@
 VDR Plugin 'softieee1394' Revision History
 ------------------------------------------
+2006-05-25:
+  - new patch for current libavc-0.5.3
+  - update for vdr-1.4.0
+  - some changes due to ffmpeg
 2005-09-12:
   - do not offer a mainmenu entry if there are no ieee1394 devices.
   - some cleanups
