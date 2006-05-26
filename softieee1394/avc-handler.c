@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: avc-handler.c,v 1.3 2006/05/25 17:48:19 lucke Exp $
+ * $Id: avc-handler.c,v 1.4 2006/05/26 19:59:21 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -16,6 +16,261 @@
 
 #include "avc-handler.h"
 #include "../softdevice/softdevice.h"
+
+/* ---------------------------------------------------------------------------
+ * MIC helper functions. should be in libavc1394, but for easier development,
+ *
+ */
+/* ---------------------------------------------------------------------------
+ */
+static int
+avc1394_mic_atn(unsigned char *p)
+{
+    int atn = 0;
+
+  if (*(p + 4) >> 3 == 0x1f) {
+    atn = (*(p+1) | *(p+2) << 8 | *(p+3) << 16) >> 1;
+  } else if (*(p + 4) >> 3 == 0x1f) {
+    atn = (*(p+3) << 1 | *(p+2) << 9 | (*(p+1) & 0x3f) << 17);
+  }
+
+  return atn;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static void
+avc1394_atn2str(int atn, char *strP, char *strN)
+{
+  sprintf (strP,
+           "%02d:%02d:%02d.%02d",
+           (atn / (12 * 25 * 60 * 60)) % 24,
+           (atn / (12 * 25 * 60)) % 60,
+           (atn / (12 * 25)) % 60,
+           (atn / 12) % 25);
+  sprintf (strN,
+           "%02d:%02d:%02d.%02d",
+           (atn / (10 * 30 * 60 * 60)) % 24,
+           (atn / (10 * 30 * 60)) % 60 ,
+           (atn / (10 * 30) % 60),
+           (atn / 10) % 30);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static void
+avc1394_mic_atn2str(unsigned char *p, char *strP, char *strN)
+{
+    int atn = 0;
+
+  if (*(p + 4) >> 3 == 0x1f) {
+    atn = (*(p+1) | *(p+2) << 8 | *(p+3) << 16) >> 1;
+  } else if (*(p + 4) >> 3 == 0x1f) {
+    atn = (*(p+3) << 1 | *(p+2) << 9 | (*(p+1) & 0x3f) << 17);
+  }
+  sprintf (strP,
+           "%02d:%02d:%02d.%02d",
+           (atn / (12 * 25 * 60 * 60)) % 24,
+           (atn / (12 * 25 * 60)) % 60,
+           (atn / (12 * 25)) % 60,
+           (atn / 12) % 25);
+  sprintf (strN,
+           "%02d:%02d:%02d.%02d",
+           (atn / (10 * 30 * 60 * 60)) % 24,
+           (atn / (10 * 30 * 60)) % 60 ,
+           (atn / (10 * 30) % 60),
+           (atn / 10) % 30);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static void
+avc1394_mic_datetime(t_mic_jump_mark *p_mark, unsigned char *p)
+{
+  p_mark->year   = (*(p+3) & 0xE0) >> 1 | (*(p+4) & 0xF0) >> 4;
+  p_mark->month  = *(p+4) & 0x0f;
+  p_mark->day    = *(p+3) & 0x1f;
+  p_mark->hour   = *(p+2) & 0x1F;
+  p_mark->minute = *(p+1) & 0x3F;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static void
+avc1394_mic_datetime2str(unsigned char *p, char *d, char *t)
+{
+  sprintf (d,
+           "%02d-%02d-%02d",
+           (*(p+3) & 0xE0) >> 1 | (*(p+4) & 0xF0) >> 4,
+           *(p+4) & 0x0f,
+           *(p+3) & 0x1f);
+  sprintf (t,
+           "%02d:%02d",
+           *(p+2) & 0x1F,
+           *(p+1) & 0x3F);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static void
+avc1394_dump_micdirectoy(t_mic_directory *mic_dir)
+{
+    int   i;
+    char  bufPAL[16],
+          bufNTSC[16];
+
+  if (!mic_dir)
+    return;
+
+  fprintf (stderr, "-- tape name:          (%s)\n", mic_dir->tape_name);
+  if (mic_dir->eom_atn) {
+    avc1394_atn2str(mic_dir->eom_atn, bufPAL, bufNTSC);
+    fprintf (stderr, "-- tape end position:  %s\n", bufPAL);
+  }
+  fprintf (stderr, "-- tape has # markers: %d\n", mic_dir->num_marks);
+  for (i = 0; i < mic_dir->num_marks; ++i) {
+    fprintf (stderr, "-- (%2d) ", i);
+    avc1394_atn2str(mic_dir->jump_mark[i]. atn, bufPAL, bufNTSC);
+    fprintf (stderr, "%s ", bufPAL);
+    fprintf (stderr,
+             "%02d-%02d-%02d %02d:%02d",
+             mic_dir->jump_mark[i]. year,
+             mic_dir->jump_mark[i]. month,
+             mic_dir->jump_mark[i]. day,
+             mic_dir->jump_mark[i]. hour,
+             mic_dir->jump_mark[i]. minute);
+    fprintf (stderr, "\n");
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static int
+avc1394_micinfo2micdirectory (t_mic_directory **mic_dir,
+                              unsigned char *mic_data, int len)
+{
+    unsigned char   *p;
+    int             l,
+                    marker;
+    t_mic_directory *tmp_dir = NULL;
+
+  if (!mic_dir || !mic_data || !len)
+    return 0;
+
+  if (*mic_dir) {
+    free (*mic_dir);
+    *mic_dir = NULL;
+  }
+
+  if (!(tmp_dir = (t_mic_directory *) calloc (1, sizeof (t_mic_directory))))
+    return 0;
+
+  p = mic_data;
+  l = len;
+  /* check header */
+
+  p += 11;
+  l -= 11;
+  /* get tape end ATN */
+  if (l < len && *p == MIC_TAG_TAPEEOM) {
+    if ((len - l) > 5)
+      tmp_dir->eom_atn = avc1394_mic_atn(p);
+
+    p += 5; l -= 5;
+  }
+
+  p += 5; l -= 5;
+  marker = 0;
+  while (l < len && *p == MIC_TAG_ATN) {
+    if ((len-l) > 10) {
+      tmp_dir->jump_mark[marker].atn = avc1394_mic_atn(p);
+
+      p += 5; l -= 5;
+      if (*p == MIC_TAG_DATETIME)
+        avc1394_mic_datetime(&tmp_dir->jump_mark[marker], p);
+
+      marker++;
+      tmp_dir->num_marks = marker;
+      p += 5; l -= 5;
+      continue;
+    }
+    p++; l--;
+  }
+  if (l < len && *p == MIC_TAG_TAPENAME)
+    memcpy(tmp_dir->tape_name, p+4, *(p+1));
+
+  *mic_dir = tmp_dir;
+  return 1;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static int
+avc1394_vcr_parse_mic_info (unsigned char *mic_data, int len, int prt)
+{
+    unsigned char *p;
+    int           l,
+                  marker;
+    char          buf1 [16],
+                  buf2 [16];
+
+  if (prt)
+    fprintf(stderr, "[AVCHandler] MIC info start\n");
+  p = mic_data;
+  l = len;
+  /* check header */
+
+  p += 11;
+  l -= 11;
+  /* get tape end ATN */
+  if (l < len && *p == 0x1F) {
+    if ((len - l) > 5) {
+      if (prt) {
+        avc1394_mic_atn2str (p, buf1, buf2);
+        fprintf (stderr, "  tape end : %s\n", buf1);
+      }
+    }
+    p += 5; l -= 5;
+  }
+
+  p += 5; l -= 5;
+
+  marker = 1;
+  while (l < len && *p == 0x0b) {
+    if ((len-l) > 10) {
+      if (prt) {
+        avc1394_mic_atn2str (p, buf1, buf2);
+        fprintf (stderr, "  %2d.      : %s ", marker, buf1);
+      }
+      p += 5; l -= 5;
+      if (*p == 0x42) {
+        if (prt) {
+          avc1394_mic_datetime2str(p, buf1, buf2);
+          fprintf (stderr, "%s %s\n", buf1, buf2);
+        }
+      } else {
+        if (prt) {
+          fprintf(stderr,"\n");
+        }
+      }
+      marker++;
+      p += 5; l -= 5;
+      continue;
+    }
+    p++; l--;
+  }
+  if (l < len && *p == 0x18) {
+    if (prt) {
+      fprintf (stderr,"  tape name: %*.*s\n", *(p+1),*(p+1), p+4);
+    }
+  }
+  if (prt)
+    fprintf(stderr, "[AVCHandler] MIC info done!\n");
+  return 0;
+}
+/* ---------------------------------------------------------------------------
+ * MIC helper END
+ */
 
 /* ---------------------------------------------------------------------------
  */
@@ -34,17 +289,15 @@ cAVCHandler::cAVCHandler()
   handle = raw1394_new_handle();
 #endif
   numDevices = 0;
-  for (int i = 0; i < MAX_IEEE1394_DEVICES; ++i)
-  {
+  for (int i = 0; i < MAX_IEEE1394_DEVICES; ++i) {
     deviceId[i] = 0;
     micSize[i] = 0;
     micData[i] = NULL;
+    micDirectories[i] = NULL;
   }
 
-  if (!handle)
-  {
-    if (!errno)
-    {
+  if (!handle) {
+    if (!errno) {
       esyslog("[AVCHandler]: Incompatible IEEE1394 subsystem!\n");
     } else {
       esyslog("[AVCHandler]: IEEE1394 driver not loaded!\n");
@@ -65,6 +318,10 @@ cAVCHandler::~cAVCHandler()
 {
   active=false;
   Cancel(3);
+  for (int i = 0; i < MAX_IEEE1394_DEVICES; ++i) {
+    free(micData[i]);
+    free(micDirectories[i]);
+  }
   raw1394_destroy_handle(handle);
   dsyslog("[AVCHandler]: Good bye");
 }
@@ -100,17 +357,24 @@ cAVCHandler::checkDevices(void)
        * report new device found
        */
       if (j >= numDevices) {
+          unsigned char *tmpMicData = NULL;
+          int           tmpMicSize = 0;
 #if 0
 // disabled since it may cause segfaults Skins.Message()
           char msg[100];
-          //static int once = 1;
 
         snprintf (msg, 100, "%s: %s",
                   tr("New FireWire Device"),newRomDirs[i].label);
         Skins.Message(mtInfo,msg);
 #endif
-        avc1394_vcr_get_mic_info (handle, i, &micData[i], &micSize[i]);
-        avc1394_vcr_parse_mic_info (micData[i], micSize[i], 1);
+        avc1394_vcr_get_mic_info (handle, i, &tmpMicData, &tmpMicSize);
+
+        avcMutex.Lock();
+        micData[i] = tmpMicData;
+        micSize[i] = tmpMicSize;
+        avc1394_micinfo2micdirectory(&micDirectories[i], micData[i], micSize[i]);
+        avc1394_dump_micdirectoy(micDirectories[i]);
+        avcMutex.Unlock();
       }
     }
   }

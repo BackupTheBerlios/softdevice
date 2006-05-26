@@ -1,5 +1,7 @@
 VDR Plugin 'softieee1394' Revision History
 ------------------------------------------
+2006-05-26:
+  - moved MIC interpretation code from libavc-0.5.3 patch to avc-handler.c
 2006-05-25:
   - new patch for current libavc-0.5.3
   - update for vdr-1.4.0
