@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dummy.h,v 1.2 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-dummy.h,v 1.3 2006/05/27 19:12:41 wachm Exp $
  */
 
 #ifndef VIDEO_DUMMY_H
@@ -22,7 +22,7 @@ public:
   virtual void Refresh();
 #endif
 
-  virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
+  virtual void YUV(sPicBuffer *buf);
   virtual void Pause(void);
 };
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.14 2006/04/24 20:36:21 lucke Exp $
+ * $Id: video-fb.c,v 1.15 2006/05/27 19:12:41 wachm Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -237,8 +237,20 @@ void cFBVideoOut::Refresh()
 
 /* ---------------------------------------------------------------------------
  */
-void cFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride)
+void cFBVideoOut::YUV(sPicBuffer *buf)
 {
+  uint8_t *Py=buf->pixel[0]
+                +(buf->edge_height)*buf->stride[0]
+                +buf->edge_width;
+  uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
+                +buf->edge_width/2;
+  uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
+                +buf->edge_width/2;
+  int Ystride=buf->stride[0];
+  int UVstride=buf->stride[1];
+  int Width=buf->width;
+  int Height=buf->height;
+ 
   if (!videoInitialized)
     return;
 

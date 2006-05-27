@@ -1,5 +1,7 @@
 Changelog
 2006-05-27:
+   - move postproc stuff into VideoFilter.[ch]
+   - apply patch to use direct rendering
    - add tests for older ffmpeg versions to configure
    - add "--disable-mmx" and "--disable-mmx2" to configure
    - fix possible segfaults in SoftOsd when using a zoom faktor

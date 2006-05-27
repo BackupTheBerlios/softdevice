@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.20 2006/05/23 21:28:54 lucke Exp $
+ * $Id: video-dfb.h,v 1.21 2006/05/27 19:12:41 wachm Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -74,8 +74,7 @@ class cDFBVideoOut : public cVideoOut {
     virtual void Refresh();
 #endif
 
-    virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
-                     int Width, int Height, int Ystride, int UVstride);
+    virtual void YUV(sPicBuffer *Pic);
     virtual void Pause(void);
     virtual void CloseOSD();
     virtual bool Initialize (void);

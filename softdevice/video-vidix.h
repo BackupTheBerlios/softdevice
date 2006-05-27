@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.9 2006/02/18 22:20:30 lucke Exp $
+ * $Id: video-vidix.h,v 1.10 2006/05/27 19:12:41 wachm Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -62,7 +62,7 @@ public:
 
   virtual void CloseOSD();
 //  virtual void OpenOSD();  
-  virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
+  virtual void YUV(sPicBuffer *buf);
   virtual void Pause(void);
 
   bool MatchPixelFormat(void);

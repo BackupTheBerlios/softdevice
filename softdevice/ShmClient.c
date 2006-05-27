@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.13 2006/04/29 06:23:28 lucke Exp $
+ * $Id: ShmClient.c,v 1.14 2006/05/27 19:12:41 wachm Exp $
  */
 
 #include <signal.h>
@@ -79,7 +79,8 @@ int main(int argc, char **argv) {
         //int curr_pict_shmid;
         uint8_t *curr_pict=0;
         uint8_t *curr_osd=0;
-        uint8_t *pixel[4];
+        sPicBuffer picture;
+        //uint8_t *pixel[4];
 
         if ((ctl_shmid = shmget(ctl_key, sizeof( ShmCtlBlock ), 0666)) < 0) {
                 fprintf(stderr,"ctl_shmid error in shmget!\n");
@@ -104,6 +105,11 @@ int main(int argc, char **argv) {
                 ctl->stride0=vout->xv_image->pitches[0];
                 ctl->stride1=vout->xv_image->pitches[1];
                 ctl->stride2=vout->xv_image->pitches[2];
+                picture.pixel[0]=picture.pixel[1]=picture.pixel[2]=NULL;
+                picture.stride[0]=ctl->stride0;
+                picture.stride[1]=ctl->stride1;
+                picture.stride[2]=ctl->stride1;
+                picture.edge_width=picture.edge_height=0;
         } else {
                 // create a picture in shm
                 ctl->max_width=736;
@@ -128,9 +134,13 @@ int main(int argc, char **argv) {
                 if ( ctl->pict_shmid > 0)
                         shmctl (ctl->pict_shmid, IPC_RMID, 0);
 
-                pixel[0]=curr_pict;
-                pixel[1]=curr_pict+ctl->max_height*ctl->stride0;
-                pixel[2]=pixel[1]+ctl->max_height/2*ctl->stride1;
+                picture.stride[0]=ctl->stride0;
+                picture.stride[1]=ctl->stride1;
+                picture.stride[2]=ctl->stride1;
+                picture.pixel[0]=curr_pict;
+                picture.pixel[1]=curr_pict+ctl->max_height*ctl->stride0;
+                picture.pixel[2]=picture.pixel[1]+ctl->max_height/2*ctl->stride1;
+                picture.edge_width=picture.edge_height=0;
         }
         ctl->attached=1;
         //printf("pict_shmid: %d max: (%d,%d), stride0: %d, stride2: %d\n",
@@ -179,18 +189,17 @@ int main(int argc, char **argv) {
                         int height=ctl->height>ctl->max_height?
                                 ctl->max_height:ctl->height;
 
+                        picture.width=ctl->width;
+                        picture.height=ctl->height;
+                        picture.dtg_active_format=ctl->new_afd;
+                        picture.aspect_ratio=ctl->new_asp;
+
                         vout->CheckArea(width,height);
                         //vout->CheckAspect(ctl->new_afd,ctl->new_asp);
                         if ( vout->useShm ) {
-                                vout->DrawStill_420pl(NULL,NULL,NULL,
-                                                width,height,
-                                                ctl->stride0,ctl->stride1,
-                                                ctl->new_afd,ctl->new_asp);
+                                vout->DrawStill_420pl(&picture);
                         } else {
-                                vout->DrawStill_420pl(pixel[0],pixel[2],pixel[1],
-                                        width,height,
-                                        ctl->stride0,ctl->stride1,
-                                        ctl->new_afd,ctl->new_asp);
+                                vout->DrawStill_420pl(&picture);
                         };
                         ctl->new_pict=0;
                 };

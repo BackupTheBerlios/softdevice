@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dummy.c,v 1.2 2005/02/24 22:35:51 lucke Exp $
+ * $Id: video-dummy.c,v 1.3 2006/05/27 19:12:41 wachm Exp $
  *
  * This is a dummy output driver.
  */
@@ -32,7 +32,7 @@ void cDummyVideoOut::Refresh()
 }
 #endif
 
-void cDummyVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride)
+void cDummyVideoOut::YUV(sPicBuffer *buf)
 {
 }
 

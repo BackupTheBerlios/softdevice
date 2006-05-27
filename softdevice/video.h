@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.39 2006/05/23 21:11:37 lucke Exp $
+ * $Id: video.h,v 1.40 2006/05/27 19:12:41 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -22,9 +22,7 @@
 
 #include "setup-softdevice.h"
 #include "sync-timer.h"
-
-
-#include <avcodec.h>
+#include "PicBuffer.h"
 
 #define DV_FORMAT_UNKNOWN -1
 #define DV_FORMAT_NORMAL  1
@@ -65,7 +63,7 @@ class cSoftRemote : public cRemote {
 };
 #endif
 
-class cVideoOut: public cThread {
+class cVideoOut: public cPicBufferManager, public cThread {
 private:
     int     aspect_I;
     double  aspect_F;
@@ -112,10 +110,8 @@ protected:
             displayTimeUS;
     double  parValues[SETUP_VIDEOASPECTNAMES_COUNT];
 
+    sPicBuffer *old_picture;
     bool    videoInitialized;
-
-    AVFrame *old_picture;
-    int     old_width, old_height;
 
     cSetupStore *setupStore;
 
@@ -136,18 +132,16 @@ public:
     // Can be used to process for example keypress events
 
     virtual void Sync(cSyncTimer *syncTimer, int *delay);
-    virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
+    virtual void YUV(sPicBuffer *buf) { return; };
+    //virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride) { return; };
     virtual void Pause(void) {return;};
     virtual void SetParValues(double displayAspect, double displayRatio);
     virtual void CheckAspect(int new_afd, double new_asp);
-    virtual void CheckAspectDimensions (AVFrame *picture, AVCodecContext *context);
+    virtual void CheckAspectDimensions (sPicBuffer *pic);
     virtual void CheckArea(int w, int h);
-    virtual void DrawVideo_420pl (cSyncTimer *syncTimer, int *delay,
-                                  AVFrame *picture, AVCodecContext *context);
-    virtual void DrawStill_420pl (uint8_t *pY, uint8_t *pU, uint8_t *pV,
-                                  int w, int h, int yPitch, int uvPitch,
-                                  int new_afd=-1,
-                                  double new_asp=0.0);
+    virtual void DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
+                                  sPicBuffer *pic);
+    virtual void DrawStill_420pl(sPicBuffer *buf);
     virtual bool Initialize(void) {videoInitialized = true; return 1;};
     virtual bool Reconfigure (int format) {return 1;};
 
@@ -162,8 +156,7 @@ public:
     // activates fallback mode if the osd was not updated for a too long
     // time
 
-    virtual void InvalidateOldPicture(void);
-    virtual void SetOldPicture(AVFrame *picture, int width, int height);
+    virtual void SetOldPicture(sPicBuffer *pic);
 
     uint8_t *PixelMask;
     uint8_t *OsdPy;

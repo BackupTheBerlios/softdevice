@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.61 2006/05/23 21:28:54 lucke Exp $
+ * $Id: video-dfb.c,v 1.62 2006/05/27 19:12:41 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -1286,13 +1286,23 @@ void cDFBVideoOut::ShowOSD ()
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
-                       int Width, int Height, int Ystride, int UVstride)
+void cDFBVideoOut::YUV(sPicBuffer *buf)
 {
-    uint8_t *dst;
-    int pitch;
-    int hi;
-
+  uint8_t *dst;
+  int pitch;
+  int hi;
+  uint8_t *Py=buf->pixel[0]
+                +(buf->edge_height)*buf->stride[0]
+                +buf->edge_width;
+  uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
+                +buf->edge_width/2;
+  uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
+                +buf->edge_width/2;
+  int Ystride=buf->stride[0];
+  int UVstride=buf->stride[1];
+  int Width=buf->width;
+  int Height=buf->height;
+  
   if (!videoInitialized)
     return;
 

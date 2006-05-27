@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.57 2006/05/23 21:11:37 lucke Exp $
+ * $Id: video.c,v 1.58 2006/05/27 19:12:41 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <math.h>
 
 //#include <vdr/plugin.h>
 #include "video.h"
@@ -32,8 +33,8 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   OsdHeight=OSD_FULL_HEIGHT;
 #endif
   // set some reasonable defaults
-  old_width = fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
-  old_height = fheight = lheight = old_dheight = dheight = sheight = 536;
+  fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
+  fheight = lheight = old_dheight = dheight = sheight = 536;
   sxoff = syoff = lxoff = lyoff = 0;
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
@@ -113,20 +114,23 @@ void cVideoOut::Action()
       if (old_picture)
       {
         OSDDEB("redrawing old_picture\n");
-        DrawStill_420pl (old_picture->data[0],
-                         old_picture->data[1],
-                         old_picture->data[2],
-                         old_width, old_height,
-                         old_picture->linesize[0],
-                         old_picture->linesize[1]);
+        DrawStill_420pl(old_picture);
       }
       else
       {
+        sPicBuffer tmpBuf;
+        tmpBuf.pixel[0]=OsdPy;
+        tmpBuf.pixel[1]=OsdPu;
+        tmpBuf.pixel[2]=OsdPv;
+        tmpBuf.stride[0]=OSD_FULL_WIDTH;
+        tmpBuf.stride[1]=tmpBuf.stride[2]=OSD_FULL_WIDTH/2;
+        tmpBuf.width=OSD_FULL_WIDTH;
+        tmpBuf.height=OSD_FULL_HEIGHT;
+        tmpBuf.aspect_ratio=((float)OSD_FULL_HEIGHT)/((float)OSD_FULL_WIDTH);
+        tmpBuf.aspect_ratio=((float)OSD_FULL_WIDTH)/((float)OSD_FULL_HEIGHT);
+        tmpBuf.dtg_active_format=0;
         OSDDEB("drawing osd_layer\n");
-        DrawStill_420pl (OsdPy,OsdPu, OsdPv,
-                        OsdWidth,OsdHeight,
-                        //OSD_FULL_WIDTH, OSD_FULL_HEIGHT,
-                         OSD_FULL_WIDTH, OSD_FULL_WIDTH/2);
+        DrawStill_420pl(&tmpBuf);
       }
       osdMutex.Unlock();
     }
@@ -136,21 +140,16 @@ void cVideoOut::Action()
 
 /* ---------------------------------------------------------------------------
  */
-void cVideoOut::InvalidateOldPicture(void)
-{
-  areaMutex.Lock();
-  old_picture = NULL;
-  areaMutex.Unlock();
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cVideoOut::SetOldPicture(AVFrame *picture, int width, int height)
+void cVideoOut::SetOldPicture(sPicBuffer *picture)
 {
   //osdMutex.Lock(); //protected by areaMutex osdMutex will cause deadlocks!
-  old_picture = picture;
-  old_width = width;
-  old_height = height;
+  //PICDEB("SetOldPicture pic->buf_num %d\n",picture->buf_num);
+  UnlockBuffer(old_picture);
+  if (picture && picture->owner==this) {
+     LockBuffer(picture);
+     old_picture=picture;
+  } else old_picture = NULL;
+  
   //osdMutex.Unlock();
 }
 
@@ -362,67 +361,32 @@ void cVideoOut::RecalculateAspect(void)
 
 /* ---------------------------------------------------------------------------
  */
-void cVideoOut::CheckAspectDimensions(AVFrame *picture,
-                                        AVCodecContext *context)
+void cVideoOut::CheckAspectDimensions(sPicBuffer *pic)
 {
-    volatile double new_asp;
-
   /* --------------------------------------------------------------------------
    * check and handle changes of dimensions first
    */
-  if (fwidth != context->width || fheight != context->height)
+  if (fwidth != pic->width || fheight != pic->height)
   {
     dsyslog("[VideoOut]: resolution changed: W(%d -> %d); H(%d ->%d)\n",
-             fwidth, context->width, fheight, context->height);
-    fwidth = context->width; fheight = context->height;
+             fwidth, pic->width, fheight, pic->height);
+    fwidth = pic->width; fheight = pic->height;
     current_aspect = -1;
   }
-
-  if (interlaceMode != picture->interlaced_frame)
+  if (interlaceMode != pic->interlaced_frame)
   {
     //dsyslog("[VideoOut]: interlaced mode now: %sinterlaced",
       //      (picture->interlaced_frame) ? "" : "non-");
-    interlaceMode = picture->interlaced_frame;
+    interlaceMode = pic->interlaced_frame;
   }
-#if LIBAVCODEC_BUILD > 4686
-  /* --------------------------------------------------------------------------
-   * removed aspect ratio calculation based on picture->pan_scan->width
-   * as this value seems to be wrong on some dvds.
-   * reverted this removal as effect from above it is not reproducable.
-   */
-  if (!context->sample_aspect_ratio.num)
-  {
-    new_asp = (double) (context->width) / (double) (context->height);
-  }
-  else if (picture->pan_scan && picture->pan_scan->width)
-  {
-    new_asp = (double) (picture->pan_scan->width *
-                         context->sample_aspect_ratio.num) /
-                (double) (picture->pan_scan->height *
-                           context->sample_aspect_ratio.den);
-  }
-  else
-  {
-    new_asp = (double) (context->width * context->sample_aspect_ratio.num) /
-               (double) (context->height * context->sample_aspect_ratio.den);
-  }
-#else
-  new_asp = context->aspect_ratio;
-#endif
 
-  /* --------------------------------------------------------------------------
-   * aspect_F and new_asp are now static volatile float. Due to above
-   * code removal, gcc-3.3.1 from suse compiles comparison wrong.
-   * it compares the 32bit float value with it's temprary new_asp value
-   * from above calculation which has even a higher precision than double :-( ,
-   * and would result not_equal every time.
-   */
-  if (aspect_I != context->dtg_active_format ||
-      aspect_F != new_asp)
+  if (aspect_I != pic->dtg_active_format ||
+      fabs(aspect_F - pic->aspect_ratio ) > 0.0001 )
   {
     dsyslog("[VideoOut]: aspect changed (%d -> %d ; %f -> %f)",
-             aspect_I,context->dtg_active_format,
-             aspect_F,new_asp);
+             aspect_I,pic->dtg_active_format,
+             aspect_F,pic->aspect_ratio);
+#if 0
 #if LIBAVCODEC_BUILD > 4686
     if (picture->pan_scan && picture->pan_scan->width) {
       dsyslog("[VideoOut]: PAN/SCAN info present ([%d] %d - %d, %d %d)",
@@ -439,9 +403,10 @@ void cVideoOut::CheckAspectDimensions(AVFrame *picture,
       }
     }
 #endif
+#endif
 
-    aspect_I = context->dtg_active_format;
-    aspect_F = new_asp;
+    aspect_I = pic->dtg_active_format;
+    aspect_F = pic->aspect_ratio;
   }
 
   CheckAspect (aspect_I, aspect_F);
@@ -474,41 +439,33 @@ void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
 /* ---------------------------------------------------------------------------
  */
 void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
-                                AVFrame *picture, AVCodecContext *context)
+                                sPicBuffer *pic)
 {
   areaMutex. Lock();
   OsdRefreshCounter=0;
   Osd_changed=0;
-  CheckAspectDimensions(picture,context);
-  SetOldPicture(picture,context->width,context->height);
+  CheckAspectDimensions(pic);
   Sync(syncTimer, delay);
-  // display picture
-  YUV(picture->data[0], picture->data[1],picture->data[2],
-      context->width,context->height,
-      picture->linesize[0],picture->linesize[1]);
+  
+  // display picture 
+  YUV(pic);
+  SetOldPicture(pic);
 
-  /* --------------------------------------------------------------------------
-   * Unlocking could be done a bit earlier in YUV(), after video is displayed
-   * and before event processing starts. For now it is easier to do it here.
-   * Same applies for DrawStill_420pl() below.
-   */
   areaMutex. Unlock();
   ProcessEvents();
 }
 
 /* ---------------------------------------------------------------------------
  */
-void cVideoOut::DrawStill_420pl(uint8_t *pY, uint8_t *pU, uint8_t *pV,
-                                int w, int h, int yPitch, int uvPitch,
-                                int new_afd,double new_asp)
+void cVideoOut::DrawStill_420pl(sPicBuffer *buf)
 {
   areaMutex. Lock();
   OsdRefreshCounter=0;
   Osd_changed=0;
-  CheckArea(w, h);
-  CheckAspect(new_afd==-1?current_afd:new_afd, new_asp==0?aspect_F:new_asp);
+  CheckArea(buf->width, buf->height);
+  CheckAspect(buf->dtg_active_format,buf->aspect_ratio);
   // display picture
-  YUV (pY, pU, pV, w, h, yPitch, uvPitch);
+  YUV (buf);
   areaMutex. Unlock();
   ProcessEvents();
 }

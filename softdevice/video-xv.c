@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.54 2006/04/24 22:56:47 lucke Exp $
+ * $Id: video-xv.c,v 1.55 2006/05/27 19:12:42 wachm Exp $
  */
 
 #include <unistd.h>
@@ -1584,9 +1584,7 @@ void cXvVideoOut::ShowOSD ()
 
 /* ---------------------------------------------------------------------------
  */
-void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
-                      int Width, int Height,
-                      int Ystride, int UVstride)
+void cXvVideoOut::YUV(sPicBuffer *buf)
 {
   if (!videoInitialized || !xv_initialized)
     return;
@@ -1607,7 +1605,18 @@ void cXvVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
     cutRight = setupStore->cropRightCols;
     ClearXvArea (0, 128, 128);
   }
-
+  uint8_t *Py=buf->pixel[0]
+                +(buf->edge_height)*buf->stride[0]
+                +buf->edge_width;
+  uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
+                +buf->edge_width/2;
+  uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
+                +buf->edge_width/2;
+  int Ystride=buf->stride[0];
+  int UVstride=buf->stride[1];
+  int Width=buf->width;
+  int Height=buf->height;
+  
   if ( Py && Pu && Pv ) {
 #if VDRVERSNUM >= 10307
   /* -------------------------------------------------------------------------

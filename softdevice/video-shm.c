@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.7 2006/04/23 19:55:53 wachm Exp $
+ * $Id: video-shm.c,v 1.8 2006/05/27 19:12:41 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -251,9 +251,18 @@ void cShmVideoOut::CommitUnlockOsdSurface() {
         sem_sig_unlock(ctl->semid,PICT_SIG);
 };
 
-void cShmVideoOut::YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv,
-                     int Width, int Height, int Ystride, int UVstride) {
-
+void cShmVideoOut::YUV(sPicBuffer *buf) {
+        uint8_t *Py=buf->pixel[0]+(buf->edge_height)*buf->stride[0]
+                +buf->edge_width;
+        uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
+                +buf->edge_width/2;
+        uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
+                +buf->edge_width/2;
+        int Ystride=buf->stride[0];
+        int UVstride=buf->stride[1];
+        int Width=buf->width;
+        int Height=buf->height;
+  
         if (!ctl->attached) {
                 setupStore->shouldSuspend=1;
                 return;

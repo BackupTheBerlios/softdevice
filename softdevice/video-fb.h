@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.7 2006/02/18 22:20:29 lucke Exp $
+ * $Id: video-fb.h,v 1.8 2006/05/27 19:12:41 wachm Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -42,7 +42,7 @@ public:
 #else
   virtual void Refresh();
 #endif
-  virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
+  virtual void YUV(sPicBuffer *Pic);
   virtual void Pause(void);
 };
 

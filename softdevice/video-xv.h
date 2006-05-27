@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.20 2006/04/23 19:38:29 wachm Exp $
+ * $Id: video-xv.h,v 1.21 2006/05/27 19:12:42 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -186,7 +186,7 @@ public:
   void CreateXvImage(Display *dpy,XvPortID port,XvImage *&xv_image,
                   XShmSegmentInfo &shminfo,int format, int &width, int &height);
   int PutXvImage();
-  virtual void YUV(uint8_t *Py, uint8_t *Pu, uint8_t *Pv, int Width, int Height, int Ystride, int UVstride);
+  virtual void YUV(sPicBuffer *buf);
   virtual void Pause(void);
 
   virtual void Suspend();

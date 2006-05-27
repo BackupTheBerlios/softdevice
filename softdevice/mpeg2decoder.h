@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.36 2006/04/14 21:25:44 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.37 2006/05/27 19:12:41 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -12,20 +12,17 @@
 # include "config.h"
 #endif
 
+#include <sys/time.h>
 #include <avcodec.h>
+#include <avformat.h>
 
-#ifdef PP_LIBAVCODEC
-  #include <postproc/postprocess.h>
-#endif //PP_LIBAVCODEC
+#include <vdr/plugin.h>
+#include <vdr/ringbuffer.h>
 
 #include "sync-timer.h"
 #include "video.h"
 #include "audio.h"
-
-#include <avformat.h>
-#include <sys/time.h>
-#include <vdr/plugin.h>
-#include <vdr/ringbuffer.h>
+#include "VideoFilter.h"
 
 #define DEFAULT_FRAMETIME 400   // for PAL in 0.1ms
 #define MIN_BUF_SIZE  (16*1024)
@@ -229,16 +226,12 @@ class cVideoStreamDecoder : public cStreamDecoder {
     int64_t lastPTS;
     int lastDuration;
     AVFrame             *picture;
-    AVPicture           avpic_src, avpic_dest;
+    sPicBuffer          privBuffer;
 
-    int                 width, height;
-    PixelFormat         pix_fmt;
-    int                 currentDeintMethod, currentMirrorMode;
-    int                 currentppMethod, currentppQuality;
-    uchar               *pic_buf_lavc, *pic_buf_pp, *pic_buf_mirror, *pic_buf_convert;
+    cVideoMirror        Mirror;
+    cDeintLibav         DeintLibav;
 #ifdef PP_LIBAVCODEC
-    pp_mode_t           *ppmode;
-    pp_context_t        *ppcontext;
+    cLibAvPostProc      LibAvPostProc;
 #endif //PP_LIBAVCODEC
 
     cVideoOut           *videoOut;
@@ -252,20 +245,13 @@ class cVideoStreamDecoder : public cStreamDecoder {
     inline int frametime()
     {return trickspeed*default_frametime;};
 
-    uchar   *allocatePicBuf(uchar *pic_buf, PixelFormat pix_fmt);
-    void    deintLibavcodec(void);
-    void    libavcodec_img_convert(void);
-    uchar   *freePicBuf(uchar *pic_buf);
-#ifdef PP_LIBAVCODEC
-    void    ppLibavcodec(void);
-#endif //PP_LIBAVCODEC
-    void    Mirror(void);
-
   public:
     cVideoStreamDecoder(AVCodecContext *Context, cVideoOut *VideoOut,
        cClock *clock, int Trickspeed, bool packetMode);
     ~cVideoStreamDecoder();
 
+    int DecodePicture_avcodec(sPicBuffer *&pic, int &got_picture,
+                              uint8_t *data, int length, int64_t pts);
     virtual void      Freeze(bool freeze=true);
     virtual void      Play(void);
     virtual int DecodePacket(AVPacket *pkt);

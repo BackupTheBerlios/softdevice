@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.28 2006/04/29 06:20:28 lucke Exp $
+# $Id: Makefile,v 1.29 2006/05/27 19:15:31 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -163,6 +163,7 @@ endif
 ifdef PP_LIBAVCODEC
   DEFINES     += -DPP_LIBAVCODEC
   FFMPEGLIBS  += -lpostproc
+  INCLUDES    += -Ipostproc/
 endif
 
 ifdef SUSPEND_BY_KEY
@@ -225,12 +226,12 @@ DEFINES += -DPLUGINLIBDIR='"$(PLUGINLIBDIR)"'
 
 TARGETS = libvdr-$(PLUGIN).so
 LIBS = $(FFMPEGLIBS) -lasound
-OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o audio-ac3pt.o video-dummy.o setup-softdevice.o setup-softdevice-menu.o sync-timer.o SoftOsd.o
+OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o audio-ac3pt.o video-dummy.o setup-softdevice.o setup-softdevice-menu.o sync-timer.o SoftOsd.o PicBuffer.o VideoFilter.o
 ALL_OBJS = $(OBJS)
 
 ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
-    DFB_OBJS  = utils.o video.o video-dfb.o
+    DFB_OBJS  = utils.o video.o video-dfb.o PicBuffer.o
     ALL_OBJS += $(DFB_OBJS)
     TARGETS  += libsubvdr-$(PLUGIN)-dfb.so
   else
@@ -243,7 +244,7 @@ endif
 ifdef FB_SUPPORT
   ifdef USE_SUBPLUGINS
     FB_LIBS   =
-    FB_OBJS   = utils.o video.o video-fb.o
+    FB_OBJS   = utils.o video.o video-fb.o PicBuffer.o
     ALL_OBJS  += $(FB_OBJS)
     TARGETS   += libsubvdr-$(PLUGIN)-fb.so
   else
@@ -253,7 +254,7 @@ endif
 
 ifdef XV_SUPPORT
   ifdef USE_SUBPLUGINS
-    XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o
+    XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o PicBuffer.o
     ALL_OBJS  += $(XV_OBJS)
     TARGETS   += libsubvdr-$(PLUGIN)-xv.so
   else
@@ -264,7 +265,7 @@ endif
 
 ifdef VIDIX_SUPPORT
   ifdef USE_SUBPLUGINS
-    VIDIX_OBJS  = utils.o video.o video-vidix.o
+    VIDIX_OBJS  = utils.o video.o video-vidix.o PicBuffer.o
     ALL_OBJS    += $(VIDIX_OBJS)
     TARGETS     += libsubvdr-$(PLUGIN)-vidix.so
   else
@@ -276,7 +277,7 @@ endif
 
 ifdef SHM_SUPPORT
   ifdef USE_SUBPLUGINS
-    SHM_OBJS  = utils.o video.o video-shm.o
+    SHM_OBJS  = utils.o video.o video-shm.o PicBuffer.o
     ALL_OBJS    += $(SHM_OBJS)
     TARGETS     += libsubvdr-$(PLUGIN)-shm.so
   else
@@ -353,7 +354,7 @@ VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../sources.o
 SHM_CLIENT_OBJS  = video_shm.o video-xv_shm.o setup-softdevice_shm.o\
 		   xscreensaver_shm.o utils_shm.o VdrReplacements_shm.o\
-		   ShmClient_shm.o
+		   ShmClient_shm.o PicBuffer_shm.o 
 
 %_shm.o: %.c
 	$(CXX) $(CXXFLAGS) -c $(DEFINES) -DSTAND_ALONE $(INCLUDES) $< -o $@
