@@ -1,4 +1,6 @@
 Changelog
+2006-05-27:
+   - fix possible segfaults in SoftOsd when using a zoom faktor
 2006-05-23:
    - fix VIA OSD transparency for newer DirectFB cvs versions
    - merged some defines which belong together

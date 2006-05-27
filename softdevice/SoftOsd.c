@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.13 2006/04/23 20:35:53 wachm Exp $
+ * $Id: SoftOsd.c,v 1.14 2006/05/27 08:06:34 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -28,6 +28,7 @@ static uint64_t opacity_thr= COLOR_64BIT(ALPHA_VALUE(OPACITY_THRESHOLD>>1));
 static uint64_t pseudo_transparent = COLOR_64BIT(COLOR_KEY);
 
 
+//#undef USE_MMX2
 /* ---------------------------------------------------------------------------
  */
 
@@ -37,7 +38,7 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         OutputConvert=&cSoftOsd::ARGB_to_ARGB32;
         pixelMask=NULL;
 	bitmap_Format=PF_None; // forces a clear after first SetMode
-        OSD_Bitmap=new uint32_t[OSD_STRIDE*(OSD_HEIGHT+2)];
+        OSD_Bitmap=new uint32_t[OSD_STRIDE*(OSD_HEIGHT+4)];
 
         videoOut = VideoOut;
         xPan = yPan = 0;
@@ -826,10 +827,14 @@ void cSoftOsd::CopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll) {
         OSDDEB("CopyToBitmap destsize: %d,%d\n",dest_Width,dest_Height);
+        if (dest_Height < 40 || dest_Width < 40)
+                return;
+
         if (dest_Height & 0x1 !=0) {
-                printf("warning dest_Height not even!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                //printf("warning dest_Height not even!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
                 dest_Height &= ~0x1;
         };
+
         if (dest_Height==OSD_HEIGHT)
                 NoVScaleCopyToBitmap(PY,PU,PV,PAlphaY,PAlphaUV,Ystride,UVstride,
                                 dest_Width,dest_Height,RefreshAll);
@@ -898,7 +903,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll) {
 
-        OSDDEB("CopyToBitmap YUV down\n");
+        OSDDEB("CopyToBitmap YUV down %d,%d\n",dest_Width,dest_Height);
         // upscaleing is not supported for YUV modes
         if (dest_Width>OSD_WIDTH)
                 dest_Width=OSD_WIDTH;
@@ -921,12 +926,15 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
         //printf("Scale to %d,%d\n",dest_Width,dest_Height);
         const int ScaleFactor=1<<6;
         uint32_t new_pixel_height=(OSD_HEIGHT*ScaleFactor)/dest_Height;
-        int lines_count=(new_pixel_height/ScaleFactor*2+2);
+        int lines_count=(new_pixel_height/ScaleFactor*2+4);
         color scaleH_pixmap[lines_count*OSD_STRIDE];
         color *scaleH_Reference[lines_count];
         int scaleH_lines[lines_count];
         int scaleH_strtIdx=0;
         memset(scaleH_lines,-1,sizeof(scaleH_lines));
+        memset(scaleH_Reference,0,sizeof(scaleH_Reference));
+        OSDDEB("new_pixel_height %d lines_count %d\n",
+                        new_pixel_height,lines_count);
         
         for (int y=0; y<dest_Height; y+=2) {
                 int start_row=new_pixel_height*y/ScaleFactor;
@@ -950,15 +958,17 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                                 scaleH_lines[SCALEH_IDX(i)]=start_row+i;
                         }
                 };
-                /*
+               /* 
                    printf("strt_Idx %d scaleH_lines: ",scaleH_strtIdx);
                    for (int i=0; i<lines_count; i++)
                    printf("%d ",scaleH_lines[i]);
-                   printf("\n");
-                   */
+                   printf("\n");fflush(stdout);
+                 */ 
+                OSDDEB("start_pos %d start_row %d\n",start_pos,start_row);
                 ScaleDownVert_MMX((uint8_t*) tmp_pixmap,0,
 				new_pixel_height,start_pos,
-                                scaleH_Reference,OSD_WIDTH-1);
+                                scaleH_Reference,dest_Width);
+                                //scaleH_Reference,OSD_WIDTH-1);
                 int new_start_row=new_pixel_height*(y+1)/ScaleFactor;
                 int start_row_idx=new_start_row-start_row;
                 start_pos=new_pixel_height*(y+1)%ScaleFactor-ScaleFactor;
@@ -969,10 +979,12 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                                         new_start_row,
                                         scaleH_lines[SCALEH_IDX(start_row_idx)]);
                 
+                OSDDEB("start_pos %d new_start_row %d\n",start_pos,new_start_row);
                 ScaleDownVert_MMX((uint8_t*) &tmp_pixmap[OSD_STRIDE],0,
 				new_pixel_height,start_pos,
                                 &scaleH_Reference[start_row_idx],
-                                OSD_WIDTH-1);
+                                dest_Width);
+                                //OSD_WIDTH-1);
 
                 // convert and copy to video out OSD layer
                 pY=PY+(y+yPan)*Ystride+xPan;
@@ -995,6 +1007,9 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
 void cSoftOsd::CopyToBitmap(uint8_t *dest, int linesize,
                 int dest_Width, int dest_Height, bool RefreshAll,
                 bool *dirtyLines) {
+        if (dest_Height < 40 || dest_Width < 40)
+                return;
+
 	if (dest_Height>=OSD_HEIGHT)
 		ScaleVUpCopyToBitmap(dest,linesize,dest_Width,dest_Height,
                                 RefreshAll,dirtyLines);
@@ -1185,7 +1200,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
 
 //------------------------ lowlevel scaling functions ------------------------
 //#define SCALEDEBV(out...) printf(out) 
-#define SCALEDEBV(out...)
+#define SCALEDEBV(out...) 
 
 void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
 		int32_t new_pixel_height, int start_pos,
