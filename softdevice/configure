@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.14 2006/05/27 11:17:48 wachm Exp $
+# $Id: configure,v 1.15 2006/05/27 13:00:07 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -29,6 +29,7 @@ with_shm="yes"
 xinerama="yes"
 vidix="yes"
 vidix_path="/usr/local"
+ffmpeg_path="/usr/local/include/ffmpeg"
 with_fb="yes"
 fb_dev_name="/dev/fb0"
 with_subplugins="yes"
@@ -46,6 +47,7 @@ function help () {
   echo "  --disable-subplugins"
   echo "  --disable-mmx"
   echo "  --disable-mmx2"
+  echo "  --with-ffmpeg-path YOUR_FFMPEG_PATH"
   echo "  --with-vidix-path YOUR_VIDIX_PATH"
   echo "  --help"
 }
@@ -61,6 +63,10 @@ do
     --disable-subplugins) shift; with_subplugins="no" ;;
     --disable-mmx) shift; with_mmx="no";;
     --disable-mmx2) shift; with_mmx2="no";;
+    --with-ffmpeg-path) shift;
+      ffmpeg_path=$1 ;
+      echo "ffmpeg path set to: $ffmpeg_path" ;
+      shift ;;
     --with-vidix-path) shift;
       vidix_path=$1 ;
       echo "vidix path set to: $vidix_path" ;
@@ -73,18 +79,65 @@ done
 #########################################################
 # start ffmpeg test
 #
+test_ffmpeg() 
+{
+  ffmpeg="yes";
+cat > ${TMPC} << EOF
+#include <stdlib.h>
+#include <avcodec.h>
+#include <avformat.h>
+int main(void) {
+/*  if ( avcodec_build() != LIBAVCODEC_BUILD ) {
+     fprintf(stderr,"Fatal Error! Libavcodec library build(%d) doesn't match avcodec.h build(%d)!!!\n",avcodec_build(),LIBAVCODEC_BUILD);
+     fprintf(stderr,"Check your ffmpeg installation / the pathes in the Makefile!!!\n");
+     exit(-1);
+  };
+*/
+  avcodec_init();
+  avcodec_register_all();
+
+ return 0;
+}
+EOF
+  $cc $CFLAGS $ffmpeg_cflags $ffmpeg_libs -o $TMPE $TMPC $ffmpeg_libs  > /dev/null 2>&1 || ffmpeg="no"
+};
+
+# try to use pkg-config
 ffmpeg_l1="libavcodec libavformat"
 
 pkg-config --libs libpostproc >/dev/null 2>&1 && { ffmpeg_l1="$ffmpeg_l1 libpostproc";libpostproc="yes"; }
 
 ffmpeg_libs=`pkg-config --libs $ffmpeg_l1` || ffmpeg="no"
+ffmpeg_cflags=`pkg-config --cflags $ffmpeg_l1`
+
+# test if it works..
+test_ffmpeg
 
 if test "${ffmpeg}" = "no" ; then
-  echo "A more recent (cvs) version of ffmpeg is required to run configure"
-  exit 8;
+  #pkg-config failed, try the default/parameter path 
+  ffmpeg="yes"
+  ffmpeg_libs="-L${ffmpeg_path}/ -L${ffmpeg_path}/libavcodec/ -L${ffmpeg_path}/libavformat/ -lavformat -lz -lavcodec "
+  ffmpeg_cflags="-I${ffmpeg_path}/ -I${ffmpeg_path}/libavcodec/ -I${ffmpeg_path}/libavformat/ "
+
+  test_ffmpeg
+
+  if test "${ffmpeg}" = "no" ; then
+    #maybe avutils is needed?
+    echo "checking for avutils..."
+    ffmpeg_libs="$ffmpeg_libs -L${ffmpeg_path}/libavutil/ -lavutil"
+    ffmpeg_cflags="$ffmpeg_cflags -I${ffmpeg_path}/libavutil/"
+
+    test_ffmpeg
+  fi    
+
+  if test "${ffmpeg}" = "no" ; then
+    echo "No usable ffmpeg library found in ${ffmpeg_path}."
+    echo "Specify the path to your ffmpeg installation using --with-ffmpeg-path"
+    echo "or use a more recent (cvs) version of ffmpeg with pkg-config"
+    exit 8;
+  fi
 fi
 
-ffmpeg_cflags=`pkg-config --cflags $ffmpeg_l1`
 
 #########################################################
 # start of DirectFB specific tests
