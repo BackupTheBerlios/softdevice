@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.13 2006/05/07 20:52:23 lucke Exp $
+# $Id: configure,v 1.14 2006/05/27 11:17:48 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -44,6 +44,8 @@ function help () {
   echo "  --disable-xv"
   echo "  --disable-shm"
   echo "  --disable-subplugins"
+  echo "  --disable-mmx"
+  echo "  --disable-mmx2"
   echo "  --with-vidix-path YOUR_VIDIX_PATH"
   echo "  --help"
 }
@@ -57,6 +59,8 @@ do
     --disable-xv) shift; xv="no" ;;
     --disable-shm) shift; with_shm="no" ;;
     --disable-subplugins) shift; with_subplugins="no" ;;
+    --disable-mmx) shift; with_mmx="no";;
+    --disable-mmx2) shift; with_mmx2="no";;
     --with-vidix-path) shift;
       vidix_path=$1 ;
       echo "vidix path set to: $vidix_path" ;
@@ -276,12 +280,11 @@ fi
 
 if test "${with_mmx}" = "yes" ; then
   echo "#define USE_MMX 1" >> $TMPH
-fi
 
-if test "${with_mmx2}" = "yes" ; then
-  echo "#define USE_MMX2 1" >> $TMPH
+  if test "${with_mmx2}" = "yes" ; then
+    echo "#define USE_MMX2 1" >> $TMPH
+  fi
 fi
-
 
 
 ###############################################################################
