@@ -1,5 +1,6 @@
 Changelog
 2006-05-29:
+   - fix PICDEB
    - fix a few stupid errors in VideoFilter.c, initialise more 
      variables in PicFilter.c
 2006-05-27:

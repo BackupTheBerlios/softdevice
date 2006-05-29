@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.2 2006/05/29 19:25:52 wachm Exp $
+ * $Id: PicBuffer.c,v 1.3 2006/05/29 20:16:58 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -162,7 +162,7 @@ void cPicBufferManager::AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
 
 sPicBuffer *cPicBufferManager::GetBuffer(PixelFormat pix_fmt,
                     int w, int h) {
-    PICDEB("GetBuffer pix_fmt %d frame %p (%d,%d)\n",pix_fmt,pic,w,h);
+    PICDEB("GetBuffer pix_fmt %d (%d,%d)\n",pix_fmt,w,h);
 
     //assert(pic->data[0]==NULL);
 
@@ -208,14 +208,14 @@ sPicBuffer *cPicBufferManager::GetBuffer(PixelFormat pix_fmt,
     PicBuffer[buf_num].age= lastPicNum - PicBuffer[buf_num].pic_num;
     PicBuffer[buf_num].pic_num= lastPicNum;
 
-    PICDEB("end GetBuffer: pic->data[0] %p buf_num %d\n",
-                    pic->data[0],buf_num);
+    PICDEB("end GetBuffer: PicBuffer.pixel[0] %p buf_num %d\n",
+                    PicBuffer[buf_num].pixel[0],buf_num);
     return &PicBuffer[buf_num];
 }
 
 void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
-    PICDEB("ReleaseBuffer frame %p, data[0] %p\n",
-                    pic,pic->data[0]);
+    PICDEB("ReleaseBuffer frame %p, pixel[0] %p\n",
+                    pic,pic->pixel[0]);
 
     int buf_num=0;
     PicBufMutex.Lock();
