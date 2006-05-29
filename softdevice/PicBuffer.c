@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.1 2006/05/27 19:12:41 wachm Exp $
+ * $Id: PicBuffer.c,v 1.2 2006/05/29 19:25:52 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +24,8 @@ void InitPicBuffer(sPicBuffer *Pic) {
         memset(Pic->pixel,0,sizeof(Pic->pixel));
         Pic->use_count=0;
         Pic->pic_num=-256*256*256*64;
+        Pic->format=PIX_FMT_NB;
+        Pic->max_width=Pic->max_height=0;
 };
 
 void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
@@ -38,7 +40,6 @@ cPicBufferManager::cPicBufferManager() {
   lastPicNum=0;
   for (int i=0; i< LAST_PICBUF; i++) 
           InitPicBuffer(&PicBuffer[i]);
-  
 }
 
 cPicBufferManager::~cPicBufferManager() {
@@ -72,8 +73,8 @@ void cPicBufferManager::GetChromaSubSample(PixelFormat pix_fmt,
                         break;
                       
                 default:
-                        fprintf(stderr,"warning unsupported pixel format!\n");
-                        hChromaShift=vChromaShift=0;
+                        fprintf(stderr,"warning unsupported pixel format(%d)! \n",pix_fmt);
+                        hChromaShift=vChromaShift=1;
         };
 };
 

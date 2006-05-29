@@ -3,9 +3,15 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.1 2006/05/27 19:12:40 wachm Exp $
+ * $Id: VideoFilter.c,v 1.2 2006/05/29 19:25:52 wachm Exp $
  */
 #include "VideoFilter.h"
+
+//#define FILDEB(out...) printf(out)
+
+#ifndef FILDEB
+#define FILDEB(out...)
+#endif
 
 cVideoFilter::cVideoFilter(cVideoOut *VideoOut)
         : vout(VideoOut) {
@@ -70,6 +76,7 @@ cVideoMirror::~cVideoMirror() {
 };
 
 void cVideoMirror::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
+    FILDEB("cVideoMirror::Filtern");
     uchar *ptr_src1, *ptr_src2;
     uchar *ptr_dest1, *ptr_dest2;
 
@@ -77,6 +84,7 @@ void cVideoMirror::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     dest=outBuf;
 
     if ( !outBuf ) {
+            dest=orig;
             fprintf(stderr,
                 "[softdevice] no picture buffer is allocated for mirroring !\n"
                 "[softdevice] switching mirroring off !\n");
@@ -143,10 +151,11 @@ void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     dest=outBuf;
 
     if ( !outBuf ) {
+            dest=orig;
             fprintf(stderr,
                 "[softdevice] no picture buffer is allocated for deinterlacing!\n"
                 "[softdevice] switching deinterlacing off !\n");
-            setupStore.mirror = 0;
+            setupStore.deintMethod = 0;
             return;
     }
 
@@ -172,8 +181,8 @@ void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     memcpy(avpic_dest.linesize,dest->stride,sizeof(avpic_dest.linesize));
 
     if (avpicture_deinterlace(&avpic_dest, &avpic_src, orig->format,
-                            orig->width, orig->height) < 0)
-    {
+                            orig->width, orig->height) < 0) {
+            dest=orig;
             fprintf(stderr,
                             "[softdevice] error, libavcodec deinterlacer failure\n"
                             "[softdevice] switching deinterlacing off !\n");
@@ -197,6 +206,7 @@ cImageConvert::~cImageConvert() {
 };
 
 void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
+        FILDEB("cImageConvert::Filtern");
         AVPicture           avpic_src, avpic_dest;
 
         if ( !outBuf ||
@@ -220,10 +230,8 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         dest=outBuf;
 
         if ( !outBuf ) {
-                fprintf(stderr,
-                                "[softdevice] no picture buffer is allocated for image converting!\n"
-                                "[softdevice] switching deinterlacing off !\n");
-                setupStore.mirror = 0;
+		dest=orig;
+                fprintf(stderr,"[softdevice] no picture buffer is allocated for image converting!\n");
                 return;
         }
 
@@ -251,6 +259,7 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         if (img_convert(&avpic_dest,PIX_FMT_YUV420P,
                                 &avpic_src, orig->format,
                                 orig->width, orig->height) < 0) {
+                dest=orig;
                 fprintf(stderr,
                                 "[softdevice] error, libavcodec img_convert failure\n");
                 return;
@@ -287,10 +296,11 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         dest=outBuf;
 
         if ( !outBuf ) {
+                dest=orig;
                 fprintf(stderr,
                                 "[softdevice] no picture buffer is allocated for post processing!\n"
                                 "[softdevice] switching post processing off !\n");
-                setupStore.mirror = 0;
+                setupStore.deintMethod = setupStore.ppMethod = 0;
                 return;
         }
 
@@ -353,11 +363,12 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                 ppmode = pp_get_mode_by_name_and_quality(mode, currentppQuality);
         }
         if (ppmode == NULL || ppcontext == NULL) {
+                dest=orig;
                 fprintf(stderr,
                         "[softdevice] pp-filter %s couldn't be initialized,\n"
                         "[softdevice] switching postprocessing off !\n",
                         setupStore.getPPValue());
-                setupStore.deintMethod = 0;
+                setupStore.deintMethod = setupStore.ppMethod = 0;
                 return;
         }
 
