@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.2 2006/05/29 19:25:52 wachm Exp $
+ * $Id: VideoFilter.c,v 1.3 2006/05/30 18:57:21 wachm Exp $
  */
 #include "VideoFilter.h"
 
@@ -49,7 +49,8 @@ bool cVideoFilter::AllocateBuffer(sPicBuffer *&dest, sPicBuffer *orig) {
                 fprintf(stderr,"Error in AllocateBuffer, orig==NULL!\n");
                 return false;
         };
-        
+       
+        printf("allocating buffer format orig->format %d\n",orig->format);
         dest=vout->GetBuffer(orig->format, orig->width, orig->height);
         
         dest->width = orig->width;
@@ -76,7 +77,7 @@ cVideoMirror::~cVideoMirror() {
 };
 
 void cVideoMirror::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
-    FILDEB("cVideoMirror::Filtern");
+    FILDEB("cVideoMirror::Filter\n");
     uchar *ptr_src1, *ptr_src2;
     uchar *ptr_dest1, *ptr_dest2;
 
@@ -146,6 +147,8 @@ cDeintLibav::~cDeintLibav() {
 
 void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     AVPicture           avpic_src, avpic_dest;
+    FILDEB("cDeintLibav::Filter orig %p format %d (%d,%d) buf_num %d\n",orig,
+                    orig->format,orig->max_width,orig->max_height,orig->buf_num);
 
     AllocateCheckBuffer(outBuf, orig);
     dest=outBuf;
@@ -206,7 +209,7 @@ cImageConvert::~cImageConvert() {
 };
 
 void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
-        FILDEB("cImageConvert::Filtern");
+        FILDEB("cImageConvert::Filter\n");
         AVPicture           avpic_src, avpic_dest;
 
         if ( !outBuf ||

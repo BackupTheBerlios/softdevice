@@ -1,4 +1,7 @@
 Changelog
+2006-05-30:
+   - set pic->format in AllocPicBuffer()
+   - more debug messages
 2006-05-29:
    - fix PICDEB
    - fix a few stupid errors in VideoFilter.c, initialise more 

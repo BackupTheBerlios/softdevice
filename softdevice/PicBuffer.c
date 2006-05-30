@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.3 2006/05/29 20:16:58 wachm Exp $
+ * $Id: PicBuffer.c,v 1.4 2006/05/30 18:57:21 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +26,7 @@ void InitPicBuffer(sPicBuffer *Pic) {
         Pic->pic_num=-256*256*256*64;
         Pic->format=PIX_FMT_NB;
         Pic->max_width=Pic->max_height=0;
+        Pic->buf_num=-1;
 };
 
 void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
@@ -47,15 +48,14 @@ cPicBufferManager::~cPicBufferManager() {
 };
 
 void cPicBufferManager::ReleasePicBuffer(int buf_num) {
-        PICDEB("ReleasePicBuffer %d",buf_num);
+        PICDEB("ReleasePicBuffer %d\n",buf_num);
         sPicBuffer *buf=&PicBuffer[buf_num];
 
         for (int i=0; i<4; i++) {
                 free(buf->pixel[i]);
                 buf->pixel[i]=NULL;
         };
-        buf->max_height=0;
-        buf->max_width=0;
+        InitPicBuffer(buf);
 };
 
 void cPicBufferManager::GetChromaSubSample(PixelFormat pix_fmt,
@@ -157,7 +157,9 @@ void cPicBufferManager::AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
         }
         buf->max_width=w;
         buf->max_height=h;
-        PICDEB("end AllocPicBuffer buf->pixel[0] %p\n",buf->pixel[0]);
+        buf->format=pix_fmt;
+        PICDEB("end AllocPicBuffer buf %p buf->pixel[0] %p\n",
+                        buf,buf->pixel[0]);
 }
 
 sPicBuffer *cPicBufferManager::GetBuffer(PixelFormat pix_fmt,
@@ -188,6 +190,11 @@ sPicBuffer *cPicBufferManager::GetBuffer(PixelFormat pix_fmt,
 //                      || PicBuffer[buf_num].max_width < w
 //                      || PicBuffer[buf_num].max_height < h ) ) {
             PICDEB("format change relasing old buf_num %d\n",buf_num);
+            PICDEB("format %d-%d width %d-%d height %d-%d\n",
+                     PicBuffer[buf_num].format, pix_fmt,
+                     PicBuffer[buf_num].max_width, w,
+                     PicBuffer[buf_num].max_height, h);
+
             ReleasePicBuffer(buf_num);
             PicBuffer[buf_num].pixel[0]=NULL;
     };
@@ -232,6 +239,7 @@ void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
     PicBuffer[buf_num].use_count--;
     PicBuffer[buf_num].buf_num=-1;
     PicBufMutex.Unlock();
+    PICDEB("end ReleaseBuffer bufnum %d\n",buf_num);
 }
 
 // end of code based on ffmpeg
