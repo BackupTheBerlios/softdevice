@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.8 2006/05/23 19:30:42 wachm Exp $
+ * $Id: utils.h,v 1.9 2006/06/06 20:55:19 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -58,6 +58,14 @@ void yv12_to_yuy2_il_c(const uint8_t *py,
                        int width,int height,
                        int lumStride,int chromStride,
                        int dstStride);
+
+void yv12_to_yuy2_il_mmx2(const uint8_t *py,
+                          const uint8_t *pu,
+                          const uint8_t *pv,
+                          uint8_t *dst,
+                          int width,int height,
+                          int lumStride,int chromStride,
+                          int dstStride);
 
 void yv12_to_yuy2_fr_c(const uint8_t *py,
                        const uint8_t *pu,

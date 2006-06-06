@@ -1,10 +1,12 @@
 Changelog
+2006-06-06:
+   - mmx version of yv12_to_yuy2_il_c(): yv12_to_yuy2_il_mmx2(). not yet called.
 2006-05-30:
    - set pic->format in AllocPicBuffer()
    - more debug messages
 2006-05-29:
    - fix PICDEB
-   - fix a few stupid errors in VideoFilter.c, initialise more 
+   - fix a few stupid errors in VideoFilter.c, initialise more
      variables in PicFilter.c
 2006-05-27:
    - move postproc stuff into VideoFilter.[ch]
