@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.9 2006/04/23 19:55:53 wachm Exp $
+ * $Id: softdevice.h,v 1.10 2006/06/09 16:45:13 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -31,22 +31,23 @@ struct PacketHandlesV100{
         SoftdeviceHandle Freeze;
         // value = 0 Play, value = 1 Pause
 };
-        
+
 
 static const char *const GET_PACKET_HANDEL_IDV100="softdevice-GetPacketHandles-v1.0";
-// 
+//
 
 // --- cSoftDevice ------------------------------------------------------------
 class cPluginSoftDevice : public cPlugin {
 private:
   int   voutMethod;
   int   aoutMethod;
-  char  *pluginPath;
+  char  *pluginPath,
+        *runtimePluginPath;
 
 public:
   cPluginSoftDevice(void);
   virtual ~cPluginSoftDevice();
-  virtual const char *Version(void); 
+  virtual const char *Version(void);
   virtual const char *Description(void);
   virtual const char *CommandLineHelp(void);
   virtual bool Initialize(void);
@@ -81,10 +82,10 @@ private:
 public:
   cSoftDevice(int method, int audioMethod, char *pluginPath);
   ~cSoftDevice();
-  
-  inline void QueuePacket(AVFormatContext *ic, AVPacket &pkt) 
+
+  inline void QueuePacket(AVFormatContext *ic, AVPacket &pkt)
   { if (decoder) decoder->QueuePacket(ic,pkt,true); };
-  inline int ResetDecoder(int Stream) 
+  inline int ResetDecoder(int Stream)
   { if (decoder) decoder->ResetDecoder(Stream); return 0;};
   inline int BufferFill(int Stream)
   { if (decoder) return decoder->BufferFill(Stream); return 0;};

@@ -1,4 +1,9 @@
 Changelog
+2006-06-09:
+   - activate mmx version of yv12_to_yuy2_il_ () for dfb, xv and vidix.
+   - name change libsubvdr-softdevice-METHOD.so.?? -> libsoftdevice-METHOD.so.?? .
+   - removed option -L . is obsolete since we can get the path we are loaded from,
+     at runtime (thanks to Petri Hintukainen).
 2006-06-06:
    - mmx version of yv12_to_yuy2_il_c(): yv12_to_yuy2_il_mmx2(). not yet called.
 2006-05-30:

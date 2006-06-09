@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.59 2006/04/30 13:50:12 lucke Exp $
+ * $Id: softdevice.c,v 1.60 2006/06/09 16:45:13 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -289,6 +289,8 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     decoder= new cMpeg2Decoder(audioOut, videoOut);
 }
 
+/* ----------------------------------------------------------------------------
+ */
 cSoftDevice::~cSoftDevice()
 {
     delete(decoder);
@@ -308,17 +310,18 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
   asprintf (&subPluginFileName,
             "%s/%s%s.so.%s",
             pluginPath,
-            "libsubvdr-softdevice-",
+            "libsoftdevice-",
             outMethodName,
             APIVERSION);
 #else
   asprintf (&subPluginFileName,
             "%s/%s%s.so.%s",
             pluginPath,
-            "libsubvdr-softdevice-",
+            "libsoftdevice-",
             outMethodName,
             VDRVERSION);
 #endif
+
   void *handle = dlopen (subPluginFileName, RTLD_NOW);
   char *err = dlerror();
   if (!err)
@@ -627,6 +630,26 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 
 // --- cPluginSoftDevice ----------------------------------------------------------
 
+/* ----------------------------------------------------------------------------
+ */
+static char *GetLibPath(void)
+{
+    Dl_info info;
+    char *libpath, *pt;
+    static int my_marker = 0;
+
+  if(!dladdr((void *)&my_marker, &info)) {
+    fprintf(stderr, "Error: dladdr() returned false (%s)", dlerror());
+    return NULL;
+  }
+
+  libpath = strdup(info.dli_fname);
+  if(NULL != (pt=strrchr(libpath, '/')))
+    *(pt+1) = 0;
+
+  return libpath;
+}
+
 cPluginSoftDevice::cPluginSoftDevice(void)
 {
   // Initialize any member variables here.
@@ -639,6 +662,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
 #endif
   aoutMethod = AOUT_ALSA;
   pluginPath = PLUGINLIBDIR;
+  runtimePluginPath = GetLibPath();
 }
 
 cPluginSoftDevice::~cPluginSoftDevice()
@@ -686,7 +710,6 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   "  -vo vidix:               enable output via vidix driver\n"
 #endif
   "  -vo dummy:               enable output to dummy device\n"
-  "  -L <plugin_path_name>    search path for loading subplugins\n"
   "\n";
 }
 
@@ -871,11 +894,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
         };
 
       }
-    } else if (!strcmp (argv[i], "-L")) {
-      ++i; --argc;
-      if (argc > 0) {
-        pluginPath = argv[i];
-      }
     } else {
             fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
             esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
@@ -950,7 +968,9 @@ bool cPluginSoftDevice::Initialize(void)
 {
   // Start any background activities the plugin shall perform.
   fprintf(stderr,"[softdevice] initializing Plugin\n");
-  new cSoftDevice(voutMethod,aoutMethod,pluginPath);
+  new cSoftDevice(voutMethod,
+                  aoutMethod,
+                  (runtimePluginPath) ? runtimePluginPath : pluginPath);
   return true;
 }
 

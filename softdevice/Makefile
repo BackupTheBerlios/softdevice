@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.29 2006/05/27 19:15:31 wachm Exp $
+# $Id: Makefile,v 1.30 2006/06/09 16:45:13 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -202,13 +202,9 @@ CXXFLAGS ?= -O2 -g -Wall -fPIC -Woverloaded-virtual
 VDRVERSION = $(shell grep 'define VDRVERSION ' $(VDRDIR)/config.h | awk '{ print $$3 }' | sed -e 's/"//g')
 APIVERSION = $(shell sed -ne '/define APIVERSION/ { s/^.*"\(.*\)".*$$/\1/; p }' $(VDRDIR)/config.h)
 
-INST_VERSION = $(APIVERSION)
-
 ifeq ($(APIVERSION),)
-	INST_VERSION = $(VDRVERSION)
+	APIVERSION = $(VDRVERSION)
 endif
-
-#DUMMY=$(LIBDIR)/fake.vdr.Makefile.check.$(APIVERSION)
 
 ### The name of the distribution archive:
 
@@ -233,7 +229,7 @@ ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
     DFB_OBJS  = utils.o video.o video-dfb.o PicBuffer.o
     ALL_OBJS += $(DFB_OBJS)
-    TARGETS  += libsubvdr-$(PLUGIN)-dfb.so
+    TARGETS  += lib$(PLUGIN)-dfb.so
   else
     OBJS     += video-dfb.o
     LIBS     += $(DFB_LIBS)
@@ -246,7 +242,7 @@ ifdef FB_SUPPORT
     FB_LIBS   =
     FB_OBJS   = utils.o video.o video-fb.o PicBuffer.o
     ALL_OBJS  += $(FB_OBJS)
-    TARGETS   += libsubvdr-$(PLUGIN)-fb.so
+    TARGETS   += lib$(PLUGIN)-fb.so
   else
     OBJS 	+= video-fb.o
   endif
@@ -256,7 +252,7 @@ ifdef XV_SUPPORT
   ifdef USE_SUBPLUGINS
     XV_OBJS   = utils.o video.o video-xv.o xscreensaver.o PicBuffer.o
     ALL_OBJS  += $(XV_OBJS)
-    TARGETS   += libsubvdr-$(PLUGIN)-xv.so
+    TARGETS   += lib$(PLUGIN)-xv.so
   else
     OBJS 	+= video-xv.o xscreensaver.o
     LIBS 	+= $(XV_LIBS)
@@ -267,7 +263,7 @@ ifdef VIDIX_SUPPORT
   ifdef USE_SUBPLUGINS
     VIDIX_OBJS  = utils.o video.o video-vidix.o PicBuffer.o
     ALL_OBJS    += $(VIDIX_OBJS)
-    TARGETS     += libsubvdr-$(PLUGIN)-vidix.so
+    TARGETS     += lib$(PLUGIN)-vidix.so
   else
     OBJS        += video-vidix.o
     LIBS        += -lvidix
@@ -279,7 +275,7 @@ ifdef SHM_SUPPORT
   ifdef USE_SUBPLUGINS
     SHM_OBJS  = utils.o video.o video-shm.o PicBuffer.o
     ALL_OBJS    += $(SHM_OBJS)
-    TARGETS     += libsubvdr-$(PLUGIN)-shm.so
+    TARGETS     += lib$(PLUGIN)-shm.so
   else
     OBJS += video-shm.o
   endif
@@ -308,29 +304,29 @@ all: $(TARGETS)
 
 libvdr-$(PLUGIN).so: $(OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
+	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
 
 ifdef USE_SUBPLUGINS
 
-libsubvdr-$(PLUGIN)-dfb.so: $(DFB_OBJS)
+lib$(PLUGIN)-dfb.so: $(DFB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(DFB_OBJS) $(DFB_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
+	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
 
-libsubvdr-$(PLUGIN)-fb.so: $(FB_OBJS)
+lib$(PLUGIN)-fb.so: $(FB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(FB_OBJS) $(FB_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
+	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
 
-libsubvdr-$(PLUGIN)-xv.so: $(XV_OBJS)
+lib$(PLUGIN)-xv.so: $(XV_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(XV_OBJS) $(XV_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
+	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
 
-libsubvdr-$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
+lib$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(VIDIX_OBJS) $(VIDIX_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
+	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
 
-libsubvdr-$(PLUGIN)-shm.so: $(SHM_OBJS)
+lib$(PLUGIN)-shm.so: $(SHM_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(SHM_OBJS) $(SHM_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(INST_VERSION)
+	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
 
 endif
 
@@ -354,7 +350,7 @@ VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../sources.o
 SHM_CLIENT_OBJS  = video_shm.o video-xv_shm.o setup-softdevice_shm.o\
 		   xscreensaver_shm.o utils_shm.o VdrReplacements_shm.o\
-		   ShmClient_shm.o PicBuffer_shm.o 
+		   ShmClient_shm.o PicBuffer_shm.o
 
 %_shm.o: %.c
 	$(CXX) $(CXXFLAGS) -c $(DEFINES) -DSTAND_ALONE $(INCLUDES) $< -o $@
