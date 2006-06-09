@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.55 2006/05/27 19:12:42 wachm Exp $
+ * $Id: video-xv.c,v 1.56 2006/06/09 16:24:34 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1616,7 +1616,7 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
   int UVstride=buf->stride[1];
   int Width=buf->width;
   int Height=buf->height;
-  
+
   if ( Py && Pu && Pv ) {
 #if VDRVERSNUM >= 10307
   /* -------------------------------------------------------------------------
@@ -1677,14 +1677,23 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
                           fwidth / 2 - (cutLeft + cutRight));
           break;
         case FOURCC_YUY2:
-          //yv12_to_yuy2_il_c(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-          yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                       Pu + UVstride * cutTop + cutLeft,
-                       Pv + UVstride * cutTop + cutLeft,
-                       pixels[0] + 2*xvWidth * cutTop * 2 + cutLeft * 4,
-                       Width - 2 * (cutLeft + cutRight),
-                       Height - 2 * (cutTop + cutBottom),
-                       Ystride, UVstride, 2*xvWidth);
+      if (interlaceMode) {
+          yv12_to_yuy2_il_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                               Pu + UVstride * cutTop + cutLeft,
+                               Pv + UVstride * cutTop + cutLeft,
+                               pixels[0] + 2*xvWidth * cutTop * 2 + cutLeft * 4,
+                               Width - 2 * (cutLeft + cutRight),
+                               Height - 2 * (cutTop + cutBottom),
+                               Ystride, UVstride, 2*xvWidth);
+      } else {
+          yv12_to_yuy2_fr_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                               Pu + UVstride * cutTop + cutLeft,
+                               Pv + UVstride * cutTop + cutLeft,
+                               pixels[0] + 2*xvWidth * cutTop * 2 + cutLeft * 4,
+                               Width - 2 * (cutLeft + cutRight),
+                               Height - 2 * (cutTop + cutBottom),
+                               Ystride, UVstride, 2*xvWidth);
+      }
           break;
       }
     }

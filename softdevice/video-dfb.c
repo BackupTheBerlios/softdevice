@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.62 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video-dfb.c,v 1.63 2006/06/09 16:24:34 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1302,7 +1302,7 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
   int UVstride=buf->stride[1];
   int Width=buf->width;
   int Height=buf->height;
-  
+
   if (!videoInitialized)
     return;
 
@@ -1374,21 +1374,21 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
     } else if (pixelformat == DSPF_YUY2) {
 
       if (interlaceMode) {
-        yv12_to_yuy2_il_c(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                          Pu + UVstride * cutTop + cutLeft,
-                          Pv + UVstride * cutTop + cutLeft,
-                          dst + pitch * cutTop * 2 + cutLeft * 4,
-                          Width - 2 * (cutLeft + cutRight),
-                          Height - 2 * (cutTop + cutBottom),
-                          Ystride, UVstride, pitch);
+        yv12_to_yuy2_il_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                             Pu + UVstride * cutTop + cutLeft,
+                             Pv + UVstride * cutTop + cutLeft,
+                             dst + pitch * cutTop * 2 + cutLeft * 4,
+                             Width - 2 * (cutLeft + cutRight),
+                             Height - 2 * (cutTop + cutBottom),
+                             Ystride, UVstride, pitch);
       } else {
-        yv12_to_yuy2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                     Pu + UVstride * cutTop + cutLeft,
-                     Pv + UVstride * cutTop + cutLeft,
-                     dst + pitch * cutTop * 2 + cutLeft * 4,
-                     Width - 2 * (cutLeft + cutRight),
-                     Height - 2 * (cutTop + cutBottom),
-                     Ystride, UVstride, pitch);
+        yv12_to_yuy2_fr_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                             Pu + UVstride * cutTop + cutLeft,
+                             Pv + UVstride * cutTop + cutLeft,
+                             dst + pitch * cutTop * 2 + cutLeft * 4,
+                             Width - 2 * (cutLeft + cutRight),
+                             Height - 2 * (cutTop + cutBottom),
+                             Ystride, UVstride, pitch);
       }
      }
 

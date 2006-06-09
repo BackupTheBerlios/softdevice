@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.19 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video-vidix.c,v 1.20 2006/06/09 16:24:35 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -550,12 +550,21 @@ void cVidixVideoOut::YUV(sPicBuffer *buf)
     }
   } else if (currentPixelFormat == 2) {
     current_osdMode = setupStore->osdMode = OSDMODE_PSEUDO;
-    yv12_to_yuy2(Py + Ystride  * cutTop * 2,
-                 Pu + UVstride * cutTop,
-                 Pv + UVstride * cutTop,
-                 dst + dstrides.y*2 * cutTop * 2,
-                 Width, Height - 2 * (cutTop + cutBottom),
-                 Ystride, UVstride, dstrides.y*2);
+    if (interlaceMode) {
+      yv12_to_yuy2_il_mmx2(Py + Ystride  * cutTop * 2,
+                        Pu + UVstride * cutTop,
+                        Pv + UVstride * cutTop,
+                        dst + dstrides.y*2 * cutTop * 2,
+                        Width, Height - 2 * (cutTop + cutBottom),
+                        Ystride, UVstride, dstrides.y*2);
+    } else {
+      yv12_to_yuy2_fr_mmx2(Py + Ystride  * cutTop * 2,
+                           Pu + UVstride * cutTop,
+                           Pv + UVstride * cutTop,
+                           dst + dstrides.y*2 * cutTop * 2,
+                           Width, Height - 2 * (cutTop + cutBottom),
+                           Ystride, UVstride, dstrides.y*2);
+    }
   }
 
   TIMINGS("After UV\n");
