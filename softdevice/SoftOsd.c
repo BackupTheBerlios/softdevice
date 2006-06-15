@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.14 2006/05/27 08:06:34 wachm Exp $
+ * $Id: SoftOsd.c,v 1.15 2006/06/15 21:34:20 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -44,6 +44,7 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         xPan = yPan = 0;
 	videoOut->OpenOSD();
 	xOfs=X;yOfs=Y;
+        ScreenOsdWidth=ScreenOsdHeight=0;
         int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
         uint8_t *PixelMask;
         videoOut->AdjustOSDMode();
@@ -78,7 +79,7 @@ cSoftOsd::~cSoftOsd() {
                 videoOut->CloseOSD();
                 videoOut=0;
         }
-        delete OSD_Bitmap;
+        delete[] OSD_Bitmap;
 }
 
 /* -------------------------------------------------------------------------*/

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.64 2006/05/27 19:12:41 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.65 2006/06/15 21:34:20 wachm Exp $
  */
 
 #include <math.h>
@@ -53,7 +53,7 @@ cPacketQueue::cPacketQueue(int maxPackets) {
 
 cPacketQueue::~cPacketQueue() {
   Clear();
-  delete queue;
+  delete[] queue;
 };
 
 int cPacketQueue::PutPacket(const AVPacket &Packet) {

@@ -2,6 +2,7 @@ Changelog
 2006-06-15:
    - make configure a bit more verbose. A complete log is now saved in 
      config.log.
+   - fix delete <-> delete[] mismatch reported by Prakash Punnoor.
 2006-06-09:
    - activate mmx version of yv12_to_yuy2_il_ () for dfb, xv and vidix.
    - name change libsubvdr-softdevice-METHOD.so.?? -> libsoftdevice-METHOD.so.?? .
