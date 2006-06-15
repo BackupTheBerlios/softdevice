@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.15 2006/05/27 13:00:07 wachm Exp $
+# $Id: configure,v 1.16 2006/06/15 21:27:08 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -52,6 +52,9 @@ function help () {
   echo "  --help"
 }
 
+echo "Parameters '$@'" >config.log
+echo "PKG_CONFIG_PATH '$PKG_CONFIG_PATH'" >> config.log 
+
 while [ $# -gt 0 ]
 do
   case $1 in
@@ -79,6 +82,9 @@ done
 #########################################################
 # start ffmpeg test
 #
+echo -n "Checking for ffmpeg... "
+echo  "Checking for ffmpeg.------------------------------------" >> config.log
+
 test_ffmpeg() 
 {
   ffmpeg="yes";
@@ -99,22 +105,22 @@ int main(void) {
  return 0;
 }
 EOF
-  $cc $CFLAGS $ffmpeg_cflags $ffmpeg_libs -o $TMPE $TMPC $ffmpeg_libs  > /dev/null 2>&1 || ffmpeg="no"
+  $cc $CFLAGS $ffmpeg_cflags $ffmpeg_libs -o $TMPE $TMPC $ffmpeg_libs  >> config.log 2>&1 || ffmpeg="no"
 };
 
-# try to use pkg-config
+echo "try to use pkg-config." >> config.log
 ffmpeg_l1="libavcodec libavformat"
 
-pkg-config --libs libpostproc >/dev/null 2>&1 && { ffmpeg_l1="$ffmpeg_l1 libpostproc";libpostproc="yes"; }
+pkg-config --libs libpostproc >> config.log 2>&1 && { ffmpeg_l1="$ffmpeg_l1 libpostproc";libpostproc="yes"; }
 
-ffmpeg_libs=`pkg-config --libs $ffmpeg_l1` || ffmpeg="no"
-ffmpeg_cflags=`pkg-config --cflags $ffmpeg_l1`
+ffmpeg_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --libs $ffmpeg_l1 2>> config.log` || ffmpeg="no"
+ffmpeg_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --cflags $ffmpeg_l1 2>> config.log`
 
 # test if it works..
 test_ffmpeg
 
 if test "${ffmpeg}" = "no" ; then
-  #pkg-config failed, try the default/parameter path 
+  echo "pkg-config failed, try the default/parameter path." >> config.log
   ffmpeg="yes"
   ffmpeg_libs="-L${ffmpeg_path}/ -L${ffmpeg_path}/libavcodec/ -L${ffmpeg_path}/libavformat/ -lavformat -lz -lavcodec "
   ffmpeg_cflags="-I${ffmpeg_path}/ -I${ffmpeg_path}/libavcodec/ -I${ffmpeg_path}/libavformat/ "
@@ -122,8 +128,7 @@ if test "${ffmpeg}" = "no" ; then
   test_ffmpeg
 
   if test "${ffmpeg}" = "no" ; then
-    #maybe avutils is needed?
-    echo "checking for avutils..."
+    echo "Still failed. Maybe avutils is needed?" >> config.log
     ffmpeg_libs="$ffmpeg_libs -L${ffmpeg_path}/libavutil/ -lavutil"
     ffmpeg_cflags="$ffmpeg_cflags -I${ffmpeg_path}/libavutil/"
 
@@ -131,24 +136,30 @@ if test "${ffmpeg}" = "no" ; then
   fi    
 
   if test "${ffmpeg}" = "no" ; then
+    echo "No. Sorry giving up." >> config.log
+    echo " Not found."
     echo "No usable ffmpeg library found in ${ffmpeg_path}."
     echo "Specify the path to your ffmpeg installation using --with-ffmpeg-path"
-    echo "or use a more recent (cvs) version of ffmpeg with pkg-config"
+    echo "or use a more recent (cvs) version of ffmpeg with pkg-config."
+    echo "For details check config.log."
     exit 8;
   fi
 fi
 
-
+echo "Ok."
 #########################################################
 # start of DirectFB specific tests
 #
+echo -n "Checking for DirectFB and DFB++... "
+echo "Checking for DirectFB and DFB++.------------------" >> config.log
 if test "${dfb}" = "yes" ; then
 
-dfb_cflags=`pkg-config --cflags directfb dfb++ 2>/dev/null` || dfb="no"
+dfb_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --cflags directfb dfb++ ` || dfb="no"
+#dfb_cflags=`pkg-config --cflags directfb dfb++ 2>> config.log` || dfb="no"
 
 if test "${dfb}" = "yes" ; then
 
-dfb_libs=`pkg-config --libs directfb dfb++`
+dfb_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --libs directfb dfb++`
 dfb_opts="${dfb_cflags} ${dfb_libs}"
 dfb_device_desc="yes"
 dfb_sourcelocation="yes"
@@ -163,7 +174,7 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $dfb_opts -o $TMPE $TMPC > /dev/null 2>&1 || dfb_device_desc="no"
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_device_desc="no"
 
 cat > ${TMPC} << EOF
 #include <stdio.h>
@@ -175,7 +186,7 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $dfb_opts -o $TMPE $TMPC > /dev/null 2>&1 || dfb_sourcelocation="no"
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_sourcelocation="no"
 
 cat > ${TMPC} << EOF
 #include <stdio.h>
@@ -192,7 +203,7 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $dfb_opts -o $TMPE $TMPC > /dev/null 2>&1 || dfb_dscaps_double="no"
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_dscaps_double="no"
 
 cat > ${TMPC} << EOF
 #include <stdio.h>
@@ -204,7 +215,7 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $dfb_opts -o $TMPE $TMPC > /dev/null 2>&1 || dfb_dief_repeat="no"
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_dief_repeat="no"
 
 cat > ${TMPC} << EOF
 #include <stdio.h>
@@ -215,15 +226,25 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $dfb_opts -o $TMPE $TMPC > /dev/null 2>&1 || dfb_blit_interlaced="no"
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_blit_interlaced="no"
 
   fi
 fi
+
+if test "${dfb}" = "yes" ; then
+echo "Enabled video-dfb."
+else
+echo "Not Found."
+fi
+
 # end of DirectFB specific tests
 
 #########################################################
 # vidix: check if we could compile with specified options
 #
+echo -n "Checking for vidix... "
+echo "Checking for vidix.------------------------" >> config.log
+
 if test "${vidix}" = "yes" ; then
   vidix_cflags="-I${vidix_path}/include/vidix"
   vidix_libs="-L${vidix_path}/lib -lvidix"
@@ -235,12 +256,21 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $vidix_cflags $vidix_libs -o $TMPE $TMPC > /dev/null 2>&1 || vidix="no"
+$cc $CFLAGS $vidix_cflags $vidix_libs -o $TMPE $TMPC >> config.log 2>&1 || vidix="no"
+fi
+
+if test "${vidix}" = "yes" ; then
+echo "Enabled video-out vidix."
+else
+echo "Not found."
 fi
 
 #########################################################
 # X11: check if X11 is present
 #
+echo -n "Checking for Xv... "
+echo  "Checking for Xv.-----------------------------" >> config.log
+
 if test "${xv}" = "yes" ; then
   xv_libs="-L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv"
   cat > ${TMPC} << EOF
@@ -252,12 +282,21 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $xv_libs -o $TMPE $TMPC > /dev/null 2>&1 || xv="no"
+$cc $CFLAGS $xv_libs -o $TMPE $TMPC >> config.log 2>&1 || xv="no"
+fi
+
+if test "${xv}" = "yes" ; then
+echo "Enabled video-xv."
+else
+echo "Not found."
 fi
 
 #########################################################
 # X11: check if we can use Xinerama extension
 #
+echo -n "Checking for Xinerama... "
+echo "Checking for Xinerama.-----------------------------" >> config.log
+
 if test "${xv}" = "yes" -a "${xinerama}" = "yes" ; then
   xinerama_libs="-lXinerama"
   cat > ${TMPC} << EOF
@@ -273,7 +312,13 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $xv_libs $xinerama_libs -o $TMPE $TMPC > /dev/null 2>&1 || xinerama="no"
+$cc $CFLAGS $xv_libs $xinerama_libs -o $TMPE $TMPC >> config.log 2>&1 || xinerama="no"
+fi
+
+if test "${xv}" = "yes" -a "${xinerama}" = "yes" ; then
+echo "Enabled Xinerama."
+else
+echo "Not found."
 fi
 
 #########################################################
@@ -314,7 +359,7 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS -o $TMPE $TMPC > /dev/null 2>&1 || broken_gcc_cpp="yes"
+$cc $CFLAGS -o $TMPE $TMPC >> config.log 2>&1 || broken_gcc_cpp="yes"
 ###########
 
 echo "Creating temporary config.h and config.mak"
@@ -462,5 +507,7 @@ if test $? -ne 0 ; then
 else
   echo "config.mak is unchanged"
 fi
+
+echo "Configure is finished. Please check config.log in case of problems."
 
 rm -f $TMPC $TMPE $TMPH $TMPM
