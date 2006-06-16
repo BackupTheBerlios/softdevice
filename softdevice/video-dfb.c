@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.63 2006/06/09 16:24:34 lucke Exp $
+ * $Id: video-dfb.c,v 1.64 2006/06/16 18:46:11 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -469,6 +469,15 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       vidDsc.height = fheight;
 
 
+      if (!setupStore->useMGAtv)
+      {
+        fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
+        videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
+
+        if (!setupStore->viaTv)
+          BESColorkeyState(videoLayer, true);
+      }
+
       if (useStretchBlit)
       {
         videoSurface = dfb->CreateSurface (vidDsc);
@@ -484,15 +493,6 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       }
 
       reportSurfaceCapabilities ("videoSurface", videoSurface);
-
-      if (!setupStore->useMGAtv)
-      {
-        fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
-        videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
-
-        if (!setupStore->viaTv)
-          BESColorkeyState(videoLayer, true);
-      }
 
       fprintf(stderr,
               "[dfb] Using this layer for OSD:        %s\n"
