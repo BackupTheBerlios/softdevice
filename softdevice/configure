@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.17 2006/06/17 16:27:34 lucke Exp $
+# $Id: configure,v 1.18 2006/06/17 19:19:38 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -54,7 +54,7 @@ function help () {
 }
 
 echo "Parameters '$@'" >config.log
-echo "PKG_CONFIG_PATH '$PKG_CONFIG_PATH'" >> config.log 
+echo "PKG_CONFIG_PATH '$PKG_CONFIG_PATH'" >> config.log
 
 while [ $# -gt 0 ]
 do
@@ -86,7 +86,7 @@ done
 echo -n "Checking for ffmpeg... "
 echo  "Checking for ffmpeg.------------------------------------" >> config.log
 
-test_ffmpeg() 
+test_ffmpeg()
 {
   ffmpeg="yes";
 cat > ${TMPC} << EOF
@@ -134,7 +134,7 @@ if test "${ffmpeg}" = "no" ; then
     ffmpeg_cflags="$ffmpeg_cflags -I${ffmpeg_path}/libavutil/"
 
     test_ffmpeg
-  fi    
+  fi
 
   if test "${ffmpeg}" = "no" ; then
     echo "No. Sorry giving up." >> config.log
@@ -270,19 +270,18 @@ fi
 # cle266mpegdec: check if present
 #
 if test "${dfb}" = "yes" ; then
-echo -n "Checking for cle266mpegdec... "
-cle266_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags cle266mpegdec 2>>config.log` || cle266="no"
+  echo -n "Checking for libcle266mpegdec ... "
+  cle266_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags libcle266mpegdec 2>>config.log` || cle266="no"
   if test "${cle266}" = "yes" ; then
-  cle266_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs cle266mpegdec`
-  cle266_opts="${cle266_cflags} ${cle266_libs}"
+    cle266_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs libcle266mpegdec`
+    cle266_opts="${cle266_cflags} ${cle266_libs}"
   fi
 
   if test "${cle266}" = "yes" ; then
-  echo "Enabled cle266 hardware decoding."
+    echo "Enabled cle266 hardware decoding."
   else
-  echo "Not found."
-
-fi
+    echo "Not found."
+  fi
 else
   cle266="no"
 fi
