@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.20 2006/06/09 16:24:35 lucke Exp $
+ * $Id: video-vidix.c,v 1.21 2006/06/17 20:42:58 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -32,11 +32,14 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
 {
     int     err;
     double  displayRatio;
+    char    *fbName = getFBName();
 
-    if ((fbdev = open(FBDEV, O_RDWR)) == -1) {
+    if ((fbdev = open(fbName, O_RDWR)) == -1) {
         esyslog("[cVidixVideoOut] Can't open framebuffer exiting\n");
+        free(fbName);
         exit(1);
     }
+    free(fbName);
 
     if (ioctl(fbdev, FBIOGET_VSCREENINFO, &fb_vinfo)) {
         esyslog("[cVidixVideoOut] Can't get VSCREENINFO exiting\n");

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.9 2006/06/06 20:55:19 lucke Exp $
+ * $Id: utils.h,v 1.10 2006/06/17 20:42:58 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -44,9 +44,9 @@
 
 #else
 //#warning Using MMX extensions
-#define PREFETCH(x) 
+#define PREFETCH(x)
 #define MOVNTQ   "movq "
-#define SFENCE  
+#define SFENCE
 #define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
 #endif
 
@@ -105,7 +105,8 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        uint8_t *alpha,uint16_t count);
    // performes alpha blending in software
 
-uint64_t getTimeMilis(void);
+uint64_t  getTimeMilis(void);
+char      *getFBName(void);
 
 void mmx_unpack_16rgb (uint8_t * image, int lines, int stride);
 void mmx_unpack_15rgb (uint8_t * image, int lines, int stride);

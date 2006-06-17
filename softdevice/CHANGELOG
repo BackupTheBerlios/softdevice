@@ -1,6 +1,10 @@
 Changelog
 2006-06-17:
    - cle266, video-dfb: added HW-decoder support
+   - configure: check for libcle266mpegdec instead of cle266mpegdec
+   - get frame buffer name at runtime:
+     1. via enviroment variable FRAMEBUFFER
+     2. try /dev/fb0 or /dev/fb/0
 2006-06-16:
    - video-dfb: fix via aspect ratio handling
 2006-06-15:

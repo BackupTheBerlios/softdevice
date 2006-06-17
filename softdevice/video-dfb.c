@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.65 2006/06/17 16:27:35 lucke Exp $
+ * $Id: video-dfb.c,v 1.66 2006/06/17 20:42:58 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1531,12 +1531,15 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
   int *buf;
   int y_offset, u_offset, v_offset, i;
   int mpegfb_stride;
+  char *fbName = getFBName();
 
-  fprintf(stderr, "Initialising CLE266 decoder:");
-  if (!CLE266MPEGInitialise(FBDEV)) {
+  fprintf(stderr, "Initialising CLE266 decoder (%s): ", fbName);
+  if (!CLE266MPEGInitialise(fbName)) {
       fprintf(stderr, "failed!\n");
+      free(fbName);
       return false;
   } else {
+      free(fbName);
       fprintf(stderr, "success!\n");
   }
 

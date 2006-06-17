@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.15 2006/06/06 20:55:19 lucke Exp $
+ * $Id: utils.c,v 1.16 2006/06/17 20:42:58 lucke Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -16,7 +16,10 @@
  *
  * Author: Olie Lho <ollie@sis.com.tw>
 */
+#include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <string.h>
 
 #include "utils.h"
 #include "setup-softdevice.h"
@@ -707,6 +710,33 @@ uint64_t getTimeMilis(void) {
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return (int64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+char *getFBName(void)
+{
+    int   fd;
+
+  if (getenv ("FRAMEBUFFER") && *getenv ("FRAMEBUFFER") != '\0') {
+    fd = open (getenv ("FRAMEBUFFER"), O_RDWR);
+    if (fd >= 0) {
+      close (fd);
+      return (strdup (getenv ("FRAMEBUFFER")));
+    }
+  }
+
+  if ((fd = open ("/dev/fb0", O_RDWR)) >= 0) {
+    close (fd);
+    return (strdup ("/dev/fb0"));
+  }
+
+  if ((fd = open ("/dev/fb/0", O_RDWR)) >= 0) {
+    close (fd);
+    return (strdup ("/dev/fb/0"));
+  }
+
+  return NULL;
 }
 
 /* taken from MPlayer's aclib */

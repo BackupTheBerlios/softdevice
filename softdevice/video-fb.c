@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.15 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video-fb.c,v 1.16 2006/06/17 20:42:58 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -23,12 +23,16 @@ static  pthread_mutex_t fb_mutex = PTHREAD_MUTEX_INITIALIZER;
 cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
               : cVideoOut(setupStore)
 {
+    char    *fbName = getFBName();
+
     printf("[video-fb] Initializing Driver\n");
 
-    if ((fbdev = open(FBDEV, O_RDWR)) == -1) {
-        printf("[video-fb] cant open framebuffer %s\n", FBDEV);
+    if ((fbdev = open(fbName, O_RDWR)) == -1) {
+        printf("[video-fb] cant open framebuffer %s\n", fbName);
+        free(fbName);
         exit(1);
     }
+    free(fbName);
 
     if (ioctl(fbdev, FBIOGET_VSCREENINFO, &fb_vinfo)) {
         printf("[video-fb] Can't get VSCREENINFO\n");
@@ -250,7 +254,7 @@ void cFBVideoOut::YUV(sPicBuffer *buf)
   int UVstride=buf->stride[1];
   int Width=buf->width;
   int Height=buf->height;
- 
+
   if (!videoInitialized)
     return;
 
