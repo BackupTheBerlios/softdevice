@@ -1,6 +1,8 @@
 Changelog
+2006-06-16:
+   - video-dfb: fix via aspect ratio handling
 2006-06-15:
-   - make configure a bit more verbose. A complete log is now saved in 
+   - make configure a bit more verbose. A complete log is now saved in
      config.log.
    - fix delete <-> delete[] mismatch reported by Prakash Punnoor.
 2006-06-09:
