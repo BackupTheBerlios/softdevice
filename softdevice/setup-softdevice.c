@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.43 2006/05/23 21:11:37 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.44 2006/06/17 16:27:35 lucke Exp $
  */
 
 #include <string.h>
@@ -109,6 +109,7 @@ cSetupStore::cSetupStore ()
   ac3Mode       = 0;
   useMGAtv      = 0;
   viaTv         = 0;
+  cle266HWdecode  = 0;
   tripleBuffering = 0;
   useStretchBlit  = 0;
   bufferMode      = 0;

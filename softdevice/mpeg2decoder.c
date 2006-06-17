@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.65 2006/06/15 21:34:20 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.66 2006/06/17 16:27:34 lucke Exp $
  */
 
 #include <math.h>
@@ -16,6 +16,9 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
+#ifdef HAVE_CLE266_MPEG_DECODER
+#include <cle266mpegdec.h>
+#endif // HAVE_CLE266_MPEG_DECODER
 
 //#define MPGDEB(out...) {printf("mpegdec[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -717,6 +720,8 @@ int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_pictur
   // save the picture's properties
 #if LIBAVCODEC_BUILD > 4684
   pic->interlaced_frame=picture->interlaced_frame;
+#else
+  pic->interlaced_frame=true;
 #endif
   pic->width=context->width;
   pic->height=context->height;
@@ -751,6 +756,51 @@ int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_pictur
   return len;
 };
 
+#ifdef HAVE_CLE266_MPEG_DECODER
+float aspect_ratio_values[5]={1.0, 1.0, 4.0/3.0, 16.0/9.0, 221.0/110 };
+
+int cVideoStreamDecoder::DecodePicture_cle266(sPicBuffer *&pic, 
+                int &got_picture,uint8_t *data, int length, int64_t pkt_pts) {
+  int cle266CurrentFB;
+  got_picture=0;
+  pic = NULL;
+
+  /* Do HW decode!
+   * Hopefully sets len to number of bytes decoded!
+   * Returns number of buffer containing decoded frame
+   */
+  cle266CurrentFB = CLE266MPEGDecodeData(data, &length, &pkt_pts);
+
+  if ( cle266CurrentFB == -1 ) 
+    // no new picture
+    return length;
+
+  got_picture = 1;
+  pic = videoOut->PicBuf(cle266CurrentFB);
+  if ( pic == NULL ) {
+    fprintf(stderr,"No picture buffer returned from cle266! %d\n",
+        cle266CurrentFB);
+    fflush(stderr);
+    got_picture = 0;
+    return length;
+  };
+
+  cle266_decoder_state_t decoder = CLE266MPEGGetDecoderState();
+  /* Fill up the necessary AVCodecContext information */
+  pic->width = decoder.width;
+  pic->height = decoder.height;
+  pic->pts = pkt_pts;
+  pic->edge_width=pic->edge_height=0;
+  pic->dtg_active_format = 0; // currently not parsed
+  pic->interlaced_frame = true; // FIXME Do we have that information?
+  pic->aspect_ratio = ( decoder.aspect_ratio_info >= 0 
+    && decoder.aspect_ratio_info < 5 ) ?
+    aspect_ratio_values[decoder.aspect_ratio_info] : 1.0;
+
+  return length;
+}
+#endif // HAVE_CLE266_MPEG_DECODER
+
 int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 {
   int len=0;
@@ -763,8 +813,14 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   while ( size > 0 ) {
     BUFDEB("start decode video stream %d data: %p size: %d \n",
         pkt->stream_index,data,size);
-    len = DecodePicture_avcodec(pic, got_picture,
-                                data, size, pkt->pts)
+#ifdef HAVE_CLE266_MPEG_DECODER
+    if (setupStore.cle266HWdecode && context->codec_id == CODEC_ID_MPEG2VIDEO)
+            len = DecodePicture_cle266(pic, got_picture,
+                                data, size, pkt->pts);
+    else
+#endif //HAVE_CLE266_MPEG_DECODER
+            len = DecodePicture_avcodec(pic, got_picture,
+                                data, size, pkt->pts);
       //avcodec_decode_video(context, picture, &got_picture,data, size);
     BUFDEB("end decode video got_picture %d, data %p, size %d\n",
         got_picture,data,size);

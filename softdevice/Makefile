@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.30 2006/06/09 16:45:13 lucke Exp $
+# $Id: Makefile,v 1.31 2006/06/17 16:27:34 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -148,6 +148,12 @@ ifdef DFB_SUPPORT
   DEFINES  += -DDFB_SUPPORT
 endif
 
+ifdef CLE266_SUPPORT
+  CLE266_LIBS = -L/usr/local/lib -lcle266mpegdec
+  CLE266_CFLAGS = -I/usr/local/include
+  DEFINES  += -DHAVE_CLE266_MPEG_DECODER
+endif
+
 ifdef XV_SUPPORT
   XV_LIBS   = -L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv
   ifdef LIBXDPMS_SUPPORT
@@ -229,12 +235,14 @@ ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
     DFB_OBJS  = utils.o video.o video-dfb.o PicBuffer.o
     ALL_OBJS += $(DFB_OBJS)
+    LIBS     += $(CLE266_LIBS)
+    DFB_LIBS += $(CLE266_LIBS)
     TARGETS  += lib$(PLUGIN)-dfb.so
   else
     OBJS     += video-dfb.o
-    LIBS     += $(DFB_LIBS)
+    LIBS     += $(DFB_LIBS) $(CLE266_LIBS)
   endif
-  INCLUDES += $(DFB_CFLAGS)
+  INCLUDES += $(DFB_CFLAGS) $(CLE266_CFLAGS)
 endif
 
 ifdef FB_SUPPORT

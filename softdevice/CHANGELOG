@@ -1,4 +1,6 @@
 Changelog
+2006-06-17:
+   - cle266, video-dfb: added HW-decoder support
 2006-06-16:
    - video-dfb: fix via aspect ratio handling
 2006-06-15:

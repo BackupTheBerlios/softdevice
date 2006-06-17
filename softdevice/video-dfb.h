@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.21 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video-dfb.h,v 1.22 2006/06/17 16:27:35 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -50,6 +50,11 @@ class cDFBVideoOut : public cVideoOut {
     void SetParams();
     void EnableFieldParity(IDirectFBDisplayLayer *layer);
 
+#ifdef HAVE_CLE266_MPEG_DECODER
+    IDirectFBSurface* mpegfb[LAST_PICBUF];
+    int               mpegfb_ofs[4];
+    bool SetupCle266Buffers(int, int);
+#endif // HAVE_CLE266_MPEG_DECODER
   public:
     IDirectFB	*dfb;
     cDFBVideoOut(cSetupStore *setupStore);

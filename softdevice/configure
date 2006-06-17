@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.16 2006/06/15 21:27:08 wachm Exp $
+# $Id: configure,v 1.17 2006/06/17 16:27:34 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -35,6 +35,7 @@ fb_dev_name="/dev/fb0"
 with_subplugins="yes"
 with_mmx="yes"
 with_mmx2="yes"
+cle266="yes"
 
 function help () {
   echo "Usage: configure [options]"
@@ -113,8 +114,8 @@ ffmpeg_l1="libavcodec libavformat"
 
 pkg-config --libs libpostproc >> config.log 2>&1 && { ffmpeg_l1="$ffmpeg_l1 libpostproc";libpostproc="yes"; }
 
-ffmpeg_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --libs $ffmpeg_l1 2>> config.log` || ffmpeg="no"
-ffmpeg_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --cflags $ffmpeg_l1 2>> config.log`
+ffmpeg_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs $ffmpeg_l1 2>> config.log` || ffmpeg="no"
+ffmpeg_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags $ffmpeg_l1 2>> config.log`
 
 # test if it works..
 test_ffmpeg
@@ -154,12 +155,12 @@ echo -n "Checking for DirectFB and DFB++... "
 echo "Checking for DirectFB and DFB++.------------------" >> config.log
 if test "${dfb}" = "yes" ; then
 
-dfb_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --cflags directfb dfb++ ` || dfb="no"
+dfb_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags directfb dfb++ 2>> config.log`|| dfb="no"
 #dfb_cflags=`pkg-config --cflags directfb dfb++ 2>> config.log` || dfb="no"
 
 if test "${dfb}" = "yes" ; then
 
-dfb_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH; pkg-config --libs directfb dfb++`
+dfb_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs directfb dfb++ 2>> config.log`
 dfb_opts="${dfb_cflags} ${dfb_libs}"
 dfb_device_desc="yes"
 dfb_sourcelocation="yes"
@@ -263,6 +264,27 @@ if test "${vidix}" = "yes" ; then
 echo "Enabled video-out vidix."
 else
 echo "Not found."
+fi
+
+#########################################################
+# cle266mpegdec: check if present
+#
+if test "${dfb}" = "yes" ; then
+echo -n "Checking for cle266mpegdec... "
+cle266_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags cle266mpegdec 2>>config.log` || cle266="no"
+  if test "${cle266}" = "yes" ; then
+  cle266_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs cle266mpegdec`
+  cle266_opts="${cle266_cflags} ${cle266_libs}"
+  fi
+
+  if test "${cle266}" = "yes" ; then
+  echo "Enabled cle266 hardware decoding."
+  else
+  echo "Not found."
+
+fi
+else
+  cle266="no"
 fi
 
 #########################################################
@@ -423,6 +445,14 @@ if test "${dfb}" = "yes" ; then
   else
     echo "#define HAVE_DSBLIT_INTERLACED          0" >> $TMPH
   fi
+fi
+
+###############################################################################
+# generating DirectFB specific defines
+#
+if test "${cle266}" = "yes" ; then
+  echo "CLE266_LIBS = ${cle266_libs}" >> $TMPM
+  echo "CLE266_CFLAGS = -DHAVE_CLE266_MPEG_DECODER ${cle266_cflags}" >> $TMPM
 fi
 
 ###############################################################################

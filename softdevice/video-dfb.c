@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.64 2006/06/16 18:46:11 lucke Exp $
+ * $Id: video-dfb.c,v 1.65 2006/06/17 16:27:35 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -13,7 +13,6 @@
 #include "video-dfb.h"
 #include "utils.h"
 #include "setup-softdevice.h"
-
 
 #ifdef HAVE_CONFIG
 # include "config.h"
@@ -34,6 +33,10 @@
 # endif
 #endif
 
+#ifdef HAVE_CLE266_MPEG_DECODER
+#include <cle266mpegdec.h>
+#endif // HAVE_CLE266_MPEG_DECODER
+
 //#define COLORKEY 17,8,79
 #define COLORKEY 0,0,0
 
@@ -46,6 +49,10 @@
               DirectFBErrorFatal( #x, err );                         \
            }                                                         \
      }
+
+#define OLD_VERSION_01  1
+#define OLD_VERSION_02  1
+#define OLD_VERSION_03  1
 
 typedef struct
 {
@@ -360,6 +367,21 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
     {
       isVIAUnichrome = true;
       clearAlpha = 0xff;
+#ifdef HAVE_CLE266_MPEG_DECODER
+      if (setupStore->cle266HWdecode) {
+          if (!SetupCle266Buffers(swidth, sheight)) {
+              fprintf(stderr, "Error allocating hardware buffers for CLE266 decoding: reverting to software decoding\n");
+              setupStore->cle266HWdecode = false;
+          } else {
+              // Need YV12 pixel format for blitting from harware buffer
+              // I420 == 0, YV12 == 1, YUY2 == 2
+              //currentPixelFormat = setupStore->pixelFormat = 0;
+              currentPixelFormat = setupStore->pixelFormat = 1;
+              setupStore->useStretchBlit = 0;
+              useStretchBlit = false;
+          }
+      }
+#endif // HAVE_CLE266_MPEG_DECODER
 
       ReportLayerInfo(osdLayer, "osdLayer");
       if (osdLayerDescription.caps & DLCAPS_ALPHACHANNEL)
@@ -474,7 +496,11 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
         fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
         videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
 
+#if OLD_VERSION_01
         if (!setupStore->viaTv)
+#else
+        if (!isVIAUnichrome)
+#endif
           BESColorkeyState(videoLayer, true);
       }
 
@@ -501,7 +527,12 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
               videoLayerDescription.name);
     }
 
-    GetDisplayFrameTime();
+#if OLD_VERSION_02
+    ;
+#else
+    if (setupStore->useMGAtv)
+#endif
+      GetDisplayFrameTime();
     /* create an event buffer with all devices attached */
     events = dfb->CreateInputEventBuffer(DICAPS_ALL,
                                          (setupStore->useMGAtv) ? DFB_TRUE : DFB_FALSE);
@@ -1311,88 +1342,103 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
   //fprintf(stderr,"[dfb] draw frame (%d x %d) Y: %d UV: %d\n", Width, Height, Ystride, UVstride);
   try
   {
-    videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
-    if (pixelformat == DSPF_I420 || pixelformat == DSPF_YV12)
-    {
+#ifdef HAVE_CLE266_MPEG_DECODER
+    int currentFB = -1;
+    if (setupStore->cle266HWdecode) {
+      // check if we use internal buffers
+      currentFB=GetBufNum(buf);
+    }
+
+    if (setupStore->cle266HWdecode && currentFB < 4 && currentFB >= 0) {
+      // we use an internal buffer and CLE266 HW decoding
+      videoSurface->Blit(mpegfb[currentFB], NULL, 0, 0);
+    } else {
+#endif // HAVE_CLE266_MPEG_DECODER
+      videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
+      if (pixelformat == DSPF_I420 || pixelformat == DSPF_YV12)
+      {
 #if HAVE_SetSourceLocation
-      Py += Ystride  * cutTop * 2 + cutLeft * 2;
-      Pv += UVstride * cutTop + cutLeft;
-      Pu += UVstride * cutTop + cutLeft;
+        Py += Ystride  * cutTop * 2 + cutLeft * 2;
+        Pv += UVstride * cutTop + cutLeft;
+        Pu += UVstride * cutTop + cutLeft;
 
-      dst += pitch * cutTop * 2;
+        dst += pitch * cutTop * 2;
 
-      for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
-        fast_memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
-        Py  += Ystride;
-        dst += pitch;
-      }
+        for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
+          fast_memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
+          Py  += Ystride;
+          dst += pitch;
+        }
 
-      dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
+        dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
-      for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-        fast_memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
-        Pu  += UVstride;
-        dst += pitch / 2;
-      }
+        for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
+          fast_memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
+          Pu  += UVstride;
+          dst += pitch / 2;
+        }
 
-      dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
+        dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
-      for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-        fast_memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
-        Pv  += UVstride;
-        dst += pitch / 2;
-      }
+        for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
+          fast_memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
+          Pv  += UVstride;
+          dst += pitch / 2;
+        }
 #else
-      Py += (Ystride  * syoff)   + Ystride  * cutTop * 2;
-      Pv += (UVstride * syoff/2) + UVstride * cutTop;
-      Pu += (UVstride * syoff/2) + UVstride * cutTop;
+        Py += (Ystride  * syoff)   + Ystride  * cutTop * 2;
+        Pv += (UVstride * syoff/2) + UVstride * cutTop;
+        Pu += (UVstride * syoff/2) + UVstride * cutTop;
 
-      dst += pitch * cutTop * 2;
+        dst += pitch * cutTop * 2;
 
-      for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
-        fast_memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
-        Py  += Ystride;
-        dst += pitch;
-      }
+        for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
+          fast_memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
+          Py  += Ystride;
+          dst += pitch;
+        }
 
-      dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
+        dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
 
-      for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-        fast_memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
-        Pu  += UVstride;
-        dst += pitch / 2;
-      }
+        for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
+          fast_memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+          Pu  += UVstride;
+          dst += pitch / 2;
+        }
 
-      dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
+        dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
 
-      for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-        fast_memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
-        Pv  += UVstride;
-        dst += pitch / 2;
-      }
+        for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
+          fast_memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+          Pv  += UVstride;
+          dst += pitch / 2;
+        }
 #endif
-    } else if (pixelformat == DSPF_YUY2) {
+      } else if (pixelformat == DSPF_YUY2) {
 
-      if (interlaceMode) {
-        yv12_to_yuy2_il_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                             Pu + UVstride * cutTop + cutLeft,
-                             Pv + UVstride * cutTop + cutLeft,
-                             dst + pitch * cutTop * 2 + cutLeft * 4,
-                             Width - 2 * (cutLeft + cutRight),
-                             Height - 2 * (cutTop + cutBottom),
-                             Ystride, UVstride, pitch);
-      } else {
-        yv12_to_yuy2_fr_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                             Pu + UVstride * cutTop + cutLeft,
-                             Pv + UVstride * cutTop + cutLeft,
-                             dst + pitch * cutTop * 2 + cutLeft * 4,
-                             Width - 2 * (cutLeft + cutRight),
-                             Height - 2 * (cutTop + cutBottom),
-                             Ystride, UVstride, pitch);
+        if (interlaceMode) {
+          yv12_to_yuy2_il_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                               Pu + UVstride * cutTop + cutLeft,
+                               Pv + UVstride * cutTop + cutLeft,
+                               dst + pitch * cutTop * 2 + cutLeft * 4,
+                               Width - 2 * (cutLeft + cutRight),
+                               Height - 2 * (cutTop + cutBottom),
+                               Ystride, UVstride, pitch);
+        } else {
+          yv12_to_yuy2_fr_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
+                               Pu + UVstride * cutTop + cutLeft,
+                               Pv + UVstride * cutTop + cutLeft,
+                               dst + pitch * cutTop * 2 + cutLeft * 4,
+                               Width - 2 * (cutLeft + cutRight),
+                               Height - 2 * (cutTop + cutBottom),
+                               Ystride, UVstride, pitch);
+        }
       }
-     }
+      videoSurface->Unlock();
 
-    videoSurface->Unlock();
+#ifdef HAVE_CLE266_MPEG_DECODER
+    }
+#endif // HAVE_CLE266_MPEG_DECODER
 
     if (useStretchBlit)
     {
@@ -1454,8 +1500,11 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
 #endif
 
       }
-      //scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
+#if OLD_VERSION_03
       scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
+#else
+      scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
+#endif
 
     }
     else
@@ -1474,6 +1523,94 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
   }
 }
 
+#ifdef HAVE_CLE266_MPEG_DECODER
+
+bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
+{
+  DFBSurfaceDescription dsc;
+  int *buf;
+  int y_offset, u_offset, v_offset, i;
+  int mpegfb_stride;
+
+  fprintf(stderr, "Initialising CLE266 decoder:");
+  if (!CLE266MPEGInitialise(FBDEV)) {
+      fprintf(stderr, "failed!\n");
+      return false;
+  } else {
+      fprintf(stderr, "success!\n");
+  }
+
+  dsc.flags = (DFBSurfaceDescriptionFlags)(DSDESC_WIDTH |
+                DSDESC_HEIGHT |
+                DSDESC_PIXELFORMAT |
+                DSDESC_CAPS);
+  dsc.caps = DSCAPS_VIDEOONLY;
+  //dsc.pixelformat = DSPF_I420;
+  dsc.pixelformat = DSPF_YV12;
+  dsc.width = width;
+  dsc.height = height;
+
+/* Create the 4 MPEG buffers for decoding */
+  fprintf(stderr, "CLE266: Creating buffers for decoder\n");
+  for (int j=0; j < LAST_PICBUF; j++)
+          mpegfb[j]=NULL;
+
+  try {
+    for (i = 0; i < 4; i++) {
+      fprintf(stderr, "CLE266: Creating buffer number %i\n", i);
+      mpegfb[i] = dfb->CreateSurface(dsc);
+
+      mpegfb[i]->Clear(0,0,0,0);
+      mpegfb[i]->Lock(DSLF_WRITE, (void**) &buf, &mpegfb_stride);
+      mpegfb[i]->GetFramebufferOffset(&mpegfb_ofs[i]);
+
+      if ( PicBuffer[i].use_count>0 ||
+           PicBuffer[i].max_width>0 || PicBuffer[i].max_height>0) {
+              esyslog("Fatal error setting up CLE266 buffers!");
+              fprintf(stderr,"Fatal error setting up CLE266 buffers!\n");
+              exit(-1);
+      };
+
+      // at this point I know that the buffer is not already allocated
+      PicBuffer[i].pixel[0] = (uint8_t*) buf;
+      PicBuffer[i].pixel[2] = (uint8_t*) buf + height * mpegfb_stride;
+      PicBuffer[i].pixel[1] = (uint8_t*) PicBuffer[i].pixel[2]
+                                         +(height>>1)*(mpegfb_stride>>1);
+      PicBuffer[i].stride[0] = mpegfb_stride;
+      PicBuffer[i].stride[1] = PicBuffer[i].stride[2] = mpegfb_stride>>1;
+      PicBuffer[i].format = PIX_FMT_YUV420P;
+      PicBuffer[i].owner = this;
+      PicBuffer[i].max_width = width;
+      PicBuffer[i].max_height = height;
+      PicBuffer[i].use_count = 2; // should never be freed!!!
+    }
+  }
+  catch (DFBException *ex)
+  {
+    fprintf(stderr, "CLE266: Error creating buffer: action=%s, result=%s\n",
+                  ex->GetAction(), ex->GetResult());
+    delete ex;
+    return false;
+  }
+
+  /* Pass info to the decoder...*/
+  fprintf(stderr, "CLE266: passing mpegfb_stride\n");
+  CLE266MPEGSetStride(mpegfb_stride, mpegfb_stride >> 1 );
+
+  height = (height + 15) & ~15;
+  width  = (width  + 15) & ~15;
+
+  fprintf(stderr, "CLE266: passing buffers to decoder\n");
+  for (i = 0; i < 4; i++) {
+    y_offset = mpegfb_ofs[i];
+    v_offset = y_offset + (mpegfb_stride * height);
+    u_offset = v_offset + (mpegfb_stride >> 1) * (height >> 1);
+    CLE266MPEGSetFrameBuffer(i,y_offset,v_offset,u_offset);
+  }
+  return true;
+}
+#endif // HAVE_CLE266_MPEG_DECODER
+
 /* ---------------------------------------------------------------------------
  */
 cDFBVideoOut::~cDFBVideoOut()
@@ -1487,6 +1624,19 @@ cDFBVideoOut::~cDFBVideoOut()
   if (scrSurface)   scrSurface->Release();
   if (videoLayer)   videoLayer->Release ();
   if (osdLayer)     osdLayer->Release();
+
+#ifdef HAVE_CLE266_MPEG_DECODER
+  if (setupStore->cle266HWdecode) {
+    CLE266MPEGClose();
+    for (int i = 0; i < 4; ++i) {
+      if (mpegfb[i]) {
+        mpegfb[i]->Unlock();
+        mpegfb[i]->Release();
+      }
+    }
+  }
+#endif // HAVE_CLE266_MPEG_DECODER
+
   if (dfb)          dfb->Release();
 }
 

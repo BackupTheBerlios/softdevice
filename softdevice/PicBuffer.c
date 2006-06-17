@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.4 2006/05/30 18:57:21 wachm Exp $
+ * $Id: PicBuffer.c,v 1.5 2006/06/17 16:27:34 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +37,7 @@ void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
     dest->pict_type=orig->pict_type;
 };   
 
+/*----------------------------------------------------------------------*/
 cPicBufferManager::cPicBufferManager() {
   lastPicNum=0;
   for (int i=0; i< LAST_PICBUF; i++) 
@@ -45,6 +46,17 @@ cPicBufferManager::cPicBufferManager() {
 
 cPicBufferManager::~cPicBufferManager() {
         // FIXME release buffers
+};
+
+int cPicBufferManager::GetBufNum(sPicBuffer *buf) {  
+        if ( !buf || buf->owner!=this )
+                return -1;
+
+        int buf_num=0;
+        while ( buf != &PicBuffer[buf_num]  && buf_num < LAST_PICBUF )
+                buf_num++;
+
+        return (buf_num < LAST_PICBUF ? buf_num : -1);
 };
 
 void cPicBufferManager::ReleasePicBuffer(int buf_num) {
@@ -244,6 +256,8 @@ void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
 
 // end of code based on ffmpeg
 
+
+/*------------------------------------------------------------------------*/
 void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
                 int width, int height,
                 int cutTop, int cutBottom, 
@@ -283,6 +297,7 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
         };
 };
 
+/*------------------------------------------------------------------------*/
 void CopyPicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
                 uint8_t *OsdPy,
                 uint8_t *OsdPu, 

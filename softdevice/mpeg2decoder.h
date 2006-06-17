@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.37 2006/05/27 19:12:41 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.38 2006/06/17 16:27:35 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -252,6 +252,10 @@ class cVideoStreamDecoder : public cStreamDecoder {
 
     int DecodePicture_avcodec(sPicBuffer *&pic, int &got_picture,
                               uint8_t *data, int length, int64_t pts);
+#ifdef HAVE_CLE266_MPEG_DECODER
+    int DecodePicture_cle266(sPicBuffer *&pic, int &got_picture,
+                              uint8_t *data, int length, int64_t pts);
+#endif //HAVE_CLE266_MPEG_DECODER
     virtual void      Freeze(bool freeze=true);
     virtual void      Play(void);
     virtual int DecodePacket(AVPacket *pkt);

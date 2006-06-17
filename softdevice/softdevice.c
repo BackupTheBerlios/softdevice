@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.60 2006/06/09 16:45:13 lucke Exp $
+ * $Id: softdevice.c,v 1.61 2006/06/17 16:27:35 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -704,6 +704,9 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   "  -vo dfb:                 enable output via directFB\n"
   "  -vo dfb:mgatv                   output via MATROX TV-out\n"
   "  -vo dfb:viatv                   output via Unichrome TV-out\n"
+#ifdef HAVE_CLE266_MPEG_DECODER
+  "  -vo dfb:cle266                  output via CLE266 accelerated decoding\n"
+#endif
   "  -vo dfb:triple                  enables triple buffering on back end scaler\n"
 #endif
 #ifdef VIDIX_SUPPORT
@@ -800,14 +803,28 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           setupStore.voArgs = vo_argv;
 #ifdef DFB_SUPPORT
           voutMethod = VOUT_DFB;
-          if (!strncmp (vo_argv, "mgatv", 5))
-            setupStore.useMGAtv = 1;
-          else if (!strncmp (vo_argv, "viatv", 5)) {
-            setupStore.viaTv = 1;
-            fprintf(stderr,"[softdevice] enabling field parity\n");
-          } else if (!strncmp (vo_argv, "triple", 6)) {
-            setupStore.tripleBuffering = 1;
-            fprintf(stderr,"[softdevice] enabling triple buffering\n");
+          while (strlen(vo_argv) > 1) {
+            if (*vo_argv == ':')
+               ++vo_argv;
+
+            if (!strncmp (vo_argv, "mgatv", 5)) {
+              setupStore.useMGAtv = 1;
+              vo_argv += 5;
+            } else if (!strncmp (vo_argv, "viatv", 5)) {
+              setupStore.viaTv = 1;
+              fprintf(stderr,"[softdevice] enabling field parity\n");
+              vo_argv += 5;
+#ifdef HAVE_CLE266_MPEG_DECODER
+            } else if (!strncmp (vo_argv, "cle266", 6)) {
+              setupStore.cle266HWdecode = 1;
+              vo_argv += 6;
+              fprintf(stderr,"[softdevice] enabling CLE266 HW decoding\n");
+#endif // HAVE_CLE266_MPEG_DECODER
+            } else if (!strncmp (vo_argv, "triple", 6)) {
+              setupStore.tripleBuffering = 1;
+              vo_argv += 6;
+              fprintf(stderr,"[softdevice] enabling triple buffering\n");
+            }
           }
 #else
           fprintf(stderr,"[softdevice] dfb support not compiled in\n");

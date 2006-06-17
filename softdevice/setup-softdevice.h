@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.30 2006/05/23 21:11:37 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.31 2006/06/17 16:27:35 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -148,6 +148,7 @@ class cSetupStore {
     int   zoomCenterY;
     int   useMGAtv;
     int   viaTv;
+    int   cle266HWdecode;
     int   tripleBuffering;
     int   useStretchBlit;
     int   shouldSuspend;
