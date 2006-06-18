@@ -1,4 +1,7 @@
 Changelog
+2006-06-18:
+   - ignore config.log on commit checks
+   - removed hardcoded FBDEV name in Makefile and configure
 2006-06-17:
    - cle266, video-dfb: added HW-decoder support
    - configure: check for libcle266mpegdec instead of cle266mpegdec

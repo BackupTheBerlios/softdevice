@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.18 2006/06/17 19:19:38 lucke Exp $
+# $Id: configure,v 1.19 2006/06/18 07:16:06 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -31,7 +31,6 @@ vidix="yes"
 vidix_path="/usr/local"
 ffmpeg_path="/usr/local/include/ffmpeg"
 with_fb="yes"
-fb_dev_name="/dev/fb0"
 with_subplugins="yes"
 with_mmx="yes"
 with_mmx2="yes"
@@ -464,7 +463,6 @@ if test "${vidix}" = "yes" ; then
   echo "VIDIX_CFLAGS  = ${vidix_cflags}" >> $TMPM
   echo "#define VIDIX_SUPPORT 1" >> $TMPH
   echo "#define VIDIX_DIR     \"${vidix_path}/lib/vidix/\"" >> $TMPH
-  echo "#define FBDEV         \"${fb_dev_name}\"" >> $TMPH
 fi
 
 ###############################################################################
@@ -492,9 +490,6 @@ fi
 if test "${with_fb}" = "yes" ; then
   echo "FB_SUPPORT = 1" >> $TMPM
   echo "#define FB_SUPPORT  1" >> $TMPH
-  echo "#ifndef FBDEV" >> $TMPH
-  echo "# define FBDEV      \"${fb_dev_name}\"" >> $TMPH
-  echo "#endif" >> $TMPH
 fi
 
 ###############################################################################

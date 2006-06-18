@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.31 2006/06/17 16:27:34 lucke Exp $
+# $Id: Makefile,v 1.32 2006/06/18 07:16:06 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -35,15 +35,6 @@ PLUGINLIBDIR = ./PLUGINS/lib
 
 
 ifndef WITH_CONFIGURE
-
-
-# -----------------------------------------------------------------------------
-# framebuffer device name
-#
-#FBDEV = /dev/fb/0
-#FBDEV = /dev/fb0
-
-FBDEV = /dev/fb0
 
 # uncomment ONE of these lines if you want to enable the support
 
@@ -163,7 +154,7 @@ ifdef XV_SUPPORT
 endif
 
 ifdef FB_SUPPORT
-  DEFINES += -DFB_SUPPORT -DFBDEV=\"$(FBDEV)\"
+  DEFINES += -DFB_SUPPORT
 endif
 
 ifdef PP_LIBAVCODEC
@@ -179,7 +170,7 @@ endif
 ifdef VIDIX_SUPPORT
   VIDIX_LIBS  = -L$(VIDIX_DIR)/lib -lvidix
   VIDIX_CFLAGS = -I$(VIDIX_DIR)/include/vidix
-  DEFINES     += -DVIDIX_SUPPORT -DVIDIX_DIR=\"$(VIDIX_DIR)/lib/vidix/\" -DFBDEV=\"$(FBDEV)\"
+  DEFINES     += -DVIDIX_SUPPORT -DVIDIX_DIR=\"$(VIDIX_DIR)/lib/vidix/\"
 endif
 
 # #############################################################################
