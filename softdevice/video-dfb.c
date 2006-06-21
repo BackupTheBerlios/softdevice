@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.66 2006/06/17 20:42:58 lucke Exp $
+ * $Id: video-dfb.c,v 1.67 2006/06/21 17:07:19 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -375,8 +375,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
           } else {
               // Need YV12 pixel format for blitting from harware buffer
               // I420 == 0, YV12 == 1, YUY2 == 2
-              //currentPixelFormat = setupStore->pixelFormat = 0;
-              currentPixelFormat = setupStore->pixelFormat = 1;
+              currentPixelFormat = setupStore->pixelFormat = 0;
+              //currentPixelFormat = setupStore->pixelFormat = 1;
               setupStore->useStretchBlit = 0;
               useStretchBlit = false;
           }
@@ -1548,8 +1548,8 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
                 DSDESC_PIXELFORMAT |
                 DSDESC_CAPS);
   dsc.caps = DSCAPS_VIDEOONLY;
-  //dsc.pixelformat = DSPF_I420;
-  dsc.pixelformat = DSPF_YV12;
+  dsc.pixelformat = DSPF_I420;
+  //dsc.pixelformat = DSPF_YV12;
   dsc.width = width;
   dsc.height = height;
 
@@ -1608,7 +1608,7 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
     y_offset = mpegfb_ofs[i];
     v_offset = y_offset + (mpegfb_stride * height);
     u_offset = v_offset + (mpegfb_stride >> 1) * (height >> 1);
-    CLE266MPEGSetFrameBuffer(i,y_offset,v_offset,u_offset);
+    CLE266MPEGSetFrameBuffer(i,y_offset,u_offset,v_offset);
   }
   return true;
 }

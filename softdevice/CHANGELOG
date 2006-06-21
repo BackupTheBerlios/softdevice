@@ -1,4 +1,7 @@
 Changelog
+2006-06-21:
+   - video-dfb: changed pixel format for HW-decoding to I420. So accelerated and
+     unaccelerated modes use the same pixel format.
 2006-06-18:
    - ignore config.log on commit checks
    - removed hardcoded FBDEV name in Makefile and configure
