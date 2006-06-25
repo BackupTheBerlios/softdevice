@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.44 2006/06/17 16:27:35 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.45 2006/06/25 13:46:12 lucke Exp $
  */
 
 #include <string.h>
@@ -111,7 +111,10 @@ cSetupStore::cSetupStore ()
   viaTv         = 0;
   cle266HWdecode  = 0;
   tripleBuffering = 0;
-  useStretchBlit  = 0;
+  pixelFormat       = 0;
+  pixelFormatLocked = false;
+  useStretchBlit    = 0;
+  stretchBlitLocked = false;
   bufferMode      = 0;
   mainMenu  = 1;
   syncTimerMode = 2;

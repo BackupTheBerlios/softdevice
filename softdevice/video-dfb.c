@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.67 2006/06/21 17:07:19 lucke Exp $
+ * $Id: video-dfb.c,v 1.68 2006/06/25 13:46:12 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -49,10 +49,6 @@
               DirectFBErrorFatal( #x, err );                         \
            }                                                         \
      }
-
-#define OLD_VERSION_01  1
-#define OLD_VERSION_02  1
-#define OLD_VERSION_03  1
 
 typedef struct
 {
@@ -336,7 +332,9 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
     if (setupStore->useMGAtv) {
       layerInfo = &layerList [CRTC2_LAYER_NEW];
       currentPixelFormat = setupStore->pixelFormat = 2;
+      setupStore->pixelFormatLocked = true;
       setupStore->useStretchBlit = 1;
+      setupStore->stretchBlitLocked = true;
 
       if (!setupStore->screenPixelAspect)
         setupStore->screenPixelAspect = 1;
@@ -376,25 +374,22 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
               // Need YV12 pixel format for blitting from harware buffer
               // I420 == 0, YV12 == 1, YUY2 == 2
               currentPixelFormat = setupStore->pixelFormat = 0;
-              //currentPixelFormat = setupStore->pixelFormat = 1;
+              setupStore->pixelFormatLocked = true;
               setupStore->useStretchBlit = 0;
+              setupStore->stretchBlitLocked = true;
               useStretchBlit = false;
           }
       }
 #endif // HAVE_CLE266_MPEG_DECODER
+    }
 
-      ReportLayerInfo(osdLayer, "osdLayer");
-      if (osdLayerDescription.caps & DLCAPS_ALPHACHANNEL)
-      {
-
-        fprintf(stderr, "[dfb] osdLayer has alpha channel\n");
-        osdLayerConfiguration.options = DLOP_ALPHACHANNEL;
-        videoLayerLevel = -1;
-      }
-      else
-      {
-        fprintf(stderr, "[dfb] osdLayer without !! alpha channel\n");
-      }
+    ReportLayerInfo(osdLayer, "osdLayer");
+    if (osdLayerDescription.caps & DLCAPS_ALPHACHANNEL) {
+      fprintf(stderr, "[dfb] osdLayer has alpha channel\n");
+      osdLayerConfiguration.options = DLOP_ALPHACHANNEL;
+      videoLayerLevel = -1;
+    } else {
+      fprintf(stderr, "[dfb] osdLayer without !! alpha channel\n");
     }
 
     osdLayer->SetCooperativeLevel(DLSCL_EXCLUSIVE);
@@ -496,11 +491,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
         fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
         videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
 
-#if OLD_VERSION_01
-        if (!setupStore->viaTv)
-#else
-        if (!isVIAUnichrome)
-#endif
+        if ((videoLayerLevel == 1))
           BESColorkeyState(videoLayer, true);
       }
 
@@ -527,12 +518,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
               videoLayerDescription.name);
     }
 
-#if OLD_VERSION_02
-    ;
-#else
-    if (setupStore->useMGAtv)
-#endif
-      GetDisplayFrameTime();
+    GetDisplayFrameTime();
     /* create an event buffer with all devices attached */
     events = dfb->CreateInputEventBuffer(DICAPS_ALL,
                                          (setupStore->useMGAtv) ? DFB_TRUE : DFB_FALSE);
@@ -711,7 +697,11 @@ void cDFBVideoOut::SetParams()
       dlc.flags   = (DFBDisplayLayerConfigFlags)(DLCONF_WIDTH | DLCONF_HEIGHT | DLCONF_PIXELFORMAT | DLCONF_OPTIONS);
 
       useStretchBlit = false;
-      OSDpseudo_alpha = !isVIAUnichrome;
+      /* ---------------------------------------------------------------------
+       * if we are in video underlay mode (videoLayerLevel == -1), we have
+       * real alpha blending with videoLayer and osdLayer.
+       */
+      OSDpseudo_alpha = (videoLayerLevel == 1);
       if (setupStore->pixelFormat == 0)
       {
         dlc.pixelformat = DSPF_I420;
@@ -797,7 +787,7 @@ void cDFBVideoOut::SetParams()
           dlc.options = (DFBDisplayLayerOptions)( DLOP_DEINTERLACING );
         }
 #endif
-        if (isVIAUnichrome)
+        if (videoLayerLevel == -1)
         {
           try
           {
@@ -958,12 +948,9 @@ void cDFBVideoOut::SetParams()
             videoSurface->Clear(COLORKEY,0); //clear and
             videoSurface->Release();
           }
-#if HAVE_DSBLIT_INTERLACED
-	  if (setupStore->useMGAtv)
-	  {
-	    vidDsc.caps = DFB_ADD_SURFACE_CAPS(vidDsc.caps, DSCAPS_INTERLACED);
-	  }
-#endif
+          if (setupStore->useMGAtv) {
+            vidDsc.caps = DFB_ADD_SURFACE_CAPS(vidDsc.caps, DSCAPS_INTERLACED);
+          }
 
           videoSurface=dfb->CreateSurface(vidDsc);
           /* --------------------------------------------------------------------
@@ -1500,12 +1487,8 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
 #endif
 
       }
-#if OLD_VERSION_03
+      //scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
       scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
-#else
-      scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
-#endif
-
     }
     else
     {

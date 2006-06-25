@@ -1,4 +1,15 @@
 Changelog
+2006-06-25:
+   - video pixelformat and stretchblit mode can be locked by output driver, so
+     that changeing them is not offered via OSD.
+   - video-dfb: - Adapted radeon real alphablend handling to current DirectFB-cvs.
+                  It is now handled similary to via mode (with underlay).
+                - In mgatv-out mode, video surface is now allways allocated with
+                  attribute DSCAPS_INTERLACED to support interlaced stretchblit
+                  of DirectFB-cvs.
+                - Removed test #if directives introduced in first via hw-dec support.
+                - Lock pixelformat and stretchblit mode in case via hw-decode
+                  and mgatv mode.
 2006-06-21:
    - video-dfb: changed pixel format for HW-decoding to I420. So accelerated and
      unaccelerated modes use the same pixel format.

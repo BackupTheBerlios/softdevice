@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.31 2006/06/17 16:27:35 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.32 2006/06/25 13:46:12 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -127,6 +127,7 @@ class cSetupStore {
     int   xvFullscreen;
     int   outputMethod;
     int   pixelFormat;
+    bool  pixelFormatLocked;
     int   cropMode;
     int   cropModeToggleKey;
     int   cropTopLines;
@@ -151,6 +152,7 @@ class cSetupStore {
     int   cle266HWdecode;
     int   tripleBuffering;
     int   useStretchBlit;
+    bool  stretchBlitLocked;
     int   shouldSuspend;
     int   osdMode;
     int   ac3Mode;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.5 2006/05/23 21:31:40 wachm Exp $
+ * $Id: setup-softdevice-menu.c,v 1.6 2006/06/25 13:46:12 lucke Exp $
  */
 
 //#include "video.h"
@@ -356,7 +356,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   Add(new cOsdItem(" ", osUnknown));
 #endif
 
-  if (data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX)
+  if ((data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX) &&
+      !data->pixelFormatLocked)
   {
     Add(new cMenuEditStraItem(tr("Pixel Format"),
                               &data->pixelFormat,
@@ -364,7 +365,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                               pix_fmt));
   }
 
-  if (data->outputMethod == VOUT_DFB)
+  if (data->outputMethod == VOUT_DFB &&
+      !data->stretchBlitLocked)
   {
     Add(new cMenuEditBoolItem(tr("Use StretchBlit"),
                               &data->useStretchBlit, tr("off"), tr("on")));
