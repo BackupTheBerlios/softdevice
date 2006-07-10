@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.16 2006/06/17 20:42:58 lucke Exp $
+ * $Id: utils.c,v 1.17 2006/07/10 17:46:59 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -103,18 +103,18 @@ void yv12_to_yuy2_il_c(const uint8_t *py,
  * convert to lines luma and one line chroma
  * lang: MMX2
  */
-static inline void
-yv12_to_yuy2_il_mmx2_line (uint8_t *dest,
-                           const int destStride2,
-                           const int lumaStride2, const int chromaWidth,
-                           const uint8_t *yc, const uint8_t *uc, const uint8_t *vc)
+void
+yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2, 
+                           const int chromaWidth,
+                           const uint8_t *yc1, const uint8_t *yc2,
+                           const uint8_t *uc, const uint8_t *vc)
 {
     int i;
 
-  for(i = 0; i < chromaWidth/4; i++)
+  for(i = chromaWidth/4; i--; )
   {
-    movq_m2r(*(yc              ), mm1);     // mm1 = y7 y6 y5 y4 y3 y2 y1 y0
-    movq_m2r(*(yc + lumaStride2), mm2);     // mm2 = y7 y6 y5 y4 y3 y2 y1 y0
+    movq_m2r(*(yc1), mm1);     // mm1 = y7 y6 y5 y4 y3 y2 y1 y0
+    movq_m2r(*(yc2), mm2);     // mm2 = y7 y6 y5 y4 y3 y2 y1 y0
     movq_r2r(mm1,mm5);                      // mm5 = y7 y6 y5 y4 y3 y2 y1 y0
     movd_m2r(*uc, mm3);                     // mm3 = 00 00 00 00 u3 u2 u1 u0
     movq_r2r(mm2,mm6);                      // mm5 = y7 y6 y5 y4 y3 y2 y1 y0
@@ -122,19 +122,21 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest,
     punpcklbw_r2r(mm4, mm3);                // mm3 = v3 u3 v2 u2 v1 u1 v0 u0
     punpcklbw_r2r(mm3, mm1);                // mm1 = V1 Y3 U1 Y2 V0 Y1 U0 Y0
 
-    movntq(mm1,*(dest + 0));
+    movntq(mm1,*(dest1 + 0));
     punpckhbw_r2r(mm3, mm5);                // mm5 = V3 Y7 U3 Y6 V2 Y5 U2 Y4
     punpcklbw_r2r(mm3, mm2);                // mm2 = V1 Y3 U1 Y2 V0 Y1 U0 Y0
-    movntq(mm5,*(dest + 8));
+    movntq(mm5,*(dest1 + 8));
     punpckhbw_r2r(mm3, mm6);                // mm6 = V3 Y7 U3 Y6 V2 Y5 U2 Y4
 
-    movntq(mm2,*(dest + destStride2    ));
-    movntq(mm6,*(dest + destStride2 + 8));
+    movntq(mm2,*(dest2    ));
+    movntq(mm6,*(dest2 + 8));
 
-    yc += 8;
+    yc1 += 8;
+    yc2 += 8;
     uc += 4;
     vc += 4;
-    dest += 16;
+    dest1 += 16;
+    dest2 += 16;
   }
 }
 
@@ -145,7 +147,8 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest,
 void yv12_to_yuy2_il_mmx2(const uint8_t *py,
                           const uint8_t *pu, const uint8_t *pv,
                           uint8_t *dst, const int width, const int height,
-                          int lumStride, int chromStride, int dstStride)
+                          const int lumStride, const int chromStride, 
+                          const int dstStride)
 {
   for(int y=0; y<height/4; y++)
   {
@@ -154,16 +157,16 @@ void yv12_to_yuy2_il_mmx2(const uint8_t *py,
      * luma lines y * 2 and y * 2 + 2
      */
     yv12_to_yuy2_il_mmx2_line (dst,
-                               dstStride * 2, lumStride * 2, width >> 1,
-                               py,
+                               dst + dstStride * 2, width >> 1,
+                               py, py + lumStride *2,
                                pu, pv);
     /* -----------------------------------------------------------------------
      * take chroma line x+1 (it's from field B) for packing with
      * luma lines y * 2 + 1 and y * 2 + 3
      */
     yv12_to_yuy2_il_mmx2_line (dst + dstStride,
-                               dstStride * 2, lumStride * 2, width >> 1,
-                               py + lumStride,
+                               dst + dstStride * 3, width >> 1,
+                               py + lumStride, py + lumStride * 3,
                                pu + chromStride, pv + chromStride);
     py  += 4*lumStride;
     pu  += 2*chromStride;

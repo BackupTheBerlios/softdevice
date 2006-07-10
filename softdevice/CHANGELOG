@@ -1,4 +1,7 @@
 Changelog
+2006-07-10:
+   - change the parameters of yv12_to_yuy2_il_mmx() so that it can also be used
+     for not interlaced pictures
 2006-06-25:
    - video pixelformat and stretchblit mode can be locked by output driver, so
      that changeing them is not offered via OSD.

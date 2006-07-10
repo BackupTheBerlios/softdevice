@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.10 2006/06/17 20:42:58 lucke Exp $
+ * $Id: utils.h,v 1.11 2006/07/10 17:46:59 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -42,14 +42,25 @@
 #define SFENCE   __asm__ __volatile__  (" sfence \n": : : "memory"  )
 #define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
 
-#else
+#elif defined ( USE_MMX )
 //#warning Using MMX extensions
 #define PREFETCH(x)
 #define MOVNTQ   "movq "
 #define SFENCE
 #define EMMS     __asm__ __volatile__ (" emms \n": : : "memory"  )
+
+#else
+//#warning Not using MMX extensions
+#define PREFETCH(x)
+#define MOVNTQ   
+#define SFENCE
+#define EMMS     
 #endif
 
+void yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2, 
+                           const int chromaWidth,
+                           const uint8_t *yc1, const uint8_t *yc2,
+                           const uint8_t *uc, const uint8_t *vc);
 
 void yv12_to_yuy2_il_c(const uint8_t *py,
                        const uint8_t *pu,
