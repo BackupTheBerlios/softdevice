@@ -3,11 +3,9 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.58 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video.c,v 1.59 2006/07/10 18:50:45 wachm Exp $
  */
 
-#include <sys/mman.h>
-#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
@@ -124,8 +122,8 @@ void cVideoOut::Action()
         tmpBuf.pixel[2]=OsdPv;
         tmpBuf.stride[0]=OSD_FULL_WIDTH;
         tmpBuf.stride[1]=tmpBuf.stride[2]=OSD_FULL_WIDTH/2;
-        tmpBuf.width=OSD_FULL_WIDTH;
-        tmpBuf.height=OSD_FULL_HEIGHT;
+        tmpBuf.max_width=tmpBuf.width=OSD_FULL_WIDTH;
+        tmpBuf.max_height=tmpBuf.height=OSD_FULL_HEIGHT;
         tmpBuf.aspect_ratio=((float)OSD_FULL_HEIGHT)/((float)OSD_FULL_WIDTH);
         tmpBuf.aspect_ratio=((float)OSD_FULL_WIDTH)/((float)OSD_FULL_HEIGHT);
         tmpBuf.dtg_active_format=0;

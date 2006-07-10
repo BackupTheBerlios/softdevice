@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.61 2006/06/17 16:27:35 lucke Exp $
+ * $Id: softdevice.c,v 1.62 2006/07/10 18:50:45 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -23,7 +23,6 @@
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <linux/fb.h>
 #include "video-dummy.h"
 
 #undef  VOUT_DEFAULT
