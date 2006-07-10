@@ -1,5 +1,6 @@
 Changelog
 2006-07-10:
+   - fix possible endianness problems in SoftOsd.c
    - add support for yuy2 pixel format to alpha blend and copy pic buf code
    - change return value of AllocPicBuffer()
    - change the parameters of yv12_to_yuy2_il_mmx() so that it can also be used

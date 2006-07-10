@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.15 2006/06/15 21:34:20 wachm Exp $
+ * $Id: SoftOsd.c,v 1.16 2006/07/10 18:23:28 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -28,6 +28,7 @@ static uint64_t opacity_thr= COLOR_64BIT(ALPHA_VALUE(OPACITY_THRESHOLD>>1));
 static uint64_t pseudo_transparent = COLOR_64BIT(COLOR_KEY);
 
 
+//#undef USE_MMX
 //#undef USE_MMX2
 /* ---------------------------------------------------------------------------
  */
@@ -273,7 +274,7 @@ void cSoftOsd::ConvertPalette(tColor *palette, const tColor *orig_palette,
         
         // Handle YUV format
         if (bitmap_Format == PF_AYUV) {
-		ARGB_to_AYUV((uint8_t*)palette,(color *)orig_palette,
+		ARGB_to_AYUV((uint32_t*)palette,(color *)orig_palette,
                                 maxColors);
                 return;
         };
@@ -288,7 +289,7 @@ void cSoftOsd::ConvertPalette(tColor *palette, const tColor *orig_palette,
 				palette[i] |= 0x00101010;
 			};
 
-                        // replace transparent colors with color key
+                       // replace transparent colors with color key
                         if ( IS_TRANSPARENT( (uint32_t)palette[i] >> 24  ) ) {
                         //if (((uint32_t)palette[i] & 0xFF000000) == 0x000000 ) {
                                 palette[i] = COLOR_KEY; // color key;
@@ -296,7 +297,10 @@ void cSoftOsd::ConvertPalette(tColor *palette, const tColor *orig_palette,
 		};
 	} else if ( bitmap_Format == PF_inverseAlpha_ARGB32 ) {
 		for (int i=0; i<maxColors; i++) {
-                        ((color*) palette)[i].a=0xFF-((color*) palette)[i].a;
+                        int a=GET_A(((color*) palette)[i]);
+                        ((color*) palette)[i]&=~SET_A(0xFF);
+                        ((color*) palette)[i]|=SET_A(0xFF-a);
+                        //((color*) palette)[i].a=0xFF-((color*) palette)[i].a;
                 };
 	};
 
@@ -355,24 +359,23 @@ bool cSoftOsd::DrawConvertBitmap(cBitmap *bitmap, bool OnlyDirty)  {
 
 /*----------------------------------------------------------------------*/
 
-void cSoftOsd::ARGB_to_AYUV(uint8_t * dest, color * pixmap, int Pixel) {
+void cSoftOsd::ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel) {
         int Y;
         int U;
         int V;
+        int a,r,g,b;
+        int c;
         while (Pixel>0) {
-                //printf("ARGB: %02x,%02x,%02x,%02x ",pixmap->a,pixmap->r,
-                //                pixmap->g,pixmap->b);
+                a=GET_A(*pixmap); r=GET_R(*pixmap);
+                g=GET_G(*pixmap); b=GET_B(*pixmap);
+                
+                //printf("ARGB: %02x,%02x,%02x,%02x ",a,r,g,b);
                 // I got this formular from Wikipedia...
-                Y = (( 66 * (int)pixmap->r + 129 * (int)pixmap->g 
-                               + 25 * (int)pixmap->b + 128 )  >> 8)+16;
-                U = (( -38 * (int)pixmap->r - 74 * (int)pixmap->g 
-                               +112 * (int)pixmap->b + 128 )  >> 8)+128;
-                V = (( 112 * (int)pixmap->r - 94 * (int)pixmap->g 
-                               - 18 * (int)pixmap->b + 128 )  >> 8)+128;
-                *dest++=(uint8_t)V;
-                *dest++=(uint8_t)U;
-                *dest++=(uint8_t)Y;
-                *dest++=pixmap->a;
+                Y = (( 66 * r + 129 * g + 25 * b + 128 )  >> 8)+16;
+                U = (( -38 * r - 74 * g +112 * b + 128 )  >> 8)+128;
+                V = (( 112 * r - 94 * g - 18 * b + 128 )  >> 8)+128;
+                c = SET_A(a) | SET_R(Y) | SET_G(U) | SET_B(V);
+                *dest++ = c;
                 //printf("->AYUV: %0x,%02x,%02x,%02x\n",pixmap->a,Y,U,V);
                 pixmap++;
                 Pixel--;
@@ -442,15 +445,17 @@ void cSoftOsd::ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel) {
 	EMMS;
 	end_dest+=16;
 #endif
+        int c;
         while (end_dest>dest) {
-                if ( IS_BACKGROUND(pixmap->a) && (((intptr_t)dest) & 0x4) ) {
+                c=*pixmap;
+                if ( IS_BACKGROUND(GET_A(c)) && (((intptr_t)dest) & 0x4) ) {
                         dest[0] = 0; dest[1] = 0; dest[2] = 0; dest[3] = 0x00;
                         // color key!
                 } else {
-                        dest[0]=pixmap->b;
-                        dest[1]=pixmap->g;
-                        dest[2]=pixmap->r;
-                        dest[3]=pixmap->a;
+                        dest[0]=GET_B(c);
+                        dest[1]=GET_G(c);
+                        dest[2]=GET_R(c);
+                        dest[3]=GET_A(c);
                 }
                 dest+=4;
                 pixmap++;
@@ -649,24 +654,27 @@ void cSoftOsd::AYUV_to_AYUV420P(uint8_t *PY1, uint8_t *PY2,
         };       
 	EMMS;
 #endif
+        int p10,p11;
+        int p20,p21;
 	while (Pixel>1) {
-		*(PAlphaY1++)=pixmap1[0].a; *(PAlphaY1++)=pixmap1[1].a;
-		*(PAlphaY2++)=pixmap2[0].a; *(PAlphaY2++)=pixmap2[1].a;
-		*(PY1++)=pixmap1[0].r; *(PY1++)=pixmap1[1].r;
-		*(PY2++)=pixmap2[0].r; *(PY2++)=pixmap2[1].r;
+                p10=pixmap1[0]; p11=pixmap1[1];
+                p20=pixmap2[0]; p21=pixmap2[1];
                 
-		*(PU++)=(uint8_t)((uint16_t)
-                                ((uint16_t)pixmap1[0].b+(uint16_t)pixmap1[1].b+
-				  (uint16_t)pixmap2[0].b+(uint16_t)pixmap2[1].b)
-			>>2);
-		*(PV++)=(uint8_t)((uint16_t)(
-                                  (uint16_t)pixmap1[0].g+(uint16_t)pixmap1[1].g+
-				  (uint16_t)pixmap2[0].g+(uint16_t)pixmap2[1].g)
-			>>2);
-		*(PAlphaUV++)=(uint8_t)((uint16_t)
-			((uint16_t)pixmap1[0].a+(uint16_t)pixmap1[1].a+
-			(uint16_t)pixmap2[0].a+(uint16_t)pixmap2[1].a)
-			>>2);
+		*(PAlphaY1++)=GET_A(p10); *(PAlphaY1++)=GET_A(p11);
+		*(PAlphaY2++)=GET_A(p20); *(PAlphaY2++)=GET_A(p21);
+		*(PAlphaUV++)=(uint8_t)((unsigned int)
+			(GET_A(p10)+GET_A(p11)+
+			 GET_A(p20)+GET_A(p21))>>2);
+
+                *(PY1++)=GET_R(p10); *(PY1++)=GET_R(p11);
+		*(PY2++)=GET_R(p20); *(PY2++)=GET_R(p21);
+                
+		*(PU++)=(uint8_t)((unsigned int)
+                                (GET_B(p10) + GET_B(p11) +
+				  GET_B(p20)+ GET_B(p21))>>2);
+		*(PV++)=(uint8_t)((unsigned int)
+                                  (GET_G(p10)+GET_G(p11)+
+				   GET_G(p20)+GET_G(p21))>>2);
                         
                 pixmap1+=2;
                 pixmap2+=2;
@@ -677,13 +685,15 @@ void cSoftOsd::AYUV_to_AYUV420P(uint8_t *PY1, uint8_t *PY2,
 /*---------------------------------------------------------------------------*/
 
 void cSoftOsd::ARGB_to_RGB24(uint8_t * dest, color * pixmap, int Pixel) {
+        int c;
         while (Pixel) {
-                if ( IS_BACKGROUND(pixmap->a) && (Pixel & 0x1) ) {
+                c = *pixmap;
+                if ( IS_BACKGROUND(GET_A(c)) && (Pixel & 0x1) ) {
                         dest[0] = 0x0; dest[1] = 0x0; dest[1] = 0x0; // color key!
                 } else {
-                        dest[0]=pixmap->b;
-                        dest[1]=pixmap->g;
-                        dest[2]=pixmap->r;
+                        dest[0]=GET_B(c);
+                        dest[1]=GET_G(c);
+                        dest[2]=GET_R(c);
                 }
                 dest+=3;
                 Pixel--;
@@ -776,13 +786,15 @@ void cSoftOsd::ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel) {
 	EMMS;
         end_dest+=8;
 #endif
+        int c;
         while (end_dest>dest) {
-                if ( IS_BACKGROUND(pixmap->a) && (((intptr_t)dest) & 0x2) ) {
+                c = *pixmap;
+                if ( IS_BACKGROUND(GET_A(c)) && (((intptr_t)dest) & 0x2) ) {
                         dest[0] = 0x0; dest[1] = 0x0; // color key!
                 } else {
-                        dest[0] = ((pixmap->b >> 3)& 0x1F) | 
-                                ((pixmap->g & 0x1C) << 3);
-                        dest[1] = (pixmap->r & 0xF8) | (pixmap->g >> 5);
+                        dest[0] = ((GET_B(c) >> 3)& 0x1F) | 
+                                ((GET_G(c) & 0x1C) << 3);
+                        dest[1] = (GET_R(c) & 0xF8) | (GET_G(c) >> 5);
                 }
                 dest+=2;
                 pixmap++;
@@ -794,16 +806,18 @@ void cSoftOsd::ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
                 int Pixel) {
 	uint8_t *end_dest=dest+2*Pixel;
 	int PixelCount=0;
+        int c;
         while (end_dest>dest) {
-                if ( IS_BACKGROUND(pixmap->a) && (((intptr_t)pixmap) & 0x4)
-				|| IS_TRANSPARENT(pixmap->a) ) {
+                c=*pixmap;
+                if ( IS_BACKGROUND(GET_A(c)) && (((intptr_t)pixmap) & 0x4)
+				|| IS_TRANSPARENT(GET_A(c)) ) {
                         // transparent, don't draw anything !
                 } else {
                         // FIXME 15/16bit mode? Probably broken!
-			dest[0] = ((pixmap->b >> 3)& 0x1F) | 
-                                ((pixmap->g & 0x1C) << 3);
-                        dest[1] = ((pixmap->r ) & 0xF8) 
-			 	| ((pixmap->g >> 5) );
+			dest[0] = ((GET_B(c) >> 3)& 0x1F) | 
+                                ((GET_G(c) & 0x1C) << 3);
+                        dest[1] = ((GET_R(c) ) & 0xF8) 
+			 	| ((GET_G(c) >> 5) );
                 }
                 dest+=2;
                 pixmap++;
@@ -813,9 +827,11 @@ void cSoftOsd::ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
 
 void cSoftOsd::CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel) {
 	int CurrPixel=0;
+        int c;
         while (CurrPixel<Pixel) {
-                if ( (IS_BACKGROUND(pixmap->a) && !(((intptr_t)pixmap) & 0x4)  )
-                                || IS_OPAQUE(pixmap->a) ) 
+                c = *pixmap;
+                if ( (IS_BACKGROUND(GET_A(c)) && !(((intptr_t)pixmap) & 0x4)  )
+                                || IS_OPAQUE(GET_A(c)) ) 
                         dest[CurrPixel/8]|=(1<<CurrPixel%8);
                  else dest[CurrPixel/8]&=~(1<<CurrPixel%8);
                 pixmap++;
@@ -856,7 +872,7 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
         color *tmp_pixmap=tmp_pixmap1;
         uint8_t *pY;uint8_t *pU;uint8_t *pV;
         uint8_t *pAlphaY; uint8_t *pAlphaUV;
- 	void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
+ 	void (cSoftOsd::*ScaleHoriz)(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
 	ScaleHoriz = ( dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
                       ( dest_Width==OSD_WIDTH ? &cSoftOsd::NoScaleHoriz_MMX :
                         &cSoftOsd::ScaleUpHoriz_MMX));
@@ -876,9 +892,9 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                         tmp_pixmap=&pixmap[y*OSD_STRIDE];
                 } else {
                         //printf("Horiz scaling line %d\n",start_row+i);
-                        (this->*ScaleHoriz)((uint8_t *)tmp_pixmap,dest_Width,
+                        (this->*ScaleHoriz)((uint32_t*)tmp_pixmap,dest_Width,
                                             &pixmap[y*OSD_STRIDE],OSD_WIDTH-1); 
-                        (this->*ScaleHoriz)((uint8_t *)&tmp_pixmap[dest_Stride],
+                        (this->*ScaleHoriz)((uint32_t*)&tmp_pixmap[dest_Stride],
                                             dest_Width,
                                             &pixmap[(y+1)*OSD_STRIDE],OSD_WIDTH-1); 
                 };
@@ -954,7 +970,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                         scaleH_Reference[i]=&scaleH_pixmap[SCALEH_IDX(i)*OSD_STRIDE];
                         if (scaleH_lines[SCALEH_IDX(i)]!=start_row+i){
                                 //printf("Horiz scaling line %d\n",start_row+i);
-                                ScaleDownHoriz_MMX((uint8_t *)scaleH_Reference[i],dest_Width,
+                                ScaleDownHoriz_MMX((uint32_t*)scaleH_Reference[i],dest_Width,
                                                 &pixmap[(start_row+i)*OSD_STRIDE],OSD_WIDTH-1); 
                                 scaleH_lines[SCALEH_IDX(i)]=start_row+i;
                         }
@@ -966,7 +982,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                    printf("\n");fflush(stdout);
                  */ 
                 OSDDEB("start_pos %d start_row %d\n",start_pos,start_row);
-                ScaleDownVert_MMX((uint8_t*) tmp_pixmap,0,
+                ScaleDownVert_MMX((uint32_t*)tmp_pixmap,0,
 				new_pixel_height,start_pos,
                                 scaleH_Reference,dest_Width);
                                 //scaleH_Reference,OSD_WIDTH-1);
@@ -981,7 +997,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                                         scaleH_lines[SCALEH_IDX(start_row_idx)]);
                 
                 OSDDEB("start_pos %d new_start_row %d\n",start_pos,new_start_row);
-                ScaleDownVert_MMX((uint8_t*) &tmp_pixmap[OSD_STRIDE],0,
+                ScaleDownVert_MMX((uint32_t*)&tmp_pixmap[OSD_STRIDE],0,
 				new_pixel_height,start_pos,
                                 &scaleH_Reference[start_row_idx],
                                 dest_Width);
@@ -1035,7 +1051,7 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
 	
 	cMutexLock dirty(&dirty_Mutex);
 	const int dest_stride=(dest_Width+32)&~0xF;
-	void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
+	void (cSoftOsd::*ScaleHoriz)(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
 	ScaleHoriz= dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
 		&cSoftOsd::ScaleUpHoriz_MMX;
 
@@ -1077,17 +1093,17 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
                
 		if ( scaleH_lines[scaleH_strtIdx] != start_row ) {
 			(this->*ScaleHoriz)
-				((uint8_t *)scaleH_Reference[0],dest_Width,
+				((uint32_t*)scaleH_Reference[0],dest_Width,
 				 &pixmap[(start_row+0)*OSD_STRIDE],OSD_WIDTH);
 			scaleH_lines[scaleH_strtIdx] = start_row;
 		};
 		
 		(this->*ScaleHoriz)
-			((uint8_t *)scaleH_Reference[1],dest_Width,
+			((uint32_t*)scaleH_Reference[1],dest_Width,
 			 &pixmap[(start_row+1)*OSD_STRIDE],OSD_WIDTH);
 	
 		scaleH_lines[!scaleH_strtIdx] = start_row+1;
-		ScaleUpVert_MMX((uint8_t*) tmp_pixmap,dest_Width*4,
+		ScaleUpVert_MMX((uint32_t*)tmp_pixmap,dest_Width,
 				new_pixel_height,start_pos,
                                 scaleH_Reference,dest_Width);
 		
@@ -1142,7 +1158,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
 	const int dest_stride=(dest_Width+32)&~0xF;
         color tmp_pixmap[2*dest_stride];
 
-       void (cSoftOsd::*ScaleHoriz)(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
+       void (cSoftOsd::*ScaleHoriz)(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
 	ScaleHoriz= dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
 		&cSoftOsd::ScaleUpHoriz_MMX;
 
@@ -1175,12 +1191,12 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
                         scaleH_Reference[i]=&scaleH_pixmap[SCALEH_IDX(i)*dest_stride];
                         if (scaleH_lines[SCALEH_IDX(i)]!=start_row+i){
                                 //printf("Horiz scaling line %d\n",start_row+i);
-                                (this->*ScaleHoriz)((uint8_t *)scaleH_Reference[i],dest_Width,
+                                (this->*ScaleHoriz)((uint32_t*)scaleH_Reference[i],dest_Width,
                                                 &pixmap[(start_row+i)*OSD_STRIDE],OSD_WIDTH-1); 
                                 scaleH_lines[SCALEH_IDX(i)]=start_row+i;
                         }
                 };
-                ScaleDownVert_MMX((uint8_t*) tmp_pixmap,linesize,
+                ScaleDownVert_MMX((uint32_t*)tmp_pixmap,linesize,
 				new_pixel_height,start_pos,
                                 scaleH_Reference,dest_Width);
                 buf=dest+y*linesize;
@@ -1203,7 +1219,7 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
 //#define SCALEDEBV(out...) printf(out) 
 #define SCALEDEBV(out...) 
 
-void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
+void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
 		int32_t new_pixel_height, int start_pos,
                 color ** pixmap, int Pixel) {
 #define SHIFT_BITS "6"
@@ -1211,10 +1227,11 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
         //const int ScaleFactor=100;
         const int ScaleFactor=1<<SHIFT_BITS_NUM;
 #ifndef USE_MMX2
-        uint16_t a_sum=0;
-        uint16_t b_sum=0;
-        uint16_t g_sum=0;
-        uint16_t r_sum=0;
+        unsigned int a_sum=0;
+        unsigned int b_sum=0;
+        unsigned int g_sum=0;
+        unsigned int r_sum=0;
+        unsigned int c;
 #endif
 
 //        uint32_t new_pixel_height=(OSD_HEIGHT*ScaleFactor)/dest_Height;
@@ -1245,10 +1262,11 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
                 //int32_t a_pos=-(pos);
 #ifndef USE_MMX2                       
                 a_sum=b_sum=g_sum=r_sum=0;
-                a_sum=((int) pixmap[row][Pixel].a)*a_pos;
-                b_sum=((int) pixmap[row][Pixel].b)*a_pos;
-                g_sum=((int) pixmap[row][Pixel].g)*a_pos;
-                r_sum=((int) pixmap[row][Pixel].r)*a_pos;
+                c = pixmap[row][Pixel];
+                a_sum= GET_A(c)*a_pos;
+                b_sum= GET_B(c)*a_pos;
+                g_sum= GET_G(c)*a_pos;
+                r_sum= GET_R(c)*a_pos;
 #else
                 __asm__(
                       " pxor %%mm0,%%mm0 \n"
@@ -1268,11 +1286,12 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
                                         a_sum,pos,pixmap[row][Pixel].a,
                                         pixmap[row][Pixel].r,pixmap[row][Pixel].g,pixmap[row][Pixel].b);
 
-#ifndef USE_MMX2                       
-                        a_sum+=((int) pixmap[row][Pixel].a)*ScaleFactor;
-                        b_sum+=((int) pixmap[row][Pixel].b)*ScaleFactor;
-                        g_sum+=((int) pixmap[row][Pixel].g)*ScaleFactor;
-                        r_sum+=((int) pixmap[row][Pixel].r)*ScaleFactor;
+#ifndef USE_MMX2               
+                        c=pixmap[row][Pixel];
+                        a_sum+=GET_A(c)*ScaleFactor;
+                        b_sum+=GET_B(c)*ScaleFactor;
+                        g_sum+=GET_G(c)*ScaleFactor;
+                        r_sum+=GET_R(c)*ScaleFactor;
 #else
                         __asm__(
                                " movd (%0),%%mm1 \n"
@@ -1289,10 +1308,11 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
                                         a_sum,pixmap[row][Pixel].a,
                                         pixmap[row][Pixel].r,pixmap[row][Pixel].g,pixmap[row][Pixel].b,pos);
 #ifndef USE_MMX2                       
-                a_sum+=((int) pixmap[row][Pixel].a)*pos;
-                b_sum+=((int) pixmap[row][Pixel].b)*pos;
-                g_sum+=((int) pixmap[row][Pixel].g)*pos;
-                r_sum+=((int) pixmap[row][Pixel].r)*pos;
+                c=pixmap[row][Pixel];
+                a_sum+=GET_A(c)*pos;
+                b_sum+=GET_B(c)*pos;
+                g_sum+=GET_G(c)*pos;
+                r_sum+=GET_R(c)*pos;
 #else
                 __asm__(
                       " movd (%0),%%mm1 \n"
@@ -1314,10 +1334,8 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
                 g_sum=g_sum/ScaleFactor*new_pixel_height_rec/ScaleFactor;
                 r_sum=r_sum/ScaleFactor*new_pixel_height_rec/ScaleFactor;
                 
-                dest[Pixel*4+0]=b_sum;
-                dest[Pixel*4+1]=g_sum;
-                dest[Pixel*4+2]=r_sum;
-                dest[Pixel*4+3]=a_sum;
+                c = SET_B(b_sum) | SET_G(g_sum) | SET_R(r_sum) | SET_A(a_sum);
+                dest[Pixel]=c;
 #else
                 __asm__(
                       " psrlw $"SHIFT_BITS",%%mm0 \n"
@@ -1325,7 +1343,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
                       " psrlw $"SHIFT_BITS",%%mm0 \n"
                       " packuswb %%mm0,%%mm0 \n"
                       " movd %%mm0,(%0) \n"
-                      : : "r"(&dest[Pixel*4]) );
+                      : : "r"(&dest[Pixel]) );
 #endif
                 SCALEDEBV(", %d, %d, %d\n",r_sum,g_sum,b_sum);
                 //dest-=4;
@@ -1335,7 +1353,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint8_t * dest, int linesize,
         EMMS;
 };
 
-void cSoftOsd::NoScaleHoriz_MMX(uint8_t * dest, int dest_Width, 
+void cSoftOsd::NoScaleHoriz_MMX(uint32_t * dest, int dest_Width, 
                 color * pixmap, int Pixel) {
         memcpy(dest,pixmap,Pixel*sizeof(color));
 };
@@ -1343,16 +1361,17 @@ void cSoftOsd::NoScaleHoriz_MMX(uint8_t * dest, int dest_Width,
 //-----------------------------------------------------------------
 #define SCALEDEBH(out...) 
 
-void cSoftOsd::ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width, 
+void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width, 
                 color * pixmap, int Pixel) {
 #define SHIFT_BITS "6"
 #define SHIFT_BITS_NUM 6
         const int ScaleFactor=1<<SHIFT_BITS_NUM;
 #ifndef USE_MMX2
-        uint16_t a_sum=0;
-        uint16_t b_sum=0;
-        uint16_t g_sum=0;
-        uint16_t r_sum=0;
+        unsigned int a_sum=0;
+        unsigned int b_sum=0;
+        unsigned int g_sum=0;
+        unsigned int r_sum=0;
+        unsigned int c;
 #endif
         uint32_t new_pixel_width=(OSD_WIDTH*ScaleFactor)/dest_Width;
         uint32_t new_pixel_width_rec=(dest_Width*ScaleFactor)/OSD_WIDTH;
@@ -1376,11 +1395,12 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width,
                                         a_sum,pixmap->a,
                                         pixmap->r,pixmap->g,pixmap->b);
 
-#ifndef USE_MMX2                       
-                        a_sum+=((int) pixmap->a)*ScaleFactor;
-                        b_sum+=((int) pixmap->b)*ScaleFactor;
-                        g_sum+=((int) pixmap->g)*ScaleFactor;
-                        r_sum+=((int) pixmap->r)*ScaleFactor;
+#ifndef USE_MMX2               
+                        c=*pixmap;
+                        a_sum+=GET_A(c)*ScaleFactor;
+                        b_sum+=GET_B(c)*ScaleFactor;
+                        g_sum+=GET_G(c)*ScaleFactor;
+                        r_sum+=GET_R(c)*ScaleFactor;
 #else
                         __asm__ __volatile__(
                                " movd (%0),%%mm1 \n"
@@ -1397,10 +1417,11 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width,
                                         a_sum,pixmap->a,
                                         pixmap->r,pixmap->g,pixmap->b,pos);
 #ifndef USE_MMX2                       
-                a_sum+=((int) pixmap->a)*pos;
-                b_sum+=((int) pixmap->b)*pos;
-                g_sum+=((int) pixmap->g)*pos;
-                r_sum+=((int) pixmap->r)*pos;
+                c=*pixmap;
+                a_sum+=GET_A(c)*pos;
+                b_sum+=GET_B(c)*pos;
+                g_sum+=GET_G(c)*pos;
+                r_sum+=GET_R(c)*pos;
 #else
                 __asm__ __volatile__(
                       " movd (%0),%%mm1 \n"
@@ -1422,10 +1443,13 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width,
                 g_sum=g_sum/ScaleFactor*new_pixel_width_rec/ScaleFactor;
                 r_sum=r_sum/ScaleFactor*new_pixel_width_rec/ScaleFactor;
                 
+                c = SET_B(b_sum) | SET_G(g_sum) | SET_R(r_sum) | SET_A(a_sum);
+                *dest=c;
+                /*
 		dest[0]=b_sum;
                 dest[1]=g_sum;
                 dest[2]=r_sum;
-                dest[3]=a_sum;
+                dest[3]=a_sum;*/
                 a_sum=b_sum=g_sum=r_sum=0;
 #else
                 __asm__ __volatile__ (
@@ -1438,7 +1462,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width,
                       : : "r"(dest) );
 #endif
                 SCALEDEBH(", %d, %d, %d\n",r_sum,g_sum,b_sum);
-                dest+=4;
+                dest++;
 
                 pos-=ScaleFactor;
                 SCALEDEBH("\nnext pixel a_sum: %d pixmap->a:%d,%d,%d,%d pos: %d\n",
@@ -1447,11 +1471,12 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width,
                                         ,pos);
                 //uint32_t apos=-(pos);
                 uint32_t apos=abs(pos);
-#ifndef USE_MMX2                       
-                a_sum=((int) pixmap->a)*apos;
-                b_sum=((int) pixmap->b)*apos;
-                g_sum=((int) pixmap->g)*apos;
-                r_sum=((int) pixmap->r)*apos;
+#ifndef USE_MMX2            
+                c=*pixmap;
+                a_sum=GET_A(c)*apos;
+                b_sum=GET_B(c)*apos;
+                g_sum=GET_G(c)*apos;
+                r_sum=GET_R(c)*apos;
 #else
                 __asm__ __volatile__ (
                       " movd (%0),%%mm1 \n"
@@ -1472,7 +1497,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width,
 //-----------------------------------------------------------------------
 #define SCALEUPDEBH(out...) 
 
-void cSoftOsd::ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width, 
+void cSoftOsd::ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width, 
                 color * pixmap, int Pixel) {
 #define SHIFT_BITS "6"
 #define SHIFT_BITS_NUM 6
@@ -1480,15 +1505,17 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width,
         //const int ScaleFactor=100;
         color *end_pixmap=pixmap+Pixel;
 #ifndef USE_MMX2
-	uint16_t a1=pixmap->a;
-	uint16_t b1=pixmap->b;
-	uint16_t g1=pixmap->g;
-	uint16_t r1=pixmap->r;
+        unsigned int c=*pixmap;
+	unsigned int a1=GET_A(c);
+	unsigned int b1=GET_B(c);
+	unsigned int g1=GET_G(c);
+	unsigned int r1=GET_R(c);
 	pixmap++;
-	uint16_t a2=pixmap->a;
-	uint16_t b2=pixmap->b;
-	uint16_t g2=pixmap->g;
-	uint16_t r2=pixmap->r;
+        c=*pixmap;
+	unsigned int a2=GET_A(c);
+	unsigned int b2=GET_B(c);
+	unsigned int g2=GET_G(c);
+	unsigned int r2=GET_R(c);
 #else
 	__asm__(
 		" pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
@@ -1515,10 +1542,11 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width,
 #ifndef USE_MMX2                       
 			// funny that's the same formula we use for
 			// alpha blending ;-)
-			dest[0]=(uint8_t) (b1+(pos*(b2-b1)/ScaleFactor));
-			dest[1]=(uint8_t) (g1+(pos*(g2-g1)/ScaleFactor));
-			dest[2]=(uint8_t) (r1+(pos*(r2-r1)/ScaleFactor));
-			dest[3]=(uint8_t) (a1+(pos*(a2-a1)/ScaleFactor));
+                        c  = SET_B(b1+(pos*(b2-b1)/ScaleFactor));
+                        c |= SET_G(g1+(pos*(g2-g1)/ScaleFactor));
+                        c |= SET_R(r1+(pos*(r2-r1)/ScaleFactor));
+                        c |= SET_A(a1+(pos*(a2-a1)/ScaleFactor));
+                        *dest=c;
 #else
 			__asm__(
 				" movd %0,%%mm3 \n" //mm3 load pos
@@ -1533,7 +1561,7 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width,
 #endif
                        
                         pos +=new_pixel_width;
-                        dest+=4;
+                        dest++;
                 };
 		pixmap++;
                 pos -= ScaleFactor;
@@ -1542,10 +1570,11 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width,
 		b1=b2;
 		g1=g2;
 		r1=r2;
-		a2=pixmap->a;
-		b2=pixmap->b;
-		g2=pixmap->g;
-		r2=pixmap->r;
+                c=*pixmap;
+		a2=GET_A(c);
+		b2=GET_B(c);
+		g2=GET_G(c);
+		r2=GET_R(c);
 #else
 		__asm__(
 			" movq %%mm4, %%mm1 \n"
@@ -1564,7 +1593,7 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width,
 //-------------------------------------------------------------------------
 #define SCALEUPDEBV(out...)  
 
-void cSoftOsd::ScaleUpVert_MMX(uint8_t *dest, int linesize, 
+void cSoftOsd::ScaleUpVert_MMX(uint32_t *dest, int linesize, 
 		int32_t new_pixel_height, int start_pos,
                 color **pixmap, int Pixel) {
 #define SHIFT_BITS "6"
@@ -1572,15 +1601,16 @@ void cSoftOsd::ScaleUpVert_MMX(uint8_t *dest, int linesize,
         const int ScaleFactor=1<<SHIFT_BITS_NUM;
         //const int ScaleFactor=100;
 #ifndef USE_MMX2
-        int16_t a1=0;
-        int16_t b1=0;
-        int16_t g1=0;
-        int16_t r1=0;
+        int a1=0;
+        int b1=0;
+        int g1=0;
+        int r1=0;
 
-	int16_t a2=0;
-        int16_t b2=0;
-        int16_t g2=0;
-        int16_t r2=0;
+	int a2=0;
+        int b2=0;
+        int g2=0;
+        int r2=0;
+        unsigned int c;
 #else
         __asm__(
                 " pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
@@ -1593,15 +1623,17 @@ void cSoftOsd::ScaleUpVert_MMX(uint8_t *dest, int linesize,
                         OSD_HEIGHT,new_pixel_height);
         while (currPixel<Pixel) {
 #ifndef USE_MMX2
-		a1=pixmap[0][currPixel].a;
-		b1=pixmap[0][currPixel].b;
-		g1=pixmap[0][currPixel].g;
-		r1=pixmap[0][currPixel].r;
+                c=pixmap[0][currPixel];
+		a1=GET_A(c);
+		b1=GET_B(c);
+		g1=GET_G(c);
+		r1=GET_R(c);
 
-		a2=pixmap[1][currPixel].a-a1;
-		b2=pixmap[1][currPixel].b-b1;
-		g2=pixmap[1][currPixel].g-g1;
-		r2=pixmap[1][currPixel].r-r1;
+                c=pixmap[1][currPixel];
+		a2=GET_A(c)-a1;
+		b2=GET_B(c)-b1;
+		g2=GET_G(c)-g1;
+		r2=GET_R(c)-r1;
 #else
                 __asm__(
                       " movd (%0),%%mm1 \n"
@@ -1618,15 +1650,12 @@ void cSoftOsd::ScaleUpVert_MMX(uint8_t *dest, int linesize,
                 while (pos<ScaleFactor) {
                         //SCALEUPDEBV("while loop pixel: %d pos: %d, row %d\n",
 			//		currPixel,pos,ypos);
-#ifndef USE_MMX2                       
-			dest[ypos*linesize+currPixel*4+0]=
-				(uint8_t) (b1+(pos*(b2)/ScaleFactor));
-			dest[ypos*linesize+currPixel*4+1]=
-				(uint8_t) (g1+(pos*(g2)/ScaleFactor));
-			dest[ypos*linesize+currPixel*4+2]=
-				(uint8_t) (r1+(pos*(r2)/ScaleFactor));
-			dest[ypos*linesize+currPixel*4+3]=
-				(uint8_t) (a1+(pos*(a2)/ScaleFactor));
+#ifndef USE_MMX2       
+                        c  = SET_B(b1+(pos*(b2)/ScaleFactor));
+                        c |= SET_G(g1+(pos*(g2)/ScaleFactor));
+                        c |= SET_R(r1+(pos*(r2)/ScaleFactor));
+                        c |= SET_A(a1+(pos*(a2)/ScaleFactor));
+                        dest[ypos*linesize+currPixel]=c;
 #else
 			__asm__(
 				" movd %0,%%mm3 \n"
@@ -1638,7 +1667,7 @@ void cSoftOsd::ScaleUpVert_MMX(uint8_t *dest, int linesize,
 				" packuswb %%mm0,%%mm0 \n"
 				" movd %%mm0,(%1) \n"
 				: : "r" (pos),
-				"r" (&dest[ypos*linesize+currPixel*4]) );
+				"r" (&dest[ypos*linesize+currPixel]) );
 #endif
                        
                         pos +=new_pixel_height;

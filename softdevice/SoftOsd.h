@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.6 2006/04/01 08:26:56 wachm Exp $
+ * $Id: SoftOsd.h,v 1.7 2006/07/10 18:23:28 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -39,13 +39,24 @@
 
 #define COLOR_RGB16(r,g,b) (((b >> 3)& 0x1F) | ((g & 0xF8) << 2)| ((r & 0xF8)<<10) )
 
+#define GET_A(x) ((x) >> 24 & 0xFF)
+#define GET_R(x) ((x) >> 16 & 0xFF)
+#define GET_G(x) ((x) >>  8 & 0xFF)
+#define GET_B(x) ((x) >>  0 & 0xFF)
 
+#define SET_A(x) ((x) << 24 & 0xFF000000)
+#define SET_R(x) ((x) << 16 & 0x00FF0000)
+#define SET_G(x) ((x) <<  8 & 0x0000FF00)
+#define SET_B(x) ((x) <<  0 & 0x000000FF)
+/*
 struct color {
     unsigned char b;
     unsigned char g;
     unsigned char r;
     unsigned char a;
 };
+*/
+typedef uint32_t color;
 
 class cVideoOut;
 
@@ -94,7 +105,7 @@ public:
     void Clear();
     virtual void Action();
     
-    static void ARGB_to_AYUV(uint8_t * dest, color * pixmap, int Pixel);
+    static void ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_RGB24(uint8_t * dest, color * pixmap, int Pixel);
@@ -141,13 +152,13 @@ public:
 
     
  private:
-    void NoScaleHoriz_MMX(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
-    void ScaleUpHoriz_MMX(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
-    void ScaleDownHoriz_MMX(uint8_t * dest, int dest_Width, color * pixmap,int Pixel);
-    void ScaleDownVert_MMX(uint8_t * dest, int linesize, int32_t new_pixel_height, 
+    void NoScaleHoriz_MMX(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
+    void ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
+    void ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
+    void ScaleDownVert_MMX(uint32_t * dest, int linesize, int32_t new_pixel_height, 
                 int start_pos,
                 color ** pixmap, int Pixel);
-    void ScaleUpVert_MMX(uint8_t *dest, int linesize, int32_t new_pixel_height, 
+    void ScaleUpVert_MMX(uint32_t *dest, int linesize, int32_t new_pixel_height, 
                 int start_pos,
                 color **pixmap, int Pixel);
 
