@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.2 2006/06/17 16:27:34 lucke Exp $
+ * $Id: PicBuffer.h,v 1.3 2006/07/10 17:56:29 wachm Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
@@ -86,7 +86,7 @@ public:
                 int &hChromaShift,
                 int &vChromaShift);
 
-        virtual void AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
+        virtual bool AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
                         int w, int h);
         // actually allocates memory for the buffer. Can be overloaded for 
         // direct rendering. 
@@ -97,14 +97,12 @@ public:
 };
 
 void CopyPicBuf(sPicBuffer *dest, sPicBuffer *src,
-                int width, int height,
                 int cutTop, int cutBottom, int cutLeft, int cutRight);
 
 void CopyPicBufAlphaBlend(sPicBuffer *dst, 
                 sPicBuffer *src,
-                uint8_t *OsdPy,uint8_t *OsdPu, 
-                uint8_t *OsdPv,uint8_t *OsdPAlphaY,
-                uint8_t *OsdPAlphaUV,int width, int height,
+                uint8_t *OsdPy,uint8_t *OsdPu, uint8_t *OsdPv,
+                uint8_t *OsdPAlphaY, uint8_t *OsdPAlphaUV,int OsdStride,
                 int cutTop, int cutBottom,int cutLeft, int cutRight); 
  
 #endif
