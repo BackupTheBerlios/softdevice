@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.32 2006/06/18 07:16:06 lucke Exp $
+# $Id: Makefile,v 1.33 2006/07/10 19:40:25 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -56,6 +56,9 @@ VIDIX_SUPPORT=1
 
 # Set this if you want to use DPMS
 LIBXDPMS_SUPPORT = 1
+
+# Set this if you want to use alsa audio
+ALSA_SUPPORT = 1
 
 # Set this if you want to be able to toggle suspend mode by keyboard (XV only)
 SUSPEND_BY_KEY = 1
@@ -173,6 +176,10 @@ ifdef VIDIX_SUPPORT
   DEFINES     += -DVIDIX_SUPPORT -DVIDIX_DIR=\"$(VIDIX_DIR)/lib/vidix/\"
 endif
 
+ifdef ALSA_SUPPORT
+  DEFINES += -DALSA_SUPPORT
+endif
+
 # #############################################################################
 # end of section without configure
 #
@@ -218,10 +225,15 @@ DEFINES += -DPLUGINLIBDIR='"$(PLUGINLIBDIR)"'
 ### The object files (add further files here):
 
 TARGETS = libvdr-$(PLUGIN).so
-LIBS = $(FFMPEGLIBS) -lasound
-OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o audio-ac3pt.o video-dummy.o setup-softdevice.o setup-softdevice-menu.o sync-timer.o SoftOsd.o PicBuffer.o VideoFilter.o
+LIBS = $(FFMPEGLIBS)
+OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o video-dummy.o setup-softdevice.o setup-softdevice-menu.o sync-timer.o SoftOsd.o PicBuffer.o VideoFilter.o
 ALL_OBJS = $(OBJS)
 
+ifdef ALSA_SUPPORT
+  LIBS += -lasound
+  OBJS += audio-alsa.o audio-ac3pt.o
+endif
+  
 ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
     DFB_OBJS  = utils.o video.o video-dfb.o PicBuffer.o

@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.19 2006/06/18 07:16:06 lucke Exp $
+# $Id: configure,v 1.20 2006/07/10 19:40:25 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -35,6 +35,7 @@ with_subplugins="yes"
 with_mmx="yes"
 with_mmx2="yes"
 cle266="yes"
+alsa="yes"
 
 function help () {
   echo "Usage: configure [options]"
@@ -47,6 +48,7 @@ function help () {
   echo "  --disable-subplugins"
   echo "  --disable-mmx"
   echo "  --disable-mmx2"
+  echo "  --disable-alsa"
   echo "  --with-ffmpeg-path YOUR_FFMPEG_PATH"
   echo "  --with-vidix-path YOUR_VIDIX_PATH"
   echo "  --help"
@@ -66,6 +68,7 @@ do
     --disable-subplugins) shift; with_subplugins="no" ;;
     --disable-mmx) shift; with_mmx="no";;
     --disable-mmx2) shift; with_mmx2="no";;
+    --disable-alsa) shift; alsa="no";;
     --with-ffmpeg-path) shift;
       ffmpeg_path=$1 ;
       echo "ffmpeg path set to: $ffmpeg_path" ;
@@ -147,6 +150,32 @@ if test "${ffmpeg}" = "no" ; then
 fi
 
 echo "Ok."
+########################################################
+# check for ALSA
+echo -n "Checking for ALSA sound... "
+echo "Checking for ALSA sound.------------------" >> config.log
+
+if test "${alsa}" = "yes" ; then
+cat > ${TMPC} << EOF
+#define ALSA_PCM_NEW_HW_PARAMS_API
+#define ALSA_PCM_NEW_SW_PARAMS_API
+#include <alsa/asoundlib.h>
+int main(void) {
+  snd_pcm_t         *handle;
+  char device[]="hw:0,1";
+  snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0); 
+  return 0;
+}
+EOF
+$cc $CFLAGS -lasound -o $TMPE $TMPC >> config.log 2>&1 || alsa="no"
+fi
+
+if test "${alsa}" = "yes" ; then
+echo "Enabled audio-alsa."
+else
+echo "Not Found."
+fi
+
 #########################################################
 # start of DirectFB specific tests
 #
@@ -404,6 +433,13 @@ if test "${with_mmx}" = "yes" ; then
   fi
 fi
 
+###############################################################################
+# alsa defines
+#
+if test "${alsa}" = "yes" ; then
+  echo "ALSA_SUPPORT = 1" >> $TMPM
+  echo "#define ALSA_SUPPORT 1" >> $TMPH
+fi
 
 ###############################################################################
 # generating DirectFB specific defines

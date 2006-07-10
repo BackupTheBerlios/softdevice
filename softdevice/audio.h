@@ -3,17 +3,15 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.11 2006/04/27 20:32:58 wachm Exp $
+ * $Id: audio.h,v 1.12 2006/07/10 19:40:25 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#define ALSA_PCM_NEW_HW_PARAMS_API
-#define ALSA_PCM_NEW_SW_PARAMS_API
-#include <alsa/asoundlib.h>
+#include <math.h>
+
 #include <vdr/plugin.h>
 #include "setup-softdevice.h"
-#include "audio-ac3pt.h"
 
 struct SampleContext {
    uint32_t channels;
@@ -22,6 +20,14 @@ struct SampleContext {
    uint32_t period_size;
    uint32_t buffer_size;
 };
+
+
+void Scale(int16_t *Data, int size,int scale_Factor);
+// scaling of auido data (changing the volume)
+
+static inline int CalcScaleFactor(int vol) 
+{ return (vol <= 0 ? 0 
+          : (int) (pow(10.0, -2.3+2.3*vol/256.0)*0x7FFF)); };
 
 /* ---------------------------------------------------------------------------
  * Abstract class for an audio device
@@ -44,42 +50,6 @@ public:
   {return;};
   virtual bool Resume(void)
   {return true;};
-};
-
-
-/* ---------------------------------------------------------------------------
- */
-class cAlsaAudioOut : public cAudioOut  {
-private:
-  cMutex            handleMutex;
-  snd_pcm_t         *handle;
-  char              *device,
-                    *ac3Device;
-  volatile bool     paused;
-  bool              ac3PassThrough,
-                    ac3SpdifPro;
-  SampleContext     oldContext;
-  cAlsaAC3pt        ac3pt;
-
-  bool  SetAC3PassThroughMode(bool on);
-  void  Xrun(void);
-  int scale_Factor;
-
-protected:
-public:
-  cAlsaAudioOut(cSetupStore *setupStore);
-  virtual ~cAlsaAudioOut();
-
-  virtual void  Write(uchar *Data, int Length);
-  virtual void  WriteAC3(uchar *Data, int Length);
-  //virtual int SetParams(int channels, unsigned int samplerate);
-  virtual int   SetParams(SampleContext &context);
-  virtual int   GetDelay(void);
-  virtual void  Pause(void);
-  virtual void  Play(void);
-  virtual void  SetVolume(int vol);
-  virtual void  Suspend(void);
-  virtual bool  Resume(void);
 };
 
 /* ---------------------------------------------------------------------------

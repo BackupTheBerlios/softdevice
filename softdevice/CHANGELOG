@@ -1,5 +1,7 @@
 Changelog
 2006-07-10:
+   - move alsa related stuff into a separate file, enable build without alsa 
+     support
    - remove uneeded include of "sys/mman.h" and "sys/ioctl.h" from video.c
    - set max_width and max_height for temporary PicBuffer
    - remove uneeded include of "linux/fb.h" from softdevice.c 
