@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.62 2006/07/10 18:50:45 wachm Exp $
+ * $Id: softdevice.c,v 1.63 2006/07/10 19:54:34 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -70,6 +70,10 @@
 #define VOUT_DEFAULT  VOUT_XV
 #endif
 
+#endif
+
+#ifdef ALSA_SUPPORT
+#include "audio-alsa.h"
 #endif
 
 #include "audio.h"
@@ -277,8 +281,12 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     fprintf(stderr,"[softdevice] Initializing Audio Out\n");
     switch (audioMethod) {
       case AOUT_ALSA:
+#ifdef ALSA_SUPPORT
         audioOut=new cAlsaAudioOut(&setupStore);
         break;
+#else
+        fprintf(stderr,"[softdevice] No alsa support compiled in. Using dummy-audio\n");
+#endif
       case AOUT_DUMMY:
         audioOut=new cDummyAudioOut(&setupStore);
         break;
@@ -686,8 +694,10 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 {
   // Return a string that describes all known command line options.
   return
+#ifdef ALSA_SUPPORT
   "  -ao alsa:pcm=dev_name#   alsa output device for analog and PCM out\n"
   "  -ao alsa:ac3=dev_name#   alsa output device for AC3 passthrough\n"
+#endif
   "  -ao dummy:               dummy output device\n"
 #ifdef XV_SUPPORT
   "  -vo xv:                  enable output via X11-Xv\n"
