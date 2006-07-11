@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.63 2006/07/10 19:54:34 wachm Exp $
+ * $Id: softdevice.c,v 1.64 2006/07/11 20:31:37 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -190,8 +190,8 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 #endif
     fprintf(stderr,"[softdevice] Initializing Video Out\n");
     fprintf(stderr,
-            "[softdevice] ffmpeg version(%s) build(%d)\n",
-            FFMPEG_VERSION, LIBAVCODEC_BUILD);
+            "[softdevice] ffmpeg build(%d)\n",
+             LIBAVCODEC_BUILD);
     setupStore.outputMethod = method;
 #ifdef USE_SUBPLUGINS
     switch (method) {

@@ -1,4 +1,6 @@
 Changelog
+2006-07-11:
+   - remove no longer defined FFMPEG_VERSION string
 2006-07-10:
    - move alsa related stuff into a separate file, enable build without alsa 
      support
