@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.59 2006/07/10 18:50:45 wachm Exp $
+ * $Id: video.c,v 1.60 2006/07/12 18:40:16 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -117,6 +117,8 @@ void cVideoOut::Action()
       else
       {
         sPicBuffer tmpBuf;
+
+        memset (&tmpBuf, 0, sizeof (sPicBuffer));
         tmpBuf.pixel[0]=OsdPy;
         tmpBuf.pixel[1]=OsdPu;
         tmpBuf.pixel[2]=OsdPv;
@@ -147,7 +149,7 @@ void cVideoOut::SetOldPicture(sPicBuffer *picture)
      LockBuffer(picture);
      old_picture=picture;
   } else old_picture = NULL;
-  
+
   //osdMutex.Unlock();
 }
 
@@ -444,8 +446,8 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
   Osd_changed=0;
   CheckAspectDimensions(pic);
   Sync(syncTimer, delay);
-  
-  // display picture 
+
+  // display picture
   YUV(pic);
   SetOldPicture(pic);
 

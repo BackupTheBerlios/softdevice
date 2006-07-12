@@ -1,12 +1,14 @@
 Changelog
+2006-07-12:
+   - fix segfault in OSD refresher.
 2006-07-11:
    - remove no longer defined FFMPEG_VERSION string
 2006-07-10:
-   - move alsa related stuff into a separate file, enable build without alsa 
+   - move alsa related stuff into a separate file, enable build without alsa
      support
    - remove uneeded include of "sys/mman.h" and "sys/ioctl.h" from video.c
    - set max_width and max_height for temporary PicBuffer
-   - remove uneeded include of "linux/fb.h" from softdevice.c 
+   - remove uneeded include of "linux/fb.h" from softdevice.c
    - fix possible endianness problems in SoftOsd.c
    - add support for yuy2 pixel format to alpha blend and copy pic buf code
    - change return value of AllocPicBuffer()
