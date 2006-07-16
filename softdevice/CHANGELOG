@@ -1,5 +1,7 @@
 Changelog
 2006-07-16:
+   - check explicitly for pkg-config in configure
+   - configure: "--with-ffmpeg-path" overrides pkg-config
    - unconditionally set _NET_WM_FULLSCREEN Atom when going fullscreen (recent Metacity WM need it)
 2006-07-12:
    - fix segfault in OSD refresher.

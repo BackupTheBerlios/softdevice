@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.20 2006/07/10 19:40:25 wachm Exp $
+# $Id: configure,v 1.21 2006/07/16 11:22:00 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -20,7 +20,9 @@ fi
 set -u
 : ${CFLAGS=""}
 
+use_pkgconfig="yes"
 ffmpeg="yes"
+ffmpeg_use_path="no"
 dfb="yes"
 libpostproc="no"
 cc="g++"
@@ -71,6 +73,7 @@ do
     --disable-alsa) shift; alsa="no";;
     --with-ffmpeg-path) shift;
       ffmpeg_path=$1 ;
+      ffmpeg_use_path="yes" ;
       echo "ffmpeg path set to: $ffmpeg_path" ;
       shift ;;
     --with-vidix-path) shift;
@@ -81,6 +84,24 @@ do
     *) echo "ERROR: unknown parameter $1"; help; exit ;;
   esac
 done
+
+#########################################################
+# start pkg-config test
+#
+if test "${use_pkgconfig}" = "yes" ; then
+  echo -n "Checking for pkg-config... "
+  echo  "Checking for pkg-config.-------------------------------" >> config.log
+        
+  pkg-config --version >> config.log 2>&1 || use_pkgconfig="no";
+  
+  if test "${use_pkgconfig}" = "no" ; then
+    echo "Not found."
+    echo "Please consider installing pkg-config. Many parts of this configure"
+    echo "rely on pkg-config to find the parameters of the needed libraries."
+  else
+    echo "Found."
+  fi
+fi
 
 #########################################################
 # start ffmpeg test
@@ -111,6 +132,10 @@ EOF
   $cc $CFLAGS $ffmpeg_cflags $ffmpeg_libs -o $TMPE $TMPC $ffmpeg_libs  >> config.log 2>&1 || ffmpeg="no"
 };
 
+ffmpeg="no" # = not yet configured 
+if test "${use_pkgconfig}" = "yes" ; then
+  if test "${ffmpeg_use_path}" = "no" ; then
+
 echo "try to use pkg-config." >> config.log
 ffmpeg_l1="libavcodec libavformat"
 
@@ -121,6 +146,9 @@ ffmpeg_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags $ffmpeg_l1 2
 
 # test if it works..
 test_ffmpeg
+
+  fi
+fi
 
 if test "${ffmpeg}" = "no" ; then
   echo "pkg-config failed, try the default/parameter path." >> config.log
@@ -143,13 +171,14 @@ if test "${ffmpeg}" = "no" ; then
     echo " Not found."
     echo "No usable ffmpeg library found in ${ffmpeg_path}."
     echo "Specify the path to your ffmpeg installation using --with-ffmpeg-path"
-    echo "or use a more recent (cvs) version of ffmpeg with pkg-config."
+    echo "or use a more recent (svn) version of ffmpeg and use/install pkg-config."
     echo "For details check config.log."
     exit 8;
   fi
 fi
 
 echo "Ok."
+
 ########################################################
 # check for ALSA
 echo -n "Checking for ALSA sound... "
