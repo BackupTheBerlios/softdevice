@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.56 2006/06/09 16:24:34 lucke Exp $
+ * $Id: video-xv.c,v 1.57 2006/07/16 02:09:22 iampivot Exp $
  */
 
 #include <unistd.h>
@@ -407,10 +407,10 @@ void cXvVideoOut::toggleFullScreen(void)
   e.xclient.data.l[0] = (fullScreen) ? 1 : 0;
   if (net_wm_STATE_ABOVE)
     e.xclient.data.l[1] = net_wm_STATE_ABOVE;
-  else if (net_wm_STATE_FULLSCREEN)
-    e.xclient.data.l[1] = net_wm_STATE_FULLSCREEN;
   else //if (net_wm_STATE_STAYS_ON_TOP)
     e.xclient.data.l[1] = net_wm_STATE_STAYS_ON_TOP;
+  if (net_wm_STATE_FULLSCREEN)
+    e.xclient.data.l[1] = net_wm_STATE_FULLSCREEN;
   XSendEvent(dpy, DefaultRootWindow(dpy), False, SubstructureRedirectMask, &e);
 
   XReparentWindow (dpy, win, DefaultRootWindow(dpy), x, y);
