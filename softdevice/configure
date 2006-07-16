@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.21 2006/07/16 11:22:00 wachm Exp $
+# $Id: configure,v 1.22 2006/07/16 11:35:36 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -349,8 +349,9 @@ fi
 echo -n "Checking for Xv... "
 echo  "Checking for Xv.-----------------------------" >> config.log
 
-if test "${xv}" = "yes" ; then
-  xv_libs="-L/usr/X11R6/lib -lXi -lXext -lX11 -lm -lXv"
+test_xv()
+{
+  xv="yes"
   cat > ${TMPC} << EOF
 #include <stdio.h>
 #include <X11/Xlib.h>
@@ -360,7 +361,19 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $xv_libs -o $TMPE $TMPC >> config.log 2>&1 || xv="no"
+  $cc $CFLAGS $xv_libs -o $TMPE $TMPC >> config.log 2>&1 || xv="no"
+};
+
+if test "${xv}" = "yes" ; then
+  xv_libs="-L/usr/X11R6/lib -lXext -lX11 -lm -lXv"
+  test_xv();
+
+  if test "${xv}" = "no" ; then
+    # do we need libXi at all?
+    echo "Xv test failed. Maybe -lXi is needed?" >> config.log
+    xv_libs+=" -lXi"
+    test_xv();
+  fi
 fi
 
 if test "${xv}" = "yes" ; then
