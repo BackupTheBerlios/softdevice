@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.22 2006/07/16 11:35:36 wachm Exp $
+# $Id: configure,v 1.23 2006/07/16 13:04:15 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -366,13 +366,13 @@ EOF
 
 if test "${xv}" = "yes" ; then
   xv_libs="-L/usr/X11R6/lib -lXext -lX11 -lm -lXv"
-  test_xv();
+  test_xv
 
   if test "${xv}" = "no" ; then
     # do we need libXi at all?
     echo "Xv test failed. Maybe -lXi is needed?" >> config.log
     xv_libs+=" -lXi"
-    test_xv();
+    test_xv
   fi
 fi
 
