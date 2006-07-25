@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.32 2006/06/25 13:46:12 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.33 2006/07/25 19:58:12 wachm Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -125,6 +125,7 @@ class cSetupStore {
     int   xvAspect;
     int   xvMaxArea;
     int   xvFullscreen;
+    int   xvUseDefaults;
     int   outputMethod;
     int   pixelFormat;
     bool  pixelFormatLocked;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.45 2006/06/25 13:46:12 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.46 2006/07/25 19:58:12 wachm Exp $
  */
 
 #include <string.h>
@@ -91,6 +91,8 @@ cSetupStore::cSetupStore ()
 {
   xvAspect      = 1;   // XV_FORMAT_NORMAL;
   xvMaxArea     = 0;
+  xvFullscreen  = 0;
+  xvUseDefaults = 0;
   outputMethod  = 0;
   cropMode      = 0;
   cropModeToggleKey = 0;
@@ -119,7 +121,7 @@ cSetupStore::cSetupStore ()
   mainMenu  = 1;
   syncTimerMode = 2;
   vidCaps = 0;
-  vidBrightness = vidHue = vidContrast = vidSaturation = VID_MAX_PARM_VALUE / 2;
+  vidBrightness = vidHue = vidContrast = vidSaturation = -1;
 
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
@@ -360,19 +362,19 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
             syncTimerNames[syncTimerMode]);
   } else if (!strcasecmp(Name, "vidBrightness")) {
     vidBrightness = atoi (Value);
-    vidBrightness = clamp (0, vidBrightness, 100);
+    vidBrightness = clamp (-1, vidBrightness, 100);
     fprintf(stderr, "[setup-softdevice] vidBrightness: %d\n", vidBrightness);
   } else if (!strcasecmp(Name, "vidContrast")) {
     vidContrast = atoi (Value);
-    vidContrast = clamp (0, vidContrast, 100);
+    vidContrast = clamp (-1, vidContrast, 100);
     fprintf(stderr, "[setup-softdevice] vidContrast: %d\n", vidContrast);
   } else if (!strcasecmp(Name, "vidHue")) {
     vidHue = atoi (Value);
-    vidHue = clamp (0, vidHue, 100);
+    vidHue = clamp (-1, vidHue, 100);
     fprintf(stderr, "[setup-softdevice] vidHue: %d\n", vidHue);
   } else if (!strcasecmp(Name, "vidSaturation")) {
     vidSaturation = atoi (Value);
-    vidSaturation = clamp (0, vidSaturation, 100);
+    vidSaturation = clamp (-1, vidSaturation, 100);
     fprintf(stderr, "[setup-softdevice] vidSaturation: %d\n", vidSaturation);
   }  else
     return false;

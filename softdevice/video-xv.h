@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.21 2006/05/27 19:12:42 wachm Exp $
+ * $Id: video-xv.h,v 1.22 2006/07/25 19:58:12 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -91,6 +91,7 @@ public:
   void SetXInfo(Display *dpy, XvPortID port, cSetupStore *setupStore);
   void SetValue(char *name, int value);
   void SetValuePercent(char *name, int value);
+  int GetValuePercent(int index);
   void SetColorkey(int value);
   void Increment(char *name);
   void Decrement(char *name);

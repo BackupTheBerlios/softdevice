@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.64 2006/07/11 20:31:37 wachm Exp $
+ * $Id: softdevice.c,v 1.65 2006/07/25 19:58:12 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -368,6 +368,8 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
   {
     esyslog("[softdevice] could not load (%s)[%s] exiting\n",
             subPluginFileName, err);
+    fprintf(stderr,"[softdevice] could not load (%s)[%s] exiting\n",
+            subPluginFileName, err);
     exit(1);
   }
 }
@@ -705,6 +707,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   "  -vo xv:aspect=normal     use a  4:3 display area (768x576)\n"
   "  -vo xv:max-area          use maximum available area\n"
   "  -vo xv:full              startup fullscreen\n"
+  "  -vo xv:use-defaults      don't change brigtness etc on startup\n"
 #endif
 #ifdef FB_SUPPORT
   "  -vo fb:                  enable output via framebuffer\n"
@@ -782,6 +785,11 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               fprintf (stderr,
                        "[ProcessArgs] xv: start up fullscreen\n");
               vo_argv += 4;
+            } else if (!strncmp (vo_argv, "use-defaults", 12)) {
+              fprintf (stderr,
+                       "[ProcessArgs] xv: don't change brigtness etc on startup\n");
+              setupStore.xvUseDefaults=true;
+              vo_argv += 12;
             } else {
                     fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
                     esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);

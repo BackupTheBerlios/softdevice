@@ -3,6 +3,10 @@ Changelog
    - no longer exit when a audio mode is not available, audio is only disabled.
    - clean up audio-alsa
    - init tmpOsdSurface and delete dirtyLines properly
+   - try to use the XVideo default brightness, hue etc. values on first start
+   - new option: "-vo xv:use-defaults", can be used to reset the values
+     of brightness, hue etc. to the default values. (Based on a patch
+     by Matthias Schwarzott)
 2006-07-16:
    - only link against libXi if necessary ( do we need libXi at all?)
    - check explicitly for pkg-config in configure

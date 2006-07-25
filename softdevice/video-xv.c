@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.57 2006/07/16 02:09:22 iampivot Exp $
+ * $Id: video-xv.c,v 1.58 2006/07/25 19:58:12 wachm Exp $
  */
 
 #include <unistd.h>
@@ -126,6 +126,21 @@ void cXvPortAttributeStore::SetValue(char *name, int value)
 
 /* ---------------------------------------------------------------------------
  */
+int cXvPortAttributeStore::GetValuePercent(int index)
+{
+      int value = portAttributeCurrentValues[index];
+
+      value = (int) (((double) value - (double) portAttributes[index].min_value) * 100.0
+              / ((double) portAttributes[index].max_value - (double) portAttributes[index].min_value));
+
+      if (value <= 100 &&
+          value >= 0)
+        return value;
+      return 0;
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cXvPortAttributeStore::SetValuePercent(char *name, int value)
 {
   for (int i = 0; i < portAttributeCount; ++i)
@@ -217,13 +232,29 @@ void cXvPortAttributeStore::Save()
         portAttributeCurrentValues[i] = portAttributeSaveValues[i];
       }
       if (!strcmp(portAttributes[i].name, "XV_BRIGHTNESS"))
+      {
         setupStore->vidCaps |= CAP_BRIGHTNESS;
+        if ( setupStore->xvUseDefaults || setupStore->vidBrightness<0 )
+                setupStore->vidBrightness = currBrightness = GetValuePercent(i);
+      }
       if (!strcmp(portAttributes[i].name, "XV_CONTRAST"))
+      {
         setupStore->vidCaps |= CAP_CONTRAST;
+        if ( setupStore->xvUseDefaults || setupStore->vidContrast<0 )
+                setupStore->vidContrast = currContrast = GetValuePercent(i);
+      }
       if (!strcmp(portAttributes[i].name, "XV_HUE"))
+      {
         setupStore->vidCaps |= CAP_HUE;
+        if ( setupStore->xvUseDefaults || setupStore->vidHue<0 )
+                setupStore->vidHue = currHue = GetValuePercent(i);
+      }
       if (!strcmp(portAttributes[i].name, "XV_SATURATION"))
+      {
         setupStore->vidCaps |= CAP_SATURATION;
+        if ( setupStore->xvUseDefaults || setupStore->vidSaturation<0 )
+                setupStore->vidSaturation = currSaturation = GetValuePercent(i);
+      }
 
       dsyslog("[XvVideoOut]:"
               "   %-25s %-4sXvGettable %-4sXvSettable "
