@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.6 2006/03/12 20:28:52 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.7 2006/07/25 20:03:33 wachm Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -153,7 +153,8 @@ class cSoftControl: public cControl {
       cPlayList *playList;
 
       // to notice when the next file starts
-      bool newFile; 
+      bool newFile;
+      int currFileDuration;
   public:
      cSoftControl( const char * filename );
      cSoftControl( cPlayList *PlayList );

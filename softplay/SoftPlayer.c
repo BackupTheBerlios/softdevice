@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.14 2006/03/12 20:28:52 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.15 2006/07/25 20:03:33 wachm Exp $
  */
 
 #include "SoftPlayer.h"
@@ -114,7 +114,7 @@ void cSoftPlayer::RemuxAndQueue(AVPacket &pkt) {
 
         av_dup_packet(&pkt);
         // length = -2 : queue packet
-        PKTDBG("Queue Packet PTS: %lld\n",pkt.pts);
+        PKTDBG("Queue Packet index: %d PTS: %lld\n",pkt.stream_index,pkt.pts);
 #if VDRVERSNUM >= 10330
         SoftHandles.QueuePacket(SoftDevice,ic,pkt);
 #else
@@ -145,13 +145,13 @@ bool cSoftPlayer::PollDevice(int Streams) {
 
 void cSoftPlayer::FlushDevice(int Streams) {
 #if VDRVERSNUM >= 10330
-	PLDBG("FlushDevice BufferFilll(%d) at start: %d\n",
+	PLDBG("FlushDevice BufferFill(%d) at start: %d\n",
 			Streams,SoftHandles.BufferFill(SoftDevice,Streams,0));
         int count=0;        
         while ( SoftHandles.BufferFill(SoftDevice,Streams,0) > 0 
-                        && count++ < 100 )
+                        && count++ < 200 )
                 usleep(50000);
-	PLDBG("FlushDevice BufferFilll(%d) at end: %d\n",
+	PLDBG("FlushDevice BufferFill(%d) at end: %d\n",
 			Streams,SoftHandles.BufferFill(SoftDevice,Streams,0));
 #else
         DeviceFlush(20000);
@@ -291,6 +291,12 @@ void cSoftPlayer::FileReplay() {
 
                 if (PacketCount == 200)
                         dump_format(ic, 0, "test", 0);
+
+                // update duration (FIXME does that help?)
+                duration=ic->duration;
+                int currPos= SoftDevice->GetSTC()*AV_TIME_BASE/(9*10000);
+                if (duration<currPos)
+                        duration=currPos;
         }
 	//if (running) 
 	//   DeviceFlush(20000);
@@ -410,8 +416,6 @@ bool IsStreamFile( const char * const Filename) {
 
         return false;
 };
-
-
 
 void cSoftPlayer::OpenFile(const char *filename) {
         int ret;
@@ -647,9 +651,11 @@ void cSoftControl::ShowProgress() {
                 displayReplay=Skins.Current()->DisplayReplay(false);
                 newFile=true;
         };
+        
+        int TotalDuration=SoftPlayer->GetDuration();
+        int CurrentPos=SoftPlayer->GetCurrPos();
 
-        if ( newFile ) {
-                int TotalDuration=SoftPlayer->GetDuration();
+        if ( newFile || currFileDuration!=SoftPlayer->GetDuration()) {
                 char Title[80];
                 if ( *SoftPlayer->GetTitle() )
                         snprintf(Title,80,"%s - %s",SoftPlayer->GetTitle(),
@@ -660,9 +666,9 @@ void cSoftControl::ShowProgress() {
                         snprintf(Title,80,"%s",tmp?tmp+1:pos);
                 };
                 displayReplay->SetTitle(Title);
+                currFileDuration=TotalDuration;
 		
-                displayReplay->SetProgress(SoftPlayer->GetCurrPos()
-                                ,TotalDuration);
+                displayReplay->SetProgress(CurrentPos,TotalDuration);
 		char str[60];
 		sprintf(str,"%02d:%02d:%02d",TotalDuration/3600,
 			TotalDuration/60%60,TotalDuration%60);
@@ -670,7 +676,6 @@ void cSoftControl::ShowProgress() {
 
 		newFile=false;
         };
-        int CurrentPos=SoftPlayer->GetCurrPos();
         displayReplay->SetProgress(CurrentPos,
                         SoftPlayer->GetDuration());
         char str[60];
