@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.1 2006/07/10 19:40:25 wachm Exp $
+ * $Id: audio-alsa.c,v 1.2 2006/07/25 19:45:37 wachm Exp $
  */
 #include "audio-alsa.h"
 
@@ -74,7 +74,7 @@ void cAlsaAudioOut::Suspend()
  */
 bool cAlsaAudioOut::Resume() {
    int err;
-   printf("Device %s\n",device);
+   AUDIODEB("Device %s\n",device);
    if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK,SND_PCM_NONBLOCK )) < 0) {
      esyslog("[softdevice-audio] Playback open error: %s, %s ",
              device, snd_strerror(err));
@@ -94,6 +94,9 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
     size_t  size;
 
   AUDIODEB("Write %p %d\n",Data,Length);
+
+  if (!handle)
+          return;
 
   handleMutex.Lock();
   if (ac3PassThrough)
@@ -264,13 +267,10 @@ void cAlsaAudioOut::Xrun(void)
 
 /* ----------------------------------------------------------------------------
  */
-int cAlsaAudioOut::SetParams(SampleContext &context)
-//int cAlsaAudioOut::SetParams(int channels, unsigned int samplerate)
-{
+int cAlsaAudioOut::SetParams(SampleContext &context) {
       int err;
 
     // not needed to set again
-    //if ((chn == channels) && (rate == samplerate)) return 0;
     if (currContext.samplerate == context.samplerate &&
         currContext.channels == context.channels ) {
       context=currContext;
@@ -280,19 +280,23 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     currContext=context;
  
     handleMutex.Lock();
-    snd_pcm_close(handle);
+    
+    if (handle) 
+            snd_pcm_close(handle);
+    
     if ((err = snd_pcm_open(&handle,
                             device,
                             SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
       esyslog("[softdevice-audio] Playback reopen error: %s, %s FATAL exiting",
               device, snd_strerror(err));
-      exit(1);
+      // should we close handle?
+      handle = NULL;
+      handleMutex.Unlock();
+      return -1;
     }
 
     dsyslog ("[softdevice-audio] samplerate: %dHz, channels: #%d",
              currContext.samplerate, currContext.channels);
-    //rate=samplerate;
-    //chn=channels;
     snd_pcm_hw_params_t *params;
     snd_pcm_sw_params_t *swparams;
     snd_pcm_uframes_t xfer_align;
@@ -302,6 +306,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     err = snd_pcm_hw_params_any(handle, params);
     if (err < 0) {
       esyslog("[softdevice-audio] Broken config for this PCM: no configurations available");
+      handleMutex.Unlock();
       exit(EXIT_FAILURE);
     }
 
@@ -312,27 +317,35 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     snd_pcm_access_mask_set(mask, SND_PCM_ACCESS_MMAP_COMPLEX);
     err = snd_pcm_hw_params_set_access_mask(handle, params, mask);
     if (err < 0) {
-      esyslog("[softdevice-audio] Access type not available FATAL exiting");
-      exit(EXIT_FAILURE);
+      esyslog("[softdevice-audio] Access type not available NO AUDIO!");
+      handleMutex.Unlock();
+      Suspend();
+      return -1;
     }
 
     err = snd_pcm_hw_params_set_format(handle, params, PCM_FMT);
     if (err < 0) {
-      esyslog("[softdevice-audio] Sample format non available FATAL exiting");
-      exit(EXIT_FAILURE);
+      esyslog("[softdevice-audio] Sample format non available NO AUDIO!");
+      handleMutex.Unlock();
+      Suspend();
+      return -1;
     }
 
     err = snd_pcm_hw_params_set_channels(handle, params,currContext.channels);
     if (err < 0) {
-      esyslog("[softdevice-audio] Channels count non available FATAL exiting");
-      exit(EXIT_FAILURE);
+      esyslog("[softdevice-audio] Channels count non available NO AUDIO");
+      handleMutex.Unlock();
+      Suspend();
+      return -1;
     }
 
     err = snd_pcm_hw_params_set_rate_near(handle, params, &currContext.samplerate, 0);
     assert(err >= 0);
     if (currContext.samplerate != context.samplerate ) {
-      esyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) FATAL exiting",context.samplerate,currContext.samplerate);
-      exit(1);
+      esyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) NO AUDIO!",context.samplerate,currContext.samplerate);
+      handleMutex.Unlock();
+      Suspend();
+      return -1;
     }
 
     // set period size
@@ -342,21 +355,26 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     periodSize = 4608 / 4;
     err = snd_pcm_hw_params_set_period_size_near(handle, params, &periodSize, 0);
     if ( err < 0)  {
-      esyslog("[softdevice-audio] Failed to set period size!");
-      exit(1);
+      esyslog("[softdevice-audio] Failed to set period size! NO AUDIO!");
+      handleMutex.Unlock();
+      Suspend();
+      return -1;
     }
 
     snd_pcm_uframes_t buffersize = 2 * 4608;
 
     err = snd_pcm_hw_params_set_buffer_size_near(handle, params, &buffersize);
     if ( err < 0 ) {
-      esyslog("[softdevice-audio] Failed to set buffer size!");
-      exit(1);
+      esyslog("[softdevice-audio] Failed to set buffer size! NO AUDIO");
+      handleMutex.Unlock();
+      Suspend();
+      return -1;
     }
 
     err = snd_pcm_hw_params(handle, params);
     if (err < 0) {
       esyslog("[softdevice-audio] Unable to install hw params: FATAL exiting");
+      handleMutex.Unlock();
       exit(EXIT_FAILURE);
     }
 
@@ -365,6 +383,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     if (periodSize == bufferSize) {
       esyslog("[softdevice-audio] Can't use period equal to buffer size (%lu == %lu) FATAL exiting",
               periodSize, bufferSize);
+      handleMutex.Unlock();
       exit(EXIT_FAILURE);
     }
     dsyslog("[softdevice-audio] Period size %lu Buffer size %lu",
@@ -377,6 +396,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context)
     err = snd_pcm_sw_params_get_xfer_align(swparams, &xfer_align);
     if (err < 0) {
       esyslog("[softdevice-audio] Unable to obtain xfer align FATAL exiting");
+      handleMutex.Unlock();
       exit(EXIT_FAILURE);
     }
     dsyslog("[softdevice-audio] Hardware initialized");
