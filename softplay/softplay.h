@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.h,v 1.4 2006/03/12 20:28:52 wachm Exp $
+ * $Id: softplay.h,v 1.5 2006/07/25 20:05:20 wachm Exp $
  */
 #ifndef __SOFTPLAY_H__
 #define __SOFTPLAY_H__
@@ -118,6 +118,8 @@ static inline void strlcpy(char *dest, const char *src, size_t n) {
 };
 
 static inline void skipSpaces(const char *&pos) {
+        if (!pos)
+                return;
 	while ( *pos==' ' )
 		pos++;
 };
