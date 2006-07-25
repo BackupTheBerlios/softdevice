@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.68 2006/06/25 13:46:12 lucke Exp $
+ * $Id: video-dfb.c,v 1.69 2006/07/25 19:47:41 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -276,6 +276,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   swidth  = fwidth  = 720;
   sheight = fheight = 576;
 
+  tmpOsdSurface = NULL;
   screenPixelAspect = -1;
   currentPixelFormat = setupStore->pixelFormat;
   prevOsdMode = setupStore->osdMode;
@@ -1059,6 +1060,7 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
   dirtyLines = DirtyLines = NULL;
   osd = NULL;
   stride = 0;
+  tmpOsdSurface = NULL;
 
   if (!videoInitialized)
     return;
@@ -1070,6 +1072,7 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
 
     tmpOsdSurface = (useStretchBlit) ? osdSurface : scrSurface;
     tmpOsdSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+    //printf("GetLockOsdSurface %p\n",tmpOsdSurface);fflush(stdout);
     osd=dst;stride=pitch;
   }
   catch (DFBException *ex)
@@ -1127,7 +1130,7 @@ void cDFBVideoOut::CommitUnlockOsdSurface()
     delete ex;
   }
   //printf("CommitUnlockOsdSurface %p 4\n",tmpOsdSurface);fflush(stdout);
-  free(dirtyLines);
+  delete[] dirtyLines;
   dirtyLines=NULL;
   tmpOsdSurface=NULL;
   cVideoOut::CommitUnlockOsdSurface();
