@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.69 2006/07/25 19:47:41 wachm Exp $
+ * $Id: video-dfb.c,v 1.70 2006/08/05 17:51:25 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -867,6 +867,12 @@ void cDFBVideoOut::SetParams()
               fprintf(stderr, "[dfb]: SetParams: failed to set buffermode "
                       "to back video, reverting to normal\n");
               dlc.buffermode = DLBM_FRONTONLY;
+            } else {
+              fprintf(stderr,
+                      "[dfb]: Testconfiguration failed flags: %08x "
+                      "(disabling failed flags)\n",
+                      failed);
+              dlc.flags = (DFBDisplayLayerConfigFlags) (dlc.flags & ~failed);
             }
             delete ex;
           }
@@ -904,7 +910,9 @@ void cDFBVideoOut::SetParams()
           }
           catch (DFBException *ex)
           {
-            fprintf (stderr, "[dfb] SetParams: action=%s, result=%s\n",
+            fprintf (stderr,
+                     "[dfb] SetParams() SetScreenLocation(): "
+                     "action=%s, result=%s\n",
                      ex->GetAction(), ex->GetResult());
             delete ex;
           }
