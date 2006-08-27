@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.40 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video.h,v 1.41 2006/08/27 13:02:50 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -30,6 +30,9 @@
 
 #define OSD_FULL_WIDTH    736
 #define OSD_FULL_HEIGHT   576
+
+#define SRC_HEIGHT         576
+#define SRC_WIDTH          736
 
 #if VDRVERSNUM < 10307
 
@@ -143,7 +146,9 @@ public:
                                   sPicBuffer *pic);
     virtual void DrawStill_420pl(sPicBuffer *buf);
     virtual bool Initialize(void) {videoInitialized = true; return 1;};
-    virtual bool Reconfigure (int format) {return 1;};
+    virtual bool Reconfigure (int format = 0,
+                    int width = SRC_WIDTH, int height = SRC_HEIGHT)
+    {return 1;};
 
     virtual void Suspend(void) { return;};
     virtual bool Resume(void) { return true;};

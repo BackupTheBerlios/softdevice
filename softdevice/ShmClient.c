@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.14 2006/05/27 19:12:41 wachm Exp $
+ * $Id: ShmClient.c,v 1.15 2006/08/27 13:02:50 wachm Exp $
  */
 
 #include <signal.h>
@@ -93,11 +93,15 @@ int main(int argc, char **argv) {
                 exit(-1);
         };
 
-        if ( !vout->Initialize() || !vout->Reconfigure(FOURCC_YV12) ) {
+        if ( !vout->Initialize()  ) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
         };
-
+        
+        while (!vout->Reconfigure(SetupStore.pixelFormat) 
+                        && SetupStore.pixelFormat < 3 )
+                SetupStore.pixelFormat++;
+        
         if ( vout->useShm && vout->xv_image ) {
                 ctl->pict_shmid= vout->shminfo.shmid;
                 ctl->max_width=vout->xv_image->width;
@@ -110,6 +114,8 @@ int main(int argc, char **argv) {
                 picture.stride[1]=ctl->stride1;
                 picture.stride[2]=ctl->stride1;
                 picture.edge_width=picture.edge_height=0;
+                picture.max_width=ctl->max_width;
+                picture.max_height=ctl->max_height;
         } else {
                 // create a picture in shm
                 ctl->max_width=736;
@@ -141,6 +147,8 @@ int main(int argc, char **argv) {
                 picture.pixel[1]=curr_pict+ctl->max_height*ctl->stride0;
                 picture.pixel[2]=picture.pixel[1]+ctl->max_height/2*ctl->stride1;
                 picture.edge_width=picture.edge_height=0;
+                picture.max_width=ctl->max_width;
+                picture.max_height=ctl->max_height;
         }
         ctl->attached=1;
         //printf("pict_shmid: %d max: (%d,%d), stride0: %d, stride2: %d\n",
@@ -216,6 +224,7 @@ int main(int argc, char **argv) {
                         vout->CommitUnlockOsdSurface();
                         ctl->new_osd=0;
                 };
+                vout->ProcessEvents();
 
                 vout->GetOSDDimension(ctl->osd_width,ctl->osd_height,
                                       ctl->osd_xPan,ctl->osd_yPan);

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.10 2006/06/09 16:45:13 lucke Exp $
+ * $Id: softdevice.h,v 1.11 2006/08/27 13:02:50 wachm Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -92,7 +92,7 @@ public:
   inline int Freeze(int Stream, int Value)
   { if (decoder) decoder->Freeze(Stream,Value); return 0;};
 
-  void LoadSubPlugin(char *outMethodName, int reconfigureArg, char *pluginPath);
+  void LoadSubPlugin(char *outMethodName, char *pluginPath);
 
   virtual bool HasDecoder(void) const;
   virtual bool CanReplay(void) const;

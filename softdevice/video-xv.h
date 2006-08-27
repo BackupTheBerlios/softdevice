@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.22 2006/07/25 19:58:12 wachm Exp $
+ * $Id: video-xv.h,v 1.23 2006/08/27 13:02:50 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -143,6 +143,12 @@ public:
   XvImage           *xv_image;
   XImage            *osd_image;
   int               osd_max_width,osd_max_height;
+  int               xv_max_width,xv_max_height;
+  sPicBuffer        privBuf;
+
+  XvImage           *dr_image[LAST_PICBUF];
+  XShmSegmentInfo   dr_shminfo[LAST_PICBUF];
+
 private:
   unsigned char     *osd_buffer,
                     *pixels[3];
@@ -166,6 +172,10 @@ public:
   virtual ~cXvVideoOut();
   virtual void ProcessEvents ();
   void ShowOSD ();
+ 
+  virtual void ReleasePicBuffer(int buf_num);
+  virtual bool AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
+                        int w, int h);
 
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();
@@ -183,10 +193,15 @@ public:
 
   virtual void CloseOSD();
   virtual bool Initialize (void);
-  virtual bool Reconfigure (int format = FOURCC_YUY2);
+  virtual bool Reconfigure (int format = 0, 
+                  int width = XV_SRC_WIDTH, int height = XV_SRC_HEIGHT);
+  void DeInitXv();
   void CreateXvImage(Display *dpy,XvPortID port,XvImage *&xv_image,
                   XShmSegmentInfo &shminfo,int format, int &width, int &height);
-  int PutXvImage();
+  void DestroyXvImage(Display *dpy,XvPortID port,
+                  XvImage *&xv_image,
+                  XShmSegmentInfo &shminfo ); 
+  int PutXvImage(XvImage *xv_image, int edge_width=0, int edge_height=0);
   virtual void YUV(sPicBuffer *buf);
   virtual void Pause(void);
 

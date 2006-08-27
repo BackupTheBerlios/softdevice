@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.58 2006/07/25 19:58:12 wachm Exp $
+ * $Id: video-xv.c,v 1.59 2006/08/27 13:02:50 wachm Exp $
  */
 
 #include <unistd.h>
@@ -30,6 +30,13 @@
 #include "setup-softdevice.h"
 
 #define PATCH_VERSION "2006-04-24"
+
+#define NO_DIRECT_RENDERING
+
+int pixFormat[3]={
+        FOURCC_I420,
+        FOURCC_YV12,
+        FOURCC_YUY2};
 
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 cSoftRemote        *xvRemote = NULL;
@@ -733,7 +740,7 @@ void cXvVideoOut::ProcessEvents ()
     if (map_count) {
       XClearArea (dpy, win, 0, 0, 0, 0, False);
       ShowOSD();
-      PutXvImage();
+      PutXvImage(xv_image,privBuf.edge_width,privBuf.edge_height);
       XSync(dpy, False);
     }
     attributeStore.CheckVideoParmChange();
@@ -795,6 +802,14 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
   } else {
     lwidth = dwidth = XV_DEST_WIDTH_16_9;
   }
+
+  for (int i=0; i<LAST_PICBUF; i++) {
+          dr_image[i]=NULL;
+          dr_shminfo[i].shmid=-1;
+          dr_shminfo[i].shmaddr=NULL;
+  };
+  
+  InitPicBuffer(&privBuf);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1050,7 +1065,7 @@ init_osd:
 
 /* ---------------------------------------------------------------------------
  */
-bool cXvVideoOut::Reconfigure(int format)
+bool cXvVideoOut::Reconfigure(int format, int width, int height)
 {
     int                 fmt_cnt, k, rc,
                         got_port, got_fmt;
@@ -1058,9 +1073,20 @@ bool cXvVideoOut::Reconfigure(int format)
                         i;
     XvAdaptorInfo       *ad_info;
     XvImageFormatValues *fmt_info;
-    int                 len=0;
 
+  if (format > 3) {
+          printf("XvVideoOut.Reconfigure format > 3!\n");
+          return false;
+  };
+  
+  currentPixelFormat=format;
+  format = pixFormat[currentPixelFormat];
+  //printf("Reconfigure %d %d %d %d\n",currentPixelFormat,format,width,height);fflush(stdout);
   pthread_mutex_lock(&xv_mutex);
+
+  xv_initialized = 0;
+  xvWidth=width;
+  xvHeight=height;
 
   /*
    * So let's first check for an available adaptor and port
@@ -1135,22 +1161,18 @@ bool cXvVideoOut::Reconfigure(int format)
               dsyslog("[XvVideoOut]: max area size %lu x %lu",
                       encodingInfo[n].width, encodingInfo[n].height);
 
-              if (setupStore->xvMaxArea) {
-                /* ------------------------------------------------------------
-                 * adjust width to 8 byte boundary and height to an even
-                 * number of lines.
-                 */
-                xvWidth  = (encodingInfo[n].width & ~7);
-                xvHeight = (encodingInfo[n].height & ~1);
-              } else {
-                xvWidth  = XV_SRC_WIDTH;
-                xvHeight = XV_SRC_HEIGHT;
-              }
+              /* ------------------------------------------------------------
+               * adjust width to 8 byte boundary and height to an even
+               * number of lines.
+               */
+              xv_max_width = (encodingInfo[n].width & ~7);
+              xv_max_height = (encodingInfo[n].height & ~1);
+
+              //FIXME (re)move?
               fprintf(stderr, "[XvVideoOut]: using area size %d x %d\n",
                       xvWidth, xvHeight);
               dsyslog("[XvVideoOut]: using area size %d x %d",
                       xvWidth, xvHeight);
-              len = xvWidth * xvHeight * 2;
             }
           }
           break;
@@ -1164,18 +1186,18 @@ bool cXvVideoOut::Reconfigure(int format)
     /* Xv extension probably not present */
     esyslog("[XvVideoOut]: (ERROR) no Xv extensions found! No video possible!");
     pthread_mutex_unlock(&xv_mutex);
-    return true;
+    return false;
   } /* else */
 
   if(!ad_cnt) {
     esyslog("[XvVideoOut]: (ERROR) no adaptor found! No video possible!");
     pthread_mutex_unlock(&xv_mutex);
-    return true;
+    return false;
   }
   if(!got_port) {
     esyslog("[XvVideoOut]: (ERROR) could not grab any port! No video possible!");
     pthread_mutex_unlock(&xv_mutex);
-    return true;
+    return false;
   }
 
   attributeStore.SetXInfo(dpy,port,setupStore);
@@ -1198,26 +1220,54 @@ retry_image:
       pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
       pixels[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
       pixels[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
+      
+      privBuf.pixel[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
+      if (format == FOURCC_YV12) {
+              privBuf.pixel[1] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
+              privBuf.pixel[2] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
+      } else {
+              privBuf.pixel[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
+              privBuf.pixel[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
+      };
+      privBuf.stride[0] = xv_image->pitches[0];
+      privBuf.stride[1] = xv_image->pitches[2];
+      privBuf.stride[2] = xv_image->pitches[1];
+
+      privBuf.format = PIX_FMT_YUV420P;
       break;
     case FOURCC_YUY2:
       pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
+        
+      privBuf.pixel[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
+      privBuf.pixel[1] = NULL;
+      privBuf.pixel[2] = NULL;
+
+      privBuf.stride[0] = xv_image->pitches[0];
+      privBuf.stride[1] = 0;
+      privBuf.stride[2] = 0;
+      
+      privBuf.format = PIX_FMT_YUV422;
       break;
     default:
       break;
   }
 
+  privBuf.max_height=xvHeight;
+  privBuf.max_width=xvWidth;
+  privBuf.owner=this;
+
   this->format = format;
 
   ClearXvArea (0, 128, 128);
-  rc = PutXvImage();
+  rc = PutXvImage(xv_image,privBuf.edge_width,privBuf.edge_height);
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
   rc = XSync(dpy, False);
 
   if (got_error)
   {
     got_error=0;retry++;
-    xvWidth=XV_SRC_WIDTH;
-    xvHeight = XV_SRC_HEIGHT;
+    xv_max_width=xvWidth=XV_SRC_WIDTH;
+    xv_max_height=xvHeight = XV_SRC_HEIGHT;
     if (retry<2) {
             fprintf(stderr,"Error initializing Xv. Retry.\n");
             goto retry_image;
@@ -1237,6 +1287,38 @@ retry_image:
   xv_initialized = 1;
   return true;
 }
+
+void cXvVideoOut::DeInitXv() {
+  printf("DeinitXv\n");fflush(stdout);
+  pthread_mutex_lock(&xv_mutex);
+
+  XvStopVideo(dpy, port, win);
+  XvUngrabPort(dpy, port, CurrentTime);
+
+
+  if (xv_image->data) {
+    if(useShm && shminfo.shmaddr)
+    {
+      shmdt(shminfo.shmaddr);
+      shminfo.shmaddr = NULL;
+      XShmDetach(dpy, &shminfo);
+    }
+    if (!useShm) {
+      free(xv_image->data);
+    };
+    xv_image->data = NULL;
+  };
+  XSync(dpy, False);
+  pthread_mutex_unlock(&xv_mutex);
+
+  if (xv_image)
+  {
+    free(xv_image);
+    xv_image = NULL;
+  }
+
+  xv_initialized = 0;
+};
 
 /* ---------------------------------------------------------------------------
  */
@@ -1338,15 +1420,103 @@ void cXvVideoOut::CreateXvImage(Display *dpy,XvPortID port,
   };
 };
 
+/*-------------------------------------------------------------------------*/
+
+void cXvVideoOut::DestroyXvImage(Display *dpy,XvPortID port,
+                  XvImage *&xv_image,
+                  XShmSegmentInfo &shminfo ) {
+  if (!xv_image)
+          return;
+  
+  if (xv_image->data) {
+    if(useShm && shminfo.shmaddr)
+    {
+      shmdt(shminfo.shmaddr);
+      shminfo.shmaddr = NULL;
+      XShmDetach(dpy, &shminfo);
+      shminfo.shmid = -1;
+    }
+    if (!useShm) {
+      free(xv_image->data);
+    };
+    xv_image->data = NULL;
+  };
+
+  free(xv_image);
+  xv_image=NULL;
+};
+
+/* ---------------------------------------------------------------------------
+ */
+bool cXvVideoOut::AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
+                    int w, int h) {
+
+  if ( pix_fmt != PIX_FMT_YUV420P || format != FOURCC_YV12 ||
+       !xv_initialized 
+#ifdef NO_DIRECT_RENDERING
+       || 1
+#endif
+       ) {
+    // no direct rendering 
+    return cVideoOut::AllocPicBuffer(buf_num,pix_fmt,w,h);
+  };
+
+  pthread_mutex_lock(&xv_mutex);
+  CreateXvImage(dpy,port,dr_image[buf_num],dr_shminfo[buf_num],
+      format,w, h);
+  XSync(dpy, False);
+  pthread_mutex_unlock(&xv_mutex);
+
+  XvImage *image=dr_image[buf_num];
+  
+  sPicBuffer *buf=&PicBuffer[buf_num];
+
+  buf->pixel[0] = (uint8_t *) (image->data + image->offsets[0]);
+  buf->pixel[1] = (uint8_t *) (image->data + image->offsets[2]);
+  buf->pixel[2] = (uint8_t *) (image->data + image->offsets[1]);
+  
+  buf->stride[0] = image->pitches[0];
+  buf->stride[1] = image->pitches[2];
+  buf->stride[2] = image->pitches[1];
+
+  buf->max_height=h;
+  buf->max_width=w;
+  buf->format=pix_fmt;
+  return true;
+};
+
+void cXvVideoOut::ReleasePicBuffer(int buf_num) {
+
+  if ( !dr_image[buf_num] ) {
+    // no direct rendering
+    cVideoOut::ReleasePicBuffer(buf_num);
+    return;
+  };
+  
+  pthread_mutex_lock(&xv_mutex);
+  DestroyXvImage(dpy, port, dr_image[buf_num], dr_shminfo[buf_num] ); 
+  pthread_mutex_unlock(&xv_mutex);
+  
+  sPicBuffer *buf=&PicBuffer[buf_num];
+
+  for (int i=0; i<4; i++) {
+    buf->pixel[i]=NULL;
+  };
+  buf->max_height=0;
+  buf->max_width=0;
+  buf->format=PIX_FMT_NB;
+};
+
 /*----------------------------------------------------------------------------
  */
 
-int cXvVideoOut::PutXvImage() {
+int cXvVideoOut::PutXvImage(XvImage *xv_image, 
+                            int edge_width, int edge_height) {
   if (useShm)
     return XvShmPutImage(dpy, port,
                      win, gc,
                      xv_image,
-                     sxoff, syoff,      /* sx, sy */
+                     sxoff+edge_width, syoff+edge_height,      /* sx, sy */
                      swidth, sheight,   /* sw, sh */
                      lxoff,  lyoff,     /* dx, dy */
                      lwidth, lheight,   /* dw, dh */
@@ -1355,7 +1525,7 @@ int cXvVideoOut::PutXvImage() {
     return XvPutImage(dpy, port,
                      win, gc,
                      xv_image,
-                     sxoff, syoff,      /* sx, sy */
+                     sxoff+edge_width, syoff+edge_height,      /* sx, sy */
                      swidth, sheight,   /* sw, sh */
                      lxoff,  lyoff,     /* dx, dy */
                      lwidth, lheight    /* dw, dh */
@@ -1375,40 +1545,14 @@ void cXvVideoOut::Suspend(void)
   if (!xv_initialized)
     return;
 
-  pthread_mutex_lock(&xv_mutex);
-
-  XvStopVideo(dpy, port, win);
-  XvUngrabPort(dpy, port, CurrentTime);
-
-
-  if (xv_image->data) {
-    if(useShm && shminfo.shmaddr)
-    {
-      shmdt(shminfo.shmaddr);
-      shminfo.shmaddr = NULL;
-      XShmDetach(dpy, &shminfo);
-    }
-    if (!useShm) {
-      free(xv_image->data);
-    };
-    xv_image->data = NULL;
-  };
-  pthread_mutex_unlock(&xv_mutex);
-
-  if (xv_image)
-  {
-    free(xv_image);
-    xv_image = NULL;
-  }
-
-  xv_initialized = 0;
+  DeInitXv();
 }
 
 /* ---------------------------------------------------------------------------
  */
 bool cXvVideoOut::Resume(void)
 {
-  return Reconfigure(format);
+  return Reconfigure(currentPixelFormat);
 }
 
 
@@ -1617,6 +1761,17 @@ void cXvVideoOut::ShowOSD ()
  */
 void cXvVideoOut::YUV(sPicBuffer *buf)
 {
+  if ( (xvWidth != buf->max_width && xv_max_width >= buf->max_width) ||
+       (xvHeight != buf->max_height && xv_max_height >= buf->max_height) ||
+       currentPixelFormat != setupStore->pixelFormat) {
+  
+          if (xv_initialized)
+                  DeInitXv();
+          if ( !Reconfigure(setupStore->pixelFormat,
+                                  buf->max_width,buf->max_height) )
+                  return;
+  };
+
   if (!videoInitialized || !xv_initialized)
     return;
 
@@ -1636,6 +1791,22 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
     cutRight = setupStore->cropRightCols;
     ClearXvArea (0, 128, 128);
   }
+
+  if ( 0 && buf->owner == this ) {
+    int buf_num=0;
+    while ( &PicBuffer[buf_num]!= buf && buf_num<LAST_PICBUF)
+      buf_num++;
+
+    if ( buf_num<LAST_PICBUF && 
+        !(OSDpresent&& current_osdMode==OSDMODE_SOFTWARE) ) {
+      PutXvImage(dr_image[buf_num],buf->edge_width,buf->edge_height);
+      XSync(dpy, False);
+      pthread_mutex_unlock(&xv_mutex);
+      return;
+    };
+  };
+
+  
   uint8_t *Py=buf->pixel[0]
                 +(buf->edge_height)*buf->stride[0]
                 +buf->edge_width;
@@ -1659,77 +1830,18 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
 
   // if (0) {
   if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
-        for (int i = cutTop * 2; i < fheight - cutBottom * 2; i++)
-        {
-          AlphaBlend(pixels[0]+i*xvWidth+2*cutLeft,
-                     OsdPy+i*OSD_FULL_WIDTH+2*cutLeft,
-                     Py + i * Ystride+2*cutLeft,
-                     OsdPAlphaY+i*OSD_FULL_WIDTH+2*cutLeft,
-                     fwidth-2*(cutLeft+cutRight));
-        }
-
-        for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
-        {
-          AlphaBlend(pixels[1]+i*xvWidth/2+cutLeft,
-                     OsdPv+i*OSD_FULL_WIDTH/2+cutLeft,
-                     Pv+ i * UVstride+cutLeft,
-                     OsdPAlphaUV+i*OSD_FULL_WIDTH/2+cutLeft,
-                     fwidth/2-(cutLeft+cutRight));
-        }
-
-        for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
-        {
-          AlphaBlend(pixels[2]+i*xvWidth/2+cutLeft,
-                     OsdPu+i*OSD_FULL_WIDTH/2+cutLeft,
-                     Pu+i*UVstride+cutLeft,
-                     OsdPAlphaUV+i*OSD_FULL_WIDTH/2+cutLeft,
-                     fwidth/2-(cutLeft+cutRight));
-        }
-
+        CopyPicBufAlphaBlend(&privBuf,buf,
+                        OsdPy,OsdPu,OsdPv,
+                        OsdPAlphaY,OsdPAlphaUV,OSD_FULL_WIDTH,
+                        cutTop,cutBottom,cutLeft,cutRight);
   }
     else
 #endif
     {
-
-      switch (format) {
-        case FOURCC_YV12:
-        case FOURCC_I420:
-          for (int i = cutTop * 2; i < fheight - cutBottom * 2; i++)
-             fast_memcpy(pixels [0] + i * xvWidth + 2 * cutLeft,
-                         Py + i * Ystride + 2 * cutLeft,
-                         fwidth - 2 * (cutLeft + cutRight));
-          for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
-             fast_memcpy (pixels [1] + i * xvWidth / 2 + cutLeft,
-                          Pv + i * UVstride + cutLeft,
-                          fwidth / 2 - (cutLeft + cutRight));
-          for (int i = cutTop; i < fheight / 2 - cutBottom; i++)
-             fast_memcpy (pixels [2] + i * xvWidth / 2 + cutLeft,
-                          Pu + i * UVstride + cutLeft,
-                          fwidth / 2 - (cutLeft + cutRight));
-          break;
-        case FOURCC_YUY2:
-      if (interlaceMode) {
-          yv12_to_yuy2_il_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                               Pu + UVstride * cutTop + cutLeft,
-                               Pv + UVstride * cutTop + cutLeft,
-                               pixels[0] + 2*xvWidth * cutTop * 2 + cutLeft * 4,
-                               Width - 2 * (cutLeft + cutRight),
-                               Height - 2 * (cutTop + cutBottom),
-                               Ystride, UVstride, 2*xvWidth);
-      } else {
-          yv12_to_yuy2_fr_mmx2(Py + Ystride  * cutTop * 2 + cutLeft * 2,
-                               Pu + UVstride * cutTop + cutLeft,
-                               Pv + UVstride * cutTop + cutLeft,
-                               pixels[0] + 2*xvWidth * cutTop * 2 + cutLeft * 4,
-                               Width - 2 * (cutLeft + cutRight),
-                               Height - 2 * (cutTop + cutBottom),
-                               Ystride, UVstride, 2*xvWidth);
-      }
-          break;
-      }
+       CopyPicBuf(&privBuf,buf,cutTop,cutBottom,cutLeft,cutRight);
     }
   }
-  PutXvImage();
+  PutXvImage(xv_image,privBuf.edge_width,privBuf.edge_height);
   XSync(dpy, False);
   pthread_mutex_unlock(&xv_mutex);
 }

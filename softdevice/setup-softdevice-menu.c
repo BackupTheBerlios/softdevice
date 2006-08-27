@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.6 2006/06/25 13:46:12 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.7 2006/08/27 13:02:50 wachm Exp $
  */
 
 //#include "video.h"
@@ -356,7 +356,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   Add(new cOsdItem(" ", osUnknown));
 #endif
 
-  if ((data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX) &&
+  if ((data->outputMethod == VOUT_DFB || data->outputMethod == VOUT_VIDIX
+       || data->outputMethod == VOUT_XV ) &&
       !data->pixelFormatLocked)
   {
     Add(new cMenuEditStraItem(tr("Pixel Format"),

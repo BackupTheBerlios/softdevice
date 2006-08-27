@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.8 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video-shm.c,v 1.9 2006/08/27 13:02:50 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -17,6 +17,12 @@
 #ifndef SHMDEB
 #define SHMDEB(out...)
 #endif
+
+//#define SIGDEB(out...) {printf("SIGSERV[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+
+#ifndef SIGDEB
+#define SIGDEB(out...)
+#endif
   
 cShmRemote::~cShmRemote(){
         SHMDEB("~cShmRemote\n");
@@ -26,9 +32,9 @@ cShmRemote::~cShmRemote(){
 
 void cShmRemote::Action(void) {
         while (active) {
-                SHMDEB("cShmRemote trying to get a lock\n");
+                SIGDEB("cShmRemote trying to get a lock\n");
                 sem_wait_lock(vout->ctl->semid,KEY_MUT);
-                SHMDEB("cShmRemote got lock\n");
+                SIGDEB("cShmRemote got lock\n");
                 
                 if (!vout->ctl->attached) {
                         vout->setupStore->shouldSuspend=1;
@@ -46,7 +52,7 @@ void cShmRemote::Action(void) {
                 // release lock
                 sem_sig_unlock(vout->ctl->semid,KEY_MUT);
 
-                SHMDEB("wait for a new key\n");
+                SIGDEB("wait for a new key\n");
                 sem_wait_lock(vout->ctl->semid,KEY_SIG);
         };
         SHMDEB("ShmRemote thread ended\n");
@@ -58,6 +64,7 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore)
         : cVideoOut(setupStore) {
         ctl_key = CTL_KEY;
         bool Clear_Ctl=false;
+        InitPicBuffer(&privBuf);
 
         // first try to get an existing ShmCltBlock
         if  ( (ctl_shmid = shmget(ctl_key,sizeof(ShmCtlBlock), 0666)) >= 0 ) {
@@ -122,7 +129,7 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore)
         //ctl->pict_shmid=-1;
         curr_pict=NULL;
         osd_surface=NULL;
-        ctl->key=kNone;
+        ctl->key=NO_KEY;
         remote = new cShmRemote("softdevice-xv",this);
 };
 
@@ -137,6 +144,10 @@ cShmVideoOut::~cShmVideoOut() {
             exit(1);
         }
         ctl->semid=-1;
+                        
+        if (osd_surface)
+                shmdt(osd_surface);
+        osd_surface=NULL;
         
         if (curr_pict)
                 shmdt(curr_pict);
@@ -251,6 +262,28 @@ void cShmVideoOut::CommitUnlockOsdSurface() {
         sem_sig_unlock(ctl->semid,PICT_SIG);
 };
 
+void cShmVideoOut::ProcessEvents() {
+        // I don't know if there is a timeout mechanism (which would probably the better solution),
+        // so we just signal every once and a while so that the client processes its events.
+        SIGDEB("ProcessEvents sending signal\n");
+        sem_sig_unlock(ctl->semid,PICT_SIG);
+}
+
+void cShmVideoOut::Suspend() {
+        SHMDEB("Suspend shm server\n");
+        if (osd_surface) {
+                shmdt(osd_surface);
+                osd_surface=NULL;
+                curr_osd_shmid=-1;
+        };
+        
+        if (curr_pict) {
+                shmdt(curr_pict);
+                curr_pict=NULL;
+                curr_pict_shmid=-1;
+        }
+};
+
 void cShmVideoOut::YUV(sPicBuffer *buf) {
         uint8_t *Py=buf->pixel[0]+(buf->edge_height)*buf->stride[0]
                 +buf->edge_width;
@@ -268,9 +301,9 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                 return;
         } else setupStore->shouldSuspend=0;
 
-        //SHMDEB("trying to get a lock\n");
+        SIGDEB("YUV trying to get a lock\n");
         sem_wait_lock(ctl->semid,PICT_MUT);
-        //SHMDEB("got a lock\n");
+        SIGDEB("YUV got a lock\n");
         
         if ( ctl->pict_shmid != curr_pict_shmid ) {
                 if (curr_pict) {
@@ -281,17 +314,35 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                 if ( ctl->pict_shmid != -1 ) {
                        if ( (curr_pict = (uint8_t *)shmat(ctl->pict_shmid,NULL,0)) 
                                        == (uint8_t*) -1 ) {
-                               fprintf(stderr,"error attatching shm pict! Assumeing no client connected\n");
+                               fprintf(stderr,"error attatching shm pict! Assuming no client connected\n");
                                ctl->pict_shmid = -1;
                                ctl->attached = 0;
                                curr_pict=NULL;
                                sem_sig_unlock(ctl->semid,PICT_MUT);
                                return;
-                       } 
-                       pixels[0]=curr_pict;
-                       pixels[1]=curr_pict+ctl->max_height*ctl->stride0;
-                       pixels[2]=pixels[1]+ctl->max_height/2*ctl->stride1;
+                       }
                        curr_pict_shmid=ctl->pict_shmid;
+                       privBuf.format=PIX_FMT_YUV420P;//ctl->format;
+                       privBuf.max_width=ctl->max_width;
+                       privBuf.max_height=ctl->max_height;
+                       switch (privBuf.format) {
+                        case PIX_FMT_YUV420P:  
+                                SHMDEB("new format YUV420P\n");
+                                pixels[0]=privBuf.pixel[0]=curr_pict;
+                                pixels[2]=privBuf.pixel[2]=curr_pict+ctl->max_height*ctl->stride0;
+                                pixels[1]=privBuf.pixel[1]=privBuf.pixel[2]+ctl->max_height/2*ctl->stride1;
+                                privBuf.stride[0]=ctl->stride0;
+                                privBuf.stride[1]=privBuf.stride[2]=ctl->stride1;
+                                break;
+                        case PIX_FMT_YUV422:
+                                SHMDEB("new format YUV422\n");
+                                privBuf.pixel[0]=curr_pict;
+                                privBuf.stride[0]=ctl->stride0;
+                                break;
+                        default:
+                                break;
+                       }
+                       SHMDEB("new pict %p shmid %d\n",curr_pict,curr_pict_shmid);
                 };
         };
 
@@ -311,8 +362,11 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
         ctl->new_afd=current_afd;
         ctl->new_asp=GetAspect_F();
         if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
-                
-                for (int i = 0; i < height; i++)
+
+                CopyPicBufAlphaBlend(&privBuf,buf,
+                                OsdPy,OsdPu,OsdPv,OsdPAlphaY,OsdPAlphaUV, OSD_FULL_WIDTH,
+                                0,0,0,0);                
+/*                for (int i = 0; i < height; i++)
                         AlphaBlend(pixels [0] + i * ctl->stride0,
                                        OsdPy+i*OSD_FULL_WIDTH,
                                        Py + i * Ystride,
@@ -330,8 +384,9 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                                         Pv + i * UVstride,
                                         OsdPAlphaUV+i*OSD_FULL_WIDTH/2,
                                         width / 2);
-        } else {
-                
+  */      } else {
+                CopyPicBuf(&privBuf,buf,0,0,0,0);
+               /* 
                 for (int i = 0; i < height; i++)
                         fast_memcpy(pixels [0] + i * ctl->stride0,
                                         Py + i * Ystride,
@@ -344,16 +399,16 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                         fast_memcpy (pixels [1] + i * ctl->stride2 ,
                                         Pv + i * UVstride,
                                         width / 2);
-
+*/
         };
         ctl->new_pict++;
         if (ctl->new_pict>30) {
-                printf("new_pict > 30; assueming client died!\n");
+                printf("new_pict > 30; assuming client died!\n");
                 ctl->attached=0;
         };
         sem_sig_unlock(ctl->semid,PICT_MUT);
         sem_sig_unlock(ctl->semid,PICT_SIG);
-        //SHMDEB("send signal\n");
+        SIGDEB("send signal\n");
         
 };
 

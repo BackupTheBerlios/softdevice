@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.h,v 1.5 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video-shm.h,v 1.6 2006/08/27 13:02:50 wachm Exp $
  */
 
 #ifndef __VIDEO_SHM_H__
@@ -35,6 +35,7 @@ class cShmVideoOut : public cVideoOut {
         int curr_pict_shmid;
         uint8_t *curr_pict;
         uint8_t *pixels[4];
+        sPicBuffer privBuf;
 
         int curr_osd_shmid;
         uint8_t *osd_surface;
@@ -44,6 +45,8 @@ class cShmVideoOut : public cVideoOut {
         ~cShmVideoOut();
         
         virtual void AdjustOSDMode();
+
+        virtual void ProcessEvents();
 
         virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
                                      int &xPan, int &yPan);
@@ -56,6 +59,8 @@ class cShmVideoOut : public cVideoOut {
                         bool *&dirtyLines);
         virtual void CommitUnlockOsdSurface();
         virtual void ClearOSD();
+
+        virtual void Suspend();
 };
 
 /* ---------------------------------------------------------------------------

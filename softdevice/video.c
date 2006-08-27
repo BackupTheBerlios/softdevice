@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.60 2006/07/12 18:40:16 lucke Exp $
+ * $Id: video.c,v 1.61 2006/08/27 13:02:50 wachm Exp $
  */
 
 #include <fcntl.h>
@@ -18,7 +18,7 @@
 #include "setup-softdevice.h"
 #include "sync-timer.h"
 
-//#define OSDDEB(out...) {printf("vout_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+#define OSDDEB(out...) {printf("vout_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef OSDDEB
 #define OSDDEB(out...)
@@ -58,7 +58,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
 
   //start osd thread
   active=true;
-  Start();
+  //Start();
 }
 
 cVideoOut::~cVideoOut()
@@ -111,7 +111,7 @@ void cVideoOut::Action()
       osdMutex.Lock();
       if (old_picture)
       {
-        OSDDEB("redrawing old_picture\n");
+        OSDDEB("redrawing old_picture osd_changed %d\n",Osd_changed);
         DrawStill_420pl(old_picture);
       }
       else
@@ -129,7 +129,7 @@ void cVideoOut::Action()
         tmpBuf.aspect_ratio=((float)OSD_FULL_HEIGHT)/((float)OSD_FULL_WIDTH);
         tmpBuf.aspect_ratio=((float)OSD_FULL_WIDTH)/((float)OSD_FULL_HEIGHT);
         tmpBuf.dtg_active_format=0;
-        OSDDEB("drawing osd_layer\n");
+        OSDDEB("drawing osd_layer osd_changed %d\n",Osd_changed);
         DrawStill_420pl(&tmpBuf);
       }
       osdMutex.Unlock();

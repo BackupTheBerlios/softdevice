@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.65 2006/07/25 19:58:12 wachm Exp $
+ * $Id: softdevice.c,v 1.66 2006/08/27 13:02:50 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -197,28 +197,28 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     switch (method) {
       case VOUT_XV:
 #ifdef XV_SUPPORT
-        LoadSubPlugin ("xv", FOURCC_YV12, pluginPath);
+        LoadSubPlugin ("xv", pluginPath);
         //LoadSubPlugin ("xv", FOURCC_YUY2, pluginPath);
 #endif
         break;
       case VOUT_FB:
 #ifdef FB_SUPPORT
-        LoadSubPlugin ("fb", 0, pluginPath);
+        LoadSubPlugin ("fb", pluginPath);
 #endif
         break;
       case VOUT_DFB:
 #ifdef DFB_SUPPORT
-        LoadSubPlugin ("dfb", 0, pluginPath);
+        LoadSubPlugin ("dfb", pluginPath);
 #endif
         break;
       case VOUT_VIDIX:
 #ifdef VIDIX_SUPPORT
-        LoadSubPlugin ("vidix", 0, pluginPath);
+        LoadSubPlugin ("vidix", pluginPath);
 #endif
         break;
       case VOUT_SHM:
 #ifdef SHM_SUPPORT
-        LoadSubPlugin ("shm", 0, pluginPath);
+        LoadSubPlugin ("shm", pluginPath);
 #endif
         break;
       case VOUT_DUMMY:
@@ -234,8 +234,19 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       case VOUT_XV:
 #ifdef XV_SUPPORT
         videoOut = new cXvVideoOut (&setupStore);
-        if (videoOut->Initialize () && videoOut->Reconfigure (FOURCC_YV12)) {
-        //if (videoOut->Initialize () && videoOut->Reconfigure (FOURCC_YUY2)) {
+        if ( !videoOut->Initialize() ) {
+                
+          if (!videoOut->Reconfigure()) {
+                  // XVideo intialization failed, try different pix formats
+                  setupStore.pixelFormat=0;
+                  while (!videoOut->Reconfigure(setupStore.pixelFormat)
+                                  && setupStore.pixelFormat < 3)
+                          setupStore.pixelFormat++;
+                  // reset to default if all failed...
+                  if (setupStore.pixelFormat == 3)
+                          setupStore.pixelFormat == 0;
+          };
+                  
           fprintf (stderr, "[softdevice] Xv out OK !\n");
         } else {
           fprintf (stderr, "[softdevice] Xv out failure !\n");
@@ -277,6 +288,9 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         break;
     }
 #endif
+    // start OSD refresh thread
+    videoOut->Start();
+
     fprintf(stderr,"[softdevice] Video Out seems to be OK\n");
     fprintf(stderr,"[softdevice] Initializing Audio Out\n");
     switch (audioMethod) {
@@ -308,7 +322,6 @@ cSoftDevice::~cSoftDevice()
 /* ----------------------------------------------------------------------------
  */
 void cSoftDevice::LoadSubPlugin(char *outMethodName,
-                                int reconfigureArg,
                                 char *pluginPath)
 {
     char  *subPluginFileName = NULL;
@@ -351,8 +364,9 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
       fprintf(stderr,"[softdevice] Did you use the -L option?\n");
       exit(1);
     }
-    if (videoOut->Initialize () && videoOut->Reconfigure (reconfigureArg))
+    if ( videoOut->Initialize() )
     {
+      videoOut->Reconfigure();
       fprintf(stderr,"[softdevice] Subplugin successfully opend\n");
       dsyslog("[softdevice] videoOut OK !\n");
     }
