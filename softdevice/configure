@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.23 2006/07/16 13:04:15 wachm Exp $
+# $Id: configure,v 1.24 2006/08/27 12:48:46 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -129,7 +129,7 @@ int main(void) {
  return 0;
 }
 EOF
-  $cc $CFLAGS $ffmpeg_cflags $ffmpeg_libs -o $TMPE $TMPC $ffmpeg_libs  >> config.log 2>&1 || ffmpeg="no"
+  $cc $CFLAGS $ffmpeg_cflags -o $TMPE $TMPC $ffmpeg_libs  >> config.log 2>&1 || ffmpeg="no"
 };
 
 ffmpeg="no" # = not yet configured 
@@ -137,7 +137,7 @@ if test "${use_pkgconfig}" = "yes" ; then
   if test "${ffmpeg_use_path}" = "no" ; then
 
 echo "try to use pkg-config." >> config.log
-ffmpeg_l1="libavcodec libavformat"
+ffmpeg_l1="libavformat libavcodec"
 
 pkg-config --libs libpostproc >> config.log 2>&1 && { ffmpeg_l1="$ffmpeg_l1 libpostproc";libpostproc="yes"; }
 
@@ -153,7 +153,7 @@ fi
 if test "${ffmpeg}" = "no" ; then
   echo "pkg-config failed, try the default/parameter path." >> config.log
   ffmpeg="yes"
-  ffmpeg_libs="-L${ffmpeg_path}/ -L${ffmpeg_path}/libavcodec/ -L${ffmpeg_path}/libavformat/ -lavformat -lz -lavcodec "
+  ffmpeg_libs="-L${ffmpeg_path}/ -L${ffmpeg_path}/libavcodec/ -L${ffmpeg_path}/libavformat/ -lavformat -lavcodec -lz"
   ffmpeg_cflags="-I${ffmpeg_path}/ -I${ffmpeg_path}/libavcodec/ -I${ffmpeg_path}/libavformat/ "
 
   test_ffmpeg
