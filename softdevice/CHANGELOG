@@ -1,6 +1,8 @@
 Changelog
 2006-08-27:
    - adjust ffmpeg library order in configure
+   - enable different pixel formats in video-xv
+   - properly init ctl->key (reported by Matthias Schwarzott)
 2006-08-05:
    - video-dfb: disable reported failed flags in SetParams()
 2006-07-25:
