@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.59 2006/08/27 13:02:50 wachm Exp $
+ * $Id: video-xv.c,v 1.60 2006/09/04 20:29:53 wachm Exp $
  */
 
 #include <unistd.h>
@@ -1222,16 +1222,18 @@ retry_image:
       pixels[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
       
       privBuf.pixel[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
+      privBuf.stride[0] = xv_image->pitches[0];
       if (format == FOURCC_YV12) {
               privBuf.pixel[1] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
               privBuf.pixel[2] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
+              privBuf.stride[1] = xv_image->pitches[2];
+              privBuf.stride[2] = xv_image->pitches[1];
       } else {
-              privBuf.pixel[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
               privBuf.pixel[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
+              privBuf.pixel[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
+              privBuf.stride[1] = xv_image->pitches[1];
+              privBuf.stride[2] = xv_image->pitches[2];
       };
-      privBuf.stride[0] = xv_image->pitches[0];
-      privBuf.stride[1] = xv_image->pitches[2];
-      privBuf.stride[2] = xv_image->pitches[1];
 
       privBuf.format = PIX_FMT_YUV420P;
       break;

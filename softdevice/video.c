@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.61 2006/08/27 13:02:50 wachm Exp $
+ * $Id: video.c,v 1.62 2006/09/04 20:29:54 wachm Exp $
  */
 
 #include <fcntl.h>
@@ -18,7 +18,7 @@
 #include "setup-softdevice.h"
 #include "sync-timer.h"
 
-#define OSDDEB(out...) {printf("vout_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+//#define OSDDEB(out...) {printf("vout_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
 #ifndef OSDDEB
 #define OSDDEB(out...)
