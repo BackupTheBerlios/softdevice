@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.6 2006/07/10 17:56:29 wachm Exp $
+ * $Id: PicBuffer.c,v 1.7 2006/09/04 20:37:07 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -22,11 +22,9 @@
 #endif
 
 void InitPicBuffer(sPicBuffer *Pic) {
-        memset(Pic->pixel,0,sizeof(Pic->pixel));
-        Pic->use_count=0;
+        memset(Pic,0,sizeof(sPicBuffer));
         Pic->pic_num=-256*256*256*64;
         Pic->format=PIX_FMT_NB;
-        Pic->max_width=Pic->max_height=0;
         Pic->buf_num=-1;
 };
 

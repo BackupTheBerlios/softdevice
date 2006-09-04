@@ -4,6 +4,7 @@ Changelog
      and derWolf@vdrportal)
    - disable debuging printouts
    - cleanup
+   - set sPicBuffer completly to zero
 2006-08-27:
    - adjust ffmpeg library order in configure
    - enable different pixel formats in video-xv
