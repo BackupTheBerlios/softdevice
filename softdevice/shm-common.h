@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: shm-common.h,v 1.5 2006/04/01 08:26:56 wachm Exp $
+ * $Id: shm-common.h,v 1.6 2006/09/04 20:25:17 wachm Exp $
  */
 #ifndef __SHM_COMMON_H__
 #define __SHM_COMMON_H__
@@ -18,7 +18,7 @@
 #include <sys/sem.h> 
 
 
-#define CTL_KEY 5678 
+#define CTL_KEY 5679 
 
 union semun {
         int val;                  
@@ -42,12 +42,16 @@ struct ShmCtlBlock {
         /* picture control */
         int pict_shmid;
         
+        PixelFormat format;
         int max_width;
         int max_height;        
         int width;
         int height;
         int new_afd;
         double new_asp;
+        int offset0;
+        int offset1;
+        int offset2;
         int stride0;
         int stride1;
         int stride2;

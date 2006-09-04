@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.23 2006/08/27 13:02:50 wachm Exp $
+ * $Id: video-xv.h,v 1.24 2006/09/04 20:25:17 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -195,6 +195,8 @@ public:
   virtual bool Initialize (void);
   virtual bool Reconfigure (int format = 0, 
                   int width = XV_SRC_WIDTH, int height = XV_SRC_HEIGHT);
+  int GetFormat() const
+  {return format;};
   void DeInitXv();
   void CreateXvImage(Display *dpy,XvPortID port,XvImage *&xv_image,
                   XShmSegmentInfo &shminfo,int format, int &width, int &height);

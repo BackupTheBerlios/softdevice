@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.15 2006/08/27 13:02:50 wachm Exp $
+ * $Id: ShmClient.c,v 1.16 2006/09/04 20:25:17 wachm Exp $
  */
 
 #include <signal.h>
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
         };
-        
+       
         while (!vout->Reconfigure(SetupStore.pixelFormat) 
                         && SetupStore.pixelFormat < 3 )
                 SetupStore.pixelFormat++;
@@ -106,13 +106,34 @@ int main(int argc, char **argv) {
                 ctl->pict_shmid= vout->shminfo.shmid;
                 ctl->max_width=vout->xv_image->width;
                 ctl->max_height=vout->xv_image->height;
-                ctl->stride0=vout->xv_image->pitches[0];
-                ctl->stride1=vout->xv_image->pitches[1];
-                ctl->stride2=vout->xv_image->pitches[2];
+                ctl->format=vout->privBuf.format;
+                switch (vout->GetFormat()) {
+                        case FOURCC_I420:
+                                ctl->offset0=vout->xv_image->offsets[0];
+                                ctl->offset1=vout->xv_image->offsets[1];
+                                ctl->offset2=vout->xv_image->offsets[2];
+                                ctl->stride0=vout->xv_image->pitches[0];
+                                ctl->stride1=vout->xv_image->pitches[1];
+                                ctl->stride2=vout->xv_image->pitches[2];
+                                break;
+                        case FOURCC_YV12:
+                                ctl->offset0=vout->xv_image->offsets[0];
+                                ctl->offset1=vout->xv_image->offsets[2];
+                                ctl->offset2=vout->xv_image->offsets[1];
+                                ctl->stride0=vout->xv_image->pitches[0];
+                                ctl->stride1=vout->xv_image->pitches[2];
+                                ctl->stride2=vout->xv_image->pitches[1];
+                                break;
+                        case FOURCC_YUY2:
+                                ctl->offset0=vout->xv_image->offsets[0];
+                                ctl->offset1=ctl->offset2=0;
+                                ctl->stride0=vout->xv_image->pitches[0];
+                                ctl->stride1=ctl->stride2=0;
+                                break;
+                };
+                
                 picture.pixel[0]=picture.pixel[1]=picture.pixel[2]=NULL;
-                picture.stride[0]=ctl->stride0;
-                picture.stride[1]=ctl->stride1;
-                picture.stride[2]=ctl->stride1;
+                picture.stride[0]=picture.stride[1]=picture.stride[2]=0;
                 picture.edge_width=picture.edge_height=0;
                 picture.max_width=ctl->max_width;
                 picture.max_height=ctl->max_height;

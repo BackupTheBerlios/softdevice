@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.9 2006/08/27 13:02:50 wachm Exp $
+ * $Id: video-shm.c,v 1.10 2006/09/04 20:25:17 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -322,22 +322,25 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                                return;
                        }
                        curr_pict_shmid=ctl->pict_shmid;
-                       privBuf.format=PIX_FMT_YUV420P;//ctl->format;
+                       privBuf.format=ctl->format;
                        privBuf.max_width=ctl->max_width;
                        privBuf.max_height=ctl->max_height;
                        switch (privBuf.format) {
                         case PIX_FMT_YUV420P:  
                                 SHMDEB("new format YUV420P\n");
-                                pixels[0]=privBuf.pixel[0]=curr_pict;
-                                pixels[2]=privBuf.pixel[2]=curr_pict+ctl->max_height*ctl->stride0;
-                                pixels[1]=privBuf.pixel[1]=privBuf.pixel[2]+ctl->max_height/2*ctl->stride1;
+                                privBuf.pixel[0]=curr_pict+ctl->offset0;
+                                privBuf.pixel[1]=curr_pict+ctl->offset1;
+                                privBuf.pixel[2]=curr_pict+ctl->offset2;
                                 privBuf.stride[0]=ctl->stride0;
-                                privBuf.stride[1]=privBuf.stride[2]=ctl->stride1;
+                                privBuf.stride[1]=ctl->stride1;
+                                privBuf.stride[2]=ctl->stride2;
                                 break;
                         case PIX_FMT_YUV422:
                                 SHMDEB("new format YUV422\n");
-                                privBuf.pixel[0]=curr_pict;
+                                privBuf.pixel[0]=curr_pict+ctl->offset0;
+                                privBuf.pixel[1]=privBuf.pixel[1]=NULL;
                                 privBuf.stride[0]=ctl->stride0;
+                                privBuf.stride[1]=privBuf.stride[2]=0;
                                 break;
                         default:
                                 break;
@@ -345,7 +348,6 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                        SHMDEB("new pict %p shmid %d\n",curr_pict,curr_pict_shmid);
                 };
         };
-
         
         if (!ctl->pict_shmid || !curr_pict) {
                 // unlock picture ctl
@@ -366,40 +368,8 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                 CopyPicBufAlphaBlend(&privBuf,buf,
                                 OsdPy,OsdPu,OsdPv,OsdPAlphaY,OsdPAlphaUV, OSD_FULL_WIDTH,
                                 0,0,0,0);                
-/*                for (int i = 0; i < height; i++)
-                        AlphaBlend(pixels [0] + i * ctl->stride0,
-                                       OsdPy+i*OSD_FULL_WIDTH,
-                                       Py + i * Ystride,
-                                       OsdPAlphaY+i*OSD_FULL_WIDTH,
-                                       width );
-                for (int i = 0; i < height / 2; i++)
-                        AlphaBlend(pixels [2] + i * ctl->stride1,
-                                        OsdPu+i*OSD_FULL_WIDTH/2,
-                                        Pu + i * UVstride ,
-                                        OsdPAlphaUV+i*OSD_FULL_WIDTH/2,
-                                        width/2);
-                for (int i = 0; i < height / 2 ; i++)
-                        AlphaBlend(pixels [1] + i * ctl->stride2 ,
-                                        OsdPv+i*OSD_FULL_WIDTH/2,
-                                        Pv + i * UVstride,
-                                        OsdPAlphaUV+i*OSD_FULL_WIDTH/2,
-                                        width / 2);
-  */      } else {
+     } else {
                 CopyPicBuf(&privBuf,buf,0,0,0,0);
-               /* 
-                for (int i = 0; i < height; i++)
-                        fast_memcpy(pixels [0] + i * ctl->stride0,
-                                        Py + i * Ystride,
-                                        width );
-                for (int i = 0; i < height / 2; i++)
-                        fast_memcpy (pixels [2] + i * ctl->stride1,
-                                        Pu + i * UVstride,
-                                        width / 2);
-                for (int i = 0; i < height / 2 ; i++)
-                        fast_memcpy (pixels [1] + i * ctl->stride2 ,
-                                        Pv + i * UVstride,
-                                        width / 2);
-*/
         };
         ctl->new_pict++;
         if (ctl->new_pict>30) {
