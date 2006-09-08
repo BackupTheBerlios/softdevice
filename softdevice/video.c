@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.62 2006/09/04 20:29:54 wachm Exp $
+ * $Id: video.c,v 1.63 2006/09/08 04:59:02 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -263,10 +263,10 @@ void cVideoOut::AdjustToDisplayGeometry(double afd_aspect)
   }
 
   /* -------------------------------------------------------------------------
-   * center result on display
+   * center result on display, and force offsets to be even.
    */
-  lxoff = (dwidth - lwidth) / 2;
-  lyoff = (dheight - lheight) / 2;
+  lxoff = ((dwidth - lwidth) / 2) & ~1;
+  lyoff = ((dheight - lheight) / 2) & ~1;
 }
 
 /* ---------------------------------------------------------------------------
