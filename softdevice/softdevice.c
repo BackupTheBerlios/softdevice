@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.67 2006/09/08 15:57:35 wachm Exp $
+ * $Id: softdevice.c,v 1.68 2006/09/08 17:04:52 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -234,8 +234,8 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
       case VOUT_XV:
 #ifdef XV_SUPPORT
         videoOut = new cXvVideoOut (&setupStore);
-        if ( !videoOut->Initialize() ) {
-                
+        if ( videoOut->Initialize() ) {
+
           if (!videoOut->Reconfigure()) {
                   // XVideo intialization failed, try different pix formats
                   setupStore.pixelFormat=0;
@@ -246,7 +246,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
                   if (setupStore.pixelFormat == 3)
                           setupStore.pixelFormat = 0;
           };
-                  
+
           fprintf (stderr, "[softdevice] Xv out OK !\n");
         } else {
           fprintf (stderr, "[softdevice] Xv out failure !\n");
