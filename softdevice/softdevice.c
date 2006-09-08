@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.66 2006/08/27 13:02:50 wachm Exp $
+ * $Id: softdevice.c,v 1.67 2006/09/08 15:57:35 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -244,7 +244,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
                           setupStore.pixelFormat++;
                   // reset to default if all failed...
                   if (setupStore.pixelFormat == 3)
-                          setupStore.pixelFormat == 0;
+                          setupStore.pixelFormat = 0;
           };
                   
           fprintf (stderr, "[softdevice] Xv out OK !\n");

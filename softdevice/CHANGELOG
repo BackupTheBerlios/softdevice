@@ -1,6 +1,7 @@
 Changelog
 2006-09-08:
    - limit destination video offsets to even values
+   - fix typo in asignment
 2006-09-04:
    - fix wrong colors when using ShmClient (reported by Matthias Schwarzott
      and derWolf@vdrportal)
