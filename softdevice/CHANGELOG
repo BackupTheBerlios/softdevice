@@ -1,4 +1,6 @@
 Changelog
+2006-09-09:
+   - video-xv.c: silence some warnings
 2006-09-08:
    - limit destination video offsets to even values
    - fix typo in asignment

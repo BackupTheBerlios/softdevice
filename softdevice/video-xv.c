@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.60 2006/09/04 20:29:53 wachm Exp $
+ * $Id: video-xv.c,v 1.61 2006/09/09 09:55:25 lucke Exp $
  */
 
 #include <unistd.h>
@@ -808,7 +808,7 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
           dr_shminfo[i].shmid=-1;
           dr_shminfo[i].shmaddr=NULL;
   };
-  
+
   InitPicBuffer(&privBuf);
 }
 
@@ -1078,7 +1078,7 @@ bool cXvVideoOut::Reconfigure(int format, int width, int height)
           printf("XvVideoOut.Reconfigure format > 3!\n");
           return false;
   };
-  
+
   currentPixelFormat=format;
   format = pixFormat[currentPixelFormat];
   //printf("Reconfigure %d %d %d %d\n",currentPixelFormat,format,width,height);fflush(stdout);
@@ -1220,7 +1220,7 @@ retry_image:
       pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
       pixels[1] = (uint8_t *) (xv_image->data + xv_image->offsets[1]);
       pixels[2] = (uint8_t *) (xv_image->data + xv_image->offsets[2]);
-      
+
       privBuf.pixel[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
       privBuf.stride[0] = xv_image->pitches[0];
       if (format == FOURCC_YV12) {
@@ -1239,7 +1239,7 @@ retry_image:
       break;
     case FOURCC_YUY2:
       pixels[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
-        
+
       privBuf.pixel[0] = (uint8_t *) (xv_image->data + xv_image->offsets[0]);
       privBuf.pixel[1] = NULL;
       privBuf.pixel[2] = NULL;
@@ -1247,7 +1247,7 @@ retry_image:
       privBuf.stride[0] = xv_image->pitches[0];
       privBuf.stride[1] = 0;
       privBuf.stride[2] = 0;
-      
+
       privBuf.format = PIX_FMT_YUV422;
       break;
     default:
@@ -1429,7 +1429,7 @@ void cXvVideoOut::DestroyXvImage(Display *dpy,XvPortID port,
                   XShmSegmentInfo &shminfo ) {
   if (!xv_image)
           return;
-  
+
   if (xv_image->data) {
     if(useShm && shminfo.shmaddr)
     {
@@ -1454,12 +1454,12 @@ bool cXvVideoOut::AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
                     int w, int h) {
 
   if ( pix_fmt != PIX_FMT_YUV420P || format != FOURCC_YV12 ||
-       !xv_initialized 
+       !xv_initialized
 #ifdef NO_DIRECT_RENDERING
        || 1
 #endif
        ) {
-    // no direct rendering 
+    // no direct rendering
     return cVideoOut::AllocPicBuffer(buf_num,pix_fmt,w,h);
   };
 
@@ -1470,13 +1470,13 @@ bool cXvVideoOut::AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
   pthread_mutex_unlock(&xv_mutex);
 
   XvImage *image=dr_image[buf_num];
-  
+
   sPicBuffer *buf=&PicBuffer[buf_num];
 
   buf->pixel[0] = (uint8_t *) (image->data + image->offsets[0]);
   buf->pixel[1] = (uint8_t *) (image->data + image->offsets[2]);
   buf->pixel[2] = (uint8_t *) (image->data + image->offsets[1]);
-  
+
   buf->stride[0] = image->pitches[0];
   buf->stride[1] = image->pitches[2];
   buf->stride[2] = image->pitches[1];
@@ -1494,11 +1494,11 @@ void cXvVideoOut::ReleasePicBuffer(int buf_num) {
     cVideoOut::ReleasePicBuffer(buf_num);
     return;
   };
-  
+
   pthread_mutex_lock(&xv_mutex);
-  DestroyXvImage(dpy, port, dr_image[buf_num], dr_shminfo[buf_num] ); 
+  DestroyXvImage(dpy, port, dr_image[buf_num], dr_shminfo[buf_num] );
   pthread_mutex_unlock(&xv_mutex);
-  
+
   sPicBuffer *buf=&PicBuffer[buf_num];
 
   for (int i=0; i<4; i++) {
@@ -1512,7 +1512,7 @@ void cXvVideoOut::ReleasePicBuffer(int buf_num) {
 /*----------------------------------------------------------------------------
  */
 
-int cXvVideoOut::PutXvImage(XvImage *xv_image, 
+int cXvVideoOut::PutXvImage(XvImage *xv_image,
                             int edge_width, int edge_height) {
   if (useShm)
     return XvShmPutImage(dpy, port,
@@ -1766,7 +1766,7 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
   if ( (xvWidth != buf->max_width && xv_max_width >= buf->max_width) ||
        (xvHeight != buf->max_height && xv_max_height >= buf->max_height) ||
        currentPixelFormat != setupStore->pixelFormat) {
-  
+
           if (xv_initialized)
                   DeInitXv();
           if ( !Reconfigure(setupStore->pixelFormat,
@@ -1799,7 +1799,7 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
     while ( &PicBuffer[buf_num]!= buf && buf_num<LAST_PICBUF)
       buf_num++;
 
-    if ( buf_num<LAST_PICBUF && 
+    if ( buf_num<LAST_PICBUF &&
         !(OSDpresent&& current_osdMode==OSDMODE_SOFTWARE) ) {
       PutXvImage(dr_image[buf_num],buf->edge_width,buf->edge_height);
       XSync(dpy, False);
@@ -1808,7 +1808,7 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
     };
   };
 
-  
+
   uint8_t *Py=buf->pixel[0]
                 +(buf->edge_height)*buf->stride[0]
                 +buf->edge_width;
@@ -1816,31 +1816,25 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
                 +buf->edge_width/2;
   uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
                 +buf->edge_width/2;
-  int Ystride=buf->stride[0];
-  int UVstride=buf->stride[1];
-  int Width=buf->width;
-  int Height=buf->height;
 
   if ( Py && Pu && Pv ) {
 #if VDRVERSNUM >= 10307
-  /* -------------------------------------------------------------------------
-   * don't know where those funny stride values (752,376) come from.
-   * therefor  we have to copy line by line :-( .
-   * Hmm .. for HDTV they should be larger anyway and for some other
-   * unusual resolutions they should be configurable swidth/sheight ?
-   */
-
-  // if (0) {
-  if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
-        CopyPicBufAlphaBlend(&privBuf,buf,
-                        OsdPy,OsdPu,OsdPv,
-                        OsdPAlphaY,OsdPAlphaUV,OSD_FULL_WIDTH,
-                        cutTop,cutBottom,cutLeft,cutRight);
-  }
+    /* -----------------------------------------------------------------------
+     * don't know where those funny stride values (752,376) come from.
+     * therefor  we have to copy line by line :-( .
+     * Hmm .. for HDTV they should be larger anyway and for some other
+     * unusual resolutions they should be configurable swidth/sheight ?
+     */
+    if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
+      CopyPicBufAlphaBlend(&privBuf,buf,
+                           OsdPy,OsdPu,OsdPv,
+                           OsdPAlphaY,OsdPAlphaUV,OSD_FULL_WIDTH,
+                           cutTop,cutBottom,cutLeft,cutRight);
+    }
     else
 #endif
     {
-       CopyPicBuf(&privBuf,buf,cutTop,cutBottom,cutLeft,cutRight);
+      CopyPicBuf(&privBuf,buf,cutTop,cutBottom,cutLeft,cutRight);
     }
   }
   PutXvImage(xv_image,privBuf.edge_width,privBuf.edge_height);
