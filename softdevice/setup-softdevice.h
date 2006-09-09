@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.33 2006/07/25 19:58:12 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.34 2006/09/09 10:35:37 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -31,10 +31,11 @@
 
 #define ALSA_DEVICE_NAME_LENGTH  64
 
-#define CAP_BRIGHTNESS  1
-#define CAP_CONTRAST    2
-#define CAP_HUE         4
-#define CAP_SATURATION  8
+#define CAP_BRIGHTNESS       1
+#define CAP_CONTRAST         2
+#define CAP_HUE              4
+#define CAP_SATURATION       8
+#define CAP_HWDEINTERLACE   16
 
 #define VID_MAX_PARM_VALUE  100
 
@@ -164,6 +165,7 @@ class cSetupStore {
           vidContrast,
           vidHue,
           vidSaturation,
+          vidDeinterlace,
           vidCaps;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.21 2006/06/17 20:42:58 lucke Exp $
+ * $Id: video-vidix.c,v 1.22 2006/09/09 10:35:37 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -113,7 +113,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
      */
     fwidth = lwidth = dwidth = Xres;
     fheight = lheight = dheight = Yres;
-
+    useVidixAlpha = false;
     swidth = 720;
     sheight = 576;
 
@@ -132,7 +132,6 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
      }
 
     memset(fb,  0, fb_line_len * Yres );
-
 
     vidix_version = vdlGetVersion();
 
@@ -195,6 +194,57 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
 
     printf("cVidixVideoOut: fourcc.flags:  0x%0x\n",vidix_fourcc.flags);
     AllocLayer();
+
+    /* -----------------------------------------------------------------------
+     * check presence of equalizer capability
+     */
+    vidix_video_eq_t tmpeq;
+    printf("cVidixVideoOut: capabilities  ", vidix_curr_eq.cap);
+
+    if(!vdlPlaybackGetEq(vidix_handler, &tmpeq)) {
+        vidix_curr_eq=tmpeq;
+        printf("EQ cap: %x: ", vidix_curr_eq.cap);
+        if (vidix_curr_eq.cap & VEQ_CAP_BRIGHTNESS) {
+            printf("brightness (%d) ", vidix_curr_eq.brightness);
+            setupStore->vidCaps |= CAP_BRIGHTNESS;
+        }
+        if (vidix_curr_eq.cap & VEQ_CAP_CONTRAST) {
+            printf("contrast (%d) ", vidix_curr_eq.contrast);
+            setupStore->vidCaps |= CAP_CONTRAST;
+        }
+        if (vidix_curr_eq.cap & VEQ_CAP_SATURATION) {
+            printf("saturation (%d) ", vidix_curr_eq.saturation);
+            setupStore->vidCaps |= CAP_SATURATION;
+        }
+        if (vidix_curr_eq.cap & VEQ_CAP_HUE) {
+            printf("hue (%d) ", vidix_curr_eq.hue);
+            setupStore->vidCaps |= CAP_HUE;
+        }
+        if (vidix_curr_eq.cap & VEQ_CAP_RGB_INTENSITY) {
+            printf("RGB-intensity (%d, %d, %d) ",
+                   vidix_curr_eq.red_intensity,
+                   vidix_curr_eq.green_intensity,
+                   vidix_curr_eq.blue_intensity );
+        }
+    } else {
+       isyslog("[cVidixVideoOut] Couldn't get EQ capability\n");
+    }
+
+    /* -----------------------------------------------------------------------
+     * check presence of hw deinterlace capability
+     */
+    vidix_deinterlace_t vidix_deint;
+
+    if (!vdlPlaybackGetDeint(vidix_handler, &vidix_deint) &&
+        !vdlPlaybackSetDeint(vidix_handler, &vidix_deint)) {
+        printf("HW-deinterlace (%x,%x)",
+               vidix_deint.flags,
+               vidix_deint.deinterlace_pattern);
+
+        setupStore->vidCaps |= CAP_HWDEINTERLACE;
+    }
+
+    printf("\n");
 }
 
 /* ----------------------------------------------------------------------------
@@ -222,6 +272,9 @@ bool cVidixVideoOut::MatchPixelFormat()
  */
 void cVidixVideoOut::SetParams(int Ystride, int UVstride)
 {
+    vidix_video_eq_t  vidix_video_eq;
+    int               err;
+
   if (aspect_changed || currentPixelFormat != setupStore->pixelFormat ||
       cutTop != setupStore->cropTopLines ||
       cutBottom != setupStore->cropBottomLines )
@@ -301,6 +354,76 @@ void cVidixVideoOut::SetParams(int Ystride, int UVstride)
     printf("cVidixVideoOut : dstrides.v=%d\n", dstrides.v);
 #endif
   }
+
+  vidix_video_eq=vidix_curr_eq;
+
+  vidix_video_eq.brightness = (setupStore->vidBrightness - 50)*20;
+  vidix_video_eq.contrast = (setupStore->vidContrast - 50)*20;
+  vidix_video_eq.saturation = (setupStore->vidSaturation - 50)*20;
+  vidix_video_eq.hue = (setupStore->vidHue - 50)*20;
+
+  if (vidix_curr_eq.brightness != vidix_video_eq.brightness ||
+      vidix_curr_eq.contrast != vidix_video_eq.contrast ||
+      vidix_curr_eq.saturation != vidix_video_eq.saturation ||
+      vidix_curr_eq.hue != vidix_video_eq.hue ) {
+
+      printf("cVidixVideoOut : set eq values\n");
+      vidix_curr_eq = vidix_video_eq;
+      if( (err = vdlPlaybackSetEq(vidix_handler, &vidix_curr_eq)) != 0) {
+          isyslog("[cVidixVideoOut] Couldn't set EQ capability: %s\n",
+                  strerror(err) );
+          printf("FAILED!!!\n");
+      }
+  }
+
+  if (setupStore->vidDeinterlace > 10)
+      setupStore->vidDeinterlace = 10;
+
+  if (setupStore->vidDeinterlace != vidix_curr_deinterlace) {
+
+      vidix_deinterlace_t vidix_deint;
+
+      vidix_curr_deinterlace = setupStore->vidDeinterlace;
+      switch (vidix_curr_deinterlace)
+      {
+          case 0: // CFG_NON_INTERLACED
+              vidix_deint.flags = CFG_NON_INTERLACED;
+              break;
+          case 1: // CFG_INTERLACED
+          case 2: // CFG_EVEN_ODD_INTERLACING
+          case 3:
+              vidix_deint. flags = CFG_EVEN_ODD_INTERLACING;
+              break;
+          case 4: // CFG_ODD_EVEN_INTERLACING
+          case 5:
+          case 6:
+          case 7:
+              vidix_deint. flags = CFG_ODD_EVEN_INTERLACING;
+              break;
+          case 8: // CFG_UNIQUE_INTERLACING
+                  // xorg METHOD_BOB
+              vidix_deint. flags = CFG_UNIQUE_INTERLACING;
+              vidix_deint. deinterlace_pattern = 0xAAAAA;
+              break;
+          case 9: // CFG_UNIQUE_INTERLACING
+                  // xorg METHOD_SINGLE
+              vidix_deint. flags = CFG_UNIQUE_INTERLACING;
+              vidix_deint. deinterlace_pattern = 0xEEEEE | (9<<28);
+              break;
+          case 10: // xorg METHOD_WEAVE
+              vidix_deint. flags = CFG_UNIQUE_INTERLACING;
+              vidix_deint. deinterlace_pattern = 0;
+              break;
+          default:
+              vidix_deint.flags = CFG_NON_INTERLACED;
+              break;
+      }
+      vdlPlaybackSetDeint(vidix_handler, &vidix_deint);
+      vdlPlaybackGetDeint(vidix_handler, &vidix_deint);
+      printf("Deinterlacer: %x %x\n",
+             vidix_deint.flags,
+             vidix_deint.deinterlace_pattern);
+  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -337,15 +460,33 @@ void cVidixVideoOut::AllocLayer(void)
 
   if (vidix_fourcc.flags & VID_CAP_COLORKEY)
   {
-    printf("cVidixVideoOut: set colorkey\n");
+    int res = 0;
+
+    printf("cVidixVideoOut: set colorkey ");
     vdlGetGrKeys(vidix_handler, &gr_key);
 
     gr_key.key_op = KEYS_PUT;
-
+#ifdef CKEY_ALPHA
+    if (vidix_fourcc.flags & VID_CAP_BLEND) {
+      useVidixAlpha = true;
+      gr_key.ckey.op = CKEY_ALPHA;
+    } else {
+      gr_key.ckey.op = CKEY_TRUE;
+    }
+#else
     gr_key.ckey.op = CKEY_TRUE;
+#endif
     gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0;
+    res = vdlSetGrKeys(vidix_handler, &gr_key);
+    printf ("vdlSetGrKeys() = %d, ", res);
 
-    vdlSetGrKeys(vidix_handler, &gr_key);
+    if (res) {
+      gr_key.ckey.op = CKEY_TRUE;
+      res = vdlSetGrKeys(vidix_handler, &gr_key);
+      printf (" - %d", res);
+      useVidixAlpha = false;
+    }
+    printf ("\n");
   }
 
   next_frame = 0;
@@ -595,6 +736,18 @@ void cVidixVideoOut::ClearOSD()
 void cVidixVideoOut::AdjustOSDMode()
 {
   current_osdMode = setupStore->osdMode;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVidixVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
+                              bool &IsYUV, uint8_t *&PixelMask)
+{
+  Depth         = Bpp;
+  HasAlpha      = useVidixAlpha;
+  AlphaInversed = false;
+  IsYUV         = (current_osdMode == OSDMODE_SOFTWARE);
+  PixelMask     = NULL;
 }
 
 /* ---------------------------------------------------------------------------

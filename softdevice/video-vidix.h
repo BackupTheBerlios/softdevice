@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.10 2006/05/27 19:12:41 wachm Exp $
+ * $Id: video-vidix.h,v 1.11 2006/09/09 10:35:37 lucke Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -13,7 +13,6 @@
 #include <linux/fb.h>
 #include "vidixlib.h"
 #include "fourcc.h"
-
 
 class cVidixVideoOut : public cVideoOut {
 private:
@@ -37,7 +36,9 @@ private:
     vidix_yuv_t        dstrides;
     vidix_grkey_t      gr_key;
     uint8_t            next_frame;
-
+    bool               useVidixAlpha;
+    vidix_video_eq_t   vidix_curr_eq;
+    int                vidix_curr_deinterlace;
     void SetParams(int Ystride, int UVstride);
 
 public:
@@ -46,22 +47,23 @@ public:
 
 #if VDRVERSNUM >= 10307
   virtual void ClearOSD();
-  virtual void AdjustOSDMode();  
+  virtual void AdjustOSDMode();
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
                                int &xPan, int &yPan);
-  virtual void GetOSDMode(int &Depth,bool &HasAlpha, bool &AlphaInversed,
-		  bool &IsYUV,uint8_t *&PixelMask)
-  { Depth=Bpp; HasAlpha=false;AlphaInversed=false; 
-	  IsYUV=(current_osdMode == OSDMODE_SOFTWARE);
-	  PixelMask=NULL;};
-  virtual void GetLockOsdSurface(uint8_t *&osd, int &stride, 
-                  bool *&dirtyLines);
+  virtual void GetOSDMode(int &Depth,
+                          bool &HasAlpha,
+                          bool &AlphaInversed,
+		                      bool &IsYUV,
+		                      uint8_t *&PixelMask);
+  virtual void GetLockOsdSurface(uint8_t *&osd,
+                                 int &stride,
+                                 bool *&dirtyLines);
 #else
   virtual void Refresh();
 #endif
 
   virtual void CloseOSD();
-//  virtual void OpenOSD();  
+//  virtual void OpenOSD();
   virtual void YUV(sPicBuffer *buf);
   virtual void Pause(void);
 

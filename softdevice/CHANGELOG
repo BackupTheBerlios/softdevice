@@ -1,6 +1,10 @@
 Changelog
 2006-09-09:
    - video-xv.c: silence some warnings
+   - video-vidix: offer equalizer settings via OSD (brightness, hue,
+                  saturation and contrast)
+                  offer HW-deinetrlace via OSD when available
+                  (by Roland Praml)
 2006-09-08:
    - limit destination video offsets to even values
    - fix typo in asignment

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.7 2006/08/27 13:02:50 wachm Exp $
+ * $Id: setup-softdevice-menu.c,v 1.8 2006/09/09 10:35:37 lucke Exp $
  */
 
 //#include "video.h"
@@ -43,6 +43,13 @@ cMenuSetupVideoParm::cMenuSetupVideoParm(const char *name) : cOsdMenu(name, 33)
                              &data->vidSaturation,
                              0,
                              VID_MAX_PARM_VALUE));
+  }
+  if (data->vidCaps & CAP_HWDEINTERLACE)
+  {
+    Add(new cMenuEditIntItem(tr("HW-Deinterlace"),
+                             &data->vidDeinterlace,
+                             0,
+                             10));
   }
 }
 
