@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.22 2006/09/09 10:35:37 lucke Exp $
+ * $Id: video-vidix.c,v 1.23 2006/09/09 10:39:43 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -199,7 +199,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
      * check presence of equalizer capability
      */
     vidix_video_eq_t tmpeq;
-    printf("cVidixVideoOut: capabilities  ", vidix_curr_eq.cap);
+    printf("cVidixVideoOut: capabilities  ");
 
     if(!vdlPlaybackGetEq(vidix_handler, &tmpeq)) {
         vidix_curr_eq=tmpeq;
