@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.16 2006/07/10 18:23:28 wachm Exp $
+ * $Id: SoftOsd.c,v 1.17 2006/09/10 20:33:29 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -1381,10 +1381,10 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
 #ifdef USE_MMX2
         __asm__ __volatile__ (
                  " pxor %%mm0,%%mm0 \n" //mm0: dest pixel
-                 " movd (%0),%%mm6  \n"
+                 " movd %0,%%mm6  \n"
                  " pshufw $0,%%mm6,%%mm6 \n"// mm6: new_pixel_width_rec
                  " pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
-                 : : "r" (&new_pixel_width_rec)  );
+                 : : "r" (new_pixel_width_rec)  );
 #endif
         SCALEDEBH("OSD_WIDTH: %d dest_width: %d new_pixel_width: %d\n",
                         OSD_WIDTH,dest_Width,new_pixel_width);

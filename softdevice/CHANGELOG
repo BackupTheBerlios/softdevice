@@ -1,4 +1,9 @@
 Changelog
+2006-09-10:
+   - fix "NVidia software alpha blending OSD" issue, which turned out
+     to be a compiler problem with g++-4.1.1. (Many thanks to Prakash 
+     Punnoor, Matthias Schwarzott, Chris Elsworth and all the others
+     who helped to fix this)
 2006-09-09:
    - video-xv.c: silence some warnings
    - video-vidix: offer equalizer settings via OSD (brightness, hue,
