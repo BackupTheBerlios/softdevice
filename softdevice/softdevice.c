@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.68 2006/09/08 17:04:52 lucke Exp $
+ * $Id: softdevice.c,v 1.69 2006/09/11 21:30:25 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -855,6 +855,10 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               setupStore.tripleBuffering = 1;
               vo_argv += 6;
               fprintf(stderr,"[softdevice] enabling triple buffering\n");
+            } else {
+              fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+              esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+              break;
             }
           }
 #else
