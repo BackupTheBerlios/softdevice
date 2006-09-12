@@ -1,4 +1,6 @@
 Changelog
+2006-09-12:
+   - don't continue on argument errors
 2006-09-11:
    - catch unrecognized options for dfb-out (reported by Rolf Ahrenberg)
 2006-09-10:

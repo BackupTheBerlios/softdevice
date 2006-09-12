@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.69 2006/09/11 21:30:25 lucke Exp $
+ * $Id: softdevice.c,v 1.70 2006/09/12 05:44:59 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -744,7 +744,8 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 
 bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 {
-  int i = 0;
+  int   i = 0;
+  bool  ret = true;
 
   // Implement command line argument processing here if applicable.
   fprintf (stderr, "[softdevice] processing args\n");
@@ -787,6 +788,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
                 fprintf (stderr,
                          "[ProcessArgs] xv: illegal value for sub option aspect (%s)\n",
                          vo_argv);
+                ret = false;
                 break;
               }
             } else if (!strncmp (vo_argv, "max-area", 8)) {
@@ -805,13 +807,15 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               setupStore.xvUseDefaults=true;
               vo_argv += 12;
             } else {
-                    fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
-                    esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+               fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+               esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+              ret = false;
               break;
             }
           }
 #else
           fprintf(stderr,"[softdevice] xv support not compiled in\n");
+          ret = false;
 #endif
         } else if (!strncmp (vo_argv, "fb:", 3)) {
           vo_argv += 3;
@@ -856,13 +860,15 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               vo_argv += 6;
               fprintf(stderr,"[softdevice] enabling triple buffering\n");
             } else {
-              fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
-              esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+              fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",vo_argv);
+              esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",vo_argv);
+              ret = false;
               break;
             }
           }
 #else
           fprintf(stderr,"[softdevice] dfb support not compiled in\n");
+          ret = false;
 #endif
         } else if (!strncmp (vo_argv, "vidix:", 6)) {
           vo_argv += 6;
@@ -871,6 +877,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           voutMethod = VOUT_VIDIX;
 #else
           fprintf(stderr,"[softdevice] vidix support not compiled in\n");
+          ret = false;
 #endif
         } else if (!strncmp (vo_argv, "dummy:", 6)) {
           vo_argv += 6;
@@ -878,9 +885,10 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           voutMethod = VOUT_DUMMY;
           fprintf(stderr,"[softdevice] using dummy video out\n");
         } else {
-                fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
-                esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
-        };
+          fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+          esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+          ret = false;
+        }
 
 
       }
@@ -940,20 +948,22 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           ao_argv += 6;
           setupStore.aoArgs = ao_argv;
           aoutMethod = AOUT_DUMMY;
-        }     else {
-                fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
-                esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
-        };
+        } else {
+          fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+          esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+          ret = false;
+      }
 
       }
     } else {
-            fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
-            esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
-    };
+      fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
+      esyslog("[softdevice] ignoring unrecognized option \"%s\"\n",argv[i]);
+      ret = false;
+    }
     ++i;
     --argc;
   }
-  return true;
+  return ret;
 }
 
 #if VDRVERSNUM >= 10330
