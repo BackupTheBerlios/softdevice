@@ -5,6 +5,7 @@ Changelog
    - video-dfb: removed check and support for DSBLIT_INTERLACED as DirectFB
                 has buildin support for this now.
    - disable cle266 support if DirectFB is not patched for this
+   - cle266: fix one aspect ratio info and configure (by Rolf Ahrenberg)
 2006-09-12:
    - don't continue on argument errors
 2006-09-11:

@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.25 2006/09/16 09:30:19 lucke Exp $
+# $Id: configure,v 1.26 2006/09/16 20:26:24 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -327,23 +327,19 @@ echo "Not found."
 fi
 
 #########################################################
-# cle266mpegdec: check if present
+# libcle266mpegdec: check if required version is present
 #
 if test "${dfb}" = "yes" ; then
   echo -n "Checking for libcle266mpegdec ... "
-  cle266_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags libcle266mpegdec 2>>config.log` || cle266="no"
+  pkg-config --atleast-version=0.2 libcle266mpegdec 2>>config.log || cle266="no"
   if test "${cle266}" = "yes" ; then
+    cle266_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags libcle266mpegdec`
     cle266_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs libcle266mpegdec`
     cle266_opts="${cle266_cflags} ${cle266_libs}"
-  fi
-
-  if test "${cle266}" = "yes" ; then
     echo "Enabled cle266 hardware decoding."
   else
     echo "Not found, not supported by DirectFB or disabled by argument."
   fi
-else
-  cle266="no"
 fi
 
 #########################################################

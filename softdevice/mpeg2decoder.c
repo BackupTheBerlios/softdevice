@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.67 2006/09/16 09:30:19 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.68 2006/09/16 20:26:24 lucke Exp $
  */
 
 #include <math.h>
@@ -757,7 +757,7 @@ int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_pictur
 };
 
 #ifdef HAVE_CLE266_MPEG_DECODER
-float aspect_ratio_values[5]={1.0, 1.0, 4.0/3.0, 16.0/9.0, 221.0/110 };
+float aspect_ratio_values[5]={1.0, 1.0, 4.0/3.0, 16.0/9.0, 2.21 };
 
 int cVideoStreamDecoder::DecodePicture_cle266(sPicBuffer *&pic,
                 int &got_picture,uint8_t *data, int length, int64_t pkt_pts) {
