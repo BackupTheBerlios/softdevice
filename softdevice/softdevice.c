@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.70 2006/09/12 05:44:59 lucke Exp $
+ * $Id: softdevice.c,v 1.71 2006/09/16 09:30:19 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -737,6 +737,10 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
 #endif
 #ifdef VIDIX_SUPPORT
   "  -vo vidix:               enable output via vidix driver\n"
+#endif
+#ifdef SHM_SUPPORT
+  "  -vo shm:                 enable output via sharde memory.\n"
+  "                           Use ShmClient for displaying\n"
 #endif
   "  -vo dummy:               enable output to dummy device\n"
   "\n";

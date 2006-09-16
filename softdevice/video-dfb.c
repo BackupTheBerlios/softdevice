@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.70 2006/08/05 17:51:25 lucke Exp $
+ * $Id: video-dfb.c,v 1.71 2006/09/16 09:30:19 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -18,7 +18,6 @@
 # include "config.h"
 #else
 # define HAVE_SetSourceLocation 0
-# define HAVE_DSBLIT_INTERLACED 0
 # if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
 #   define HAVE_GraphicsDeviceDescription 0
 #   define HAVE_DIEF_REPEAT               0
@@ -169,9 +168,6 @@ static void reportCardInfo (IDirectFB *dfb)
   if (caps.blitting_flags & DSBLIT_DST_PREMULTIPLY ) fprintf(stderr,"DstPremultiply ");
   if (caps.blitting_flags & DSBLIT_DEMULTIPLY ) fprintf(stderr,"Demultiply ");
   if (caps.blitting_flags & DSBLIT_DEINTERLACE ) fprintf(stderr,"Deinterlace ");
-#if HAVE_DSBLIT_INTERLACED
-  if (caps.blitting_flags & DSBLIT_INTERLACED ) fprintf(stderr,"Interlaced ");
-#endif
   fprintf(stderr,"\n");
 }
 
@@ -1278,21 +1274,8 @@ void cDFBVideoOut::ShowOSD ()
         clearBackground--;
       }
 
-#if HAVE_DSBLIT_INTERLACED
-      if (setupStore->useMGAtv)
-      {
-        scrSurface->SetBlittingFlags(DSBLIT_INTERLACED);
-        scrSurface->StretchBlit(videoSurface, &src, &dst);
-      }
-      else
-      {
-        scrSurface->SetBlittingFlags(DSBLIT_NOFX);
-        scrSurface->StretchBlit(videoSurface, &src, &dst);
-      }
-#else
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
-#endif
       if (OSDpresent)
       {
         osdsrc.x = osdsrc.y = 0;
@@ -1465,19 +1448,8 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
 
       osdMutex.Unlock();
 
-#if HAVE_DSBLIT_INTERLACED
-      if (setupStore->useMGAtv)
-      {
-        scrSurface->SetBlittingFlags(DSBLIT_INTERLACED);
-        scrSurface->StretchBlit(videoSurface, &src, &dst);
-      } else {
-        scrSurface->SetBlittingFlags(DSBLIT_NOFX);
-        scrSurface->StretchBlit(videoSurface, &src, &dst);
-      }
-#else
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
-#endif
 
       if (OSDpresent)
       {

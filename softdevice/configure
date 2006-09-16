@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.24 2006/08/27 12:48:46 wachm Exp $
+# $Id: configure,v 1.25 2006/09/16 09:30:19 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -45,6 +45,7 @@ function help () {
   echo "  --disable-vidix"
   echo "  --disable-fb"
   echo "  --disable-dfb"
+  echo "  --disable-cle266"
   echo "  --disable-xv"
   echo "  --disable-shm"
   echo "  --disable-subplugins"
@@ -65,6 +66,7 @@ do
     --disable-vidix) shift; vidix="no" ;;
     --disable-fb) shift; with_fb="no" ;;
     --disable-dfb) shift; dfb="no" ;;
+    --disable-cle266) shift; cle266="no" ;;
     --disable-xv) shift; xv="no" ;;
     --disable-shm) shift; with_shm="no" ;;
     --disable-subplugins) shift; with_subplugins="no" ;;
@@ -91,9 +93,9 @@ done
 if test "${use_pkgconfig}" = "yes" ; then
   echo -n "Checking for pkg-config... "
   echo  "Checking for pkg-config.-------------------------------" >> config.log
-        
+
   pkg-config --version >> config.log 2>&1 || use_pkgconfig="no";
-  
+
   if test "${use_pkgconfig}" = "no" ; then
     echo "Not found."
     echo "Please consider installing pkg-config. Many parts of this configure"
@@ -132,7 +134,7 @@ EOF
   $cc $CFLAGS $ffmpeg_cflags -o $TMPE $TMPC $ffmpeg_libs  >> config.log 2>&1 || ffmpeg="no"
 };
 
-ffmpeg="no" # = not yet configured 
+ffmpeg="no" # = not yet configured
 if test "${use_pkgconfig}" = "yes" ; then
   if test "${ffmpeg_use_path}" = "no" ; then
 
@@ -192,7 +194,7 @@ cat > ${TMPC} << EOF
 int main(void) {
   snd_pcm_t         *handle;
   char device[]="hw:0,1";
-  snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0); 
+  snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0);
   return 0;
 }
 EOF
@@ -223,7 +225,6 @@ dfb_device_desc="yes"
 dfb_sourcelocation="yes"
 dfb_dscaps_double="yes"
 dfb_dief_repeat="yes"
-dfb_blit_interlaced="yes"
 
 cat > ${TMPC} << EOF
 #include <directfb.h>
@@ -280,11 +281,13 @@ cat > ${TMPC} << EOF
 #include <dfb++.h>
 #include <directfb.h>
 int main(void) {
-    DFBSurfaceBlittingFlags   flags = DSBLIT_INTERLACED;
+  IDirectFBSurface  *surf;
+  int               i;
+  surf->GetFramebufferOffset(&i);
   return 0;
 }
 EOF
-$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_blit_interlaced="no"
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || cle266="no"
 
   fi
 fi
@@ -337,7 +340,7 @@ if test "${dfb}" = "yes" ; then
   if test "${cle266}" = "yes" ; then
     echo "Enabled cle266 hardware decoding."
   else
-    echo "Not found."
+    echo "Not found, not supported by DirectFB or disabled by argument."
   fi
 else
   cle266="no"
@@ -516,11 +519,6 @@ if test "${dfb}" = "yes" ; then
     echo "#define HAVE_DIEF_REPEAT                0" >> $TMPH
   fi
 
-  if test "${dfb_blit_interlaced}" = "yes" ; then
-    echo "#define HAVE_DSBLIT_INTERLACED          1" >> $TMPH
-  else
-    echo "#define HAVE_DSBLIT_INTERLACED          0" >> $TMPH
-  fi
 fi
 
 ###############################################################################

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.66 2006/06/17 16:27:34 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.67 2006/09/16 09:30:19 lucke Exp $
  */
 
 #include <math.h>
@@ -514,7 +514,7 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
 #if LIBAVCODEC_BUILD >  4713
   avcodec_align_dimensions(c, &w, &h);
 #endif
-  
+
 #define EDGE_WIDTH 16
   bool EmuEdge=c->flags&CODEC_FLAG_EMU_EDGE;
   if(!EmuEdge){
@@ -534,7 +534,7 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
     fprintf(stderr,"buf or buf->pixel[0] null!\n");
     return 0;
   };
-  
+
   pic->type= FF_BUFFER_TYPE_USER;
   pic->opaque = (void*) buf;
 
@@ -568,7 +568,7 @@ void ReleaseBuffer(struct AVCodecContext *c, AVFrame *pic) {
   cVideoOut *VideoOutPtr=(cVideoOut *)c->opaque;
   if (!VideoOutPtr)
     return;
-  
+
   VideoOutPtr->ReleaseBuffer((sPicBuffer *)pic->opaque);
   for(int i=0; i<3; i++){
     pic->data[i]=NULL;
@@ -633,7 +633,7 @@ uint64_t cVideoStreamDecoder::GetPTS() {
 int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_picture,
                               uint8_t *data, int length, int64_t pkt_pts) {
   int len=0;
-  
+
   if ( context->width  > 2048 || context->height  > 2048 ) {
     fprintf(stderr,"Invalid width (%d) or height (%d), most likely a broken stream\n",
         context->width,context->height);
@@ -685,8 +685,8 @@ int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_pictur
           };
           pic->owner=NULL;
           pic->format=context->pix_fmt;
-  };      
-          
+  };
+
   pic->pts=AV_NOPTS_VALUE;
   // find decoded pictures pts value
   int findPTS=(lastPTSidx+1)%NO_PTS_VALUES;
@@ -744,9 +744,9 @@ int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_pictur
   }
   else
   {
-    pic->aspect_ratio =(float) (context->width * 
+    pic->aspect_ratio =(float) (context->width *
         context->sample_aspect_ratio.num) /
-      (float) (context->height * 
+      (float) (context->height *
                 context->sample_aspect_ratio.den);
   }
 #else
@@ -759,7 +759,7 @@ int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_pictur
 #ifdef HAVE_CLE266_MPEG_DECODER
 float aspect_ratio_values[5]={1.0, 1.0, 4.0/3.0, 16.0/9.0, 221.0/110 };
 
-int cVideoStreamDecoder::DecodePicture_cle266(sPicBuffer *&pic, 
+int cVideoStreamDecoder::DecodePicture_cle266(sPicBuffer *&pic,
                 int &got_picture,uint8_t *data, int length, int64_t pkt_pts) {
   int cle266CurrentFB;
   got_picture=0;
@@ -771,7 +771,7 @@ int cVideoStreamDecoder::DecodePicture_cle266(sPicBuffer *&pic,
    */
   cle266CurrentFB = CLE266MPEGDecodeData(data, &length, &pkt_pts);
 
-  if ( cle266CurrentFB == -1 ) 
+  if ( cle266CurrentFB == -1 )
     // no new picture
     return length;
 
@@ -791,9 +791,14 @@ int cVideoStreamDecoder::DecodePicture_cle266(sPicBuffer *&pic,
   pic->height = decoder.height;
   pic->pts = pkt_pts;
   pic->edge_width=pic->edge_height=0;
+#if LIBCLE266MPEGDEC_VERSION_INT >= 4
+  pic->dtg_active_format = decoder.dtg_active_format;
+  pic->interlaced_frame = decoder.progressive_frame ? false : true;
+#else
   pic->dtg_active_format = 0; // currently not parsed
   pic->interlaced_frame = true; // FIXME Do we have that information?
-  pic->aspect_ratio = ( decoder.aspect_ratio_info >= 0 
+#endif
+  pic->aspect_ratio = ( decoder.aspect_ratio_info >= 0
     && decoder.aspect_ratio_info < 5 ) ?
     aspect_ratio_values[decoder.aspect_ratio_info] : 1.0;
 
@@ -861,7 +866,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     // postproc stuff....
     if (setupStore.mirror == 1)
       Mirror.Filter(pic,pic);
-   
+
     if (setupStore.deintMethod == 1)
       DeintLibav.Filter(pic,pic);
 
@@ -873,7 +878,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 #endif //FB_SUPPORT
       LibAvPostProc.Filter(pic,pic);
 #endif //PP_LIBAVCODEC
-    
+
   if (pic->pts != AV_NOPTS_VALUE )
           pts=pic->pts;
 

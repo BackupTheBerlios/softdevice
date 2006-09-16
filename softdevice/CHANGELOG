@@ -1,4 +1,10 @@
 Changelog
+2006-09-xx:
+   - added -vo shm: to help option
+   - added support new fields from libcle266mpegdec-0.4
+   - video-dfb: removed check and support for DSBLIT_INTERLACED as DirectFB
+                has buildin support for this now.
+   - disable cle266 support if DirectFB is not patched for this
 2006-09-12:
    - don't continue on argument errors
 2006-09-11:
