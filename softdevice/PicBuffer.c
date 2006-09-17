@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.7 2006/09/04 20:37:07 wachm Exp $
+ * $Id: PicBuffer.c,v 1.8 2006/09/17 12:07:57 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -38,13 +38,19 @@ void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
 
 /*----------------------------------------------------------------------*/
 cPicBufferManager::cPicBufferManager() {
-  lastPicNum=0;
-  for (int i=0; i< LAST_PICBUF; i++) 
-          InitPicBuffer(&PicBuffer[i]);
+        lastPicNum=0;
+        for (int i=0; i< LAST_PICBUF; i++) 
+                InitPicBuffer(&PicBuffer[i]);
 }
 
 cPicBufferManager::~cPicBufferManager() {
-        // FIXME release buffers
+        for (int i=0; i<LAST_PICBUF; i++) 
+                if ( PicBuffer[i].pixel[0] ) {
+//                        if ( PicBuffer[i].use_count > 0 ) 
+//                                fprintf(stderr,"Warning! Use_count of PicBuffer not zero in PicBufferManager destructor!\n");
+                        
+                        ReleasePicBuffer( i );
+                };
 };
 
 int cPicBufferManager::GetBufNum(sPicBuffer *buf) {  
@@ -59,10 +65,11 @@ int cPicBufferManager::GetBufNum(sPicBuffer *buf) {
 };
 
 void cPicBufferManager::ReleasePicBuffer(int buf_num) {
-        PICDEB("ReleasePicBuffer %d\n",buf_num);
+        PICDEB("ReleasePicBuffer %d pixel[0] %p\n",buf_num,PicBuffer[buf_num].pixel[0]);
         sPicBuffer *buf=&PicBuffer[buf_num];
 
         for (int i=0; i<4; i++) {
+                //printf("release %d: %p\n",i,buf->pixel[i]);
                 free(buf->pixel[i]);
                 buf->pixel[i]=NULL;
         };
@@ -84,22 +91,32 @@ void cPicBufferManager::GetChromaSubSample(PixelFormat pix_fmt,
                         break;
                       
                 default:
-                        fprintf(stderr,"warning unsupported pixel format(%d)! \n",pix_fmt);
+                        fprintf(stderr,"Warning unsupported pixel format(%d)! \n",pix_fmt);
                         hChromaShift=vChromaShift=1;
         };
 };
 
 void cPicBufferManager::LockBuffer(sPicBuffer *picture) {
+        PICDEB("LockBuffer buf->pixel[0] %p\n",picture->pixel[0]);
         PicBufMutex.Lock();
         if (picture)
                 picture->use_count++;
+        else fprintf(stderr,
+                    "Error! Trying to lock a nil picture... Ignoring.\n");
         PicBufMutex.Unlock();
 };
 
 void cPicBufferManager::UnlockBuffer(sPicBuffer *picture) {
+        if (!picture) {
+                fprintf(stderr,
+                    "Error! Trying to unlock a nil picture... Ignoring.\n");
+                return;
+        };
+        PICDEB("UnlockBuffer buf %p pixel[0] %p %p\n",picture,picture->pixel[0]);
         PicBufMutex.Lock();
-        if (picture && picture->use_count>0)
+        if ( picture->use_count>0 )
                 picture->use_count--;
+        else fprintf(stderr,"Warning, trying to unlock buffer with use_count 0!\n");
         PicBufMutex.Unlock();
 };
 
@@ -179,8 +196,6 @@ sPicBuffer *cPicBufferManager::GetBuffer(PixelFormat pix_fmt,
                     int w, int h) {
     PICDEB("GetBuffer pix_fmt %d (%d,%d)\n",pix_fmt,w,h);
 
-    //assert(pic->data[0]==NULL);
-
     PicBufMutex.Lock();
     int buf_num=0;
     while (buf_num<LAST_PICBUF && PicBuffer[buf_num].use_count!=0 ) {
@@ -189,7 +204,6 @@ sPicBuffer *cPicBufferManager::GetBuffer(PixelFormat pix_fmt,
             buf_num++;
     };
 
-    //assert(buf_num<LAST_PICBUF);
     if (buf_num>=LAST_PICBUF) {
             printf("error finding PicBuffer!\n");
             exit(-1);
@@ -242,9 +256,8 @@ void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
     while (buf_num<LAST_PICBUF && PicBuffer[buf_num].pixel[0]!=pic->pixel[0] ) 
             buf_num++;
 
-    //assert(buf_num<LAST_PICBUF);
     if (buf_num>=LAST_PICBUF)  {
-            printf("didn't find corresponding PicBuffer!\n");
+            fprintf(stderr,"ReleaseBuffer din't find corresponding PicBuffer!\n");
             exit(-1);
     };
     
@@ -252,7 +265,7 @@ void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
     PicBuffer[buf_num].use_count--;
     PicBuffer[buf_num].buf_num=-1;
     PicBufMutex.Unlock();
-    PICDEB("end ReleaseBuffer bufnum %d\n",buf_num);
+    PICDEB("end ReleaseBuffer bufnum %d use_count %d\n",buf_num,PicBuffer[buf_num].use_count);
 }
 
 // end of code based on ffmpeg
