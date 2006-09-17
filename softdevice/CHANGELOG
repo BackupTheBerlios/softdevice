@@ -5,6 +5,9 @@ Changelog
    - cleanup PicBuffer.c, release PicBuffers in destructor,...
    - add linux framebuffer detection to configure
    - disable libcle266mpegdec if no DirectFB is found
+   - add altivec optimizations to some AlphaBlend() and 
+     yv12_to_yuy2_il_mmx2_line()
+   - make utils.c compile on non MMX machines, cleanup some #ifdefs
 2006-09-xx:
    - added -vo shm: to help option
    - added support new fields from libcle266mpegdec-0.4

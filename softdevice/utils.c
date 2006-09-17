@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.17 2006/07/10 17:46:59 wachm Exp $
+ * $Id: utils.c,v 1.18 2006/09/17 16:39:34 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -109,8 +109,9 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2,
                            const uint8_t *yc1, const uint8_t *yc2,
                            const uint8_t *uc, const uint8_t *vc)
 {
-    int i;
-
+  int i;
+  
+#ifdef USE_MMX 
   for(i = chromaWidth/4; i--; )
   {
     movq_m2r(*(yc1), mm1);     // mm1 = y7 y6 y5 y4 y3 y2 y1 y0
@@ -138,6 +139,49 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2,
     dest1 += 16;
     dest2 += 16;
   }
+#elif USE_ALTIVEC
+
+/* This altivec optimization is based on vlc's i420_yuy2.c with the copyright notice:
+ * 
+ * Copyright (C) 2000, 2001 the VideoLAN team
+ *
+ * Authors: Samuel Hocevar <sam@zoy.org>
+ */
+  
+   vector unsigned char u_vec;
+   vector unsigned char v_vec; 
+   vector unsigned char uv_vec;
+   vector unsigned char y_vec;
+
+   for ( i=chromaWidth; i>=16; i-=16) {
+        u_vec = vec_ld(0,uc); uc+=16;
+        v_vec = vec_ld(0,vc); vc+=16;
+        uv_vec = vec_mergeh( u_vec, v_vec);
+        y_vec = vec_ld( 0, yc1); yc1+=16;
+        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest1); dest1+=16;
+        vec_st( vec_mergel( y_vec, uv_vec), 0, dest1); dest1+=16;
+        y_vec = vec_ld( 0, yc2); yc2+=16;
+        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest2); dest2+=16;        
+        vec_st( vec_mergel( y_vec, uv_vec), 0, dest2); dest2+=16;             
+        
+        uv_vec = vec_mergel( u_vec, v_vec);
+        y_vec = vec_ld( 0, yc1); yc1+=16;
+        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest1); dest1+=16;
+        vec_st( vec_mergel( y_vec, uv_vec), 0, dest1); dest1+=16;
+        y_vec = vec_ld( 0, yc2); yc2+=16;
+        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest2); dest2+=16;        
+        vec_st( vec_mergel( y_vec, uv_vec), 0, dest2); dest2+=16;        
+   }
+#endif
+   for ( ; i>=1; i-=1 ) {
+      *((uint32_t *)dest1)++ = (yc1[0] << 24)+ (uc[0] << 16) + (yc1[1] << 8) + (vc[0] << 0);
+      *((uint32_t *)dest2)++ = (yc2[0] << 24)+ (uc[0] << 16) + (yc2[1] << 8) + (vc[0] << 0);
+      //*idst++ = (yc[0] << 0)+ (uc[0] << 8) + (yc[1] << 16) + (vc[0] << 24);
+      yc1 += 2;
+      yc2 += 2;
+      uc++;
+      vc++;
+    }
 }
 
 /* ---------------------------------------------------------------------------
@@ -221,6 +265,7 @@ void yv12_to_yuy2_fr_mmx2(const uint8_t *ysrc,
                           uint8_t *dst, int width, int height,
                           int lumStride, int chromStride, int dstStride)
 {
+#ifdef USE_MMX 
   for (int i=0; i<height; i++)
   {
       const uint8_t *pu, *pv, *py;
@@ -264,6 +309,7 @@ void yv12_to_yuy2_fr_mmx2(const uint8_t *ysrc,
   }
   SFENCE;
   EMMS;
+#endif
 }
 
 void yv12_to_yuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
@@ -341,6 +387,8 @@ void yv12_to_yuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
   EMMS;
 #endif
 }
+
+#ifdef USE_MMX
 
 #define VERT_SCALING
 void (*mmx_unpack)(uint8_t * image, int lines, int stride);
@@ -420,8 +468,6 @@ static inline void mmx_yuv2rgb (uint8_t * py, uint8_t * pu, uint8_t * pv)
     punpcklbw_r2r (mm4, mm1);		/* mm1 = R7 R6 R5 R4 R3 R2 R1 R0 */
     punpcklbw_r2r (mm5, mm2);		/* mm2 = G7 G6 G5 G4 G3 G2 G1 G0 */
 }
-
-
 
 void mmx_unpack_16rgb (uint8_t * image, int lines, int stride)
 {
@@ -631,7 +677,7 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
   free(scaleU);
   free(scaleV);
 }
-
+#endif // USE_MMX
 
 void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
           uint8_t *alpha,uint16_t count) {
@@ -639,7 +685,6 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
 
 #ifdef USE_MMX
         __asm__(" pxor %%mm3,%%mm3\n"
-#ifdef USE_MMX2
                 PREFETCH("(%0)\n")
                 PREFETCH("(%1)\n")
                 PREFETCH("(%2)\n")
@@ -649,7 +694,6 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
                 PREFETCH("128(%0)\n")
                 PREFETCH("128(%1)\n")
                 PREFETCH("128(%2)\n")
-#endif //USE_MMX2
                 : : "r" (P1), "r" (P2), "r" (alpha) : "memory");
 
         // I guess this can be further improved...
@@ -702,6 +746,55 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        EMMS;
 #endif //USE_MMX
 
+#ifdef USE_ALTIVEC 
+       vector unsigned char zero = vec_splat_u8(0);
+       vector unsigned short one = vec_splat_u16(1);
+       vector unsigned short seven = vec_splat_u16(7);
+       vector short p1h;
+       vector short p1l;
+       vector short p2h;
+       vector short p2l;
+       vector short ah;
+       vector short al;
+       for (; count>15; count-=16) {
+                p1h = (vector short) vec_ld(0,P1);
+                p2h = (vector short) vec_ld(0,P2);
+                p1l = (vector short) vec_mergel( zero, (vector unsigned char) p1h);
+                p2l = (vector short) vec_mergel( zero, (vector unsigned char) p2h);
+                ah  = (vector short) vec_ld(0,alpha);
+                
+                p1h = (vector short) vec_mergeh( zero, (vector unsigned char) p1h);
+                p2h = (vector short) vec_mergeh( zero, (vector unsigned char) p2h);
+                
+                al = (vector short) vec_mergel( zero, (vector unsigned char) ah);
+                ah = (vector short) vec_mergeh( zero, (vector unsigned char) ah);
+                
+                p1h = vec_subs(p1h,p2h);
+                p1l = vec_subs(p1l,p2l);
+                
+                ah = vec_sr(ah, one);
+                al = vec_sr(al, one);
+       
+                p1h = vec_mladd( p1h, ah, (vector short) zero);
+                p1l = vec_mladd( p1l, al, (vector short) zero);
+
+                p1h = vec_sra(p1h, seven);
+                p1l = vec_sra(p1l, seven);
+
+                p1h = vec_adds(p1h, p2h);
+                p1l = vec_adds(p1l, p2l);
+
+                p1h = (vector short) vec_packsu(p1h,p1l);
+
+                vec_st((vector unsigned char) p1h, 0, dest);
+                
+                P1+=16;
+                P2+=16;
+                alpha+=16;
+                dest+=16;
+       }
+#endif // USE_ALTIVEC
+       
        //fallback version and the last missing bytes...
        for (int i=0; i < count; i++){
           dest[i]=(((uint16_t) P1[i] *(uint16_t) alpha[i]) +
@@ -744,6 +837,15 @@ char *getFBName(void)
 
 /* taken from MPlayer's aclib */
 
+
+#ifndef USE_MMX
+
+void * fast_memcpy(void * to, const void * from, size_t len) {
+        memcpy(to,from,len);
+}
+
+#else
+
 #define MIN_LEN 0x40
 #define MMREG_SIZE 64
 #define BLOCK_SIZE 4096
@@ -753,8 +855,6 @@ char *getFBName(void)
 #else
 # define  REG_a "eax"
 #endif
-
-#define CONFUSION_FACTOR 0
 
 /* for small memory blocks (<256 bytes) this version is faster */
 #define small_memcpy(to,from,n)\
@@ -812,9 +912,7 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 	for(; ((long)to & (BLOCK_SIZE-1)) && i>0; i--)
 	{
 		__asm__ __volatile__ (
-#ifdef USE_MMX2
         	PREFETCH(" 320(%0)\n")
-#endif
 		"movq (%0), %%mm0\n"
 		"movq 8(%0), %%mm1\n"
 		"movq 16(%0), %%mm2\n"
@@ -835,79 +933,11 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 		from=((const unsigned char *)from)+64;
 		to=((unsigned char *)to)+64;
 	}
-#if 0
-//	printf(" %d %d\n", (int)from&1023, (int)to&1023);
-	// Pure Assembly cuz gcc is a bit unpredictable ;)
-	if(i>=BLOCK_SIZE/64)
-		asm volatile(
-			"xor %%"REG_a", %%"REG_a"	\n\t"
-			".balign 16		\n\t"
-			"1:			\n\t"
-				"movl (%0, %%"REG_a"), %%ebx 	\n\t"
-				"movl 32(%0, %%"REG_a"), %%ebx 	\n\t"
-				"movl 64(%0, %%"REG_a"), %%ebx 	\n\t"
-				"movl 96(%0, %%"REG_a"), %%ebx 	\n\t"
-				"add $128, %%"REG_a"		\n\t"
-				"cmp %3, %%"REG_a"		\n\t"
-				" jb 1b				\n\t"
 
-			"xor %%"REG_a", %%"REG_a"	\n\t"
-
-				".balign 16		\n\t"
-				"2:			\n\t"
-				"movq (%0, %%"REG_a"), %%mm0\n"
-				"movq 8(%0, %%"REG_a"), %%mm1\n"
-				"movq 16(%0, %%"REG_a"), %%mm2\n"
-				"movq 24(%0, %%"REG_a"), %%mm3\n"
-				"movq 32(%0, %%"REG_a"), %%mm4\n"
-				"movq 40(%0, %%"REG_a"), %%mm5\n"
-				"movq 48(%0, %%"REG_a"), %%mm6\n"
-				"movq 56(%0, %%"REG_a"), %%mm7\n"
-				MOVNTQ" %%mm0, (%1, %%"REG_a")\n"
-				MOVNTQ" %%mm1, 8(%1, %%"REG_a")\n"
-				MOVNTQ" %%mm2, 16(%1, %%"REG_a")\n"
-				MOVNTQ" %%mm3, 24(%1, %%"REG_a")\n"
-				MOVNTQ" %%mm4, 32(%1, %%"REG_a")\n"
-				MOVNTQ" %%mm5, 40(%1, %%"REG_a")\n"
-				MOVNTQ" %%mm6, 48(%1, %%"REG_a")\n"
-				MOVNTQ" %%mm7, 56(%1, %%"REG_a")\n"
-				"add $64, %%"REG_a"		\n\t"
-				"cmp %3, %%"REG_a"		\n\t"
-				"jb 2b				\n\t"
-
-#if CONFUSION_FACTOR > 0
-	// a few percent speedup on out of order executing CPUs
-			"mov %5, %%"REG_a"		\n\t"
-				"2:			\n\t"
-				"movl (%0), %%ebx	\n\t"
-				"movl (%0), %%ebx	\n\t"
-				"movl (%0), %%ebx	\n\t"
-				"movl (%0), %%ebx	\n\t"
-				"dec %%"REG_a"		\n\t"
-				" jnz 2b		\n\t"
-#endif
-
-			"xor %%"REG_a", %%"REG_a"	\n\t"
-			"add %3, %0		\n\t"
-			"add %3, %1		\n\t"
-			"sub %4, %2		\n\t"
-			"cmp %4, %2		\n\t"
-			" jae 1b		\n\t"
-				: "+r" (from), "+r" (to), "+r" (i)
-				: "r" ((long)BLOCK_SIZE), "i" (BLOCK_SIZE/64), "i" ((long)CONFUSION_FACTOR)
-#if HAVE_BROKEN_GCC_CPP
-				: "%eax", "%ebx"
-#else
-				: "%"REG_a, "%ebx"
-#endif
-		);
-#endif
-	for(; i>0; i--)
+        for(; i>0; i--)
 	{
 		__asm__ __volatile__ (
-#ifdef USE_MMX2
         	PREFETCH(" 320(%0)\n")
-#endif
 		"movq (%0), %%mm0\n"
 		"movq 8(%0), %%mm1\n"
 		"movq 16(%0), %%mm2\n"
@@ -929,15 +959,11 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 		to=((unsigned char *)to)+64;
 	}
 
-#ifdef USE_MMX2
                 /* since movntq is weakly-ordered, a "sfence"
 		 * is needed to become ordered again. */
                  SFENCE;
-#endif
-#ifdef USE_MMX
 		/* enables to use FPU */
 		EMMS ;
-#endif
 	}
 	/*
 	 *	Now do the tail of the block
@@ -945,3 +971,5 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 	if(len) small_memcpy(to, from, len);
 	return retval;
 }
+
+#endif // USE_MMX
