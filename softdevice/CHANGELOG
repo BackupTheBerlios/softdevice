@@ -8,6 +8,7 @@ Changelog
    - add altivec optimizations to some AlphaBlend() and 
      yv12_to_yuy2_il_mmx2_line()
    - make utils.c compile on non MMX machines, cleanup some #ifdefs
+   - fix compile issue with g++-4.1.1
 2006-09-xx:
    - added -vo shm: to help option
    - added support new fields from libcle266mpegdec-0.4

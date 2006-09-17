@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.19 2006/09/17 16:49:12 wachm Exp $
+ * $Id: utils.c,v 1.20 2006/09/17 18:41:27 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -174,9 +174,11 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2,
    }
 #endif
    for ( ; i>=1; i-=1 ) {
-      *((uint32_t *)dest1)++ = (yc1[0] << 24)+ (uc[0] << 16) + (yc1[1] << 8) + (vc[0] << 0);
-      *((uint32_t *)dest2)++ = (yc2[0] << 24)+ (uc[0] << 16) + (yc2[1] << 8) + (vc[0] << 0);
+      *((uint32_t *)dest1) = (yc1[0] << 24)+ (uc[0] << 16) + (yc1[1] << 8) + (vc[0] << 0);
+      *((uint32_t *)dest2) = (yc2[0] << 24)+ (uc[0] << 16) + (yc2[1] << 8) + (vc[0] << 0);
       //*idst++ = (yc[0] << 0)+ (uc[0] << 8) + (yc[1] << 16) + (vc[0] << 24);
+      dest1+=4;
+      dest2+=4;
       yc1 += 2;
       yc2 += 2;
       uc++;
