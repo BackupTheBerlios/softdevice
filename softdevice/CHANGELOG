@@ -3,6 +3,7 @@ Changelog
    - replace "pshufw" with MMX commands to make scaling optimazations available
      to processors without MMX2
    - cleanup PicBuffer.c, release PicBuffers in destructor,...
+   - add linux framebuffer detection to configure
 2006-09-xx:
    - added -vo shm: to help option
    - added support new fields from libcle266mpegdec-0.4

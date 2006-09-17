@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.26 2006/09/16 20:26:24 lucke Exp $
+# $Id: configure,v 1.27 2006/09/17 12:50:04 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -203,6 +203,50 @@ fi
 
 if test "${alsa}" = "yes" ; then
 echo "Enabled audio-alsa."
+else
+echo "Not Found."
+fi
+
+########################################################
+# check for linux fb
+echo -n "Checking for linux frambuffer... "
+echo "Checking for linux framebuffer.------------------" >> config.log
+
+if test "${with_fb}" = "yes" ; then
+cat > ${TMPC} << EOF
+#include <linux/fb.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+int main(void) {
+        int fbdev;
+        struct fb_fix_screeninfo fb_finfo;
+        struct fb_var_screeninfo fb_orig_vinfo;
+        struct fb_var_screeninfo fb_vinfo;
+        if ((fbdev = open("/dev/fb0", O_RDWR)) == -1) {
+                printf("[video-fb] cant open framebuffer %s\n", "/dev/fb0");
+                exit(1);
+        }
+
+        if (ioctl(fbdev, FBIOGET_VSCREENINFO, &fb_vinfo)) {
+                printf("[video-fb] Can't get VSCREENINFO\n");
+                exit(1);
+        }
+        if (ioctl(fbdev, FBIOGET_FSCREENINFO, &fb_finfo)) {
+                printf("[video-fb] Can't get FSCREENINFO\n");
+                exit(1);
+        }
+
+        return 0;
+}
+EOF
+$cc $CFLAGS  -o $TMPE $TMPC >> config.log 2>&1 || with_fb="no"
+fi
+
+if test "${with_fb}" = "yes" ; then
+echo "Enabled video-fb."
 else
 echo "Not Found."
 fi
