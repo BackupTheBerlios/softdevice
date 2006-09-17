@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.27 2006/09/17 12:50:04 wachm Exp $
+# $Id: configure,v 1.28 2006/09/17 13:02:46 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -384,6 +384,8 @@ if test "${dfb}" = "yes" ; then
   else
     echo "Not found, not supported by DirectFB or disabled by argument."
   fi
+else 
+  cle266="no"
 fi
 
 #########################################################
