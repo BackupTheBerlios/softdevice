@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.7 2006/07/10 18:23:28 wachm Exp $
+ * $Id: SoftOsd.h,v 1.8 2006/09/17 20:49:05 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -140,6 +140,9 @@ public:
 
     // ARGB packed modes
     void CopyToBitmap(uint8_t * dest, int linesize,
+                    int dest_Width, int dest_Height, bool RefreshAll=false,
+                    bool *dirtyLines=NULL);
+    void NoVScaleCopyToBitmap(uint8_t * dest, int linesize,
                     int dest_Width, int dest_Height, bool RefreshAll=false,
                     bool *dirtyLines=NULL);
     void ScaleVUpCopyToBitmap(uint8_t * dest, int linesize,

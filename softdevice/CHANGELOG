@@ -9,6 +9,7 @@ Changelog
      yv12_to_yuy2_il_mmx2_line()
    - make utils.c compile on non MMX machines, cleanup some #ifdefs
    - fix compile issue with g++-4.1.1
+   - add NoVScaleCopyBitmap() for RGB modes
 2006-09-xx:
    - added -vo shm: to help option
    - added support new fields from libcle266mpegdec-0.4

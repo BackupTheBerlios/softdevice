@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.18 2006/09/17 11:54:32 wachm Exp $
+ * $Id: SoftOsd.c,v 1.19 2006/09/17 20:49:05 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -1036,7 +1036,10 @@ void cSoftOsd::CopyToBitmap(uint8_t *dest, int linesize,
         if (dest_Height < 40 || dest_Width < 40)
                 return;
 
-	if (dest_Height>=OSD_HEIGHT)
+        if ( dest_Height==OSD_HEIGHT )
+                NoVScaleCopyToBitmap(dest,linesize,dest_Width,dest_Height,
+                                RefreshAll,dirtyLines);
+        else if ( dest_Height>OSD_HEIGHT )
 		ScaleVUpCopyToBitmap(dest,linesize,dest_Width,dest_Height,
                                 RefreshAll,dirtyLines);
 	else ScaleVDownCopyToBitmap(dest,linesize,dest_Width,dest_Height,
@@ -1146,6 +1149,57 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
 };
 
 
+//--------------------------- no vertical scale -----------------------------
+void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *dest, int linesize, 
+                int dest_Width, int dest_Height, bool RefreshAll,
+                bool *dest_dirtyLines) {
+	
+        OSDDEB("CopyToBitmap RGB down\n");
+	if ( bitmap_Format == PF_AYUV ) {
+                fprintf(stderr,"cSoftOsd error did not call SetMode()!\n");
+		// convert bitmap to argb
+		bitmap_Format = PF_ARGB32;
+		Clear();
+		FlushBitmaps(false);
+	};
+
+	cMutexLock dirty(&dirty_Mutex);
+        uint8_t *buf;
+        color *pixmap=(color*) OSD_Bitmap;
+	const int dest_stride=(dest_Width+32)&~0xF;
+        color tmp_pixmap1[2*dest_stride];
+        color *tmp_pixmap=tmp_pixmap1;
+
+       void (cSoftOsd::*ScaleHoriz)(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
+	ScaleHoriz= dest_Width<OSD_WIDTH ? &cSoftOsd::ScaleDownHoriz_MMX :
+		&cSoftOsd::ScaleUpHoriz_MMX;
+
+        for (int y=0; y<OSD_HEIGHT; y++) {
+
+                if (!dirty_lines[y]) 
+                        continue;
+                
+                if (dest_Width==OSD_WIDTH) {
+                        tmp_pixmap=&pixmap[y*OSD_STRIDE];
+                } else {
+                        (this->*ScaleHoriz)((uint32_t*)tmp_pixmap,dest_Width,
+                                      &pixmap[y*OSD_STRIDE],OSD_WIDTH-1);
+                };
+                
+                buf=dest+y*linesize;
+                //printf("copy to destination %d\n",y);
+                (*OutputConvert)(buf,tmp_pixmap+1,dest_Width-2);
+                if (pixelMask)
+                        CreatePixelMask(pixelMask+y*linesize/16,
+                                        tmp_pixmap+1,dest_Width-2);
+                if (dest_dirtyLines)
+                        dest_dirtyLines[y]=true;
+
+        };
+        memset(dirty_lines,false,sizeof(dirty_lines));
+        OSDDEB("CopyToBitmap RGB down end\n");
+};
+
 //--------------------------- scale vertical down -----------------------------
 #define SCALEH_IDX(x) ((scaleH_strtIdx+(x))%lines_count)
 void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize, 
@@ -1221,8 +1275,6 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
         memset(dirty_lines,false,sizeof(dirty_lines));
         OSDDEB("CopyToBitmap RGB down end\n");
 };
-
-
 
 //------------------------ lowlevel scaling functions ------------------------
 //#define SCALEDEBV(out...) printf(out) 
