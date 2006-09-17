@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.18 2006/09/17 16:39:34 wachm Exp $
+ * $Id: utils.c,v 1.19 2006/09/17 16:49:12 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -109,7 +109,7 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2,
                            const uint8_t *yc1, const uint8_t *yc2,
                            const uint8_t *uc, const uint8_t *vc)
 {
-  int i;
+  int i=chromaWidth;
   
 #ifdef USE_MMX 
   for(i = chromaWidth/4; i--; )
