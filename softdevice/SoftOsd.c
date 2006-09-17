@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.17 2006/09/10 20:33:29 wachm Exp $
+ * $Id: SoftOsd.c,v 1.18 2006/09/17 11:54:32 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -30,6 +30,15 @@ static uint64_t pseudo_transparent = COLOR_64BIT(COLOR_KEY);
 
 //#undef USE_MMX
 //#undef USE_MMX2
+
+#undef SPLAT_U16
+#ifdef USE_MMX2
+#define SPLAT_U16(X)   " pshufw $0b0, " X ", " X " \n"
+#else
+#define SPLAT_U16(X)   " punpcklwd " X ", " X " \n"\
+                       " punpckldq " X ", " X " \n"
+#endif
+
 /* ---------------------------------------------------------------------------
  */
 
@@ -1226,7 +1235,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
 #define SHIFT_BITS_NUM 6
         //const int ScaleFactor=100;
         const int ScaleFactor=1<<SHIFT_BITS_NUM;
-#ifndef USE_MMX2
+#ifndef USE_MMX
         unsigned int a_sum=0;
         unsigned int b_sum=0;
         unsigned int g_sum=0;
@@ -1241,11 +1250,11 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
         int32_t pos;
 
         int row;
-#ifdef USE_MMX2
+#ifdef USE_MMX
         __asm__(
                         " pxor %%mm0,%%mm0 \n" //mm0: dest pixel
                         " movd %0,%%mm6  \n"
-                        " pshufw $0,%%mm6,%%mm6 \n"// mm6: new_pixel_height_rec
+                        SPLAT_U16( "%%mm6 " )
                         " pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
                         : : "r" (new_pixel_height_rec)  );
 #endif
@@ -1260,7 +1269,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
                           pixmap[row][Pixel].g,pixmap[row][Pixel].b);
                 int32_t a_pos=abs(pos);
                 //int32_t a_pos=-(pos);
-#ifndef USE_MMX2                       
+#ifndef USE_MMX                       
                 a_sum=b_sum=g_sum=r_sum=0;
                 c = pixmap[row][Pixel];
                 a_sum= GET_A(c)*a_pos;
@@ -1273,7 +1282,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
                       " movd (%0),%%mm1 \n"
                       " movd %1,%%mm2 \n"
                       " punpcklbw %%mm7, %%mm1 \n"
-                      " pshufw $0b0,%%mm2,%%mm2 \n"
+                      SPLAT_U16( "%%mm2" )
                       " pmullw %%mm2,%%mm1 \n"
                       " paddw %%mm1,%%mm0 \n"
                       : : "r" (&pixmap[row][Pixel]),"r" (a_pos)  );
@@ -1286,7 +1295,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
                                         a_sum,pos,pixmap[row][Pixel].a,
                                         pixmap[row][Pixel].r,pixmap[row][Pixel].g,pixmap[row][Pixel].b);
 
-#ifndef USE_MMX2               
+#ifndef USE_MMX               
                         c=pixmap[row][Pixel];
                         a_sum+=GET_A(c)*ScaleFactor;
                         b_sum+=GET_B(c)*ScaleFactor;
@@ -1307,7 +1316,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
                 SCALEDEBV("end while Pixel: %d a_sum: %d pixmap->a: %d,%d,%d,%d pos: %d\n",Pixel,
                                         a_sum,pixmap[row][Pixel].a,
                                         pixmap[row][Pixel].r,pixmap[row][Pixel].g,pixmap[row][Pixel].b,pos);
-#ifndef USE_MMX2                       
+#ifndef USE_MMX                       
                 c=pixmap[row][Pixel];
                 a_sum+=GET_A(c)*pos;
                 b_sum+=GET_B(c)*pos;
@@ -1318,7 +1327,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
                       " movd (%0),%%mm1 \n"
                       " movd %1,%%mm2 \n"
                       " punpcklbw %%mm7, %%mm1 \n"
-                      " pshufw $0b0,%%mm2,%%mm2 \n"
+                      SPLAT_U16( "%%mm2" )
                       " pmullw %%mm2,%%mm1 \n"
                       " paddw %%mm1,%%mm0 \n"
                       : : "r" (&pixmap[row][Pixel]),"r" (pos)  );
@@ -1328,7 +1337,7 @@ void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
                                 a_sum,new_pixel_height_rec,
                                 a_sum/ScaleFactor*
                                 new_pixel_height_rec/ScaleFactor);
-#ifndef USE_MMX2                       
+#ifndef USE_MMX                       
                 a_sum=a_sum/ScaleFactor*new_pixel_height_rec/ScaleFactor;
                 b_sum=b_sum/ScaleFactor*new_pixel_height_rec/ScaleFactor;
                 g_sum=g_sum/ScaleFactor*new_pixel_height_rec/ScaleFactor;
@@ -1366,7 +1375,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
 #define SHIFT_BITS "6"
 #define SHIFT_BITS_NUM 6
         const int ScaleFactor=1<<SHIFT_BITS_NUM;
-#ifndef USE_MMX2
+#ifndef USE_MMX
         unsigned int a_sum=0;
         unsigned int b_sum=0;
         unsigned int g_sum=0;
@@ -1378,11 +1387,11 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
         
         int32_t pos=new_pixel_width;
         
-#ifdef USE_MMX2
+#ifdef USE_MMX
         __asm__ __volatile__ (
                  " pxor %%mm0,%%mm0 \n" //mm0: dest pixel
                  " movd %0,%%mm6  \n"
-                 " pshufw $0,%%mm6,%%mm6 \n"// mm6: new_pixel_width_rec
+                 SPLAT_U16( "%%mm6" )
                  " pxor %%mm7,%%mm7 \n" //mm7: 00 00 00 ...
                  : : "r" (new_pixel_width_rec)  );
 #endif
@@ -1395,7 +1404,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
                                         a_sum,pixmap->a,
                                         pixmap->r,pixmap->g,pixmap->b);
 
-#ifndef USE_MMX2               
+#ifndef USE_MMX               
                         c=*pixmap;
                         a_sum+=GET_A(c)*ScaleFactor;
                         b_sum+=GET_B(c)*ScaleFactor;
@@ -1416,7 +1425,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
                 SCALEDEBH("end while a_sum: %d pixmap->a: %d,%d,%d,%d pos: %d\n",
                                         a_sum,pixmap->a,
                                         pixmap->r,pixmap->g,pixmap->b,pos);
-#ifndef USE_MMX2                       
+#ifndef USE_MMX                       
                 c=*pixmap;
                 a_sum+=GET_A(c)*pos;
                 b_sum+=GET_B(c)*pos;
@@ -1427,7 +1436,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
                       " movd (%0),%%mm1 \n"
                       " movd %1,%%mm2 \n"
                       " punpcklbw %%mm7, %%mm1 \n"
-                      " pshufw $0b0,%%mm2,%%mm2 \n"
+                      SPLAT_U16( "%%mm2" )
                       " pmullw %%mm2,%%mm1 \n"
                       " paddw %%mm1,%%mm0 \n"
                       : : "r" (pixmap),"r" (pos)  );
@@ -1437,7 +1446,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
                                 a_sum,new_pixel_width_rec,
                                 a_sum/ScaleFactor*
                                 new_pixel_width_rec/ScaleFactor);
-#ifndef USE_MMX2                       
+#ifndef USE_MMX                       
                 a_sum=a_sum/ScaleFactor*new_pixel_width_rec/ScaleFactor;
                 b_sum=b_sum/ScaleFactor*new_pixel_width_rec/ScaleFactor;
                 g_sum=g_sum/ScaleFactor*new_pixel_width_rec/ScaleFactor;
@@ -1471,7 +1480,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
                                         ,pos);
                 //uint32_t apos=-(pos);
                 uint32_t apos=abs(pos);
-#ifndef USE_MMX2            
+#ifndef USE_MMX            
                 c=*pixmap;
                 a_sum=GET_A(c)*apos;
                 b_sum=GET_B(c)*apos;
@@ -1482,7 +1491,7 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
                       " movd (%0),%%mm1 \n"
                       " movd %1,%%mm2 \n"
                       " punpcklbw %%mm7, %%mm1 \n"
-                      " pshufw $0b0,%%mm2,%%mm2 \n"
+                      SPLAT_U16( "%%mm2" )
                       " pmullw %%mm2,%%mm1 \n"
                       " paddw %%mm1,%%mm0 \n"
                       : : "r" (pixmap),"r" (apos)  );
@@ -1504,7 +1513,7 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width,
         const int ScaleFactor=1<<SHIFT_BITS_NUM;
         //const int ScaleFactor=100;
         color *end_pixmap=pixmap+Pixel;
-#ifndef USE_MMX2
+#ifndef USE_MMX
         unsigned int c=*pixmap;
 	unsigned int a1=GET_A(c);
 	unsigned int b1=GET_B(c);
@@ -1539,7 +1548,7 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width,
                                         a_sum,pixmap->a,
                                         pixmap->r,pixmap->g,pixmap->b);
 
-#ifndef USE_MMX2                       
+#ifndef USE_MMX                       
 			// funny that's the same formula we use for
 			// alpha blending ;-)
                         c  = SET_B(b1+(pos*(b2-b1)/ScaleFactor));
@@ -1551,7 +1560,7 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width,
 			__asm__(
 				" movd %0,%%mm3 \n" //mm3 load pos
 				" movq %%mm2,%%mm0 \n" // mm0 pixel2-pixel1
-				" pshufw $0b0,%%mm3,%%mm3 \n"
+                                SPLAT_U16( "%%mm3" )
 				" pmullw %%mm3, %%mm0 \n" //mm0 *pos
 				" psraw $"SHIFT_BITS",%%mm0 \n"
 				" paddsw %%mm1, %%mm0 \n" // mm0 + pixel1
@@ -1565,7 +1574,7 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width,
                 };
 		pixmap++;
                 pos -= ScaleFactor;
-#ifndef USE_MMX2                       
+#ifndef USE_MMX                       
                 a1=a2;
 		b1=b2;
 		g1=g2;
@@ -1600,7 +1609,7 @@ void cSoftOsd::ScaleUpVert_MMX(uint32_t *dest, int linesize,
 #define SHIFT_BITS_NUM 6
         const int ScaleFactor=1<<SHIFT_BITS_NUM;
         //const int ScaleFactor=100;
-#ifndef USE_MMX2
+#ifndef USE_MMX
         int a1=0;
         int b1=0;
         int g1=0;
@@ -1622,7 +1631,7 @@ void cSoftOsd::ScaleUpVert_MMX(uint32_t *dest, int linesize,
         SCALEUPDEBV("Scale up OSD_WIDTH: %d  new_pixel_height: %d\n",
                         OSD_HEIGHT,new_pixel_height);
         while (currPixel<Pixel) {
-#ifndef USE_MMX2
+#ifndef USE_MMX
                 c=pixmap[0][currPixel];
 		a1=GET_A(c);
 		b1=GET_B(c);
@@ -1650,7 +1659,7 @@ void cSoftOsd::ScaleUpVert_MMX(uint32_t *dest, int linesize,
                 while (pos<ScaleFactor) {
                         //SCALEUPDEBV("while loop pixel: %d pos: %d, row %d\n",
 			//		currPixel,pos,ypos);
-#ifndef USE_MMX2       
+#ifndef USE_MMX       
                         c  = SET_B(b1+(pos*(b2)/ScaleFactor));
                         c |= SET_G(g1+(pos*(g2)/ScaleFactor));
                         c |= SET_R(r1+(pos*(r2)/ScaleFactor));
@@ -1660,7 +1669,7 @@ void cSoftOsd::ScaleUpVert_MMX(uint32_t *dest, int linesize,
 			__asm__(
 				" movd %0,%%mm3 \n"
 				" movq %%mm2,%%mm0 \n"
-				" pshufw $0b0,%%mm3,%%mm3 \n"
+                                SPLAT_U16( "%%mm2" )
 				" pmullw %%mm3, %%mm0 \n"
 				" psraw $"SHIFT_BITS",%%mm0 \n"
 				" paddsw %%mm1, %%mm0 \n"
