@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.33 2006/07/10 19:40:25 wachm Exp $
+# $Id: Makefile,v 1.34 2006/09/18 10:06:38 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -196,7 +196,7 @@ endif  # WITH_CONFIGURE
 ### normally you shoudn't have to touch something below this line
 
 CXX      ?= g++
-CXXFLAGS ?= -O2 -g -Wall -fPIC -Woverloaded-virtual
+CXXFLAGS ?= -O2 -g -Wall -fPIC -Woverloaded-virtual $(ADD_CXXFLAGS)
 
 ### The directory environment:
 

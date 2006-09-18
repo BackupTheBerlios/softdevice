@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.28 2006/09/17 13:02:46 wachm Exp $
+# $Id: configure,v 1.29 2006/09/18 10:06:38 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -20,6 +20,8 @@ fi
 set -u
 : ${CFLAGS=""}
 
+system="Linux"
+cpu_arch="i386"
 use_pkgconfig="yes"
 ffmpeg="yes"
 ffmpeg_use_path="no"
@@ -36,6 +38,7 @@ with_fb="yes"
 with_subplugins="yes"
 with_mmx="yes"
 with_mmx2="yes"
+with_altivec="no"
 cle266="yes"
 alsa="yes"
 
@@ -86,6 +89,41 @@ do
     *) echo "ERROR: unknown parameter $1"; help; exit ;;
   esac
 done
+
+#########################################################
+# detect host system and cpu type
+#
+echo -n "Testing system and cpu type... "
+echo "Testing system and cpu type.----------------------------" >> config.log
+echo "uname -a: `uname -a`" >> config.log
+echo "$cc -dumpmache: `$cc -dumpmachine `" >> config.log
+
+system=`uname -s`
+case "$system" in
+  Linux) system="Linux";;
+  Darwin) system="Darwin";;
+  *) system="unknown";;
+esac
+
+cpu_arch=`uname -m`
+case "$cpu_arch" in
+  i[3-6]86*) 
+        cpu_arch="i386"
+        ;;
+  ppc|"Power Macintosh") 
+        cpu_arch="PowerPC"
+        with_mmx="no" 
+        with_mmx2="no"
+        with_altivec="yes"
+        ;;
+  *) 
+        cpu_arch="unknown"
+        with_mmx="no" 
+        with_mmx2="no"  
+        ;;
+esac
+
+echo "found $system on $cpu_arch cpu."
 
 #########################################################
 # start pkg-config test
@@ -518,6 +556,11 @@ if test "${with_mmx}" = "yes" ; then
   if test "${with_mmx2}" = "yes" ; then
     echo "#define USE_MMX2 1" >> $TMPH
   fi
+fi
+
+if test "${with_altivec}" = "yes" ; then
+  echo "#define USE_ALTIVEC 1" >> $TMPH
+  echo "ADD_CXXFLAGS += -faltivec" >> $TMPM
 fi
 
 ###############################################################################
