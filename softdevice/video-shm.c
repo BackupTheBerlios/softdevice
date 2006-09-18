@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.10 2006/09/04 20:25:17 wachm Exp $
+ * $Id: video-shm.c,v 1.11 2006/09/18 10:50:33 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -68,21 +68,21 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore)
 
         // first try to get an existing ShmCltBlock
         if  ( (ctl_shmid = shmget(ctl_key,sizeof(ShmCtlBlock), 0666)) >= 0 ) {
-                fprintf(stderr,"got ctl_shmid %d shm ctl!\n",ctl_shmid);
+                fprintf(stderr,"cShmVideoOut: Got ctl_shmid %d shm ctl!\n",ctl_shmid);
         } else if ( (ctl_shmid = shmget(ctl_key,sizeof(ShmCtlBlock), 
                                         IPC_CREAT | 0666)) >= 0 ) {
-                fprintf(stderr,"created ctl_shmid %d shm ctl!\n",ctl_shmid);
+                fprintf(stderr,"cShmVideoOut: Created ctl_shmid %d shm ctl!\n",ctl_shmid);
                 // created ShmCltBlock, clear it
                 Clear_Ctl=true;
         } else {
-                fprintf(stderr,"error creating shm ctl!\n");
+                fprintf(stderr,"cShmVideoOut: Error creating shm ctl!\n");
                 exit(-1);
         };
 
         // attach to the control block
         if ( (ctl = (ShmCtlBlock*)shmat(ctl_shmid,NULL,0)) 
                         == (ShmCtlBlock*) -1 ) {
-                fprintf(stderr,"error attatching shm ctl!\n");
+                fprintf(stderr,"cShmVideoOut: Error attatching shm ctl!\n");
                 exit(-1);
         };
 
@@ -97,30 +97,30 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore)
                 // create semaphores
                 if ( (ctl->semid = semget(IPC_PRIVATE, 4, 0666 | IPC_CREAT) )
                                 == -1) {
-                        fprintf(stderr,"error creating semaphore set!\n");
+                        fprintf(stderr,"cShmVideoOut: Error creating semaphore set!\n");
                         exit(-1);
                 };
-                printf("created semaphores id %d\n",ctl->semid);
+                SHMDEB("created semaphores id %d\n",ctl->semid);
         };
 
         semun sem_val;
         sem_val.val = 0; // nothing available
         if ( semctl(ctl->semid,PICT_SIG, SETVAL, sem_val) == -1 ) {
-                printf("error resetting semaphore PICT_SIG\n");
+                fprintf(stderr,"cShmVideoOut: Error resetting semaphore PICT_SIG\n");
                 exit(-1);
         };
         if ( semctl(ctl->semid,KEY_SIG,SETVAL,sem_val) == -1 ) {
-                printf("error resetting semaphore KEY_SIG\n");
+                fprintf(stderr,"cShmVideoOut: Error resetting semaphore KEY_SIG\n");
                 exit(-1);
         };
         
         sem_val.val = 1; // not locked
         if ( semctl(ctl->semid,PICT_MUT, SETVAL, sem_val) == -1 ) {
-                printf("error resetting semaphore PICT_MUT\n");
+                fprintf(stderr,"cShmVideoOut: Error resetting semaphore PICT_MUT\n");
                 exit(-1);
         };
         if ( semctl(ctl->semid,KEY_MUT,SETVAL,sem_val) == -1 ) {
-                printf("error resetting semaphore KEY_MUT\n");
+                fprintf(stderr,"cShmVideoOut: Error resetting semaphore KEY_MUT\n");
                 exit(-1);
         };
    
@@ -140,7 +140,7 @@ cShmVideoOut::~cShmVideoOut() {
         semun sem_val;
         // remove semaphore 
         if ( semctl(ctl->semid, 0, IPC_RMID, sem_val ) == -1) {
-            fprintf(stderr,"error removeing semaphore set!\n");
+            fprintf(stderr,"cShmVideoOut: Error removing semaphore set!\n");
             exit(1);
         }
         ctl->semid=-1;
@@ -195,65 +195,97 @@ void cShmVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
         PixelMask=NULL;
 };       
 
-void cShmVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
-                  bool *&dirtyLines) {
-	SHMDEB("GetLockOsdSurface osd_surface %p\n",osd_surface);
+void cShmVideoOut::CheckShmIDs() {
+
+        if ( ctl->pict_shmid != curr_pict_shmid ) {
+                if (curr_pict) {
+                        shmdt(curr_pict);
+                        curr_pict=NULL;
+                };
+
+                if ( ctl->pict_shmid != -1 ) {
+                        if ( (curr_pict = (uint8_t *)shmat(ctl->pict_shmid,NULL,0)) 
+                                        == (uint8_t*) -1 ) {
+                                fprintf(stderr,"cShmVideoOut: Warning! Could not attatch to shm pict! Assuming no client connected.\n");
+                                ctl->pict_shmid = -1;
+                                ctl->attached = 0;
+                                curr_pict=NULL;
+                                sem_sig_unlock(ctl->semid,PICT_MUT);
+                                return;
+                        }
+                        curr_pict_shmid=ctl->pict_shmid;
+                        privBuf.format=ctl->format;
+                        privBuf.max_width=ctl->max_width;
+                        privBuf.max_height=ctl->max_height;
+                        switch (privBuf.format) {
+                                case PIX_FMT_YUV420P:  
+                                        SHMDEB("new format YUV420P\n");
+                                        privBuf.pixel[0]=curr_pict+ctl->offset0;
+                                        privBuf.pixel[1]=curr_pict+ctl->offset1;
+                                        privBuf.pixel[2]=curr_pict+ctl->offset2;
+                                        privBuf.stride[0]=ctl->stride0;
+                                        privBuf.stride[1]=ctl->stride1;
+                                        privBuf.stride[2]=ctl->stride2;
+                                        break;
+                                case PIX_FMT_YUV422:
+                                        SHMDEB("new format YUV422\n");
+                                        privBuf.pixel[0]=curr_pict+ctl->offset0;
+                                        privBuf.pixel[1]=privBuf.pixel[1]=NULL;
+                                        privBuf.stride[0]=ctl->stride0;
+                                        privBuf.stride[1]=privBuf.stride[2]=0;
+                                        break;
+                                default:
+                                        break;
+                        }
+                        SHMDEB("new pict %p shmid %d\n",curr_pict,curr_pict_shmid);
+                };
+        };
+ 
         if ( ctl->osd_shmid != curr_osd_shmid ) {
                 if (osd_surface) {
                         shmdt(osd_surface);
                         osd_surface=NULL;
-                        osd=NULL;
                 };
                 
                 if ( ctl->osd_shmid != -1 ) {
                        SHMDEB("get new osd_surface %p\n",osd_surface);
                        if ( (osd_surface = (uint8_t *)shmat(ctl->osd_shmid,NULL,0)) 
                                        == (uint8_t*) -1 ) {
-                               fprintf(stderr,"error attatching osd pict(%d)! Assuming no client connected\n",
+                               fprintf(stderr,"cShmVideoOut: Warning! Could not attatch to osd pict(%d)! Assuming no client connected.\n",
                                                ctl->osd_shmid);
                                ctl->pict_shmid = -1;
                                ctl->osd_shmid = -1;
                                ctl->attached = 0;
                                osd_surface=NULL;
-                               osd=NULL;
                                return;
                        }
                        curr_osd_shmid=ctl->osd_shmid;
                 };
 	        SHMDEB("got new osd_surface %p\n",osd_surface);
         };
+}
 
+void cShmVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
+                  bool *&dirtyLines) {
+	SHMDEB("GetLockOsdSurface osd_surface %p osd_shmid %d\n",osd_surface,ctl->osd_shmid);
+
+        CheckShmIDs();
         osd=osd_surface;
         stride=ctl->osd_stride;
         dirtyLines=NULL;
 };
 
-void cShmVideoOut::ClearOSD()
-{
-  SHMDEB("ClearOsd\n");
-  cVideoOut::ClearOSD();
-  if ( ctl->osd_shmid != curr_osd_shmid ) {
-          if (osd_surface) {
-                  shmdt(osd_surface);
-                  osd_surface=NULL;
-          };
+void cShmVideoOut::ClearOSD() {
+        SHMDEB("ClearOsd\n");
+        cVideoOut::ClearOSD();
+        if (current_osdMode == OSDMODE_SOFTWARE)
+                return;
 
-          if ( ctl->osd_shmid != -1 ) {
-                  if ( (osd_surface = (uint8_t *)shmat(ctl->osd_shmid,NULL,0)) 
-                                  == (uint8_t*) -1 ) {
-                          fprintf(stderr,"error attatching osd pict(%d)! Assuming no client connected\n",
-                                          ctl->osd_shmid);
-                          ctl->osd_shmid = -1;
-                          ctl->attached = 0;
-                          osd_surface=NULL;
-                          return;
-                  } 
-          };
-  };
-  if (osd_surface)
-          memset (osd_surface, 0, ctl->osd_stride *ctl->osd_max_height);
-  ctl->new_osd++;
-  sem_sig_unlock(ctl->semid,PICT_SIG);
+        CheckShmIDs();
+        if (osd_surface)
+                memset (osd_surface, 0, ctl->osd_stride *ctl->osd_max_height);
+        ctl->new_osd++;
+        sem_sig_unlock(ctl->semid,PICT_SIG);
 };
 
 void cShmVideoOut::CommitUnlockOsdSurface() {
@@ -304,52 +336,10 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
         SIGDEB("YUV trying to get a lock\n");
         sem_wait_lock(ctl->semid,PICT_MUT);
         SIGDEB("YUV got a lock\n");
+
+        CheckShmIDs();        
         
-        if ( ctl->pict_shmid != curr_pict_shmid ) {
-                if (curr_pict) {
-                        shmdt(curr_pict);
-                        curr_pict=NULL;
-                };
-                
-                if ( ctl->pict_shmid != -1 ) {
-                       if ( (curr_pict = (uint8_t *)shmat(ctl->pict_shmid,NULL,0)) 
-                                       == (uint8_t*) -1 ) {
-                               fprintf(stderr,"error attatching shm pict! Assuming no client connected\n");
-                               ctl->pict_shmid = -1;
-                               ctl->attached = 0;
-                               curr_pict=NULL;
-                               sem_sig_unlock(ctl->semid,PICT_MUT);
-                               return;
-                       }
-                       curr_pict_shmid=ctl->pict_shmid;
-                       privBuf.format=ctl->format;
-                       privBuf.max_width=ctl->max_width;
-                       privBuf.max_height=ctl->max_height;
-                       switch (privBuf.format) {
-                        case PIX_FMT_YUV420P:  
-                                SHMDEB("new format YUV420P\n");
-                                privBuf.pixel[0]=curr_pict+ctl->offset0;
-                                privBuf.pixel[1]=curr_pict+ctl->offset1;
-                                privBuf.pixel[2]=curr_pict+ctl->offset2;
-                                privBuf.stride[0]=ctl->stride0;
-                                privBuf.stride[1]=ctl->stride1;
-                                privBuf.stride[2]=ctl->stride2;
-                                break;
-                        case PIX_FMT_YUV422:
-                                SHMDEB("new format YUV422\n");
-                                privBuf.pixel[0]=curr_pict+ctl->offset0;
-                                privBuf.pixel[1]=privBuf.pixel[1]=NULL;
-                                privBuf.stride[0]=ctl->stride0;
-                                privBuf.stride[1]=privBuf.stride[2]=0;
-                                break;
-                        default:
-                                break;
-                       }
-                       SHMDEB("new pict %p shmid %d\n",curr_pict,curr_pict_shmid);
-                };
-        };
-        
-        if (!ctl->pict_shmid || !curr_pict) {
+        if ( ctl->pict_shmid==-1 || !curr_pict ) {
                 // unlock picture ctl
                 sem_sig_unlock(ctl->semid,PICT_MUT);
                 SHMDEB(" no pict_shmid or no curr_pict unlock and return\n");

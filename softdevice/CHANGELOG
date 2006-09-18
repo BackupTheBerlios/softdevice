@@ -3,6 +3,9 @@ Changelog
    - fix RefreshAll for NoVScaleCopyToBitmap()
    - add a very simple cpu type and host system detection to configure
    - fix changing from pseudo to software osd blending for video-xv
+   - remove no longer needed test for broken gcc compiler from configure
+   - combine shared memory checks into CheckShmIDs()
+   - improve error messages in video-shm.c
 2006-09-17:
    - replace "pshufw" with MMX commands to make scaling optimazations available
      to processors without MMX2
