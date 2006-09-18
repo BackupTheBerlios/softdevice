@@ -1,4 +1,6 @@
 Changelog
+2006-09-18:
+   - fix RefreshAll for NoVScaleCopyToBitmap()
 2006-09-17:
    - replace "pshufw" with MMX commands to make scaling optimazations available
      to processors without MMX2
@@ -9,7 +11,7 @@ Changelog
      yv12_to_yuy2_il_mmx2_line()
    - make utils.c compile on non MMX machines, cleanup some #ifdefs
    - fix compile issue with g++-4.1.1
-   - add NoVScaleCopyBitmap() for RGB modes
+   - add NoVScaleCopyToBitmap() for RGB modes
 2006-09-xx:
    - added -vo shm: to help option
    - added support new fields from libcle266mpegdec-0.4

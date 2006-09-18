@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.19 2006/09/17 20:49:05 wachm Exp $
+ * $Id: SoftOsd.c,v 1.20 2006/09/18 09:46:38 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -1176,7 +1176,7 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *dest, int linesize,
 
         for (int y=0; y<OSD_HEIGHT; y++) {
 
-                if (!dirty_lines[y]) 
+                if (!RefreshAll && !dirty_lines[y]) 
                         continue;
                 
                 if (dest_Width==OSD_WIDTH) {
