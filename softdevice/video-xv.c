@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.61 2006/09/09 09:55:25 lucke Exp $
+ * $Id: video-xv.c,v 1.62 2006/09/18 10:14:01 wachm Exp $
  */
 
 #include <unistd.h>
@@ -1592,10 +1592,10 @@ void cXvVideoOut::CloseOSD()
 void cXvVideoOut::ClearOSD()
 {
   cVideoOut::ClearOSD();
-  if (videoInitialized && current_osdMode==OSDMODE_PSEUDO) {
+  if ( videoInitialized ) {
     pthread_mutex_lock(&xv_mutex);
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
-    ShowOSD();
+    XClearArea (dpy, win, 0, 0, 0, 0, False);
     XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
   };

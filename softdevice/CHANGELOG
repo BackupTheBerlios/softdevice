@@ -2,6 +2,7 @@ Changelog
 2006-09-18:
    - fix RefreshAll for NoVScaleCopyToBitmap()
    - add a very simple cpu type and host system detection to configure
+   - fix changing from pseudo to software osd blending for video-xv
 2006-09-17:
    - replace "pshufw" with MMX commands to make scaling optimazations available
      to processors without MMX2
