@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.29 2006/09/18 10:06:38 wachm Exp $
+# $Id: configure,v 1.30 2006/09/18 10:16:31 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -495,45 +495,6 @@ else
 echo "Not found."
 fi
 
-#########################################################
-broken_gcc_cpp="no"
-cat > ${TMPC} << EOF
-
-#include <stdio.h>
-#define BLOCK_SIZE 4096
-
-#ifdef __x86_64__
-# define  REG_a "rax"
-#else
-# define  REG_a "eax"
-#endif
-
-#define CONFUSION_FACTOR 0
-
-int main(void) {
-    void    *to, *from;
-    size_t  i;
-
-  asm volatile(
-    "xor %%"REG_a", %%"REG_a"	\n\t"
-    "xor %%"REG_a", %%"REG_a"	\n\t"
-    "add %3, %0		\n\t"
-    "add %3, %1		\n\t"
-    "sub %4, %2		\n\t"
-    "cmp %4, %2		\n\t"
-      : "+r" (from),
-        "+r" (to),
-        "+r" (i)
-      : "r" ((long)BLOCK_SIZE),
-        "i" (BLOCK_SIZE/64),
-        "i" ((long)CONFUSION_FACTOR)
-      : "%"REG_a,
-        "%ebx"
-    );
-  return 0;
-}
-EOF
-$cc $CFLAGS -o $TMPE $TMPC >> config.log 2>&1 || broken_gcc_cpp="yes"
 ###########
 
 echo "Creating temporary config.h and config.mak"
@@ -651,15 +612,6 @@ fi
 if test "${with_fb}" = "yes" ; then
   echo "FB_SUPPORT = 1" >> $TMPM
   echo "#define FB_SUPPORT  1" >> $TMPH
-fi
-
-###############################################################################
-# generating utils.c specific specific defines
-#
-if test "${broken_gcc_cpp}" = "yes" ; then
-  echo "#define HAVE_BROKEN_GCC_CPP  1" >> $TMPH
-else
-  echo "#define HAVE_BROKEN_GCC_CPP  0" >> $TMPH
 fi
 
 ###############################################################################
