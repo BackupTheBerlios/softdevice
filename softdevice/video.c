@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.63 2006/09/08 04:59:02 lucke Exp $
+ * $Id: video.c,v 1.64 2006/09/19 13:23:51 wachm Exp $
  */
 
 #include <fcntl.h>
@@ -105,7 +105,7 @@ void cVideoOut::Action()
 
     if (
         OsdRefreshCounter > 120 || // blanks the screen after inactivity (4s)
-        (setupStore->osdMode == OSDMODE_SOFTWARE &&
+        (current_osdMode == OSDMODE_SOFTWARE &&
          OsdRefreshCounter>5 && Osd_changed))
     {
       osdMutex.Lock();
@@ -144,7 +144,8 @@ void cVideoOut::SetOldPicture(sPicBuffer *picture)
 {
   //osdMutex.Lock(); //protected by areaMutex osdMutex will cause deadlocks!
   //PICDEB("SetOldPicture pic->buf_num %d\n",picture->buf_num);
-  UnlockBuffer(old_picture);
+  if (old_picture)
+          UnlockBuffer(old_picture);
   if (picture && picture->owner==this) {
      LockBuffer(picture);
      old_picture=picture;

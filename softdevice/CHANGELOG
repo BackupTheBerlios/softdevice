@@ -1,4 +1,7 @@
 Changelog
+2006-09-19:
+   - fix "Error! Trying to unlock a nil picture... Ignoring" error message.
+   - use current_OsdMode instead of setupStore.OsdMode
 2006-09-18:
    - fix RefreshAll for NoVScaleCopyToBitmap()
    - add a very simple cpu type and host system detection to configure
