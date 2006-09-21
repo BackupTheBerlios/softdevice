@@ -1,4 +1,7 @@
 Changelog
+2006-09-21:
+   - introduce a mutex to protect calls to videoOut from SoftOsd
+   - initialize parameters for the vout->GetOSDMode() call
 2006-09-19:
    - fix "Error! Trying to unlock a nil picture... Ignoring" error message.
    - use current_OsdMode instead of setupStore.OsdMode

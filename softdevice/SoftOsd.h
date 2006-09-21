@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.8 2006/09/17 20:49:05 wachm Exp $
+ * $Id: SoftOsd.h,v 1.9 2006/09/21 10:35:51 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -64,6 +64,7 @@ class cVideoOut;
  */
 class cSoftOsd : public cOsd,cThread {
 private:
+    cMutex voutMutex; // lock all operations on videoOut!
     cVideoOut *videoOut;
 protected:
     int      xOfs, yOfs;
@@ -93,14 +94,17 @@ protected:
 public:
     cSoftOsd(cVideoOut *VideoOut, int XOfs, int XOfs);
     virtual ~cSoftOsd();
+    virtual void Flush(void);
 
+protected:
     bool SetMode(int Depth, bool HasAlpha, bool AlphaInversed, 
                  bool IsYUV, uint8_t *PixelMask=NULL);
     
     bool FlushBitmaps(bool OnlyDirty);
     bool DrawConvertBitmap(cBitmap *Bitmap, bool OnlyDirty);
-    virtual void Flush(void);
-    void OsdCommit();
+    
+    void OsdCommit(); 
+    // may only be called if the caller holds voutMutex
     
     void Clear();
     virtual void Action();
@@ -165,8 +169,6 @@ public:
                 int start_pos,
                 color **pixmap, int Pixel);
 
- public:
-	    
 };
 
 #endif //VDRVERSUM >= 10307

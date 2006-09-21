@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.20 2006/09/18 09:46:38 wachm Exp $
+ * $Id: SoftOsd.c,v 1.21 2006/09/21 10:35:51 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -52,16 +52,18 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
 
         videoOut = VideoOut;
         xPan = yPan = 0;
+        voutMutex.Lock();
 	videoOut->OpenOSD();
 	xOfs=X;yOfs=Y;
         ScreenOsdWidth=ScreenOsdHeight=0;
-        int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV; 
-        uint8_t *PixelMask;
+        int Depth=16; bool HasAlpha=false; bool AlphaInversed=false; 
+        bool IsYUV=false; uint8_t *PixelMask=NULL;
         videoOut->AdjustOSDMode();
         videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
                         IsYUV,PixelMask);
         SetMode(Depth,HasAlpha,AlphaInversed,
                         IsYUV,PixelMask);
+        voutMutex.Unlock();
 };
 
 /*--------------------------------------------------------------------------*/
@@ -86,8 +88,10 @@ cSoftOsd::~cSoftOsd() {
         active=false;
         Cancel(3);
         if (videoOut) {
+                voutMutex.Lock();
                 videoOut->CloseOSD();
                 videoOut=0;
+                voutMutex.Unlock();
         }
         delete[] OSD_Bitmap;
 }
@@ -101,6 +105,12 @@ void cSoftOsd::Action() {
                 int newOsdHeight;
                 int newXPan, newYPan;
 
+                voutMutex.Lock();
+                if (!videoOut) {
+                        voutMutex.Unlock();
+                        continue;
+                };
+                
                 videoOut->AdjustOSDMode();
                 videoOut->GetOSDDimension(newOsdWidth,newOsdHeight,newXPan,newYPan);
                 if ( newOsdWidth==-1 || newOsdHeight==-1 )
@@ -109,8 +119,8 @@ void cSoftOsd::Action() {
                         newOsdHeight=OSD_FULL_HEIGHT;
                 }
 
-                int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV;
-                uint8_t *PixelMask;
+                int Depth=16; bool HasAlpha=false; bool AlphaInversed=false; 
+                bool IsYUV=false; uint8_t *PixelMask=NULL;
                 videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
                                 IsYUV,PixelMask);
                 bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,
@@ -130,6 +140,8 @@ void cSoftOsd::Action() {
                                 videoOut->ClearOSD();
                         OsdCommit();
                 }
+                voutMutex.Unlock();
+
                 usleep(17000);
         }
         OSDDEB("OSD thread ended\n");
@@ -155,8 +167,8 @@ void cSoftOsd::OsdCommit() {
                 RefreshAll=true;
         };
 
-        int Depth; bool HasAlpha; bool AlphaInversed; bool IsYUV;
-        uint8_t *PixelMask;
+        int Depth=16; bool HasAlpha=false; bool AlphaInversed=false; 
+        bool IsYUV=false; uint8_t *PixelMask=NULL;
         videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
         bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
 
@@ -255,9 +267,11 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
 void cSoftOsd::Flush(void) {
         OSDDEB("SoftOsd::Flush \n");
 	bool OSD_changed=FlushBitmaps(true);
-	
+
+        voutMutex.Lock();
         if (OSD_changed)
                 OsdCommit();
+        voutMutex.Unlock();
 
 	// give priority to the other threads
 	pthread_yield();
