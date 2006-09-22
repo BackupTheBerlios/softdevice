@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.42 2006/09/22 04:19:58 lucke Exp $
+ * $Id: video.h,v 1.43 2006/09/22 19:28:04 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -96,8 +96,7 @@ protected:
     // may need to take some longer actions e.g clearing background for one or
     // mutiple output buffers (double, triple buffering).
     //
-    cMutex  osdMutex,
-            areaMutex;
+    cMutex  osdMutex;
     bool    OSDpresent,
             OSDpseudo_alpha;
     int     current_osdMode;

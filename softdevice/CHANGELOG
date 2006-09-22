@@ -1,6 +1,7 @@
 Changelog
 2006-09-22:
-   - protect locking for old picture by a separate mutex
+   - protect locking for old picture by a separate mutex.
+   - fix possible lost picture update and dropped areaMutex.
 2006-09-21:
    - introduce a mutex to protect calls to videoOut from SoftOsd
    - initialize parameters for the vout->GetOSDMode() call

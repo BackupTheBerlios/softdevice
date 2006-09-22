@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.65 2006/09/22 04:19:58 lucke Exp $
+ * $Id: video.c,v 1.66 2006/09/22 19:28:04 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -142,8 +142,6 @@ void cVideoOut::Action()
  */
 void cVideoOut::SetOldPicture(sPicBuffer *picture)
 {
-  oldPictureMutex.Lock();
-
   if (oldPicture)
     UnlockBuffer(oldPicture);
   if (picture && picture->owner==this) {
@@ -151,8 +149,6 @@ void cVideoOut::SetOldPicture(sPicBuffer *picture)
     oldPicture=picture;
   } else
     oldPicture = NULL;
-
-  oldPictureMutex.Unlock();
 }
 
 /* ---------------------------------------------------------------------------
@@ -443,7 +439,8 @@ void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
 void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
                                 sPicBuffer *pic)
 {
-  areaMutex. Lock();
+  oldPictureMutex.Lock();
+
   OsdRefreshCounter=0;
   Osd_changed=0;
   CheckAspectDimensions(pic);
@@ -451,9 +448,9 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
 
   // display picture
   YUV(pic);
-  areaMutex. Unlock();
-
   SetOldPicture(pic);
+
+  oldPictureMutex.Unlock();
   ProcessEvents();
 }
 
@@ -461,14 +458,15 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
  */
 void cVideoOut::DrawStill_420pl(sPicBuffer *buf)
 {
-  areaMutex. Lock();
+  oldPictureMutex.Lock();
+
   OsdRefreshCounter=0;
   Osd_changed=0;
   CheckArea(buf->width, buf->height);
   CheckAspect(buf->dtg_active_format,buf->aspect_ratio);
   // display picture
   YUV (buf);
-  areaMutex. Unlock();
+  oldPictureMutex.Unlock();
 
   ProcessEvents();
 }
