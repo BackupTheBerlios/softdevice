@@ -1,4 +1,6 @@
 Changelog
+2006-09-22:
+   - protect locking for old picture by a separate mutex
 2006-09-21:
    - introduce a mutex to protect calls to videoOut from SoftOsd
    - initialize parameters for the vout->GetOSDMode() call
@@ -18,12 +20,12 @@ Changelog
    - cleanup PicBuffer.c, release PicBuffers in destructor,...
    - add linux framebuffer detection to configure
    - disable libcle266mpegdec if no DirectFB is found
-   - add altivec optimizations to some AlphaBlend() and 
+   - add altivec optimizations to some AlphaBlend() and
      yv12_to_yuy2_il_mmx2_line()
    - make utils.c compile on non MMX machines, cleanup some #ifdefs
    - fix compile issue with g++-4.1.1
    - add NoVScaleCopyToBitmap() for RGB modes
-2006-09-xx:
+2006-09-16:
    - added -vo shm: to help option
    - added support new fields from libcle266mpegdec-0.4
    - video-dfb: removed check and support for DSBLIT_INTERLACED as DirectFB

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.41 2006/08/27 13:02:50 wachm Exp $
+ * $Id: video.h,v 1.42 2006/09/22 04:19:58 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -75,11 +75,27 @@ private:
             AdjustSourceArea(int tw, int th),
             AdjustToDisplayGeometry(double afd_aspect);
 
+    // -----------------------------------------------------------------------
+    // oldPicture is a reference to a previous decoded frame. It is used
+    // when there is osd drawing activity in case of no video currently
+    // available. Access to this pointer must be protected by corresponding
+    // mutex: oldPictureMutex .
+    //
+    sPicBuffer  *oldPicture;
+    cMutex      oldPictureMutex;
+    void        SetOldPicture(sPicBuffer *pic);
+
 protected:
     inline double GetAspect_F()
     { return aspect_F;};
 
 protected:
+    // -----------------------------------------------------------------------
+    // State changes of OSD like on / off transitions, must be proteced by
+    // osdMutex. This are changes of variable OSDpresent, as the output method
+    // may need to take some longer actions e.g clearing background for one or
+    // mutiple output buffers (double, triple buffering).
+    //
     cMutex  osdMutex,
             areaMutex;
     bool    OSDpresent,
@@ -113,14 +129,13 @@ protected:
             displayTimeUS;
     double  parValues[SETUP_VIDEOASPECTNAMES_COUNT];
 
-    sPicBuffer *old_picture;
     bool    videoInitialized;
 
     cSetupStore *setupStore;
 
     bool active;
-    uint16_t OsdRefreshCounter;
-    // should be setted to null everytime OSD is shown
+    volatile uint16_t OsdRefreshCounter;
+    // should be set to 0 everytime OSD is shown
     // (software alpha blending mode).
 
     virtual void RecalculateAspect(void);
@@ -160,8 +175,6 @@ public:
     // osd control thread. Refreshes the osd on dimension changes and
     // activates fallback mode if the osd was not updated for a too long
     // time
-
-    virtual void SetOldPicture(sPicBuffer *pic);
 
     uint8_t *PixelMask;
     uint8_t *OsdPy;

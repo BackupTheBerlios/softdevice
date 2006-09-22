@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.64 2006/09/19 13:23:51 wachm Exp $
+ * $Id: video.c,v 1.65 2006/09/22 04:19:58 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -49,7 +49,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   this->setupStore=setupStore;
   freezeMode=false;
   videoInitialized = false;
-  old_picture = NULL;
+  oldPicture = NULL;
 
   for (int i = 0; i < SETUP_VIDEOASPECTNAMES_COUNT; ++i)
     parValues [i] = 1.0;
@@ -108,11 +108,11 @@ void cVideoOut::Action()
         (current_osdMode == OSDMODE_SOFTWARE &&
          OsdRefreshCounter>5 && Osd_changed))
     {
-      osdMutex.Lock();
-      if (old_picture)
+      oldPictureMutex.Lock();
+      if (oldPicture)
       {
-        OSDDEB("redrawing old_picture osd_changed %d\n",Osd_changed);
-        DrawStill_420pl(old_picture);
+        OSDDEB("redrawing oldPicture osd_changed %d\n",Osd_changed);
+        DrawStill_420pl(oldPicture);
       }
       else
       {
@@ -132,7 +132,7 @@ void cVideoOut::Action()
         OSDDEB("drawing osd_layer osd_changed %d\n",Osd_changed);
         DrawStill_420pl(&tmpBuf);
       }
-      osdMutex.Unlock();
+      oldPictureMutex.Unlock();
     }
   }
 #endif
@@ -142,16 +142,17 @@ void cVideoOut::Action()
  */
 void cVideoOut::SetOldPicture(sPicBuffer *picture)
 {
-  //osdMutex.Lock(); //protected by areaMutex osdMutex will cause deadlocks!
-  //PICDEB("SetOldPicture pic->buf_num %d\n",picture->buf_num);
-  if (old_picture)
-          UnlockBuffer(old_picture);
-  if (picture && picture->owner==this) {
-     LockBuffer(picture);
-     old_picture=picture;
-  } else old_picture = NULL;
+  oldPictureMutex.Lock();
 
-  //osdMutex.Unlock();
+  if (oldPicture)
+    UnlockBuffer(oldPicture);
+  if (picture && picture->owner==this) {
+    LockBuffer(picture);
+    oldPicture=picture;
+  } else
+    oldPicture = NULL;
+
+  oldPictureMutex.Unlock();
 }
 
 /* ---------------------------------------------------------------------------
@@ -450,9 +451,9 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
 
   // display picture
   YUV(pic);
-  SetOldPicture(pic);
-
   areaMutex. Unlock();
+
+  SetOldPicture(pic);
   ProcessEvents();
 }
 
@@ -468,6 +469,7 @@ void cVideoOut::DrawStill_420pl(sPicBuffer *buf)
   // display picture
   YUV (buf);
   areaMutex. Unlock();
+
   ProcessEvents();
 }
 
@@ -476,22 +478,23 @@ void cVideoOut::DrawStill_420pl(sPicBuffer *buf)
 void cVideoOut::ClearOSD()
 {
   OSDDEB("ClearOSD\n");
+  osdMutex.Lock();
+
   OSDpresent=false; // will automaticly be set to true on redraw ;-)
-  //if (current_osdMode==OSDMODE_SOFTWARE)
-  {
-    if (OsdPy)
-       memset(OsdPy,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
-    if (OsdPu)
-       memset(OsdPu,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
-    if (OsdPv)
-       memset(OsdPv,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
-    if (OsdPAlphaY)
-       memset(OsdPAlphaY,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
-    if (OsdPAlphaUV)
-       memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
-   };
+  if (OsdPy)
+    memset(OsdPy,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
+  if (OsdPu)
+    memset(OsdPu,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
+  if (OsdPv)
+    memset(OsdPv,127,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
+  if (OsdPAlphaY)
+    memset(OsdPAlphaY,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
+  if (OsdPAlphaUV)
+    memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
   Osd_changed=1;
-};
+
+ osdMutex.Unlock();
+}
 
 #if VDRVERSNUM >= 10307
 
