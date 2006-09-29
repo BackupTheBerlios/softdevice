@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.11 2006/09/18 10:50:33 wachm Exp $
+ * $Id: video-shm.c,v 1.12 2006/09/29 19:12:19 lucke Exp $
  */
 
 #include "video-shm.h"
@@ -317,6 +317,7 @@ void cShmVideoOut::Suspend() {
 };
 
 void cShmVideoOut::YUV(sPicBuffer *buf) {
+#if 0	
         uint8_t *Py=buf->pixel[0]+(buf->edge_height)*buf->stride[0]
                 +buf->edge_width;
         uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
@@ -327,6 +328,7 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
         int UVstride=buf->stride[1];
         int Width=buf->width;
         int Height=buf->height;
+#endif	
   
         if (!ctl->attached) {
                 setupStore->shouldSuspend=1;
@@ -346,8 +348,10 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                 return;
         };
       
+#if 0	
         int width= ctl->max_width < Width ? ctl->max_width : Width;
         int height= ctl->max_height < Height ? ctl->max_height : Height;    
+#endif	
         
         ctl->width=fwidth;
         ctl->height=fheight;
