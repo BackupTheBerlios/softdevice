@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.62 2006/09/18 10:14:01 wachm Exp $
+ * $Id: video-xv.c,v 1.63 2006/09/29 19:17:18 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1563,17 +1563,6 @@ bool cXvVideoOut::Resume(void)
 void cXvVideoOut::CloseOSD()
 {
   cVideoOut::CloseOSD();
-  osdMutex.Lock();
-#if VDRVERSNUM < 10307
-  for (int i = 0; i < MAXNUMWINDOWS; i++)
-  {
-    if (layer[i])
-    {
-      delete(layer[i]);
-      layer[i]=0;
-    }
-  }
-#endif
   if (videoInitialized)
   {
     memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
@@ -1583,7 +1572,6 @@ void cXvVideoOut::CloseOSD()
     XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
   }
-  osdMutex.Unlock();
 }
 
 #if VDRVERSNUM >= 10307
