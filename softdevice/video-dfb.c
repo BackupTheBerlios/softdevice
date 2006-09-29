@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.71 2006/09/16 09:30:19 lucke Exp $
+ * $Id: video-dfb.c,v 1.72 2006/09/29 19:24:57 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -660,9 +660,6 @@ void cDFBVideoOut::ProcessEvents ()
       }
     }
   }
-
-  if (OsdRefreshCounter && (OsdRefreshCounter % 3) == 0)
-    ShowOSD();
 }
 
 /* ---------------------------------------------------------------------------
@@ -1072,7 +1069,7 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
   try
   {
     dirtyLines=DirtyLines=new bool[Yres];
-    memset(dirtyLines,false,sizeof(dirtyLines));
+    memset(dirtyLines,false,sizeof(bool)*Yres);
 
     tmpOsdSurface = (useStretchBlit) ? osdSurface : scrSurface;
     tmpOsdSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
@@ -1137,6 +1134,7 @@ void cDFBVideoOut::CommitUnlockOsdSurface()
   delete[] dirtyLines;
   dirtyLines=NULL;
   tmpOsdSurface=NULL;
+  clearBackground = 0;
   cVideoOut::CommitUnlockOsdSurface();
 }
 
@@ -1203,6 +1201,14 @@ void cDFBVideoOut::Refresh()
 
 /* ---------------------------------------------------------------------------
  */
+bool cDFBVideoOut::IsSoftOSDMode()
+{
+  return cVideoOut::IsSoftOSDMode() ||
+         useStretchBlit;
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cDFBVideoOut::CloseOSD()
 {
     IDirectFBSurface  *tmpSurface;
@@ -1210,16 +1216,14 @@ void cDFBVideoOut::CloseOSD()
   if (!videoInitialized)
     return;
 
+  cVideoOut::CloseOSD();
   tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-
   try
   {
     if (useStretchBlit)
     {
-      osdMutex.Lock();
       OSDpresent  = false;
-      osdClrBack = true;
-      osdMutex.Unlock();
+      clearBackground = clearBackCount;
       tmpSurface->Clear(COLORKEY,clearAlpha); //clear and
     }
     else
@@ -1243,56 +1247,35 @@ void cDFBVideoOut::CloseOSD()
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::ShowOSD ()
+void cDFBVideoOut::ClearBorders()
 {
-  if (!videoInitialized)
-    return;
+  /* ---------------------------------------------------------------------
+   * clear parts of screen when OSD is present and which are not
+   * covered by video. This avoids fading effects when 16:9 video
+   * is shown on 4:3 screen (top & bottom) or when 4:3 video is shown
+   * on 16:9 screen (left & right).
+   */
+  if (OSDpresent || clearBackground > 0) {
+    scrSurface->SetColor(0,0,0,0);
 
-  if (useStretchBlit && (OSDpresent || osdClrBack)) {
-    // do image and OSD mix here
-      DFBRectangle  src, dst, osdsrc;
+    if (clearBackground > 0)
+      clearBackground--;
 
-    src.x = sxoff;
-    src.y = syoff;
-    src.w = swidth;
-    src.h = sheight;
-    dst.x = lxoff;
-    dst.y = lyoff;
-    dst.w = lwidth;
-    dst.h = lheight;
-
-    osdMutex.Lock();
-    if (osdClrBack) {
-      clearBackground = clearBackCount;
-      osdClrBack = false;
+    /* -------------------------------------------------------------------
+     * clear top & bottom black bar area
+     */
+    if (lyoff) {
+      scrSurface->FillRectangle(0,0,            dwidth,lyoff);
+      scrSurface->FillRectangle(0,lyoff+lheight,dwidth,lyoff);
     }
 
-    try
-    {
-      if (clearBackground) {
-        scrSurface->Clear(0,0,0,0);
-        clearBackground--;
-      }
-
-      scrSurface->SetBlittingFlags(DSBLIT_NOFX);
-      scrSurface->StretchBlit(videoSurface, &src, &dst);
-      if (OSDpresent)
-      {
-        osdsrc.x = osdsrc.y = 0;
-        osdsrc.w = Xres;osdsrc.h=Yres;
-        scrSurface->SetBlittingFlags(DSBLIT_BLEND_ALPHACHANNEL);
-        scrSurface->Blit(osdSurface, &osdsrc, 0, 0);
-      }
-      scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
-
+    /* -------------------------------------------------------------------
+     * clear left & right black bar area
+     */
+    if (lxoff) {
+      scrSurface->FillRectangle(0,0,           lxoff,dheight);
+      scrSurface->FillRectangle(lxoff+lwidth,0,lxoff,dheight);
     }
-    catch (DFBException *ex)
-    {
-      fprintf (stderr,"[dfb] ShowOSD: action=%s, result=%s\n",
-               ex->GetAction(), ex->GetResult());
-      delete ex;
-    }
-    osdMutex.Unlock();
   }
 }
 
@@ -1300,25 +1283,33 @@ void cDFBVideoOut::ShowOSD ()
  */
 void cDFBVideoOut::YUV(sPicBuffer *buf)
 {
-  uint8_t *dst;
-  int pitch;
-  int hi;
-  uint8_t *Py=buf->pixel[0]
-                +(buf->edge_height)*buf->stride[0]
-                +buf->edge_width;
-  uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
-                +buf->edge_width/2;
-  uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
-                +buf->edge_width/2;
-  int Ystride=buf->stride[0];
-  int UVstride=buf->stride[1];
-  int Width=buf->width;
-  int Height=buf->height;
+  DFBSurfaceFlipFlags   flipFlags;
+  IDirectFBSurface      *flipSurface;
+
+  uint8_t               *dst;
+  int                   pitch;
+  int                   hi;
+  uint8_t               *Py = buf->pixel[0] +
+                              (buf->edge_height)*buf->stride[0] +
+                              buf->edge_width;
+  uint8_t               *Pu = buf->pixel[1] +
+                              (buf->edge_height/2)*buf->stride[1] +
+                              buf->edge_width/2;
+  uint8_t               *Pv = buf->pixel[2] +
+                              (buf->edge_height/2)*buf->stride[2] +
+                              buf->edge_width/2;
+  int                   Ystride  = buf->stride[0];
+  int                   UVstride = buf->stride[1];
+  int                   Width    = buf->width;
+  int                   Height   = buf->height;
 
   if (!videoInitialized)
     return;
 
   SetParams();
+
+  flipSurface = videoSurface;
+  flipFlags = (setupStore->tripleBuffering) ? DSFLIP_NONE : DSFLIP_ONSYNC;
 
   //fprintf(stderr,"[dfb] draw frame (%d x %d) Y: %d UV: %d\n", Width, Height, Ystride, UVstride);
   try
@@ -1436,53 +1427,24 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
       //fprintf (stderr, "src (%d,%d %dx%d)\n", sxoff,syoff,swidth,sheight);
       //fprintf (stderr, "dst (%d,%d %dx%d)\n", lxoff,lyoff,lwidth,lheight);
 
-      osdMutex.Lock();
-      clearBackground = (aspect_changed || osdClrBack) ? clearBackCount: clearBackground;
-      osdClrBack = false;
-
-      if (clearBackground)
-      {
-        scrSurface->Clear(0,0,0,0);
-        clearBackground--;
-      }
-
-      osdMutex.Unlock();
-
+      clearBackground = (aspect_changed) ? clearBackCount: clearBackground;
+      ClearBorders ();
       scrSurface->SetBlittingFlags(DSBLIT_NOFX);
       scrSurface->StretchBlit(videoSurface, &src, &dst);
 
-      if (OSDpresent)
-      {
-          DFBRectangle  osdsrc;
-        osdsrc.x = osdsrc.y = 0;
-        osdsrc.w = Xres;osdsrc.h=Yres;
+      if (OSDpresent) {
         scrSurface->SetBlittingFlags(DSBLIT_BLEND_ALPHACHANNEL);
-#if 0
-        /* --------------------------------------------------------------------
-         * test for OSD scaleinf to 4:3 aspect on a 16:9 tv
-         */
-          DFBRectangle  osddest;
-        osddest.x = 90; osddest.y = 0;
-        osddest.w = 540; osddest.h = Yres;
-        scrSurface->StretchBlit(osdSurface, &osdsrc, &osddest);
-#else
-        scrSurface->Blit(osdSurface, &osdsrc, 0, 0);
-#endif
-
+        scrSurface->Blit(osdSurface, NULL, 0, 0);
       }
-      //scrSurface->Flip(NULL, (setupStore->useMGAtv) ? DSFLIP_WAITFORSYNC:DSFLIP_ONSYNC);
-      scrSurface->Flip(NULL, DSFLIP_WAITFORSYNC);
+
+      flipFlags = DSFLIP_WAITFORSYNC;
+      flipSurface = scrSurface;
     }
-    else
-    {
-      if (setupStore->tripleBuffering)
-        videoSurface->Flip(/*NULL, DSFLIP_ONSYNC*/);
-      else
-        videoSurface->Flip(NULL, DSFLIP_ONSYNC);
-    }
+
+    flipSurface->Flip (NULL, flipFlags);
+
   }
-  catch (DFBException *ex)
-  {
+  catch (DFBException *ex) {
     fprintf (stderr, "[dfb] YUV: action=%s, result=%s\n",
              ex->GetAction(), ex->GetResult());
     delete ex;

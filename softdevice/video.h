@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.43 2006/09/22 19:28:04 lucke Exp $
+ * $Id: video.h,v 1.44 2006/09/29 19:24:57 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -79,7 +79,9 @@ private:
     // oldPicture is a reference to a previous decoded frame. It is used
     // when there is osd drawing activity in case of no video currently
     // available. Access to this pointer must be protected by corresponding
-    // mutex: oldPictureMutex .
+    // mutex: oldPictureMutex . This includes changeing the contens e.g.
+    // when a decoded picture will be displayed and thus will be the reference
+    // for future operation on oldPicture.
     //
     sPicBuffer  *oldPicture;
     cMutex      oldPictureMutex;
@@ -89,14 +91,13 @@ protected:
     inline double GetAspect_F()
     { return aspect_F;};
 
-protected:
+#if VDRVERSNUM < 10307
     // -----------------------------------------------------------------------
-    // State changes of OSD like on / off transitions, must be proteced by
-    // osdMutex. This are changes of variable OSDpresent, as the output method
-    // may need to take some longer actions e.g clearing background for one or
-    // mutiple output buffers (double, triple buffering).
+    // Artefakt of vdr-1.2.x OSD create/delete locking
     //
     cMutex  osdMutex;
+#endif
+
     bool    OSDpresent,
             OSDpseudo_alpha;
     int     current_osdMode;
@@ -138,6 +139,11 @@ protected:
     // (software alpha blending mode).
 
     virtual void RecalculateAspect(void);
+
+    /* -----------------------------------------------------------------------
+     * To be used in video thread only: Action()
+     */
+    virtual bool IsSoftOSDMode();
 
 public:
     cVideoOut(cSetupStore *setupStore);

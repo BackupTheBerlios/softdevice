@@ -1,4 +1,9 @@
 Changelog
+2006-09-29:
+   - video-shm: silence warnings.
+   - video-xv: removed osdMutex.
+   - video-dfb: removed osdMutex.
+                clear non video area when OSD is active to avoid fade effects.
 2006-09-22:
    - protect locking for old picture by a separate mutex.
    - fix possible lost picture update and dropped areaMutex.

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.22 2006/06/17 16:27:35 lucke Exp $
+ * $Id: video-dfb.h,v 1.23 2006/09/29 19:24:57 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -55,12 +55,17 @@ class cDFBVideoOut : public cVideoOut {
     int               mpegfb_ofs[4];
     bool SetupCle266Buffers(int, int);
 #endif // HAVE_CLE266_MPEG_DECODER
+
+    void ClearBorders();
+
+  protected:
+    virtual bool IsSoftOSDMode();
+
   public:
     IDirectFB	*dfb;
     cDFBVideoOut(cSetupStore *setupStore);
     virtual ~cDFBVideoOut();
     void ProcessEvents ();
-    void ShowOSD ();
     void GetDisplayFrameTime();
 
 #if VDRVERSNUM >= 10307

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.66 2006/09/22 19:28:04 lucke Exp $
+ * $Id: video.c,v 1.67 2006/09/29 19:24:57 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -105,7 +105,7 @@ void cVideoOut::Action()
 
     if (
         OsdRefreshCounter > 120 || // blanks the screen after inactivity (4s)
-        (current_osdMode == OSDMODE_SOFTWARE &&
+        (IsSoftOSDMode() &&
          OsdRefreshCounter>5 && Osd_changed))
     {
       oldPictureMutex.Lock();
@@ -476,8 +476,6 @@ void cVideoOut::DrawStill_420pl(sPicBuffer *buf)
 void cVideoOut::ClearOSD()
 {
   OSDDEB("ClearOSD\n");
-  osdMutex.Lock();
-
   OSDpresent=false; // will automaticly be set to true on redraw ;-)
   if (OsdPy)
     memset(OsdPy,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT);
@@ -490,8 +488,13 @@ void cVideoOut::ClearOSD()
   if (OsdPAlphaUV)
     memset(OsdPAlphaUV,0,OSD_FULL_WIDTH*OSD_FULL_HEIGHT/4);
   Osd_changed=1;
+}
 
- osdMutex.Unlock();
+/* ---------------------------------------------------------------------------
+ */
+bool cVideoOut::IsSoftOSDMode()
+{
+  return current_osdMode == OSDMODE_SOFTWARE;
 }
 
 #if VDRVERSNUM >= 10307
@@ -503,10 +506,8 @@ void cVideoOut::OpenOSD()
 
 void cVideoOut::CloseOSD()
 {
-  osdMutex.Lock();
   ClearOSD();
   OSDpresent=false;
-  osdMutex.Unlock();
   OSDDEB("CloseOSD\n");
 }
 
