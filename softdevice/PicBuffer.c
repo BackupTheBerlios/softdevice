@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.8 2006/09/17 12:07:57 wachm Exp $
+ * $Id: PicBuffer.c,v 1.9 2006/10/01 12:08:05 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +36,35 @@ void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
     dest->pict_type=orig->pict_type;
 };   
 
+void ClearPicBuffer(sPicBuffer *Pic) {
+        if (!Pic || !Pic->pixel[0])
+                return;
+         PICDEB("ClearPicBuffer Pic %p pixel[0] %p max_height %d stride[0] %d\n",
+                        Pic, Pic->pixel[0], Pic->max_height, Pic->stride[0]);
+       
+        switch (Pic->format) {
+                case PIX_FMT_YUV420P :
+                        memset(Pic->pixel[0],0,Pic->max_height*Pic->stride[0]);
+                        memset(Pic->pixel[1],128,
+                                        (Pic->max_height>>1)*Pic->stride[1]);
+                        memset(Pic->pixel[2],128,
+                                        (Pic->max_height>>1)*Pic->stride[2]);
+                        break;
+                case PIX_FMT_YUV422 : 
+                        {
+                                uint32_t *tmp=(uint32_t *)Pic->pixel[0];
+                                for (int i=0; i<Pic->max_height*
+                                                Pic->max_width/2; i++) {
+                                        *tmp=0x80008000;
+                                        tmp++;
+                                };
+                                break;
+                        };
+                default:
+                        fprintf(stderr,"Warning, unsupported format in ClearPicBuffer!\n");
+        };                              
+};              
+        
 /*----------------------------------------------------------------------*/
 cPicBufferManager::cPicBufferManager() {
         lastPicNum=0;

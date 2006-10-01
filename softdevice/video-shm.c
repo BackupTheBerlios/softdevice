@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.12 2006/09/29 19:12:19 lucke Exp $
+ * $Id: video-shm.c,v 1.13 2006/10/01 12:08:05 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -317,18 +317,6 @@ void cShmVideoOut::Suspend() {
 };
 
 void cShmVideoOut::YUV(sPicBuffer *buf) {
-#if 0	
-        uint8_t *Py=buf->pixel[0]+(buf->edge_height)*buf->stride[0]
-                +buf->edge_width;
-        uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
-                +buf->edge_width/2;
-        uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
-                +buf->edge_width/2;
-        int Ystride=buf->stride[0];
-        int UVstride=buf->stride[1];
-        int Width=buf->width;
-        int Height=buf->height;
-#endif	
   
         if (!ctl->attached) {
                 setupStore->shouldSuspend=1;
@@ -347,23 +335,29 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                 SHMDEB(" no pict_shmid or no curr_pict unlock and return\n");
                 return;
         };
-      
-#if 0	
-        int width= ctl->max_width < Width ? ctl->max_width : Width;
-        int height= ctl->max_height < Height ? ctl->max_height : Height;    
-#endif	
+        if ( cutTop != setupStore->cropTopLines ||
+             cutBottom != setupStore->cropBottomLines ||
+             cutLeft != setupStore->cropLeftCols ||
+             cutRight != setupStore->cropRightCols) {
+                cutTop = setupStore->cropTopLines;
+                cutBottom = setupStore->cropBottomLines;
+                cutLeft = setupStore->cropLeftCols;
+                cutRight = setupStore->cropRightCols;
+                ClearPicBuffer(&privBuf);
+        }
         
-        ctl->width=fwidth;
-        ctl->height=fheight;
+        ctl->width= fwidth<ctl->max_width ? fwidth : ctl->max_width;
+        ctl->height= fheight<ctl->max_height ? fheight : ctl->max_height;
         ctl->new_afd=current_afd;
         ctl->new_asp=GetAspect_F();
         if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
 
                 CopyPicBufAlphaBlend(&privBuf,buf,
                                 OsdPy,OsdPu,OsdPv,OsdPAlphaY,OsdPAlphaUV, OSD_FULL_WIDTH,
-                                0,0,0,0);                
-     } else {
-                CopyPicBuf(&privBuf,buf,0,0,0,0);
+                                cutTop,cutBottom,cutLeft,cutRight); 
+        } else {
+                CopyPicBuf(&privBuf,buf,
+                                cutTop,cutBottom,cutLeft,cutRight);
         };
         ctl->new_pict++;
         if (ctl->new_pict>30) {

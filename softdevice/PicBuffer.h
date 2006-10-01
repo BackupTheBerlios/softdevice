@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.3 2006/07/10 17:56:29 wachm Exp $
+ * $Id: PicBuffer.h,v 1.4 2006/10/01 12:08:05 wachm Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
@@ -49,6 +49,7 @@ typedef struct sPicBuffer {
 };
 
 void InitPicBuffer(sPicBuffer *Pic);
+void ClearPicBuffer(sPicBuffer *Pic);
 void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig);
 
 class cPicBufferManager {

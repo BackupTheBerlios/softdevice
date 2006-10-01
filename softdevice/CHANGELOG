@@ -1,4 +1,7 @@
 Changelog
+2006-10-01:
+   - enable cropping for video-shm. 
+   - Remove some unneeded code and fix ctl->width/height setting.
 2006-09-29:
    - video-shm: silence warnings.
    - video-xv: removed osdMutex.
