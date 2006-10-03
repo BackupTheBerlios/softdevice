@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.c,v 1.4 2005/06/30 21:46:16 lucke Exp $
+ * $Id: sync-timer.c,v 1.5 2006/10/03 12:24:31 lucke Exp $
  */
 
 #include <math.h>
@@ -59,9 +59,10 @@ int32_t cRelTimer::GetRelTime()
  */
 int cSigTimer::Sleep(int timeoutUS, int lowLimitUS)
 {
-  got_signal=false;
-  if ( timeoutUS < lowLimitUS )
+  if ( timeoutUS < lowLimitUS ) {
+    got_signal=false;
     return GetRelTime();
+  }
 
   struct timeval tv;
   gettimeofday(&tv,NULL);
@@ -146,7 +147,6 @@ void cSyncTimer::Signal()
  */
 void cSyncTimer::Sleep(int *timeoutUS, int lowLimitUS)
 {
-  got_signal=false;
   switch(syncMode)
   {
     case emUsleepTimer: // usleep timer mode
@@ -155,6 +155,7 @@ void cSyncTimer::Sleep(int *timeoutUS, int lowLimitUS)
         usleep (2200);
         *timeoutUS -= GetRelTime ();
       }
+      got_signal=false;
       break;
     case emRtcTimer: // rtc timer mode
       while ((*timeoutUS - lowLimitUS) > 15000 && !got_signal)
@@ -174,6 +175,7 @@ void cSyncTimer::Sleep(int *timeoutUS, int lowLimitUS)
         }
         *timeoutUS -= GetRelTime();
       }
+      got_signal=false;
       break;
     case emSigTimer: // signal timer mode
       *timeoutUS -= cSigTimer::Sleep(*timeoutUS, lowLimitUS);
