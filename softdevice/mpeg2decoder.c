@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.68 2006/09/16 20:26:24 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.69 2006/10/03 19:50:43 wachm Exp $
  */
 
 #include <math.h>
@@ -627,7 +627,7 @@ void cVideoStreamDecoder::Freeze(bool freeze)
 };
 
 uint64_t cVideoStreamDecoder::GetPTS() {
-  return pts - (delay + syncTimer->TimePassed())/100;
+  return pts - (delay + syncTimer->GetRelTime(false))/100;
 }
 
 int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_picture,

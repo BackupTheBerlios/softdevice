@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.h,v 1.3 2005/06/30 21:46:16 lucke Exp $
+ * $Id: sync-timer.h,v 1.4 2006/10/03 19:50:43 wachm Exp $
  */
 #ifndef SYNCTIMER_H
 #define SYNCTIMER_H
@@ -25,8 +25,9 @@ class cRelTimer {
       cRelTimer() {lastTime=GetTime();};
       virtual ~cRelTimer() {};
 
-      int32_t TimePassed();
-      virtual int32_t GetRelTime();
+      virtual int32_t GetRelTime( bool updateNow=true );
+      // to avoid overflows the max. time is limited to 10 min
+
       inline void Reset() { lastTime=GetTime(); };
 };
 

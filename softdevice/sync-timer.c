@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.c,v 1.5 2006/10/03 12:24:31 lucke Exp $
+ * $Id: sync-timer.c,v 1.6 2006/10/03 19:50:43 wachm Exp $
  */
 
 #include <math.h>
@@ -24,34 +24,25 @@
 
 /* --- cRelTimer --------------------------------------------------------------
  */
-int32_t cRelTimer::TimePassed()
+int32_t cRelTimer::GetRelTime( bool updateNow )
 {
   int64_t now;
   int32_t ret;
 
   now=GetTime();
-  if ( now < lastTime ) {
-    ret = (uint32_t) (now - lastTime + 60 *1000000); // untested
-    TIMDEB("now %lld kleiner als lastTime %lld\n",now,lastTime);
+
+  if ( now < 0 ) {
+    ret = abs((int32_t) ( now + lastTime )); // still untested
+    now = abs( now );
   }
   else ret = now - lastTime;
-  return ret;
-}
 
-/* ----------------------------------------------------------------------------
- */
-int32_t cRelTimer::GetRelTime()
-{
-  int64_t now;
-  int32_t ret;
+  if ( ret < 0 || ret > (10*60*1000000) )
+        ret = 10*60*1000000; // 10 minutes
 
-  now=GetTime();
-  if ( now < lastTime ) {
-    ret = (uint32_t) (now - lastTime + 60 *1000000); // untested
-    TIMDEB("now %lld kleiner als lastTime %lld\n",now,lastTime);
-  }
-  else ret = now - lastTime;
-  lastTime=now;
+  if ( updateNow )
+        lastTime=now;
+
   return ret;
 }
 
