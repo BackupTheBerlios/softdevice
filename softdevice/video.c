@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.67 2006/09/29 19:24:57 lucke Exp $
+ * $Id: video.c,v 1.68 2006/10/03 12:14:45 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -439,12 +439,12 @@ void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
 void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
                                 sPicBuffer *pic)
 {
+  Sync(syncTimer, delay);
   oldPictureMutex.Lock();
 
   OsdRefreshCounter=0;
   Osd_changed=0;
   CheckAspectDimensions(pic);
-  Sync(syncTimer, delay);
 
   // display picture
   YUV(pic);
