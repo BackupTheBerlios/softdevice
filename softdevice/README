@@ -209,7 +209,7 @@ OSD setup options:
   Post processing:
 
   Video out:
-    Output methods : X11-XV, DirectFB, vidix
+    Output methods : X11-XV, vidix
     The following subselections are available if the driver of
     current video card supports it:
 
