@@ -87,6 +87,42 @@ Set the PrimaryDVB value to the last device if you own a FF-Card.
 Note that we strongly recommend to use Xv, DirectFB or Vidix for output.
 Framebuffer mode is not well maintained and  _completly_ unaccelerated.
 
+Commandline arguments:
+----------------------
+Complete list of suitable options is available when vdr is called with
+option "-h" for help. Subarguments of each output method can be combined.
+
+ -vo METHOD{:SUBARGUMENTS}
+     Specify desired output method. Possible values:
+     dfb      Output via DirectFB.
+              Available subarguments:
+              mgatv           TV-out for Martoy cards.
+              viatv           TV-out for other cards (from Via, ??).
+              cle266          Enable Via hardware decoding support.
+              triple          Use triple buffering for output.
+
+     dummy    Use a dummy device for video out.
+
+     fb       Output via framebuffer.
+
+     shm      Output via shared memory. You'll need a special client
+              ShmClient for video viewing.
+
+     vidix    Output via vidix.
+
+     xv       Output via X11-Xv.
+              Available subarguments:
+              full            Startup in fullscreen mode.
+              max-area        Use maximum available area for video source.
+              use-defaults    Reset video out options to default values found
+                              at startup. Usually we use those values from
+                              previous run.
+              aspect=wide     Startup with an initial aspect ratio of 16:9.
+                              Video window size will be 1024x576.
+              aspect=normal   Startup with an initial aspect ratio of 4:3.
+                              Video window size will be 768x576.
+
+ -ao METHOD[:SUBARGUMENTS]
 
 AC3 pass through:
 -----------------
@@ -173,7 +209,7 @@ OSD setup options:
   Post processing:
 
   Video out:
-    Output methods : X11-XV
+    Output methods : X11-XV, DirectFB, vidix
     The following subselections are available if the driver of
     current video card supports it:
 
@@ -190,9 +226,17 @@ OSD setup options:
 
   Screen aspect
     Possible values: default, 5:4, 4:3, 16:9, 16:10
+    For correct scaling operations, you'll have to specify geometry
+    of your output device.
+    - When using some sort of TV-out, you should choose either 4:3 or 16:9.
+    - With LCD monitors, you should specify the geometry of the native
+      resolution. That is for example in case of 1280x1024 monitor: 5:4 (even
+      it is driven by a 1024x768 signal).
+    - When default is used, we assume a geometry which is derived from the
+      assumption that your monitor operates in square pixel mode.
 
   OSD alpha blending
-    Output methods : X11-XV, Vidix
+    Output methods : X11-XV, vidix
     Possible values: pseudo, software
 
   Buffer mode
@@ -251,6 +295,7 @@ The code in the plugin is based on parts of:
 Many thanks to:
 - Andre Neumann
 - Antti Seppälä
+- Chris Elsworth
 - Colin Paton
 - Herbert Attenberger
 - Holger Waechtler
@@ -261,8 +306,10 @@ Many thanks to:
 - Malcolm Caldwell
 - Marko Mäkelä
 - Martin Wache
+- Matthias Schwarzott
 - Nicolas Huillard
 - Petri Hintukainen
+- Prakash Punnoor
 - Roland Praml
 - Rolf Ahrenberg
 - Stefan Lucke
