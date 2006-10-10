@@ -1,4 +1,8 @@
 Changelog
+2006-10-10:
+   - fix segfaults when YUY2 pixelformat is used for xv-out and cut lines
+     from top is non zero. This fixes wrong colors and misplaced OSD drawing
+     too, when cut colums from left is non zero.
 2006-10-09: softdevice-0.3.0
 2006-10-03:
    - fix hang after long pause.

@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.9 2006/10/01 12:08:05 wachm Exp $
+ * $Id: PicBuffer.c,v 1.10 2006/10/10 21:57:18 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -326,7 +326,10 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         int dstStride=dst->stride[0];
         int lumStride=src->stride[0];
         int chromStride=src->stride[1];
-        
+
+        height -= 2 * (cutTop + cutBottom);
+        width  -= 2 * (cutLeft + cutRight);
+
         if (src->interlaced_frame) {
                 for(int y=height/4; y--; ) {
                         /* ---------------------------------------------
@@ -492,6 +495,9 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         int lumStride=src->stride[0];
         int chromStride=src->stride[1];
       
+        height -= 2 * (cutTop + cutBottom);
+        width  -= 2 * (cutLeft + cutRight);
+
         if (src->interlaced_frame) {
                 for(int y=height/4; y--; ) {
                         /* ---------------------------------------------
