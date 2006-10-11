@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.10 2006/10/10 21:57:18 lucke Exp $
+ * $Id: PicBuffer.c,v 1.11 2006/10/11 19:50:55 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -34,14 +34,14 @@ void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
     dest->pts=orig->pts;
     dest->interlaced_frame=orig->interlaced_frame;
     dest->pict_type=orig->pict_type;
-};   
+};
 
 void ClearPicBuffer(sPicBuffer *Pic) {
         if (!Pic || !Pic->pixel[0])
                 return;
          PICDEB("ClearPicBuffer Pic %p pixel[0] %p max_height %d stride[0] %d\n",
                         Pic, Pic->pixel[0], Pic->max_height, Pic->stride[0]);
-       
+
         switch (Pic->format) {
                 case PIX_FMT_YUV420P :
                         memset(Pic->pixel[0],0,Pic->max_height*Pic->stride[0]);
@@ -50,7 +50,7 @@ void ClearPicBuffer(sPicBuffer *Pic) {
                         memset(Pic->pixel[2],128,
                                         (Pic->max_height>>1)*Pic->stride[2]);
                         break;
-                case PIX_FMT_YUV422 : 
+                case PIX_FMT_YUV422 :
                         {
                                 uint32_t *tmp=(uint32_t *)Pic->pixel[0];
                                 for (int i=0; i<Pic->max_height*
@@ -62,27 +62,27 @@ void ClearPicBuffer(sPicBuffer *Pic) {
                         };
                 default:
                         fprintf(stderr,"Warning, unsupported format in ClearPicBuffer!\n");
-        };                              
-};              
-        
+        };
+};
+
 /*----------------------------------------------------------------------*/
 cPicBufferManager::cPicBufferManager() {
         lastPicNum=0;
-        for (int i=0; i< LAST_PICBUF; i++) 
+        for (int i=0; i< LAST_PICBUF; i++)
                 InitPicBuffer(&PicBuffer[i]);
 }
 
 cPicBufferManager::~cPicBufferManager() {
-        for (int i=0; i<LAST_PICBUF; i++) 
+        for (int i=0; i<LAST_PICBUF; i++)
                 if ( PicBuffer[i].pixel[0] ) {
-//                        if ( PicBuffer[i].use_count > 0 ) 
+//                        if ( PicBuffer[i].use_count > 0 )
 //                                fprintf(stderr,"Warning! Use_count of PicBuffer not zero in PicBufferManager destructor!\n");
-                        
+
                         ReleasePicBuffer( i );
                 };
 };
 
-int cPicBufferManager::GetBufNum(sPicBuffer *buf) {  
+int cPicBufferManager::GetBufNum(sPicBuffer *buf) {
         if ( !buf || buf->owner!=this )
                 return -1;
 
@@ -118,7 +118,7 @@ void cPicBufferManager::GetChromaSubSample(PixelFormat pix_fmt,
                 case PIX_FMT_YUV444P:
                         hChromaShift=0;vChromaShift=0;
                         break;
-                      
+
                 default:
                         fprintf(stderr,"Warning unsupported pixel format(%d)! \n",pix_fmt);
                         hChromaShift=vChromaShift=1;
@@ -184,14 +184,14 @@ int cPicBufferManager::GetFormatBPP(PixelFormat fmt) {
 #define STRIDE_ALIGN 16
 #define EDGE_WIDTH 16
 
-bool cPicBufferManager::AllocPicBuffer(int buf_num,PixelFormat pix_fmt, 
+bool cPicBufferManager::AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
                 int w, int h)  {
         PICDEB("AllocPicBuffer buf_num %d pix_fmt %d (%d,%d)\n",
                         buf_num,pix_fmt,w,h);
         sPicBuffer *buf=&PicBuffer[buf_num];
         int h_chroma_shift, v_chroma_shift;
         int pixel_size=GetFormatBPP(pix_fmt);
-        
+
         GetChromaSubSample(pix_fmt, h_chroma_shift, v_chroma_shift);
 
         for(int i=0; i<3; i++){
@@ -199,19 +199,19 @@ bool cPicBufferManager::AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
             const int v_shift= i==0 ? 0 : v_chroma_shift;
 
             //FIXME next ensures that linesize= 2^x uvlinesize, thats needed because some MC code assumes it
-            buf->stride[i]= ALIGN(pixel_size*w>>h_shift, 
-                            STRIDE_ALIGN<<(h_chroma_shift-h_shift)); 
+            buf->stride[i]= ALIGN(pixel_size*w>>h_shift,
+                            STRIDE_ALIGN<<(h_chroma_shift-h_shift));
 
             buf->pixel[i]= (uint8_t*)malloc((buf->stride[i]*h>>v_shift)+16); //FIXME 16
-            
+
             if(buf->pixel[i]==NULL) {
                     printf("could not allocate memory for picture buffer!\n") ;
                     exit(-1);
                     return false;
             };
-            
+
             memset(buf->pixel[i], 128, buf->stride[i]*h>>v_shift);
-       
+
         }
         buf->max_width=w;
         buf->max_height=h;
@@ -260,7 +260,7 @@ sPicBuffer *cPicBufferManager::GetBuffer(PixelFormat pix_fmt,
             PicBuffer[buf_num].pic_num= -256*256*256*64;
             AllocPicBuffer(buf_num,pix_fmt,w,h);
     };
-    
+
     // found or allocated a picture buffer
     lastPicNum++;
     PicBuffer[buf_num].use_count++;
@@ -282,14 +282,14 @@ void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
 
     int buf_num=0;
     PicBufMutex.Lock();
-    while (buf_num<LAST_PICBUF && PicBuffer[buf_num].pixel[0]!=pic->pixel[0] ) 
+    while (buf_num<LAST_PICBUF && PicBuffer[buf_num].pixel[0]!=pic->pixel[0] )
             buf_num++;
 
     if (buf_num>=LAST_PICBUF)  {
             fprintf(stderr,"ReleaseBuffer din't find corresponding PicBuffer!\n");
             exit(-1);
     };
-    
+
     // found PicBuffer
     PicBuffer[buf_num].use_count--;
     PicBuffer[buf_num].buf_num=-1;
@@ -302,19 +302,19 @@ void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
 /*------------------------------------------------------------------------*/
 static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                 int width, int height,
-                int cutTop, int cutBottom, 
+                int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
         PICDEB("CopyPicBuf_YUV420P_YUY2 width %d height %d\n",width,height);
 
         dst->interlaced_frame=src->interlaced_frame;
         uint8_t *dst_ptr=dst->pixel[0]+
                 (2*cutTop+dst->edge_height)*dst->stride[0]+
-                2*cutLeft+dst->edge_width;// 4*cutLeft ??
-        
+                4*cutLeft+dst->edge_width;// 4*cutLeft ?? <- !!!! [2->4]
+
         uint8_t *py=src->pixel[0]+
                 (2*cutTop+src->edge_height)*src->stride[0]+
                 2*cutLeft+src->edge_width;
- 
+
         uint8_t *pu=src->pixel[1]+
                 (cutTop+src->edge_height/2)*src->stride[1]+
                 cutLeft+src->edge_width/2;
@@ -322,7 +322,7 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         uint8_t *pv=src->pixel[2]+
                 (cutTop+src->edge_height/2)*src->stride[2]+
                 cutLeft+src->edge_width/2;
-       
+
         int dstStride=dst->stride[0];
         int lumStride=src->stride[0];
         int chromStride=src->stride[1];
@@ -333,7 +333,7 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         if (src->interlaced_frame) {
                 for(int y=height/4; y--; ) {
                         /* ---------------------------------------------
-                         * take chroma line x (it's from field A) for packing 
+                         * take chroma line x (it's from field A) for packing
                          * with luma lines y * 2 and y * 2 + 2
                          */
                         yv12_to_yuy2_il_mmx2_line (dst_ptr,
@@ -341,14 +341,14 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                                         py, py + lumStride *2,
                                         pu, pv);
                         /* ----------------------------------------------
-                         * take chroma line x+1 (it's from field B) for packing 
+                         * take chroma line x+1 (it's from field B) for packing
                          * with luma lines y * 2 + 1 and y * 2 + 3
                          */
                         yv12_to_yuy2_il_mmx2_line (dst_ptr + dstStride,
                                dst_ptr + dstStride * 3, width >> 1,
                                py + lumStride, py + lumStride * 3,
                                pu + chromStride, pv + chromStride);
-                        
+
                         py  += 4*lumStride;
                         pu  += 2*chromStride;
                         pv  += 2*chromStride;
@@ -373,12 +373,12 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
 /*------------------------------------------------------------------------*/
 static void CopyPicBuf_YUV420P(sPicBuffer *dst, sPicBuffer *src,
                 int width, int height,
-                int cutTop, int cutBottom, 
+                int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
-       
+
         int copy_width = width - 2 * (cutLeft + cutRight);
         int copy_height = height - 2 *  (cutBottom + cutTop) ;
-        
+
         uint8_t *dst_ptr=dst->pixel[0]+
                 (2*cutTop+dst->edge_height)*dst->stride[0]+
                  2*cutLeft+dst->edge_width;
@@ -390,7 +390,7 @@ static void CopyPicBuf_YUV420P(sPicBuffer *dst, sPicBuffer *src,
                 dst_ptr+=dst->stride[0];
                 src_ptr+=src->stride[0];
         };
-        
+
         dst_ptr=dst->pixel[1]+(cutTop+dst->edge_height/2)*dst->stride[1]+
                 cutLeft+dst->edge_width/2;
         src_ptr=src->pixel[1]+(cutTop+src->edge_height/2)*src->stride[1]+
@@ -416,13 +416,13 @@ static void CopyPicBuf_YUV420P(sPicBuffer *dst, sPicBuffer *src,
 
 /*------------------------------------------------------------------------*/
 void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
-                int cutTop, int cutBottom, 
+                int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
         int width=0;
         int height=0;
         dst->edge_width=0;
         dst->edge_height=0;
-        
+
         if ( src->width+src->edge_width <= dst->max_width) {
                 dst->edge_width = src->edge_width;
                 width = dst->width = src->width;
@@ -430,7 +430,7 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
                 width = dst->width = dst->max_width;
                 dst->edge_width = 0;
         };
-        
+
         if ( src->height+src->edge_height <= dst->max_height) {
                 dst->edge_height = src->edge_height;
                 dst->height = height = src->height;
@@ -439,7 +439,7 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
                 dst->edge_height=0;
         };
 
-        if ( dst->format == PIX_FMT_YUV420P ) 
+        if ( dst->format == PIX_FMT_YUV420P )
                 CopyPicBuf_YUV420P(dst,src,width,height,
                                 cutTop,cutBottom,
                                 cutLeft,cutRight);
@@ -454,12 +454,12 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
 void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                 int width, int height,
                 uint8_t *OsdPy,
-                uint8_t *OsdPu, 
+                uint8_t *OsdPu,
                 uint8_t *OsdPv,
                 uint8_t *OsdPAlphaY,
                 uint8_t *OsdPAlphaUV,
                 int OsdStride,
-                int cutTop, int cutBottom, 
+                int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
         PICDEB("CopyPicBufAlphaBlend_YUV420P_YUY2 width %d height %d\n",
                         width,height);
@@ -471,14 +471,14 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         dst->interlaced_frame=src->interlaced_frame;
         uint8_t *dst_ptr=dst->pixel[0]+
                 (2*cutTop+dst->edge_height)*dst->stride[0]+
-                2*cutLeft+dst->edge_width;// 4*cutLeft ??
-        
+                4*cutLeft+dst->edge_width;// 4*cutLeft ?? <- !!!! [2->4]
+
         uint8_t *py=src->pixel[0]+
                 (2*cutTop+src->edge_height)*src->stride[0]+
                 2*cutLeft+src->edge_width;
-        uint8_t *osd_py=OsdPy+2*cutTop*OsdStride+2*cutLeft;  
+        uint8_t *osd_py=OsdPy+2*cutTop*OsdStride+2*cutLeft;
         uint8_t *alpha_py=OsdPAlphaY+2*cutTop*OsdStride+2*cutLeft;
-        
+
         uint8_t *pu=src->pixel[1]+
                 (cutTop+src->edge_height/2)*src->stride[1]+
                 cutLeft+src->edge_width/2;
@@ -488,20 +488,20 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                 (cutTop+src->edge_height/2)*src->stride[2]+
                 cutLeft+src->edge_width/2;
         uint8_t *osd_pv=OsdPv+cutTop*OsdStride/2+cutLeft;
-        
+
         uint8_t *alpha_puv=OsdPAlphaUV+cutTop*OsdStride/2+cutLeft;
-        
+
         int dstStride=dst->stride[0];
         int lumStride=src->stride[0];
         int chromStride=src->stride[1];
-      
+
         height -= 2 * (cutTop + cutBottom);
         width  -= 2 * (cutLeft + cutRight);
 
         if (src->interlaced_frame) {
                 for(int y=height/4; y--; ) {
                         /* ---------------------------------------------
-                         * take chroma line x (it's from field A) for packing 
+                         * take chroma line x (it's from field A) for packing
                          * with luma lines y * 2 and y * 2 + 2
                          */
                         AlphaBlend(tmp_y,osd_py,
@@ -509,7 +509,7 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                         AlphaBlend(&tmp_y[width],osd_py+2*OsdStride,
                                         py+2*lumStride,
                                         alpha_py+2*OsdStride,width);
-                        
+
                         AlphaBlend(tmp_u,osd_pu,
                                         pu,alpha_puv,width>>1);
                         AlphaBlend(tmp_v,osd_pv,
@@ -520,7 +520,7 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                                         tmp_y, &tmp_y[width],
                                         tmp_u, tmp_v);
                         /* ----------------------------------------------
-                         * take chroma line x+1 (it's from field B) for packing 
+                         * take chroma line x+1 (it's from field B) for packing
                          * with luma lines y * 2 + 1 and y * 2 + 3
                          */
                         AlphaBlend(tmp_y,osd_py+OsdStride,
@@ -529,7 +529,7 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                         AlphaBlend(&tmp_y[width],osd_py+3*OsdStride,
                                         py+3*lumStride,
                                         alpha_py+3*OsdStride,width);
-                        
+
                         AlphaBlend(tmp_u,osd_pu+OsdStride/2,
                                         pu+chromStride,
                                         alpha_puv+OsdStride/2,width>>1);
@@ -541,13 +541,13 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                                         dst_ptr + dstStride * 3, width >> 1,
                                         tmp_y, &tmp_y[width],
                                         tmp_u, tmp_v);
-                       
+
                         osd_py += 4*OsdStride;
                         alpha_py += 4*OsdStride;
                         osd_pu += OsdStride;
                         osd_pv += OsdStride;
                         alpha_puv += OsdStride;
-                        
+
                         py  += 4*lumStride;
                         pu  += 2*chromStride;
                         pv  += 2*chromStride;
@@ -556,7 +556,7 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         } else {
                 for(int y=height/2; y--; ) {
                         /* ---------------------------------------------
-                         * take chroma line x (it's from field A) for packing 
+                         * take chroma line x (it's from field A) for packing
                          * with luma lines y * 2 and y * 2 + 2
                          */
                         AlphaBlend(tmp_y,osd_py,
@@ -564,7 +564,7 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                         AlphaBlend(&tmp_y[width],osd_py+OsdStride,
                                         py+lumStride,
                                         alpha_py+OsdStride,width);
-                        
+
                         AlphaBlend(tmp_u,osd_pu,
                                         pu,alpha_puv,width>>1);
                         AlphaBlend(tmp_v,osd_pv,
@@ -580,7 +580,7 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                         osd_pu += OsdStride/2;
                         osd_pv += OsdStride/2;
                         alpha_puv += OsdStride/2;
-                        
+
                         py  += 2*lumStride;
                         pu  += chromStride;
                         pv  += chromStride;
@@ -596,17 +596,17 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
 void CopyPicBufAlphaBlend_YUV420P(sPicBuffer *dst, sPicBuffer *src,
                 int width, int height,
                 uint8_t *OsdPy,
-                uint8_t *OsdPu, 
+                uint8_t *OsdPu,
                 uint8_t *OsdPv,
                 uint8_t *OsdPAlphaY,
                 uint8_t *OsdPAlphaUV,
                 int OsdStride,
-                int cutTop, int cutBottom, 
+                int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
 
         int copy_width = width - 2 * (cutLeft + cutRight);
         int copy_height = height - 2 *  (cutBottom + cutTop) ;
-        
+
         uint8_t *dst_ptr=dst->pixel[0]+
                 (2*cutTop+dst->edge_height)*dst->stride[0]+
                 2*cutLeft+dst->edge_width;
@@ -622,7 +622,7 @@ void CopyPicBufAlphaBlend_YUV420P(sPicBuffer *dst, sPicBuffer *src,
                 osd_ptr+=OsdStride;
                 alpha_ptr+=OsdStride;
         };
-        
+
         dst_ptr=dst->pixel[1]+(cutTop+dst->edge_height/2)*dst->stride[1]+
                 cutLeft+dst->edge_width/2;
         src_ptr=src->pixel[1]+(cutTop+src->edge_height/2)*src->stride[1]+
@@ -657,19 +657,19 @@ void CopyPicBufAlphaBlend_YUV420P(sPicBuffer *dst, sPicBuffer *src,
 /*------------------------------------------------------------------------*/
 void CopyPicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
                 uint8_t *OsdPy,
-                uint8_t *OsdPu, 
+                uint8_t *OsdPu,
                 uint8_t *OsdPv,
                 uint8_t *OsdPAlphaY,
                 uint8_t *OsdPAlphaUV,
                 int OsdStride,
-                int cutTop, int cutBottom, 
+                int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
-        
+
         int width=0;
         int height=0;
         dst->edge_width=0;
         dst->edge_height=0;
-        
+
         if ( src->width+src->edge_width <= dst->max_width) {
                 dst->edge_width = src->edge_width;
                 width = dst->width = src->width;
@@ -677,7 +677,7 @@ void CopyPicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
                 width = dst->width = dst->max_width;
                 dst->edge_width = 0;
         };
-        
+
         if ( src->height+src->edge_height <= dst->max_height) {
                 dst->edge_height = src->edge_height;
                 dst->height = height = src->height;
@@ -691,8 +691,8 @@ void CopyPicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
 
         if ( height > OSD_FULL_HEIGHT )
                 height = OSD_FULL_HEIGHT;
- 
-        if ( dst->format == PIX_FMT_YUV420P ) 
+
+        if ( dst->format == PIX_FMT_YUV420P )
                 CopyPicBufAlphaBlend_YUV420P(dst,src,width,height,
                                 OsdPy, OsdPu, OsdPv,
                                 OsdPAlphaY, OsdPAlphaUV, OsdStride,
