@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.11 2006/10/11 19:50:55 lucke Exp $
+ * $Id: PicBuffer.c,v 1.12 2006/10/11 19:57:50 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -309,7 +309,7 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         dst->interlaced_frame=src->interlaced_frame;
         uint8_t *dst_ptr=dst->pixel[0]+
                 (2*cutTop+dst->edge_height)*dst->stride[0]+
-                4*cutLeft+dst->edge_width;// 4*cutLeft ?? <- !!!! [2->4]
+                4*cutLeft+2*dst->edge_width;// 4*cutLeft ?? <- !!!! [2->4]
 
         uint8_t *py=src->pixel[0]+
                 (2*cutTop+src->edge_height)*src->stride[0]+
@@ -471,7 +471,7 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
         dst->interlaced_frame=src->interlaced_frame;
         uint8_t *dst_ptr=dst->pixel[0]+
                 (2*cutTop+dst->edge_height)*dst->stride[0]+
-                4*cutLeft+dst->edge_width;// 4*cutLeft ?? <- !!!! [2->4]
+                4*cutLeft+2*dst->edge_width;// 4*cutLeft ?? <- !!!! [2->4]
 
         uint8_t *py=src->pixel[0]+
                 (2*cutTop+src->edge_height)*src->stride[0]+
