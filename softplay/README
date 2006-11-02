@@ -33,8 +33,9 @@ this directory from different file systems.
 Requirements
 =============
 
-- ffmpeg 0.4.9-pre1 or later
-- softdevice-0.1.1 or later (recommended is softdevice-0.1.2)
+- ffmpeg 0.4.9-pre1 or later (_has_to_be_ the same version which is used by 
+  the softdevice)
+- softdevice-0.1.1 or later (recommended is >softdevice-0.1.2)
 - vdr-1.3.22 or later (others may work, I use 1.3.22)
 
 Installation
