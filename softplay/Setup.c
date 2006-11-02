@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: Setup.c,v 1.1 2006/03/12 20:23:23 wachm Exp $
+ * $Id: Setup.c,v 1.2 2006/11/02 19:07:18 wachm Exp $
  */
 
 #include "Setup.h"
@@ -37,6 +37,7 @@ void cSoftplaySetup::Store() {
         plugin->SetupStore ("UseFileIndex", fileIndex);
 	plugin->SetupStore ("LastBrowsedDir", lastDir);
 	plugin->SetupStore ("openLastDir", openLastDir);
+	plugin->SetupStore ("ReturnToLiveTV", returnToLiveTV);
 };        
 
 bool cSoftplaySetup::Parse( const char *Name, const char *Value) {
