@@ -122,7 +122,21 @@ option "-h" for help. Subarguments of each output method can be combined.
               aspect=normal   Startup with an initial aspect ratio of 4:3.
                               Video window size will be 768x576.
 
- -ao METHOD[:SUBARGUMENTS]
+ -ao METHOD{:SUBARGUMENTS}
+    Specify desired output method. Possible values:
+    dummy     no output at all.
+    alsa      normal audio output via alsa
+              Availavble subarguments:
+              mixer           Use alsa mixer for volume control. By default,
+                              volume control is done via software scaling.
+
+              Devicename subarguments must be terminated by '#'.
+
+              pcm=DEVICE      Device name for audio PCM out.
+              ac3=DEVICE      Device name for AC3 pass through.
+
+    Example:
+    -ao alsa:mixer:pcm=default#ac3=hw:0,2#
 
 AC3 pass through:
 -----------------

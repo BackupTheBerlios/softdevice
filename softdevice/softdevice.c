@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.72 2006/10/08 22:28:23 lucke Exp $
+ * $Id: softdevice.c,v 1.73 2006/11/05 22:05:59 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -82,7 +82,7 @@
 #include "setup-softdevice.h"
 #include "setup-softdevice-menu.h"
 
-static const char *VERSION        = "0.3.0";
+static const char *VERSION        = "0.3.1";
 static const char *DESCRIPTION    = "A software emulated MPEG2 device";
 static const char *MAINMENUENTRY  = "Softdevice";
 
@@ -711,6 +711,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   // Return a string that describes all known command line options.
   return
 #ifdef ALSA_SUPPORT
+  "  -ao alsa:mixer           volume control via alsa mixer\n"
   "  -ao alsa:pcm=dev_name#   alsa output device for analog and PCM out\n"
   "  -ao alsa:ac3=dev_name#   alsa output device for AC3 passthrough\n"
 #endif
@@ -941,6 +942,11 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
                          setupStore.alsaAC3Device);
               }
               ao_argv += len;
+            } else if (!strncmp(ao_argv, "mixer", 5)) {
+              ao_argv += 5;
+              setupStore.useMixer = 1;
+              fprintf(stderr,
+                      "[softdevice] using alsa mixer for volume control\n");
             } else {
               fprintf(stderr, "[softdevice] using alsa device %s\n", ao_argv);
               strncpy(setupStore.alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);

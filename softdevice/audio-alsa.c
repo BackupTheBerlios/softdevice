@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.2 2006/07/25 19:45:37 wachm Exp $
+ * $Id: audio-alsa.c,v 1.3 2006/11/05 22:05:59 lucke Exp $
  */
 #include "audio-alsa.h"
 
@@ -12,7 +12,6 @@
 #include <alsa/asoundlib.h>
 
 #define PCM_FMT SND_PCM_FORMAT_S16_LE
-#define NO_MIXER
 
 //#define AUDIODEB(out...) {printf("AUDIO-ALSA[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -50,6 +49,7 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
     oldContext.samplerate = currContext.samplerate=48000;
     dsyslog("[softdevice-audio] Device opened! Ready to play");
     scale_Factor=0x7FFF;
+    this->setupStore = setupStore;
 }
 
 /* ----------------------------------------------------------------------------
@@ -80,14 +80,14 @@ bool cAlsaAudioOut::Resume() {
              device, snd_strerror(err));
      return false;
    }
-   //force setting of the parameters after resume 
+   //force setting of the parameters after resume
    currContext.channels=0;
    return true;
 };
 
 /* ----------------------------------------------------------------------------
  */
-  
+
 void cAlsaAudioOut::Write(uchar *Data, int Length)
 {
     int     err;
@@ -111,10 +111,9 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
   else
     size = Length/(2*currContext.channels);
 
-#ifdef NO_MIXER
-  // change the volume
-  Scale((int16_t*)Data,Length/2,scale_Factor);
-#endif
+  // change the volume without mixer
+  if (!setupStore->useMixer)
+    Scale((int16_t*)Data,Length/2,scale_Factor);
 
   while (size) {
     while (paused) usleep(1000); // block
@@ -225,7 +224,7 @@ int cAlsaAudioOut::GetDelay(void) {
           handleMutex.Unlock();
           return 0;
   };
-          
+
   if (!snd_pcm_delay(handle, &r) &&
       currContext.samplerate) {
     // successfully got delay
@@ -278,12 +277,12 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
     };
     //printf("alsa-audio: SetParams\n");
     currContext=context;
- 
+
     handleMutex.Lock();
-    
-    if (handle) 
+
+    if (handle)
             snd_pcm_close(handle);
-    
+
     if ((err = snd_pcm_open(&handle,
                             device,
                             SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
@@ -410,56 +409,58 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
  */
 void cAlsaAudioOut::SetVolume (int vol)
 {
-#ifdef NO_MIXER
-  scale_Factor = CalcScaleFactor(vol);
-  //printf("vol %d scale_Factor 0x%04x\n",vol,scale_Factor);
-  //scale_Factor = vol;
-#else
-    int                   err;
-    long                  mixerMin, mixerMax,
-                          setVol;
-    double                mixerRange,
-                          volPercent;
-    char                  *mName = "PCM",
-                          *cardName = "default";
-    snd_mixer_t           *mHandle;
-    snd_mixer_elem_t      *mElem;
-    snd_mixer_selem_id_t  *sId;
+  if (!setupStore->useMixer) {
+    scale_Factor = CalcScaleFactor(vol);
+    //printf("vol %d scale_Factor 0x%04x\n",vol,scale_Factor);
+    //scale_Factor = vol;
+  } else {
+      int                   err;
+      long                  mixerMin, mixerMax,
+                            setVol;
+      double                mixerRange,
+                            volPercent;
+      char                  *mName = "PCM",
+                            *cardName = "default";
+      snd_mixer_t           *mHandle;
+      snd_mixer_elem_t      *mElem;
+      snd_mixer_selem_id_t  *sId;
 
-  snd_mixer_selem_id_alloca(&sId);
-  snd_mixer_selem_id_set_name(sId, mName);
-  if ((err = snd_mixer_open(&mHandle, 0)) < 0) {
-      static int once = 0;
-    if (!once) {
-      dsyslog("[softdevice-audio]: cannot open mixer: %s (%s)",
-              mName,snd_strerror(err));
-      once = 1;
+    snd_mixer_selem_id_alloca(&sId);
+    snd_mixer_selem_id_set_name(sId, mName);
+    if ((err = snd_mixer_open(&mHandle, 0)) < 0) {
+        static int once = 0;
+      if (!once) {
+        dsyslog("[softdevice-audio]: cannot open mixer: %s (%s)",
+                mName,snd_strerror(err));
+        once = 1;
+      }
+      return;
     }
-    return;
-  }
 
-  snd_mixer_attach(mHandle, cardName);
-  snd_mixer_selem_register(mHandle, NULL, NULL);
-  snd_mixer_load(mHandle);
-  mElem = snd_mixer_find_selem(mHandle,sId);
-  /* --------------------------------------------------------------------------
-   * some cards don't have any master volume. so check return value
-   */
-  if (mElem)
-  {
-    snd_mixer_selem_get_playback_volume_range(mElem,&mixerMin,&mixerMax);
-    mixerRange = mixerMax - mixerMin;
-    volPercent = (double) vol / 255.0;
-    setVol = (int) (((double)mixerMin+(mixerRange*volPercent))+0.5);
-    snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_LEFT,setVol);
-    snd_mixer_selem_set_playback_volume(mElem,SND_MIXER_SCHN_FRONT_RIGHT,setVol);
-    if (snd_mixer_selem_has_playback_switch(mElem))
-    {
-      snd_mixer_selem_set_playback_switch_all(mElem, (vol) ? 1 : 0);
+    snd_mixer_attach(mHandle, cardName);
+    snd_mixer_selem_register(mHandle, NULL, NULL);
+    snd_mixer_load(mHandle);
+    mElem = snd_mixer_find_selem(mHandle,sId);
+    /* ------------------------------------------------------------------------
+     * some cards don't have any master volume. so check return value
+     */
+    if (mElem) {
+      snd_mixer_selem_get_playback_volume_range(mElem,&mixerMin,&mixerMax);
+      mixerRange = mixerMax - mixerMin;
+      volPercent = (double) vol / 255.0;
+      setVol = (int) (((double)mixerMin+(mixerRange*volPercent))+0.5);
+      snd_mixer_selem_set_playback_volume(mElem,
+                                          SND_MIXER_SCHN_FRONT_LEFT,
+                                          setVol);
+      snd_mixer_selem_set_playback_volume(mElem,
+                                          SND_MIXER_SCHN_FRONT_RIGHT,
+                                          setVol);
+      if (snd_mixer_selem_has_playback_switch(mElem)) {
+        snd_mixer_selem_set_playback_switch_all(mElem, (vol) ? 1 : 0);
+      }
     }
-  }
 
-  snd_mixer_close(mHandle);
-#endif
+    snd_mixer_close(mHandle);
+  }
 }
 

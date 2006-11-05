@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.34 2006/09/09 10:35:37 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.35 2006/11/05 22:05:59 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -158,6 +158,7 @@ class cSetupStore {
     int   shouldSuspend;
     int   osdMode;
     int   ac3Mode;
+    int   useMixer;
     int   bufferMode;
     int   mainMenu;
     int   syncTimerMode;

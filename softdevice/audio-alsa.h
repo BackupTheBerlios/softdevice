@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.h,v 1.1 2006/07/10 19:40:25 wachm Exp $
+ * $Id: audio-alsa.h,v 1.2 2006/11/05 22:05:59 lucke Exp $
  */
 #ifndef __AUDIO_ALSA_H__
 #define __AUDIO_ALSA_H__
@@ -29,6 +29,7 @@ private:
                     ac3SpdifPro;
   SampleContext     oldContext;
   cAlsaAC3pt        ac3pt;
+  cSetupStore       *setupStore;
 
   bool  SetAC3PassThroughMode(bool on);
   void  Xrun(void);
@@ -52,4 +53,4 @@ public:
 };
 
 
-#endif 
+#endif
