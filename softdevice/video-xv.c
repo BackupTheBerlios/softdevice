@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.63 2006/09/29 19:17:18 lucke Exp $
+ * $Id: video-xv.c,v 1.64 2006/11/05 21:32:25 lucke Exp $
  */
 
 #include <unistd.h>
@@ -29,7 +29,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "2006-04-24"
+#define PATCH_VERSION "2006-11-05"
 
 #define NO_DIRECT_RENDERING
 
@@ -862,6 +862,23 @@ bool cXvVideoOut::Initialize (void)
     }
   }
 #endif
+
+  /* -------------------------------------------------------------------------
+   * limit widht and height to screen dimensions
+   */
+  {
+      int  screen_width, screen_height;
+
+    screen_width  = DisplayWidth(dpy, scn_id);
+    screen_height = DisplayHeight(dpy, scn_id);
+
+    if (height > screen_height)
+      old_dheight = lheight = dheight = height = screen_height;
+
+    if (width > screen_width)
+      old_dwidth = lwidth = dwidth = width = screen_width;
+  }
+
   /* -------------------------------------------------------------------------
    * default settings which allow arbitraray resizing of the window
    */
