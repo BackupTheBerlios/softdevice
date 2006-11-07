@@ -11,6 +11,7 @@ Changelog
    - add GrabImage() support. Currently there is no OSD in the grabbed
      images.
    - some more debugging info in softdevice.c
+   - add explanations to error messages in ShmClient.c
 2006-11-05: softdevice-0.3.1
    - xv-out: limit used width & height to screen dimensions.
    - audio: select alsa h/w-mixer for volume control via command line.

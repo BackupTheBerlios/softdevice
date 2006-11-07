@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.16 2006/09/04 20:25:17 wachm Exp $
+ * $Id: ShmClient.c,v 1.17 2006/11/07 19:31:26 wachm Exp $
  */
 
 #include <signal.h>
@@ -84,15 +84,17 @@ int main(int argc, char **argv) {
 
         if ((ctl_shmid = shmget(ctl_key, sizeof( ShmCtlBlock ), 0666)) < 0) {
                 fprintf(stderr,"ctl_shmid error in shmget!\n");
+                fprintf(stderr,"Check if vdr and the softdevice are running with the option -vo shm:\n");
                 exit(1);
         }
 
         if ( (ctl = (ShmCtlBlock *)shmat(ctl_shmid,NULL,0))
                         == (ShmCtlBlock *) -1 ) {
                 fprintf(stderr,"ctl_shmid error attatching shm ctl!\n");
+                fprintf(stderr,"Check if vdr and the softdevice are running with the option -vo shm:\n");
                 exit(-1);
         };
-
+        
         if ( !vout->Initialize()  ) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
