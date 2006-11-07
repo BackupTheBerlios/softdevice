@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.20 2006/09/17 18:41:27 wachm Exp $
+ * $Id: utils.c,v 1.21 2006/11/07 18:13:19 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -680,6 +680,447 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
   free(scaleV);
 }
 #endif // USE_MMX
+
+inline uint8_t clip( int x) {
+  if (x<=0)
+    return 0;
+  if (x>=255)
+    return 255;
+  return (uint8_t) x;
+};
+
+#define YUV420P_TO_RGB(FMT) \
+    int y=(((int) *py1)-16)*298;        \
+    int u=((int) *pu)-128;              \
+    int v=((int) *pv)-128;              \
+                                        \
+    int r=(409*v+128);                  \
+    int g=(-100*u-208*v+128);           \
+    int b=(516*u+128);                  \
+                                        \
+    WRITE_##FMT(dst,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    py1++;                              \
+                                        \
+    y=(((int) *py1)-16)*298;            \
+    WRITE_##FMT(dst+SIZE_##FMT,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    py1++;                              \
+                                        \
+    /* second line */                   \
+    y=(((int) *py2)-16)*298;            \
+    WRITE_##FMT(dst+dst_stride,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    py2++;                              \
+                                        \
+    y=(((int) *py2)-16)*298;            \
+    WRITE_##FMT(dst+dst_stride+SIZE_##FMT,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    py2++;                              \
+                                        \
+    dst+=2*SIZE_##FMT;                  \
+    pu++;                               \
+    pv++;                               
+
+// MMX macros taken from libswscale
+/*
+ * Copyright (C) 2000, Silicon Integrated System Corp.
+ * All Rights Reserved.
+ *
+ * Author: Olie Lho <ollie@sis.com.tw>
+ *
+ * This file is part of mpeg2dec, a free MPEG-2 video decoder
+ * 
+ * 15,24 bpp and dithering from Michael Niedermayer (michaelni@gmx.at)
+ * MMX/MMX2 Template stuff from Michael Niedermayer (needed for fast movntq support)
+ * context / deglobalize stuff by Michael Niedermayer
+ */
+
+#define Y_COEFF      "3*8"
+#define VR_COEFF     "4*8"
+#define UB_COEFF     "5*8"
+#define VG_COEFF     "6*8"
+#define UG_COEFF     "7*8"
+#define Y_OFFSET     "8*8"
+#define U_OFFSET     "9*8"
+#define V_OFFSET     "10*8"
+#define MASK_00FF    "11*8"
+#define RED_MASK     "12*8"
+#define GREEN_MASK   "13*8"
+#define M24A_MASK    "14*8"
+#define M24B_MASK    "15*8"
+#define M24C_MASK    "16*8"
+
+static uint64_t __attribute__((aligned(8))) MMX_Constants[]= {
+        0,
+        0,
+        0,
+        0x253f253f253f253fULL, /* Y_COEFF    */
+        0x3312331233123312ULL, /* VR_COEFF   */
+        0x4093409340934093ULL, /* UB_COEFF   */
+        0xe5fce5fce5fce5fcULL, /* VG_COEFF   */
+        0xf37df37df37df37dULL, /* UG_COEFF   */
+        0x0080008000800080ULL, /* Y_OFFSET   */
+        0x0400040004000400ULL, /* U_OFFSET   */
+        0x0400040004000400ULL, /* V_OFFSET   */
+        0x00ff00ff00ff00ffULL, /* mask_00ff  */
+        0xf8f8f8f8f8f8f8f8ULL, /* red_mask   */
+        0xfcfcfcfcfcfcfcfcULL, /* green_mask */ 
+        0x00FF0000FF0000FFULL, /* M24A */  
+        0xFF0000FF0000FF00ULL, /* M24B */
+        0x0000FF0000FF0000ULL, /* M24C */
+};
+
+
+#define YUV2RGB \
+     /* Do the multiply part of the conversion for even and odd pixels,
+	register usage:
+	mm0 -> Cblue, mm1 -> Cred, mm2 -> Cgreen even pixels,
+	mm3 -> Cblue, mm4 -> Cred, mm5 -> Cgreen odd pixels,
+	mm6 -> Y even, mm7 -> Y odd */\
+     /* convert the chroma part */\
+     "punpcklbw %%mm4, %%mm0\n" /* scatter 4 Cb 00 u3 00 u2 00 u1 00 u0 */ \
+     "punpcklbw %%mm4, %%mm1\n" /* scatter 4 Cr 00 v3 00 v2 00 v1 00 v0 */ \
+\
+     "psllw $3, %%mm0\n" /* Promote precision */ \
+     "psllw $3, %%mm1\n" /* Promote precision */ \
+\
+     "psubsw "U_OFFSET"(%0), %%mm0\n" /* Cb -= 128 */ \
+     "psubsw "V_OFFSET"(%0), %%mm1\n" /* Cr -= 128 */ \
+\
+     "movq %%mm0, %%mm2\n" /* Copy 4 Cb 00 u3 00 u2 00 u1 00 u0 */ \
+     "movq %%mm1, %%mm3\n" /* Copy 4 Cr 00 v3 00 v2 00 v1 00 v0 */ \
+\
+     "pmulhw "UG_COEFF"(%0), %%mm2\n" /* Mul Cb with green coeff -> Cb green */ \
+     "pmulhw "VG_COEFF"(%0), %%mm3\n" /* Mul Cr with green coeff -> Cr green */ \
+\
+     "pmulhw "UB_COEFF"(%0), %%mm0\n" /* Mul Cb -> Cblue 00 b3 00 b2 00 b1 00 b0 */\
+     "pmulhw "VR_COEFF"(%0), %%mm1\n" /* Mul Cr -> Cred 00 r3 00 r2 00 r1 00 r0 */\
+\
+     "paddsw %%mm3, %%mm2\n" /* Cb green + Cr green -> Cgreen */\
+\
+     /* convert the luma part */\
+     "movq %%mm6, %%mm7\n" /* Copy 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */\
+     "pand "MASK_00FF"(%0), %%mm6\n" /* get Y even 00 Y6 00 Y4 00 Y2 00 Y0 */\
+\
+     "psrlw $8, %%mm7\n" /* get Y odd 00 Y7 00 Y5 00 Y3 00 Y1 */\
+\
+     "psllw $3, %%mm6\n" /* Promote precision */\
+     "psllw $3, %%mm7\n" /* Promote precision */\
+\
+     "psubw "Y_OFFSET"(%0), %%mm6\n" /* Y -= 16 */\
+     "psubw "Y_OFFSET"(%0), %%mm7\n" /* Y -= 16 */\
+\
+     "pmulhw "Y_COEFF"(%0), %%mm6\n" /* Mul 4 Y even 00 y6 00 y4 00 y2 00 y0 */\
+     "pmulhw "Y_COEFF"(%0), %%mm7\n" /* Mul 4 Y odd 00 y7 00 y5 00 y3 00 y1 */\
+\
+     /* Do the addition part of the conversion for even and odd pixels,
+	register usage:
+	mm0 -> Cblue, mm1 -> Cred, mm2 -> Cgreen even pixels,
+	mm3 -> Cblue, mm4 -> Cred, mm5 -> Cgreen odd pixels,
+	mm6 -> Y even, mm7 -> Y odd */\
+     "movq %%mm0, %%mm3\n" /* Copy Cblue */\
+     "movq %%mm1, %%mm4\n" /* Copy Cred */\
+     "movq %%mm2, %%mm5\n" /* Copy Cgreen */\
+\
+     "paddsw %%mm6, %%mm0\n" /* Y even + Cblue 00 B6 00 B4 00 B2 00 B0 */\
+     "paddsw %%mm7, %%mm3\n" /* Y odd + Cblue 00 B7 00 B5 00 B3 00 B1 */\
+\
+     "paddsw %%mm6, %%mm1\n" /* Y even + Cred 00 R6 00 R4 00 R2 00 R0 */\
+     "paddsw %%mm7, %%mm4\n" /* Y odd + Cred 00 R7 00 R5 00 R3 00 R1 */\
+\
+     "paddsw %%mm6, %%mm2\n" /* Y even + Cgreen 00 G6 00 G4 00 G2 00 G0 */\
+     "paddsw %%mm7, %%mm5\n" /* Y odd + Cgreen 00 G7 00 G5 00 G3 00 G1 */\
+\
+     /* Limit RGB even to 0..255 */\
+     "packuswb %%mm0, %%mm0\n" /* B6 B4 B2 B0  B6 B4 B2 B0 */\
+     "packuswb %%mm1, %%mm1\n" /* R6 R4 R2 R0  R6 R4 R2 R0 */\
+     "packuswb %%mm2, %%mm2\n" /* G6 G4 G2 G0  G6 G4 G2 G0 */\
+\
+     /* Limit RGB odd to 0..255 */\
+     "packuswb %%mm3, %%mm3\n" /* B7 B5 B3 B1  B7 B5 B3 B1 */\
+     "packuswb %%mm4, %%mm4\n" /* R7 R5 R3 R1  R7 R5 R3 R1 */\
+     "packuswb %%mm5, %%mm5\n" /* G7 G5 G3 G1  G7 G5 G3 G1 */\
+\
+     /* Interleave RGB even and odd */\
+     "punpcklbw %%mm3, %%mm0\n" /* B7 B6 B5 B4 B3 B2 B1 B0 */\
+     "punpcklbw %%mm4, %%mm1\n" /* R7 R6 R5 R4 R3 R2 R1 R0 */\
+     "punpcklbw %%mm5, %%mm2\n" /* G7 G6 G5 G4 G3 G2 G1 G0 */\
+
+#define WRITE_RGB16_MMX  \
+       /* mask unneeded bits off */\
+       "pand "RED_MASK"(%0), %%mm0\n" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */\
+       "pand "GREEN_MASK"(%0), %%mm2\n" /* g7g6g5g4 g3g2_0_0 g7g6g5g4 g3g2_0_0 */\
+       "pand "RED_MASK"(%0), %%mm1\n" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */\
+\
+       "psrlw $3,%%mm0\n" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */\
+       "pxor %%mm4, %%mm4\n" /* zero mm4 */\
+\
+       "movq %%mm0, %%mm5\n" /* Copy B7-B0 */\
+       "movq %%mm2, %%mm7\n" /* Copy G7-G0 */\
+\
+       /* convert rgb24 plane to rgb16 pack for pixel 0-3 */\
+       "punpcklbw %%mm4, %%mm2\n" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3g2_0_0 */\
+       "punpcklbw %%mm1, %%mm0\n" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */\
+\
+       "psllw $3, %%mm2\n" /* 0_0_0_0 0_g7g6g5 g4g3g2_0 0_0_0_0 */\
+       "por %%mm2, %%mm0\n" /* r7r6r5r4 r3g7g6g5 g4g3g2b7 b6b5b4b3 */\
+\
+       MOVNTQ " %%mm0, (%1)\n" /* store pixel 0-3 */\
+\
+       /* convert rgb24 plane to rgb16 pack for pixel 0-3 */\
+       "punpckhbw %%mm4, %%mm7\n" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3g2_0_0 */\
+       "punpckhbw %%mm1, %%mm5\n" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */\
+\
+       "psllw $3, %%mm7\n" /* 0_0_0_0 0_g7g6g5 g4g3g2_0 0_0_0_0 */\
+       "por %%mm7, %%mm5\n" /* r7r6r5r4 r3g7g6g5 g4g3g2b7 b6b5b4b3*/\
+       MOVNTQ " %%mm5, 8 (%1)\n" /* store pixel 4-7 */\
+
+#define WRITE_RGB24_MMX  \
+	"movq "M24A_MASK"(%0), %%mm4	\n\t" \
+	"movq "M24C_MASK"(%0), %%mm7	\n\t" \
+	"pshufw $0x50, %%mm0, %%mm5	\n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */\
+	"pshufw $0x50, %%mm2, %%mm3	\n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */\
+	"pshufw $0x00, %%mm1, %%mm6	\n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */\
+\
+	"pand %%mm4, %%mm5		\n\t" /*    B2        B1       B0 */\
+	"pand %%mm4, %%mm3		\n\t" /*    G2        G1       G0 */\
+	"pand %%mm7, %%mm6		\n\t" /*       R1        R0       */\
+\
+	"psllq $8, %%mm3		\n\t" /* G2        G1       G0    */\
+	"por %%mm5, %%mm6		\n\t"\
+	"por %%mm3, %%mm6		\n\t"\
+	MOVNTQ" %%mm6, (%1)		\n\t"\
+\
+	"psrlq $8, %%mm2		\n\t" /* 00 G7 G6 G5  G4 G3 G2 G1 */\
+	"pshufw $0xA5, %%mm0, %%mm5	\n\t" /* B5 B4 B5 B4  B3 B2 B3 B2 */\
+	"pshufw $0x55, %%mm2, %%mm3	\n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */\
+	"pshufw $0xA5, %%mm1, %%mm6	\n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */\
+\
+	"pand "M24B_MASK"(%0), %%mm5	\n\t" /* B5       B4        B3    */\
+	"pand %%mm7, %%mm3		\n\t" /*       G4        G3       */\
+	"pand %%mm4, %%mm6		\n\t" /*    R4        R3       R2 */\
+\
+	"por %%mm5, %%mm3		\n\t" /* B5    G4 B4     G3 B3    */\
+	"por %%mm3, %%mm6		\n\t"\
+	MOVNTQ" %%mm6, 8(%1)		\n\t"\
+\
+	"pshufw $0xFF, %%mm0, %%mm5	\n\t" /* B7 B6 B7 B6  B7 B6 B6 B7 */\
+	"pshufw $0xFA, %%mm2, %%mm3	\n\t" /* 00 G7 00 G7  G6 G5 G6 G5 */\
+	"pshufw $0xFA, %%mm1, %%mm6	\n\t" /* R7 R6 R7 R6  R5 R4 R5 R4 */\
+\
+	"pand %%mm7, %%mm5		\n\t" /*       B7        B6       */\
+	"pand %%mm4, %%mm3		\n\t" /*    G7        G6       G5 */\
+	"pand "M24B_MASK"(%0), %%mm6	\n\t" /* R7       R6        R5    */\
+\
+	"por %%mm5, %%mm3		\n\t"\
+	"por %%mm3, %%mm6		\n\t"\
+	MOVNTQ" %%mm6, 16(%1)		\n\t"\
+	"pxor %%mm4, %%mm4		\n\t"\
+
+#define WRITE_RGB32_MMX \
+        /* convert RGB plane to RGB packed format, */\
+	/* mm0 -> B, mm1 -> R, mm2 -> G, mm3 -> 0, */\
+	/* mm4 -> GB, mm5 -> AR pixel 4-7,         */\
+	/* mm6 -> GB, mm7 -> AR pixel 0-3          */\
+        "pxor %%mm3, %%mm3\n" /* zero mm3 */ \
+\
+        "movq %%mm0, %%mm6\n" /* B7 B6 B5 B4 B3 B2 B1 B0 */\
+	"movq %%mm1, %%mm7\n" /* R7 R6 R5 R4 R3 R2 R1 R0 */\
+\
+	"movq %%mm0, %%mm4\n" /* B7 B6 B5 B4 B3 B2 B1 B0 */\
+	"movq %%mm1, %%mm5\n" /* R7 R6 R5 R4 R3 R2 R1 R0 */\
+\
+	"punpcklbw %%mm2, %%mm6\n" /* G3 B3 G2 B2 G1 B1 G0 B0 */\
+	"punpcklbw %%mm3, %%mm7\n" /* 00 R3 00 R2 00 R1 00 R0 */\
+\
+	"punpcklwd %%mm7, %%mm6\n" /* 00 R1 B1 G1 00 R0 B0 G0 */\
+	MOVNTQ " %%mm6, (%1)\n" /* Store ARGB1 ARGB0 */\
+\
+	"movq %%mm0, %%mm6\n" /* B7 B6 B5 B4 B3 B2 B1 B0 */\
+	"punpcklbw %%mm2, %%mm6\n" /* G3 B3 G2 B2 G1 B1 G0 B0 */\
+\
+	"punpckhwd %%mm7, %%mm6\n" /* 00 R3 G3 B3 00 R2 B3 G2 */\
+	MOVNTQ " %%mm6, 8 (%1)\n" /* Store ARGB3 ARGB2 */\
+\
+	"punpckhbw %%mm2, %%mm4\n" /* G7 B7 G6 B6 G5 B5 G4 B4 */\
+	"punpckhbw %%mm3, %%mm5\n" /* 00 R7 00 R6 00 R5 00 R4 */\
+\
+	"punpcklwd %%mm5, %%mm4\n" /* 00 R5 B5 G5 00 R4 B4 G4 */\
+	MOVNTQ " %%mm4, 16 (%1)\n" /* Store ARGB5 ARGB4 */\
+\
+	"movq %%mm0, %%mm4\n" /* B7 B6 B5 B4 B3 B2 B1 B0 */\
+	"punpckhbw %%mm2, %%mm4\n" /* G7 B7 G6 B6 G5 B5 G4 B4 */\
+\
+	"punpckhwd %%mm5, %%mm4\n" /* 00 R7 G7 B7 00 R6 B6 G6 */\
+	MOVNTQ " %%mm4, 24 (%1)\n" /* Store ARGB7 ARGB6 */\
+\
+	"pxor %%mm4, %%mm4\n" /* zero mm4 */\
+
+                  
+// end of MMX macros from libswscale
+
+void yuv420_to_rgb32(uint8_t *dst, int dst_stride,
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 int pixel)
+{
+#ifdef USE_MMX
+  pixel/=8;
+  __asm__ __volatile__(
+      "pxor %%mm4, %%mm4 \n"
+      : : : "memory" );
+  while (pixel) {
+    __asm__ __volatile__ (
+          "movd (%1), %%mm6  \n"
+          "movd (%2), %%mm0  \n"
+          "movd (%3), %%mm1  \n"
+          "punpckldq 4(%1), %%mm6  \n"
+          YUV2RGB
+        	: : "r" (MMX_Constants), "r" (py1), "r" (pu), "r" (pv)
+                : "memory");
+    __asm__ __volatile__ (
+          WRITE_RGB32_MMX
+                : : "r" (MMX_Constants),"r" (dst)
+                : "memory");
+    
+    __asm__ __volatile__ (
+          "movd (%1), %%mm6  \n"
+          "movd (%2), %%mm0  \n"
+          "movd (%3), %%mm1  \n"
+          "punpckldq 4(%1), %%mm6  \n"
+          YUV2RGB
+        	: : "r" (MMX_Constants), "r" (py2), "r" (pu), "r" (pv)
+                : "memory");
+    __asm__ __volatile__ (
+          WRITE_RGB32_MMX
+                : : "r" (MMX_Constants), "r" (dst+dst_stride)
+                : "memory");
+    dst+=32;
+    py1+=8;
+    py2+=8;
+    pu+=4;
+    pv+=4;
+    pixel--;
+  };
+  EMMS;
+#else
+  pixel/=2;
+  while (pixel) {
+    YUV420P_TO_RGB(RGB32);  
+    pixel--;
+  };
+#endif
+};
+
+void yuv420_to_rgb24(uint8_t *dst, int dst_stride,
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 int pixel)
+{
+#ifdef USE_MMX2
+  pixel/=8;
+  __asm__ __volatile__(
+      "pxor %%mm4, %%mm4 \n"
+      : : : "memory" );
+  while (pixel) {
+    __asm__ __volatile__ (
+          "movd (%1), %%mm6  \n"
+          "movd (%2), %%mm0  \n"
+          "movd (%3), %%mm1  \n"
+          "punpckldq 4(%1), %%mm6  \n"
+          YUV2RGB
+        	: : "r" (MMX_Constants), "r" (py1), "r" (pu), "r" (pv)
+                : "memory");
+    __asm__ __volatile__ (
+          WRITE_RGB24_MMX
+                : : "r" (MMX_Constants),"r" (dst)
+                : "memory");
+    
+    __asm__ __volatile__ (
+          "movd (%1), %%mm6  \n"
+          "movd (%2), %%mm0  \n"
+          "movd (%3), %%mm1  \n"
+          "punpckldq 4(%1), %%mm6  \n"
+          YUV2RGB
+        	: : "r" (MMX_Constants), "r" (py2), "r" (pu), "r" (pv)
+                : "memory");
+    __asm__ __volatile__ (
+          WRITE_RGB24_MMX
+                : : "r" (MMX_Constants), "r" (dst+dst_stride)
+                : "memory");
+    dst+=24;
+    py1+=8;
+    py2+=8;
+    pu+=4;
+    pv+=4;
+    pixel--;
+  };
+  EMMS;
+#else
+  pixel/=2;
+  while (pixel) {
+    YUV420P_TO_RGB(RGB24);  
+    pixel--;
+  };
+#endif
+};
+
+void yuv420_to_bgr24(uint8_t *dst, int dst_stride,
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 int pixel)
+{
+  pixel/=2;
+  while (pixel) {
+    YUV420P_TO_RGB(BGR24);  
+    pixel--;
+  };
+};
+
+void yuv420_to_rgb16(uint8_t *dst, int dst_stride,
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 int pixel)
+{
+#ifdef USE_MMX
+  pixel/=8;
+  __asm__ __volatile__(
+      "pxor %%mm4, %%mm4 \n"
+      : : : "memory" );
+  while (pixel) {
+    __asm__ __volatile__ (
+          "movd (%1), %%mm6  \n"
+          "movd (%2), %%mm0  \n"
+          "movd (%3), %%mm1  \n"
+          "punpckldq 4(%1), %%mm6  \n"
+          YUV2RGB
+        	: : "r" (MMX_Constants), "r" (py1), "r" (pu), "r" (pv)
+                : "memory");
+    __asm__ __volatile__ (
+          WRITE_RGB16_MMX
+                : : "r" (MMX_Constants),"r" (dst)
+                : "memory");
+    __asm__ __volatile__ (
+          "movd (%1), %%mm6  \n"
+          "movd (%2), %%mm0  \n"
+          "movd (%3), %%mm1  \n"
+          "punpckldq 4(%1), %%mm6  \n"
+          YUV2RGB
+        	: : "r" (MMX_Constants), "r" (py2), "r" (pu), "r" (pv)
+                : "memory");
+    __asm__ __volatile__ (
+          WRITE_RGB16_MMX
+                : : "r" (MMX_Constants), "r" (dst+dst_stride)
+                : "memory");
+    dst+=16;
+    py1+=8;
+    py2+=8;
+    pu+=4;
+    pv+=4;
+    pixel--;
+  };
+  EMMS;
+#else
+  pixel/=2;
+  while (pixel) {
+    YUV420P_TO_RGB(RGB16);  
+    pixel--;
+  };
+#endif
+};
 
 void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
           uint8_t *alpha,uint16_t count) {
