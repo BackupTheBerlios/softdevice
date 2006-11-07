@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.13 2006/10/01 12:08:05 wachm Exp $
+ * $Id: video-shm.c,v 1.14 2006/11/07 19:40:10 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -210,7 +210,6 @@ void cShmVideoOut::CheckShmIDs() {
                                 ctl->pict_shmid = -1;
                                 ctl->attached = 0;
                                 curr_pict=NULL;
-                                sem_sig_unlock(ctl->semid,PICT_MUT);
                                 return;
                         }
                         curr_pict_shmid=ctl->pict_shmid;
@@ -324,14 +323,14 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
         } else setupStore->shouldSuspend=0;
 
         SIGDEB("YUV trying to get a lock\n");
-        sem_wait_lock(ctl->semid,PICT_MUT);
+        sem_wait_lock(ctl->semid,PICT_MUT,SEM_UNDO);
         SIGDEB("YUV got a lock\n");
 
         CheckShmIDs();        
         
         if ( ctl->pict_shmid==-1 || !curr_pict ) {
                 // unlock picture ctl
-                sem_sig_unlock(ctl->semid,PICT_MUT);
+                sem_sig_unlock(ctl->semid,PICT_MUT,SEM_UNDO);
                 SHMDEB(" no pict_shmid or no curr_pict unlock and return\n");
                 return;
         };
@@ -364,7 +363,7 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
                 printf("new_pict > 30; assuming client died!\n");
                 ctl->attached=0;
         };
-        sem_sig_unlock(ctl->semid,PICT_MUT);
+        sem_sig_unlock(ctl->semid,PICT_MUT,SEM_UNDO);
         sem_sig_unlock(ctl->semid,PICT_SIG);
         SIGDEB("send signal\n");
         
