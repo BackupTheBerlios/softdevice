@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.3 2006/11/05 22:05:59 lucke Exp $
+ * $Id: audio-alsa.c,v 1.4 2006/11/07 18:16:57 wachm Exp $
  */
 #include "audio-alsa.h"
 
@@ -342,6 +342,8 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
     assert(err >= 0);
     if (currContext.samplerate != context.samplerate ) {
       esyslog("[softdevice-audio] Rate %d Hz is not possible (and using instead %d Hz is not implemented) NO AUDIO!",context.samplerate,currContext.samplerate);
+      //put back requested samplerate, so that we don't try again
+      currContext.samplerate = context.samplerate;
       handleMutex.Unlock();
       Suspend();
       return -1;
@@ -385,6 +387,8 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
       handleMutex.Unlock();
       exit(EXIT_FAILURE);
     }
+    dsyslog("[softdevice-audio] Device '%s', Samplerate %d Channels %d",
+            device,currContext.samplerate, currContext.channels);
     dsyslog("[softdevice-audio] Period size %lu Buffer size %lu",
             periodSize, bufferSize);
 
