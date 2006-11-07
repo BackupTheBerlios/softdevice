@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.69 2006/10/03 19:50:43 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.70 2006/11/07 19:01:37 wachm Exp $
  */
 
 #include <math.h>
@@ -539,7 +539,7 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
   pic->opaque = (void*) buf;
 
   int h_chroma_shift, v_chroma_shift;
-  VideoOutPtr->GetChromaSubSample(c->pix_fmt, h_chroma_shift, v_chroma_shift);
+  GetChromaSubSample(c->pix_fmt, h_chroma_shift, v_chroma_shift);
 
   for(int i=0; i<4; i++){
     const int h_shift= i==0 ? 0 : h_chroma_shift;

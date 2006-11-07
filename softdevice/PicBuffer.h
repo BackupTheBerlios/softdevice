@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.4 2006/10/01 12:08:05 wachm Exp $
+ * $Id: PicBuffer.h,v 1.5 2006/11/07 19:01:37 wachm Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
@@ -51,6 +51,12 @@ typedef struct sPicBuffer {
 void InitPicBuffer(sPicBuffer *Pic);
 void ClearPicBuffer(sPicBuffer *Pic);
 void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig);
+bool AllocatePicBuffer(sPicBuffer *buf,PixelFormat pix_fmt,int w, int h);
+void DeallocatePicBuffer(sPicBuffer *buf);
+int GetFormatBPP(PixelFormat fmt);
+void GetChromaSubSample(PixelFormat pix_fmt,
+                int &hChromaShift,
+                int &vChromaShift);
 
 class cPicBufferManager {
 public:
@@ -82,10 +88,6 @@ public:
         void UnlockBuffer(sPicBuffer *picture);
         // don't need it anymore
         
-        int GetFormatBPP(PixelFormat fmt);
-        void GetChromaSubSample(PixelFormat pix_fmt,
-                int &hChromaShift,
-                int &vChromaShift);
 
         virtual bool AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
                         int w, int h);
@@ -97,7 +99,24 @@ public:
         // releases the memory of the buffer again
 };
 
+// copy the contents of a picture buffer into the other
 void CopyPicBuf(sPicBuffer *dest, sPicBuffer *src,
+                int cutTop, int cutBottom, int cutLeft, int cutRight);
+
+// Copy the contents of a picture buffer into the other.
+// If the dimension of the destination buffer don't match the
+// dimensions of the source, the image is scaled using a low quality
+// next neighbour algorithm
+void CopyScalePicBuf(sPicBuffer *dest, sPicBuffer *src,
+                int sxoff, int syoff, int swidth, int sheight,
+                int dxoff, int dyoff, int dwidth, int dheight,
+                int cutTop, int cutBottom, int cutLeft, int cutRight);
+
+void CopyScalePicBufAlphaBlend(sPicBuffer *dest, sPicBuffer *src,
+                int sxoff, int syoff, int swidth, int sheight,
+                int dxoff, int dyoff, int dwidth, int dheight,
+                uint8_t *OsdPy,uint8_t *OsdPu, uint8_t *OsdPv,
+                uint8_t *OsdPAlphaY, uint8_t *OsdPAlphaUV,int OsdStride,
                 int cutTop, int cutBottom, int cutLeft, int cutRight);
 
 void CopyPicBufAlphaBlend(sPicBuffer *dst, 

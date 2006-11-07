@@ -2,6 +2,11 @@ Changelog
 2006-11-07:
    - add yuv to rgb conversion routines for rgb32, rgb24, bgr24 and rgb16
    - audio-alsa: restore samplerate after a unsuccessfull change request
+   - add scaling methods with yuv to rgb conversion
+   - add packed pixel format support to ClearPicBuffer()
+   - move AllocatePicBuffer(), DeallocatePicBuffer(), GetFormatBPP and
+     GetChromaSubSample() out of cPicBufferManager
+   - add packed pixel format to PicBuffer
 2006-11-05: softdevice-0.3.1
    - xv-out: limit used width & height to screen dimensions.
    - audio: select alsa h/w-mixer for volume control via command line.
