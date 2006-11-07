@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.73 2006/11/05 22:05:59 lucke Exp $
+ * $Id: softdevice.c,v 1.74 2006/11/07 19:19:05 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -440,6 +440,7 @@ bool cSoftDevice::CanReplay(void) const
 
 bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
 {
+    SOFTDEB("SetPlayMode %d\n",PlayMode);
     if (!decoder)
        return false;
 
@@ -498,6 +499,7 @@ void cSoftDevice::Play(void)
       decoder->TrickSpeed(1);
       decoder->Play();
     };
+    SOFTDEB("Play finished.\n");
 }
 
 void cSoftDevice::Freeze(void)
@@ -506,6 +508,7 @@ void cSoftDevice::Freeze(void)
     cDevice::Freeze();
     if (decoder)
       decoder->Freeze();
+    SOFTDEB("Freeze finished.\n");
 }
 
 void cSoftDevice::Mute(void)
@@ -529,7 +532,7 @@ void cSoftDevice::StillPicture(const uchar *Data, int Length)
 
 bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
 {
-  SOFTDEB("[softdevice] Poll TimeoutMs: %d ....\n",TimeoutMs);
+  //SOFTDEB("Poll TimeoutMs: %d ....\n",TimeoutMs);
 
   if ( decoder->BufferFill() > 90 ) {
      //fprintf(stderr,"[softdevice] Buffer filled, TimeoutMs %d, fill %d\n",
@@ -543,14 +546,17 @@ bool cSoftDevice::Poll(cPoller &Poller, int TimeoutMs)
        TimeoutUs-=Timer.GetRelTime();
      };
 
+     //SOFTDEB("Poll finished after wait.\n");
      return decoder->BufferFill() < 99;
   }
 
+  //SOFTDEB("Poll finished.\n");
   return true;
 }
 
 bool cSoftDevice::Flush(int TimeoutMs)
 {
+  SOFTDEB("Flush %d\n",TimeoutMs);
   int64_t TimeoutUs=TimeoutMs*1000;
   cRelTimer Timer;
   Timer.Reset();
@@ -581,7 +587,7 @@ int cSoftDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
 int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 # endif
 {
-  //fprintf(stderr,"PlayAudio...\n");
+  SOFTDEB("PlayAudio... %p length %d\n",Data,Length);
   if (! packetMode)
     return decoder->Decode(Data, Length);
 
@@ -616,6 +622,7 @@ void cSoftDevice::SetDigitalAudioDevice(bool On)
  */
 void cSoftDevice::SetAudioChannelDevice(int AudioChannel)
 {
+  SOFTDEB("SetAudioChannelDevice %d\n",AudioChannel);
   if (decoder)
      decoder->SetAudioMode(AudioChannel);
 }
@@ -635,6 +642,7 @@ int  cSoftDevice::GetAudioChannelDevice(void)
  */
 int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 {
+   SOFTDEB("PlayVideo %x length %d\n",Data,Length);
    if (! packetMode)
     return decoder->Decode(Data, Length);
 
@@ -650,6 +658,77 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
   };
   return 0;
 }
+
+#if VDRVERSNUM >= 10338
+uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality, 
+                int SizeX, int SizeY)
+{
+  Size=0;
+  if (!videoOut) 
+    return NULL;
+
+  sPicBuffer *orig_pic;
+  videoOut->GetLockLastPic(orig_pic);
+  if (!orig_pic)
+    return NULL;
+
+  if ( SizeX<0 || SizeY<0 ) {
+    SizeX=orig_pic->width;
+    SizeY=orig_pic->height;
+  };
+
+  if (Quality<0)
+    Quality=100;
+
+  sPicBuffer dst;
+  AllocatePicBuffer(&dst,PIX_FMT_BGR24,SizeX,SizeY);
+
+  CopyScalePicBuf(&dst,orig_pic,
+      0,0,orig_pic->width,orig_pic->height,
+      0,0,SizeX,SizeY,
+      0,0,0,0);
+  SizeX=dst.width; 
+  SizeY=dst.height;
+  videoOut->UnlockBuffer(orig_pic);
+  orig_pic=NULL;
+
+  uint8_t *picture = NULL;
+  int l=0;
+  char buf[32];
+  picture = (uchar*) malloc( 32 + 3*SizeX*SizeY );
+  if (!picture) {
+    esyslog("[softdevice] failed to allocate grab image buffer");
+    DeallocatePicBuffer(&dst);
+    return NULL;
+  };
+
+  if (!Jpeg) {
+    // write PNM header:
+    snprintf(buf, sizeof(buf), "P6\n%d\n%d\n255\n", SizeX, SizeY);
+    l = strlen(buf);
+    memcpy(picture, buf, l);
+    Size+=l;
+  };
+
+  for (int i=0; i<dst.height; i++) {
+    memcpy(picture+Size, dst.pixel[0]+i*dst.stride[0], dst.width*3);
+    Size+=dst.width*3;
+  };
+  DeallocatePicBuffer(&dst);
+
+  if (Jpeg) {
+    uint8_t *jpeg_picture = RgbToJpeg(picture, SizeX, SizeY, Size, Quality);
+    free(picture);
+
+    if (!jpeg_picture) {
+      esyslog("[softdevice] failed to convert image to JPEG");
+      return NULL;
+    };
+    return jpeg_picture;
+  };
+  return picture;
+};
+#endif
 
 // --- cPluginSoftDevice ----------------------------------------------------------
 

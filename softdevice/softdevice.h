@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.11 2006/08/27 13:02:50 wachm Exp $
+ * $Id: softdevice.h,v 1.12 2006/11/07 19:19:05 wachm Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -115,6 +115,11 @@ public:
   virtual int  GetAudioChannelDevice(void);
   virtual void SetDigitalAudioDevice(bool On);
   virtual void SetAudioTrackDevice(eTrackType Type);
+
+#if VDRVERSNUM >= 10338
+  virtual uchar *GrabImage(int &Size, bool Jpeg, int Quality, 
+                  int SizeX, int SizeY);
+#endif
 
 # if VDRVERSNUM >= 10342
   virtual int  PlayAudio(const uchar *Data, int Length, uchar Id);
