@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.44 2006/09/29 19:24:57 lucke Exp $
+ * $Id: video.h,v 1.45 2006/11/07 19:09:00 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -175,6 +175,18 @@ public:
     inline void FreezeMode(bool freeze)
     {freezeMode=freeze;};
     bool freezeMode;
+
+    inline void GetLockLastPic(sPicBuffer *&pic) 
+            // Returns a pointer to the last decoded frame.
+            // The caller has to unlock the picture buffer after use
+            // by calling cVideoOut::UnlockBuffer().
+    {
+            oldPictureMutex.Lock();
+            pic=oldPicture;
+            LockBuffer(oldPicture);
+            oldPictureMutex.Unlock();
+    };
+
 
     virtual void Action(void);
     // osd control thread. Refreshes the osd on dimension changes and
