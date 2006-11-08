@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.13 2006/11/07 19:01:37 wachm Exp $
+ * $Id: PicBuffer.c,v 1.14 2006/11/08 21:24:14 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +46,7 @@ void ClearPicBuffer(sPicBuffer *Pic) {
         int pixel_size=GetFormatBPP(Pic->format); 
 
         switch (Pic->format) {
-                case PIX_FMT_RGB32 :
+                case PIX_FMT_RGBA32 :
                 case PIX_FMT_RGB24 :
                 case PIX_FMT_BGR24 :
                 case PIX_FMT_RGB555 :
@@ -615,7 +615,7 @@ void CopyScalePicBuf(sPicBuffer *dst, sPicBuffer *src,
                         +dxoff*GetFormatBPP(dst->format);
                 convert_dst_stride=dst->stride[0];
                 switch (dst->format) {
-                        case PIX_FMT_RGB32:
+                        case PIX_FMT_RGBA32:
                                 yuv_to_rgb=yuv420_to_rgb32;
                                 break;
                         case PIX_FMT_BGR24:
@@ -780,7 +780,7 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
                 convert_dst_stride=dst->stride[0];
 
                 switch (dst->format) {
-                        case PIX_FMT_RGB32:
+                        case PIX_FMT_RGBA32:
                                 yuv_to_rgb=yuv420_to_rgb32;
                                 break;
                         case PIX_FMT_RGB24:

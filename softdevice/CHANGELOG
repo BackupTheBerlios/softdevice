@@ -1,4 +1,6 @@
 Changelog
+2006-11-08:
+   - change PIX_FMT_RGB32 to PIX_FMT_RGBA32 to support older ffmpeg versions
 2006-11-07:
    - add yuv to rgb conversion routines for rgb32, rgb24, bgr24 and rgb16
    - audio-alsa: restore samplerate after a unsuccessfull change request
