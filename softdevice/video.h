@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.45 2006/11/07 19:09:00 wachm Exp $
+ * $Id: video.h,v 1.46 2006/11/11 08:45:17 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -33,27 +33,6 @@
 
 #define SRC_HEIGHT         576
 #define SRC_WIDTH          736
-
-#if VDRVERSNUM < 10307
-
-class cWindowLayer {
-  private:
-    int left, top;
-    int width, height, bpp, xres, yres;
-    unsigned char *imagedata;
-    bool          OSDpseudo_alpha;
-  public:
-    cWindowLayer(int X, int Y, int W, int H, int Bpp,
-                 int Xres, int Yres, bool alpha);
-    ~cWindowLayer();
-    void Render(cWindow *Window);
-    void Draw(unsigned char * buf, int linelen, unsigned char * keymap);
-    void Move(int x, int y);
-    void Region (int *x, int *y, int *w, int *h);
-    bool visible;
-};
-
-#endif
 
 #ifndef STAND_ALONE
 class cSoftRemote : public cRemote {
@@ -90,13 +69,6 @@ private:
 protected:
     inline double GetAspect_F()
     { return aspect_F;};
-
-#if VDRVERSNUM < 10307
-    // -----------------------------------------------------------------------
-    // Artefakt of vdr-1.2.x OSD create/delete locking
-    //
-    cMutex  osdMutex;
-#endif
 
     bool    OSDpresent,
             OSDpseudo_alpha;
@@ -176,7 +148,7 @@ public:
     {freezeMode=freeze;};
     bool freezeMode;
 
-    inline void GetLockLastPic(sPicBuffer *&pic) 
+    inline void GetLockLastPic(sPicBuffer *&pic)
             // Returns a pointer to the last decoded frame.
             // The caller has to unlock the picture buffer after use
             // by calling cVideoOut::UnlockBuffer().
@@ -212,7 +184,6 @@ public:
     virtual void ClearOSD();
     // clear the OSD buffer
 
-#if VDRVERSNUM >= 10307
     virtual void OpenOSD();
     virtual void CloseOSD();
 
@@ -249,21 +220,6 @@ public:
 
     virtual void CommitUnlockSoftOsdSurface( int osdwidth, int osdheight)
     { OSDpresent=true; OsdWidth=osdwidth; OsdHeight=osdheight; Osd_changed=1;};
-
-#else
-    int OSDxOfs,OSDyOfs;
-
-    cWindowLayer *layer[MAXNUMWINDOWS];
-    virtual void OpenOSD(int X, int Y);
-    virtual bool OpenWindow(cWindow *Window);
-    virtual void CommitWindow(cWindow *Window);
-    virtual void ShowWindow(cWindow *Window);
-    virtual void HideWindow(cWindow *Window, bool Hide);
-    virtual void MoveWindow(cWindow *Window, int X, int Y);
-    virtual void CloseWindow(cWindow *Window);
-    virtual void Refresh() {return;};
-    virtual void CloseOSD();
-#endif
 
 };
 

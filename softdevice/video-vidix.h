@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.11 2006/09/09 10:35:37 lucke Exp $
+ * $Id: video-vidix.h,v 1.12 2006/11/11 08:45:17 lucke Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -45,7 +45,6 @@ public:
   cVidixVideoOut(cSetupStore *setupStore);
   virtual ~cVidixVideoOut();
 
-#if VDRVERSNUM >= 10307
   virtual void ClearOSD();
   virtual void AdjustOSDMode();
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
@@ -58,10 +57,6 @@ public:
   virtual void GetLockOsdSurface(uint8_t *&osd,
                                  int &stride,
                                  bool *&dirtyLines);
-#else
-  virtual void Refresh();
-#endif
-
   virtual void CloseOSD();
 //  virtual void OpenOSD();
   virtual void YUV(sPicBuffer *buf);

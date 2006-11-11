@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.16 2006/06/17 20:42:58 lucke Exp $
+ * $Id: video-fb.c,v 1.17 2006/11/11 08:45:17 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -129,12 +129,7 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
     };
 
     int OsdYres=Yres>OSD_FULL_HEIGHT?Yres:OSD_FULL_HEIGHT;
-#if VDRVERSNUM < 10307
-    int OsdXres=Xres>OSD_FULL_WIDTH?Xres:OSD_FULL_WIDTH;
-    PixelMask = (unsigned char *)malloc(OsdXres*OsdYres/8 ); // where the Video window should be transparent
-#else
     PixelMask = (unsigned char *)malloc(OsdYres*line_len / ((Bpp+7) / 8) / 8); // where the Video window should be transparent
-#endif
 
     OSDpresent=false;
 
@@ -156,7 +151,6 @@ void cFBVideoOut::Pause(void)
 {
 }
 
-#if VDRVERSNUM >= 10307
 /* ---------------------------------------------------------------------------
  */
 void cFBVideoOut::OpenOSD()
@@ -212,32 +206,6 @@ void cFBVideoOut::CommitUnlockOsdSurface()
   pthread_mutex_unlock(&fb_mutex);
   cVideoOut::CommitUnlockOsdSurface();
 }
-
-#else
-
-/* ---------------------------------------------------------------------------
- */
-void cFBVideoOut::Refresh()
-{
-  // refreshes the OSD screen
-  osdMutex.Lock();
-  if (OSDpresent)
-  {
-    pthread_mutex_lock(&fb_mutex);
-    for (int i = 0; i <(Yres*line_len / ((Bpp + 7) / 8) / 8); i++)
-    {
-      PixelMask[i]= 0;
-    }
-    for (int i = 0; i < MAXNUMWINDOWS; i++)
-    {
-      if (layer[i] && layer[i]->visible)
-        layer[i]->Draw(fb, line_len, PixelMask);
-    }
-    pthread_mutex_unlock(&fb_mutex);
-  }
-  osdMutex.Unlock();
-}
-#endif
 
 /* ---------------------------------------------------------------------------
  */
@@ -305,15 +273,6 @@ cFBVideoOut::~cFBVideoOut()
   }
   if (fbdev)
     close(fbdev);
-#if VDRVERSNUM < 10307
-  osdMutex.Lock();
-  for (int i = 0; i < MAXNUMWINDOWS; i++)
-  {
-    if (layer[i])
-      delete(layer[i]);
-  }
-  osdMutex.Unlock();
-#endif
 }
 
 #ifdef USE_SUBPLUGINS

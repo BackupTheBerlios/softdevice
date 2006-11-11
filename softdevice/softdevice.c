@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.74 2006/11/07 19:19:05 wachm Exp $
+ * $Id: softdevice.c,v 1.75 2006/11/11 08:45:17 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -13,13 +13,8 @@
 
 #include <dlfcn.h>
 
-#if VDRVERSNUM >= 10307
 #include <vdr/osd.h>
 #include <vdr/dvbspu.h>
-#else
-#include <vdr/osdbase.h>
-#endif
-
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
@@ -97,8 +92,6 @@ static const char *MAINMENUENTRY  = "Softdevice";
 #define SOFTDEB(out...)
 #endif
 
-#if VDRVERSNUM >= 10307
-
 #include "SoftOsd.h"
 // --- cSoftOsdProvider -----------------------------------------------
 class cSoftOsdProvider : public cOsdProvider {
@@ -121,73 +114,11 @@ cOsd * cSoftOsdProvider::CreateOsd(int Left, int Top)
     return osd;
 }
 
-#else
-
-// --- cSoftOsd -----------------------------------------------
-class cSoftOsd : public cOsdBase {
-private:
-  int xOfs, yOfs;
-  cVideoOut *videoOut;
-protected:
-  virtual bool OpenWindow(cWindow *Window);
-  virtual void CommitWindow(cWindow *Window);
-  virtual void ShowWindow(cWindow *Window);
-  virtual void HideWindow(cWindow *Window, bool Hide);
-  virtual void MoveWindow(cWindow *Window, int X, int Y);
-  virtual void CloseWindow(cWindow *Window);
-public:
-  cSoftOsd(cVideoOut *VideoOut, int XOfs, int XOfs);
-  virtual ~cSoftOsd();
-};
-
-cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
-    :cOsdBase(X, Y) {
-    videoOut=VideoOut;
-    xOfs=X; // this position should be recalculated
-    yOfs=Y;
-    //fprintf(stderr,"[softdevice] OSD-Position at %d x %d\n",X,Y);
-    videoOut->OpenOSD(X, Y);
-}
-cSoftOsd::~cSoftOsd() {
-    if (videoOut) {
-      videoOut->CloseOSD();
-      videoOut=0;
-    }
-    //fprintf(stderr,"[softdevice] OSD is off now\n");
-}
-
-bool cSoftOsd::OpenWindow(cWindow *Window) {
-    return videoOut->OpenWindow(Window);
-}
-
-void cSoftOsd::CommitWindow(cWindow *Window) {
-    videoOut->CommitWindow(Window);
-}
-
-void cSoftOsd::ShowWindow(cWindow *Window) {
-    videoOut->ShowWindow(Window);
-}
-void cSoftOsd::HideWindow(cWindow *Window, bool Hide) {
-    videoOut->HideWindow(Window, Hide);
-}
-
-void cSoftOsd::MoveWindow(cWindow *Window, int x, int y) {
-    videoOut->MoveWindow(Window, x, y);
-}
-
-void cSoftOsd::CloseWindow(cWindow *Window) {
-    videoOut->CloseWindow(Window);
-}
-
-#endif
-
 /* ----------------------------------------------------------------------------
  */
 cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 {
-#if VDRVERSNUM >= 10307
     spuDecoder = NULL;
-#endif
     fprintf(stderr,"[softdevice] Initializing Video Out\n");
     fprintf(stderr,
             "[softdevice] ffmpeg build(%d)\n",
@@ -392,8 +323,6 @@ int64_t cSoftDevice::GetSTC(void) {
   return (decoder?decoder->GetSTC():(int64_t)NULL);
 };
 
-#if VDRVERSNUM >= 10307
-
 void cSoftDevice::MakePrimaryDevice(bool On)
 {
   //fprintf(stderr,"cSoftDevice::MakePrimaryDevice\n");
@@ -413,20 +342,6 @@ cSpuDecoder *cSoftDevice::GetSpuDecoder(void)
     spuDecoder = new cDvbSpuDecoder();
   return spuDecoder;
 };
-
-#else
-
-cOsdBase *cSoftDevice::NewOsd(int X, int Y)
-{
-    return new cSoftOsd(videoOut,X,Y);
-}
-
-int cSoftDevice::ProvidesCa(int Ca)
-{
-    return 0;
-}
-
-#endif
 
 bool cSoftDevice::HasDecoder(void) const
 {
@@ -660,11 +575,11 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 }
 
 #if VDRVERSNUM >= 10338
-uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality, 
+uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
                 int SizeX, int SizeY)
 {
   Size=0;
-  if (!videoOut) 
+  if (!videoOut)
     return NULL;
 
   sPicBuffer *orig_pic;
@@ -687,7 +602,7 @@ uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
       0,0,orig_pic->width,orig_pic->height,
       0,0,SizeX,SizeY,
       0,0,0,0);
-  SizeX=dst.width; 
+  SizeX=dst.width;
   SizeY=dst.height;
   videoOut->UnlockBuffer(orig_pic);
   orig_pic=NULL;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.23 2006/09/09 10:39:43 lucke Exp $
+ * $Id: video-vidix.c,v 1.24 2006/11/11 08:45:17 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -573,7 +573,6 @@ void cVidixVideoOut::YUV(sPicBuffer *buf)
 
   if (currentPixelFormat == 0 || currentPixelFormat == 1)
   {
-#if VDRVERSNUM >= 10307
     if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE)
     {
       for (hi=0; hi < sheight; hi++){
@@ -614,7 +613,6 @@ void cVidixVideoOut::YUV(sPicBuffer *buf)
         dst += dstrides.v / 2;
       }
     } else
-#endif
     {
         int chromaWidth  = swidth >> 1;
         int chromaOffset = sxoff >> 1;
@@ -717,8 +715,6 @@ void cVidixVideoOut::YUV(sPicBuffer *buf)
   TIMINGS("End\n");
 }
 
-#if VDRVERSNUM >= 10307
-
 /* ---------------------------------------------------------------------------
  */
 void cVidixVideoOut::ClearOSD()
@@ -785,22 +781,6 @@ void cVidixVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
     stride=fb_line_len;
     dirtyLines=NULL;
 }
-
-#else
-
-/* ---------------------------------------------------------------------------
- */
-void cVidixVideoOut::Refresh()
-{
-
-    for (int i = 0; i < MAXNUMWINDOWS; i++)
-    {
-        if (layer[i] && layer[i]->visible)
-          layer[i]->Draw(fb, fb_line_len, NULL);
-    }
-}
-
-#endif
 
 /* ---------------------------------------------------------------------------
  */

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.24 2006/09/04 20:25:17 wachm Exp $
+ * $Id: video-xv.h,v 1.25 2006/11/11 08:45:17 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -172,12 +172,10 @@ public:
   virtual ~cXvVideoOut();
   virtual void ProcessEvents ();
   void ShowOSD ();
- 
+
   virtual void ReleasePicBuffer(int buf_num);
   virtual bool AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
                         int w, int h);
-
-#if VDRVERSNUM >= 10307
   virtual void ClearOSD();
   virtual void AdjustOSDMode();
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
@@ -187,13 +185,9 @@ public:
   virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
                   bool *&dirtyLines);
   virtual void CommitUnlockOsdSurface();
-#else
-  virtual void Refresh();
-#endif
-
   virtual void CloseOSD();
   virtual bool Initialize (void);
-  virtual bool Reconfigure (int format = 0, 
+  virtual bool Reconfigure (int format = 0,
                   int width = XV_SRC_WIDTH, int height = XV_SRC_HEIGHT);
   int GetFormat() const
   {return format;};
@@ -202,7 +196,7 @@ public:
                   XShmSegmentInfo &shminfo,int format, int &width, int &height);
   void DestroyXvImage(Display *dpy,XvPortID port,
                   XvImage *&xv_image,
-                  XShmSegmentInfo &shminfo ); 
+                  XShmSegmentInfo &shminfo );
   int PutXvImage(XvImage *xv_image, int edge_width=0, int edge_height=0);
   virtual void YUV(sPicBuffer *buf);
   virtual void Pause(void);

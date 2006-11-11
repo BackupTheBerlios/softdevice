@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.12 2006/11/07 19:19:05 wachm Exp $
+ * $Id: softdevice.h,v 1.13 2006/11/11 08:45:17 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -67,11 +67,6 @@ public:
 class cSoftDevice : public cDevice {
 private:
   cMpeg2Decoder *decoder;
-
-#if VDRVERSNUM < 10307
-  cOsdBase *OSD;
-#endif
-
   cVideoOut *videoOut;
   cAudioOut *audioOut;
   int       outMethod;
@@ -117,7 +112,7 @@ public:
   virtual void SetAudioTrackDevice(eTrackType Type);
 
 #if VDRVERSNUM >= 10338
-  virtual uchar *GrabImage(int &Size, bool Jpeg, int Quality, 
+  virtual uchar *GrabImage(int &Size, bool Jpeg, int Quality,
                   int SizeX, int SizeY);
 #endif
 
@@ -128,7 +123,6 @@ public:
 # endif
 
 #endif
-#if VDRVERSNUM >= 10307
   virtual int ProvidesCa(const cChannel *Channel) const;
 
 private:
@@ -138,10 +132,6 @@ public:
   virtual cSpuDecoder *GetSpuDecoder(void);
 
   virtual void MakePrimaryDevice(bool On);
-#else
-  int ProvidesCa(int Ca);
-  virtual cOsdBase *NewOsd(int x, int y);
-#endif
 };
 
 #endif

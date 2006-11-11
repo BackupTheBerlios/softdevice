@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.68 2006/10/03 12:14:45 lucke Exp $
+ * $Id: video.c,v 1.69 2006/11/11 08:45:17 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -26,10 +26,8 @@
 
 cVideoOut::cVideoOut(cSetupStore *setupStore)
 {
-#if VDRVERSNUM >= 10307
   OsdWidth=OSD_FULL_WIDTH;
   OsdHeight=OSD_FULL_HEIGHT;
-#endif
   // set some reasonable defaults
   fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
   fheight = lheight = old_dheight = dheight = sheight = 536;
@@ -94,7 +92,6 @@ void cVideoOut::init_OsdBuffers()
 void cVideoOut::Action()
 {
   ClearOSD();
-#if VDRVERSNUM >= 10307
   while(active)
   {
     OsdRefreshCounter++;
@@ -135,7 +132,6 @@ void cVideoOut::Action()
       oldPictureMutex.Unlock();
     }
   }
-#endif
 }
 
 /* ---------------------------------------------------------------------------
@@ -497,8 +493,6 @@ bool cVideoOut::IsSoftOSDMode()
   return current_osdMode == OSDMODE_SOFTWARE;
 }
 
-#if VDRVERSNUM >= 10307
-
 void cVideoOut::OpenOSD()
 {
   OSDDEB("OpenOSD\n");
@@ -517,193 +511,3 @@ void cVideoOut::AdjustOSDMode()
 {
   current_osdMode = OSDMODE_PSEUDO;
 }
-
-#else
-
-#include "SoftOsd.h"
-
-bool cVideoOut::OpenWindow(cWindow *Window) {
-    layer[Window->Handle()]= new cWindowLayer(Window->X0()+OSDxOfs,
-                                              Window->Y0()+OSDyOfs,
-                                              Window->Width(),
-                                              Window->Height(),
-                                              Bpp,
-                                              Xres, Yres, OSDpseudo_alpha);
-    return true;
-}
-
-void cVideoOut::OpenOSD(int X, int Y)
-{
-  // initialize Layers.
-  OSDxOfs = (Xres - 720) / 2 + X;
-  OSDyOfs = (Yres - 576) / 2 + Y;
-  osdMutex.Lock();
-  for (int i = 0; i < MAXNUMWINDOWS; i++)
-  {
-    layer[i]=0;
-  }
-  OSDpresent=true;
-  osdMutex.Unlock();
-}
-
-void cVideoOut::CloseOSD()
-{
-  osdMutex.Lock();
-  OSDpresent=false;
-  for (int i = 0; i < MAXNUMWINDOWS; i++)
-  {
-    if (layer[i])
-    {
-      delete(layer[i]);
-      layer[i]=0;
-    }
-  }
-  osdMutex.Unlock();
-}
-
-void cVideoOut::CommitWindow(cWindow *Window) {
-    layer[Window->Handle()]->Render(Window);
-    Refresh();
-}
-
-void cVideoOut::ShowWindow(cWindow *Window) {
-    layer[Window->Handle()]->visible=true;
-    layer[Window->Handle()]->Render(Window);
-    Refresh();
-}
-void cVideoOut::HideWindow(cWindow *Window, bool Hide) {
-    layer[Window->Handle()]->visible= ! Hide ;
-    Refresh();
-}
-
-void cVideoOut::MoveWindow(cWindow *Window, int x, int y) {
-    layer[Window->Handle()]->Move(x,y);
-    layer[Window->Handle()]->Render(Window);
-    Refresh();
-}
-
-void cVideoOut::CloseWindow(cWindow *Window) {
-    delete (layer[Window->Handle()]);
-    Refresh();
-}
-
-
-// --- cWindowLayer --------------------------------------------------
-cWindowLayer::cWindowLayer(int X, int Y, int W, int H, int Bpp,
-                           int Xres, int Yres, bool alpha) {
-    left=X;
-    top=Y;
-    width=W;
-    height=H;
-    bpp=Bpp;
-    xres=Xres;
-    yres=Yres;
-    visible=false;
-    OSDpseudo_alpha = alpha;
-    imagedata=(unsigned char *)malloc(W*H*4); // RGBA Screen memory
-    //printf("[video] Creating WindowLayer at %d x %d, (%d x %d)\n",X,Y,W,H);
-}
-
-void cWindowLayer::Region (int *x, int *y, int *w, int *h) {
-   *x = left;
-   *y = top;
-   *w = width;
-   *h = height;
-}
-
-
-cWindowLayer::~cWindowLayer() {
-    free(imagedata);
-}
-
-
-void cWindowLayer::Render(cWindow *Window) {
-    unsigned char * buf;
-    buf=imagedata;
-
-  for (int yp = 0; yp < height; yp++) {
-    for (int ix = 0; ix < width; ix++) {
-      eDvbColor c = Window->GetColor(*Window->Data(ix,yp));
-      buf[0]=c & 255; //Red
-      buf[1]=(c >> 8) & 255; //Green
-      buf[2]=(c >> 16) & 255; //Blue
-      buf[3]=(c >> 24) & 255; //Alpha*/
-      buf+=4;
-    }
-  }
-}
-
-void cWindowLayer::Move(int x, int y) {
-    left=x;
-    top=y;
-}
-
-void cWindowLayer::Draw(unsigned char * buf, int linelen, unsigned char * keymap) {
-    unsigned char * im;
-    im = imagedata;
-    int depth = (bpp + 7) / 8;
-    int dx = linelen - width * depth;
-    bool          prev_pix = false, do_dither;
-
-  buf += top * linelen + left * depth; // upper left corner
-  for (int y = top; y < top+height; y++) {
-    prev_pix = false;
-
-    for (int x = left; x < left+width; x++) {
-      if ( (im[3] != 0)
-          && (x >= 0) && (x < xres)
-          && (y >= 0) && (y < yres))  { // Alpha != 0 and in the screen
-        do_dither = ((x % 2 == 1 && y % 2 == 1) ||
-                      x % 2 == 0 && y % 2 == 0 || prev_pix);
-
-        //if (keymap) keymap[(x+y*linelen / depth) / 8] |= (1 << (x % 8));
-        switch (depth) {
-          case 4:
-            if ((do_dither && IS_BACKGROUND(im[3]) && OSDpseudo_alpha) ||
-                (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
-              *buf++ = 1; *buf++ = 1; *buf++ = 1; *buf++ = 255;
-            } else {
-              *(buf++)=im[2];
-              *(buf++)=im[1];
-              *(buf++)=im[0];
-              *(buf++)=im[3];
-            }
-            //buf++;
-            break;
-          case 3:
-            if ((do_dither && IS_BACKGROUND(im[3])) ||
-                (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
-              *buf++ = 1; *buf++ = 1; *buf++ = 1;
-            } else {
-              *(buf++)=im[2];
-              *(buf++)=im[1];
-              *(buf++)=im[0];
-            }
-            break;
-          case 2: // 565 RGB
-            if ((do_dither && IS_BACKGROUND(im[3])) ||
-                (im[3] == 255 && im[0] == 0 && im[1] == 0 && im[2] == 0)) {
-              *buf++ = 0x21; *buf++ = 0x08;
-            } else {
-              *(buf++)= ((im[2] >> 3)& 0x1F) | ((im[1] & 0x1C) << 3);
-              *(buf++)= (im[0] & 0xF8) | (im[1] >> 5);
-            }
-            break;
-          default:
-            dsyslog("[video] Unsupported depth %d exiting",depth);
-            exit(1);
-        }
-        prev_pix = !IS_BACKGROUND(im[3]);
-
-
-      } else  {
-        buf += depth; // skip this pixel
-      }
-      im +=4;
-    }
-    buf += dx;
-  }
-  return;
-}
-
-#endif

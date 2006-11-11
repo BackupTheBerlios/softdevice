@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.64 2006/11/05 21:32:25 lucke Exp $
+ * $Id: video-xv.c,v 1.65 2006/11/11 08:45:17 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1591,7 +1591,6 @@ void cXvVideoOut::CloseOSD()
   }
 }
 
-#if VDRVERSNUM >= 10307
 /* ---------------------------------------------------------------------------
  */
 void cXvVideoOut::ClearOSD()
@@ -1679,76 +1678,13 @@ void cXvVideoOut::CommitUnlockOsdSurface()
         pthread_mutex_unlock(&xv_mutex);
 }
 
-#else
-/* ---------------------------------------------------------------------------
- */
-void cXvVideoOut::Refresh()
-{
-  // refreshes the screen
-  // copy video Data
-  if (!videoInitialized)
-    return;
-  //if (OSDpresent)
-  {
-      int x0 = 0, y0 = 0, x1 = 0, y1 = 0, w = 0, h = 0,
-          cx0 = 0, cy0 = 0, cx1 = 0, cy1 = 0, cw = 0, ch = 0;
-
-    if (lastUpdate + 40 > getTimeMilis())
-    {
-      ;//return; // accept screen update only every 40 ms
-    }
-    lastUpdate = getTimeMilis();
-    for (int i = 0; i < MAXNUMWINDOWS; i++)
-    {
-      if (layer[i] && layer[i]->visible) {
-        layer[i]->Draw (osd_buffer, osd_image->bytes_per_line, NULL);
-        layer[i]->Region (&cx0, &cy0, &cw, &ch);
-        cx1 = cx0 + cw;
-        cy1 = cy0 + ch;
-        if (!x1 || !y1)
-        {
-          x0 = cx0; y0 = cy0; x1 = cx1; y1 = cy1;
-        }
-        else
-        {
-          if (cx0 < x0)
-            x0 = cx0;
-          if (cy0 < y0)
-            y0 = cy0;
-          if (cx1 > x1)
-            x1 = cx1;
-          if (cy1 > y1)
-            y1 = cy1;
-        }
-      }
-    }
-    w = x1 - x0;
-    h = y1 - y0;
-
-    if (w && h)
-    {
-      pthread_mutex_lock(&xv_mutex);
-      ShowOSD();
-      XSync(dpy, False);
-      pthread_mutex_unlock(&xv_mutex);
-
-    }
-  }
-}
-#endif
-
 /* ---------------------------------------------------------------------------
  */
 void cXvVideoOut::ShowOSD ()
 {
   if (current_osdMode==OSDMODE_PSEUDO ) {
-#if VDRVERSNUM >= 10307
     int x= lwidth > osd_max_width ?(lwidth - osd_max_width)/2+lxoff:lxoff;
     int y= lheight > osd_max_height ? (lheight - osd_max_height) / 2+lyoff:lyoff;
-#else
-    int x=lwidth > OSD_FULL_WIDTH ?(lwidth - OSD_FULL_WIDTH)/2+lxoff:lxoff;
-    int y=lheight > OSD_FULL_HEIGHT?(lheight - OSD_FULL_HEIGHT) / 2+lyoff:lyoff;
-#endif
     if (useShm)
       XShmPutImage (dpy, win, gc, osd_image,
           1,1,
@@ -1823,7 +1759,6 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
                 +buf->edge_width/2;
 
   if ( Py && Pu && Pv ) {
-#if VDRVERSNUM >= 10307
     /* -----------------------------------------------------------------------
      * don't know where those funny stride values (752,376) come from.
      * therefor  we have to copy line by line :-( .
@@ -1837,7 +1772,6 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
                            cutTop,cutBottom,cutLeft,cutRight);
     }
     else
-#endif
     {
       CopyPicBuf(&privBuf,buf,cutTop,cutBottom,cutLeft,cutRight);
     }
@@ -1893,15 +1827,6 @@ cXvVideoOut::~cXvVideoOut()
   videoInitialized = false;
   pthread_mutex_unlock(&xv_mutex);
 
-#if VDRVERSNUM < 10307
-  for (int i = 0; i < MAXNUMWINDOWS; i++)
-  {
-    if (layer[i])
-    {
-      delete(layer[i]);
-    }
-  }
-#endif
 }
 
 #ifdef USE_SUBPLUGINS

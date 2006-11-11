@@ -6,12 +6,11 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.22 2006/10/27 19:04:26 lucke Exp $
+ * $Id: SoftOsd.c,v 1.23 2006/11/11 08:45:17 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
 #include "utils.h"
-#if VDRVERSNUM >= 10307 // only for the new osd interface...
 
 //#define OSDDEB(out...) {printf("soft_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -1752,6 +1751,4 @@ void cSoftOsd::ScaleUpVert_MMX(uint32_t *dest, int linesize,
         };
         EMMS;
 };
-
-#endif   // VDRVERSNUM >= 10307
 

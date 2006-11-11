@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.9 2006/09/21 10:35:51 wachm Exp $
+ * $Id: SoftOsd.h,v 1.10 2006/11/11 08:45:17 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -26,13 +26,11 @@
 
 #include <vdr/config.h>
 
-#if VDRVERSNUM >= 10307 // only for the new osd interface...
-
 #include <vdr/osd.h>
 #include <vdr/thread.h>
 #include "video.h"
 
-#define X_OFFSET 0 
+#define X_OFFSET 0
 #define Y_OFFSET 0
 
 #define OSD_STRIDE (736)
@@ -72,7 +70,7 @@ protected:
     uint32_t *OSD_Bitmap;
     bool dirty_lines[OSD_HEIGHT+10];
     cMutex dirty_Mutex;
-    
+
     void (*OutputConvert)(uint8_t * dest, color * pixmap, int Pixel);
     uint8_t *pixelMask;
     enum PixFormat {
@@ -84,9 +82,9 @@ protected:
     };
     PixFormat bitmap_Format;
 
-    void ConvertPalette(tColor *dest_palette, const tColor *orig_palette, 
+    void ConvertPalette(tColor *dest_palette, const tColor *orig_palette,
 		    int maxColors);
-   
+
     bool active;
     bool close;
     int ScreenOsdWidth;
@@ -97,24 +95,24 @@ public:
     virtual void Flush(void);
 
 protected:
-    bool SetMode(int Depth, bool HasAlpha, bool AlphaInversed, 
+    bool SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
                  bool IsYUV, uint8_t *PixelMask=NULL);
-    
+
     bool FlushBitmaps(bool OnlyDirty);
     bool DrawConvertBitmap(cBitmap *Bitmap, bool OnlyDirty);
-    
-    void OsdCommit(); 
+
+    void OsdCommit();
     // may only be called if the caller holds voutMutex
-    
+
     void Clear();
     virtual void Action();
-    
+
     static void ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_RGB24(uint8_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel);
-    static void ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap, 
+    static void ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
                     int Pixel);
 
     void CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel);
@@ -130,7 +128,7 @@ protected:
 		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll=false);
-  
+
     void NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
 		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
@@ -140,7 +138,7 @@ protected:
 		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll=false);
-    
+
 
     // ARGB packed modes
     void CopyToBitmap(uint8_t * dest, int linesize,
@@ -157,19 +155,18 @@ protected:
                     bool *dirtyLines=NULL);
 
 
-    
+
  private:
     void NoScaleHoriz_MMX(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
     void ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
     void ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width, color * pixmap,int Pixel);
-    void ScaleDownVert_MMX(uint32_t * dest, int linesize, int32_t new_pixel_height, 
+    void ScaleDownVert_MMX(uint32_t * dest, int linesize, int32_t new_pixel_height,
                 int start_pos,
                 color ** pixmap, int Pixel);
-    void ScaleUpVert_MMX(uint32_t *dest, int linesize, int32_t new_pixel_height, 
+    void ScaleUpVert_MMX(uint32_t *dest, int linesize, int32_t new_pixel_height,
                 int start_pos,
                 color **pixmap, int Pixel);
 
 };
 
-#endif //VDRVERSUM >= 10307
 #endif

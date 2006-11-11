@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.72 2006/09/29 19:24:57 lucke Exp $
+ * $Id: video-dfb.c,v 1.73 2006/11/11 08:45:17 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -1001,8 +1001,6 @@ void cDFBVideoOut::Pause(void)
 {
 }
 
-#if VDRVERSNUM >= 10307
-
 /* ----------------------------------------------------------------------------
  */
 void cDFBVideoOut::OpenOSD ()
@@ -1158,46 +1156,6 @@ void cDFBVideoOut::GetOSDDimension( int &Width, int &Height, int &xPan, int &yPa
   Height=Yres;
   xPan = yPan = 0;
 }
-
-#else
-
-/* ---------------------------------------------------------------------------
- */
-void cDFBVideoOut::Refresh()
-{
-    int               pitch;
-    uint8_t           *dst;
-    IDirectFBSurface  *tmpSurface;
-
-  if (!videoInitialized)
-    return;
-
-  tmpSurface = (useStretchBlit) ? osdSurface : scrSurface;
-
-  try
-  {
-    tmpSurface->Clear(0,0,0,clearAlpha);
-    tmpSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
-    for (int i = 0; i < MAXNUMWINDOWS; i++)
-    {
-      if (layer[i] && layer[i]->visible)
-        layer[i]->Draw(dst, pitch, NULL);
-    }
-    tmpSurface->Unlock();
-
-    if (useStretchBlit)
-      OSDpresent = true;
-
-    tmpSurface->Flip();
-  }
-  catch (DFBException *ex)
-  {
-    fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
-             ex->GetAction(), ex->GetResult());
-    delete ex;
-  }
-}
-#endif
 
 /* ---------------------------------------------------------------------------
  */

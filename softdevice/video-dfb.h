@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.23 2006/09/29 19:24:57 lucke Exp $
+ * $Id: video-dfb.h,v 1.24 2006/11/11 08:45:17 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -68,7 +68,6 @@ class cDFBVideoOut : public cVideoOut {
     void ProcessEvents ();
     void GetDisplayFrameTime();
 
-#if VDRVERSNUM >= 10307
     bool *dirtyLines;
     IDirectFBSurface  *tmpOsdSurface;
     virtual void OpenOSD();
@@ -80,10 +79,6 @@ class cDFBVideoOut : public cVideoOut {
     virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
                                    bool *&dirtyLines);
     virtual void CommitUnlockOsdSurface();
-#else
-    virtual void Refresh();
-#endif
-
     virtual void YUV(sPicBuffer *Pic);
     virtual void Pause(void);
     virtual void CloseOSD();
