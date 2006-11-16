@@ -2,6 +2,11 @@ Changelog
 2006-11-16:
    - fix wrong colors when using GRAB with the cle266 hardware decoder 
      (patch by Laz)
+   - better colorkey support in SoftOsd.c, with interface to video.c
+   - fix a bug which causes bad resolution on upscaling
+   - fix a bug which causes segfaults when upscaling to huge images
+   - reintroduce the chessboard pattern for pseudo alpha blending
+   - use WRITE_RGB macros from utils.h
 2006-11-11:
    - !! removed support for vdr versions older than vdr-1.3.7 !!
 2006-11-08:
