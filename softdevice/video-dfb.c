@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.73 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video-dfb.c,v 1.74 2006/11/16 20:41:36 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -1462,8 +1462,8 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
 
       // at this point I know that the buffer is not already allocated
       PicBuffer[i].pixel[0] = (uint8_t*) buf;
-      PicBuffer[i].pixel[2] = (uint8_t*) buf + height * mpegfb_stride;
-      PicBuffer[i].pixel[1] = (uint8_t*) PicBuffer[i].pixel[2]
+      PicBuffer[i].pixel[1] = (uint8_t*) buf + height * mpegfb_stride;
+      PicBuffer[i].pixel[2] = (uint8_t*) PicBuffer[i].pixel[1]
                                          +(height>>1)*(mpegfb_stride>>1);
       PicBuffer[i].stride[0] = mpegfb_stride;
       PicBuffer[i].stride[1] = PicBuffer[i].stride[2] = mpegfb_stride>>1;
