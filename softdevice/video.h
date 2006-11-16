@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.46 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video.h,v 1.47 2006/11/16 21:03:18 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -185,6 +185,7 @@ public:
     // clear the OSD buffer
 
     virtual void OpenOSD();
+    virtual int GetOSDColorkey();
     virtual void CloseOSD();
 
     virtual void AdjustOSDMode();

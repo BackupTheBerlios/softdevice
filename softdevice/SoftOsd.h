@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.10 2006/11/11 08:45:17 lucke Exp $
+ * $Id: SoftOsd.h,v 1.11 2006/11/16 21:03:18 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -65,13 +65,14 @@ private:
     cMutex voutMutex; // lock all operations on videoOut!
     cVideoOut *videoOut;
 protected:
+    static int colorkey;
     int      xOfs, yOfs;
     int      xPan, yPan;
     uint32_t *OSD_Bitmap;
     bool dirty_lines[OSD_HEIGHT+10];
     cMutex dirty_Mutex;
 
-    void (*OutputConvert)(uint8_t * dest, color * pixmap, int Pixel);
+    void (*OutputConvert)(uint8_t * dest, color * pixmap, int Pixel, int odd);
     uint8_t *pixelMask;
     enum PixFormat {
 	    PF_None,
@@ -108,12 +109,16 @@ protected:
     virtual void Action();
 
     static void ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel);
-    static void ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel);
-    static void ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel);
-    static void ARGB_to_RGB24(uint8_t * dest, color * pixmap, int Pixel);
-    static void ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel);
+    static void ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel,
+                    int odd);
+    static void ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel,
+                    int odd);
+    static void ARGB_to_RGB24(uint8_t * dest, color * pixmap, int Pixel,
+                    int odd);
+    static void ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel,
+                    int odd);
     static void ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
-                    int Pixel);
+                    int Pixel, int odd);
 
     void CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel);
 

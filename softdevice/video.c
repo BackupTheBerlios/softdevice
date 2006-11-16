@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.69 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video.c,v 1.70 2006/11/16 21:03:18 wachm Exp $
  */
 
 #include <fcntl.h>
@@ -496,6 +496,12 @@ bool cVideoOut::IsSoftOSDMode()
 void cVideoOut::OpenOSD()
 {
   OSDDEB("OpenOSD\n");
+}
+
+int cVideoOut::GetOSDColorkey()
+{
+  OSDDEB("GetOSDColorKey\n");
+  return 0x000000;
 }
 
 void cVideoOut::CloseOSD()
