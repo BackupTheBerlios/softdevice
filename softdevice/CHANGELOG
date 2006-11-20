@@ -1,4 +1,7 @@
 Changelog
+2006-11-20:
+   - send fake key events to disable any screen saver (patch by 
+     peterw2k@vdr-portal)
 2006-11-16:
    - fix wrong colors when using GRAB with the cle266 hardware decoder 
      (patch by Laz)

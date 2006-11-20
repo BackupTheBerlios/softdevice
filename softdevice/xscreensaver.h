@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: xscreensaver.h,v 1.3 2005/09/10 19:43:21 lucke Exp $
+ * $Id: xscreensaver.h,v 1.4 2006/11/20 19:36:31 wachm Exp $
  */
 #ifndef XSCREENSAVER_H
 #define XSCREENSAVER_H
@@ -54,6 +54,7 @@ extern Status DPMSInfo(Display *, CARD16 *, BOOL *);
 #endif
 
 #define INTERVAL 50 // number of seconds between each time we ping xscreensaver
+#define INTERVAL_KEYEVENT 50 // number of seconds between each time we send a key event
 
 // Our xscreensaver handler class
 class cScreensaver {
@@ -62,6 +63,7 @@ private:
   Window window;
   bool disabled;
   int last;
+  int lastKeyEvent;
   Atom XA_SCREENSAVER_VERSION;
   Atom XA_SCREENSAVER;
   Atom XA_DEACTIVATE;
@@ -72,6 +74,7 @@ public:
   cScreensaver(Display *dpy);
   ~cScreensaver();
   void MaybeSendDeactivate();
+  void MaybeSendKeyEvent();
   void DisableScreensaver(bool disable);
 };
 

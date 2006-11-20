@@ -18,7 +18,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  * 
- * $Id: xscreensaver.c,v 1.4 2006/04/23 19:55:53 wachm Exp $
+ * $Id: xscreensaver.c,v 1.5 2006/11/20 19:36:31 wachm Exp $
  */
 
 #ifndef STAND_ALONE
@@ -29,6 +29,7 @@
 
 #include <string.h>
 #include "xscreensaver.h"
+#include <X11/keysym.h>
 #include "utils.h"
 
 static XErrorHandler old_handler = 0;
@@ -72,12 +73,14 @@ cScreensaver::cScreensaver(Display *dpy) {
   }
   disabled = false; // don't disable screensaver until asked to
   last = 0;
+  lastKeyEvent = 0;
 }
 
 void cScreensaver::DisableScreensaver(bool disable) {
   struct timeval current;
   gettimeofday(&current, NULL);
   last = current.tv_sec;
+  lastKeyEvent = current.tv_sec;
   this->disabled = disable;
 
 #ifdef LIBXDPMS_SUPPORT
@@ -106,6 +109,46 @@ void cScreensaver::DisableScreensaver(bool disable) {
   }
 #endif
 }
+
+void cScreensaver::MaybeSendKeyEvent(void) {
+  if (disabled) {
+    struct timeval current;
+    gettimeofday(&current, NULL);
+    if (current.tv_sec - lastKeyEvent > INTERVAL_KEYEVENT) {
+      lastKeyEvent = current.tv_sec;
+
+      dsyslog("[softdevice-xscreensaver]: faking left shift pushing\n");
+      XKeyEvent keyEvent;
+      keyEvent.window = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
+      keyEvent.root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
+      keyEvent.display = dpy;
+      keyEvent.subwindow = None;
+      keyEvent.time = CurrentTime;
+      keyEvent.x = 1;
+      keyEvent.y = 1;
+      keyEvent.x_root = 1;
+      keyEvent.y_root = 1;
+      keyEvent.same_screen = True;
+      keyEvent.type = KeyPress; 
+      keyEvent.keycode = XKeysymToKeycode(this->dpy, XK_Shift_L);
+
+      if (!XSendEvent (dpy, window, True, KeyPressMask, (XEvent *)&keyEvent)) {
+        esyslog("[softdevice-xscreensaver]: failed to send left shift key event\n");
+        return;
+      }
+      XSync (dpy, 0);
+
+      keyEvent.type = KeyRelease;
+
+      if (!XSendEvent (dpy, window, True, KeyPressMask, (XEvent *)&keyEvent)) {
+        esyslog("[softdevice-xscreensaver]: failed to send left shift released key event\n");
+        return;
+      }
+      XSync (dpy, 0);
+    }
+  }
+}
+
 
 void cScreensaver::MaybeSendDeactivate(void) {
   if (window && disabled) {
