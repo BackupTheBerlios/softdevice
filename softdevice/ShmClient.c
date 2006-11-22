@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.17 2006/11/07 19:31:26 wachm Exp $
+ * $Id: ShmClient.c,v 1.18 2006/11/22 22:16:07 wachm Exp $
  */
 
 #include <signal.h>
@@ -41,11 +41,11 @@ class cShmRemote : public cSoftRemote {
                 ~cShmRemote()
                 {};
 
-                virtual bool PutKey(uint64 Code, bool Repeat = false,
+                virtual bool PutKey(uint64_t Code, bool Repeat = false,
                                 bool Release = false);
 };
 
-bool cShmRemote::PutKey(uint64 Code, bool Repeat,
+bool cShmRemote::PutKey(uint64_t Code, bool Repeat,
                                 bool Release) {
         if (ctl)
         {

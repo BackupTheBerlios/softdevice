@@ -1,4 +1,7 @@
 Changelog
+2006-11-22:
+   - fix ShmClient not forwarding to key presses to vdr on AMD64
+     (patch by peterw2k@vdr-portal)
 2006-11-20:
    - send fake key events to disable any screen saver (patch by 
      peterw2k@vdr-portal)
