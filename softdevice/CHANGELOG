@@ -1,5 +1,7 @@
 Changelog
 2006-11-22:
+   - remove cShmVideo::Process() method, and instead signal PICT_SIG
+     from cShmRemote to simulate a timeout.
    - fix ShmClient not forwarding to key presses to vdr on AMD64
      (patch by peterw2k@vdr-portal)
 2006-11-20:

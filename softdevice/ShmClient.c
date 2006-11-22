@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.18 2006/11/22 22:16:07 wachm Exp $
+ * $Id: ShmClient.c,v 1.19 2006/11/22 22:35:54 wachm Exp $
  */
 
 #include <signal.h>
@@ -32,17 +32,21 @@ void sig_handler(int signal) {
         active=false;
 };
 
-class cShmRemote : public cSoftRemote {
+class cShmRemote : public cSoftRemote, cThread {
+        protected:
+                bool running;
         public:
                 cShmRemote(const char *Name)
-                        : cSoftRemote(Name)
+                        : cSoftRemote(Name), running(false)
                         {};
 
                 ~cShmRemote()
-                {};
+                { running=false; };
 
                 virtual bool PutKey(uint64_t Code, bool Repeat = false,
                                 bool Release = false);
+
+                virtual void Action();
 };
 
 bool cShmRemote::PutKey(uint64_t Code, bool Repeat,
@@ -62,6 +66,17 @@ bool cShmRemote::PutKey(uint64_t Code, bool Repeat,
                 SHMDEB("signal new key\n");
         };
         return true;
+};
+
+void cShmRemote::Action() {
+        running=true;
+        while (running) {
+                // I don't know if there is a timeout mechanism (which would probably the better solution),
+                // so we just signal every once and a while so that the client processes its events.
+                if (ctl)
+                        sem_sig_unlock(ctl->semid,PICT_SIG);
+                usleep(113000);
+        };
 };
 
 int main(int argc, char **argv) {
