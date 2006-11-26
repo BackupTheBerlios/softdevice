@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.12 2006/11/07 18:13:19 wachm Exp $
+ * $Id: utils.h,v 1.13 2006/11/26 18:52:02 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -166,14 +166,23 @@ void * fast_memcpy(void * to, const void * from, size_t len);
         } while (0)
 #define SIZE_BGR24  3
 
-
 #define WRITE_RGB16(dst,r,g,b) \
         do { \
-            ((uint8_t *)dst)[0]=((b >> 3)& 0x1F) | ((g & 0x1C) << 3); \
-            ((uint8_t *)dst)[1]=(r & 0xF8) | (g >> 5); \
+            ((uint8_t *)dst)[0]=(((b) >> 3)& 0x1F) | (((g) & 0x1C) << 3); \
+            ((uint8_t *)dst)[1]=((r) & 0xF8) | ((g) >> 5); \
         } while (0)
 #define SIZE_RGB16  2
 
+#define WRITE_RGB15(dst,r,g,b) \
+        do { \
+            ((uint8_t *)dst)[0]=(((b) >> 3)& 0x1F) | (((g) & 0x1F) << 3); \
+            ((uint8_t *)dst)[1]=(((r) & 0xF8)>>1) | ((g) >> 6); \
+        } while (0)
+#define SIZE_RGB15  2
+
+#define ARGB_TO_RGB(rgb,dst,src) \
+        WRITE_##rgb(dst,((src) >> 16) & 0xff,\
+                        ((src) >>  8) & 0xff,\
+                        ((src)      ) & 0xff )
 
 #endif
-
