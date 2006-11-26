@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: shm-common.h,v 1.6 2006/09/04 20:25:17 wachm Exp $
+ * $Id: shm-common.h,v 1.7 2006/11/26 19:00:17 wachm Exp $
  */
 #ifndef __SHM_COMMON_H__
 #define __SHM_COMMON_H__
@@ -18,7 +18,7 @@
 #include <sys/sem.h> 
 
 
-#define CTL_KEY 5679 
+#define CTL_KEY 5680
 
 union semun {
         int val;                  
@@ -68,6 +68,7 @@ struct ShmCtlBlock {
         int osd_depth;
         int osd_stride;
         int new_osd;
+        int colorkey;
         
         /* is a client attached */
         int attached;

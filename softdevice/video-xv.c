@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.66 2006/11/20 19:36:31 wachm Exp $
+ * $Id: video-xv.c,v 1.67 2006/11/26 19:00:17 wachm Exp $
  */
 
 #include <unistd.h>
@@ -32,6 +32,8 @@
 #define PATCH_VERSION "2006-11-05"
 
 #define NO_DIRECT_RENDERING
+//#define COLOR_KEY 0x00000000
+#define COLOR_KEY 0x001a0f00LL
 
 int pixFormat[3]={
         FOURCC_I420,
@@ -41,6 +43,7 @@ int pixFormat[3]={
 static pthread_mutex_t  xv_mutex = PTHREAD_MUTEX_INITIALIZER;
 cSoftRemote        *xvRemote = NULL;
 static cScreensaver     *xScreensaver = NULL;
+static int colorkey;
 
 static XErrorHandler old_handler = 0;
 static Bool got_error = False;
@@ -1025,12 +1028,26 @@ init_osd:
 		              osd_buffer = NULL;
           }
   };
+  InitPicBuffer(&osdBuf);
   if (osd_image) {
           Bpp=osd_image->bits_per_pixel;
           fprintf(stderr, "[XvVideoOut]: got osd_image: width"
-                          " %d height %d, bytes per line %d\n",
+                          " %d height %d, bytes per line %d, Bpp %d\n",
                           osd_max_width, osd_max_height,
-                          osd_image->bytes_per_line);
+                          osd_image->bytes_per_line,osd_image->bits_per_pixel);
+          switch (osd_image->bits_per_pixel) {
+                  case 32 : osdBuf.format=PIX_FMT_RGBA32;
+                            break;
+                  case 24 : osdBuf.format=PIX_FMT_RGB24;
+                            break;
+                  case 16 : 
+                  default:
+                           osdBuf.format=PIX_FMT_RGB555;
+          };
+          osdBuf.max_width=osd_max_width;
+          osdBuf.max_height=osd_max_height;
+          osdBuf.pixel[0]=(uint8_t*)osd_image->data;
+          osdBuf.stride[0]=osd_image->bytes_per_line;
   };
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
 
@@ -1105,6 +1122,9 @@ bool cXvVideoOut::Reconfigure(int format, int width, int height)
   xv_initialized = 0;
   xvWidth=width;
   xvHeight=height;
+
+//  pthread_mutex_unlock(&xv_mutex);
+//  return false;
 
   /*
    * So let's first check for an available adaptor and port
@@ -1220,7 +1240,23 @@ bool cXvVideoOut::Reconfigure(int format, int width, int height)
 
   attributeStore.SetXInfo(dpy,port,setupStore);
   attributeStore.Save();
-  attributeStore.SetColorkey(0x00000000);
+
+  switch (osdBuf.format) {
+          case PIX_FMT_RGBA32:
+                  ARGB_TO_RGB(RGB32,&colorkey,COLOR_KEY);
+                  break;
+          case PIX_FMT_RGB24:
+                  ARGB_TO_RGB(RGB24,&colorkey,COLOR_KEY);
+                  break;
+          case PIX_FMT_RGB555:
+          default:
+                  ARGB_TO_RGB(RGB16,&colorkey,COLOR_KEY);
+                  break;
+  };               
+  dsyslog("[XvVideoOut]: using color key 0x%0x",colorkey);
+  FillPicBuffer(&osdBuf,colorkey);
+  attributeStore.SetColorkey(colorkey);
+  //attributeStore.SetColorkey(0x00000000);
   attributeStore.SetValue("XV_AUTOPAINT_COLORKEY",0);
 
   /*
@@ -1281,6 +1317,7 @@ retry_image:
   ClearXvArea (0, 128, 128);
   rc = PutXvImage(xv_image,privBuf.edge_width,privBuf.edge_height);
   rc = XClearArea (dpy, win, 0, 0, 0, 0, True);
+  ShowOSD();
   rc = XSync(dpy, False);
 
   if (got_error)
@@ -1575,23 +1612,6 @@ bool cXvVideoOut::Resume(void)
   return Reconfigure(currentPixelFormat);
 }
 
-
-/* ---------------------------------------------------------------------------
- */
-void cXvVideoOut::CloseOSD()
-{
-  cVideoOut::CloseOSD();
-  if (videoInitialized)
-  {
-    memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
-    pthread_mutex_lock(&xv_mutex);
-    XClearArea (dpy, win, 0, 0, 0, 0, False);
-    ShowOSD();
-    XSync(dpy, False);
-    pthread_mutex_unlock(&xv_mutex);
-  }
-}
-
 /* ---------------------------------------------------------------------------
  */
 void cXvVideoOut::ClearOSD()
@@ -1599,8 +1619,8 @@ void cXvVideoOut::ClearOSD()
   cVideoOut::ClearOSD();
   if ( videoInitialized ) {
     pthread_mutex_lock(&xv_mutex);
-    memset (osd_buffer, 0, osd_image->bytes_per_line * osd_max_height);
-    XClearArea (dpy, win, 0, 0, 0, 0, False);
+    FillPicBuffer(&osdBuf,colorkey);
+    ShowOSD();
     XSync(dpy, False);
     pthread_mutex_unlock(&xv_mutex);
   };
@@ -1612,7 +1632,14 @@ void cXvVideoOut::AdjustOSDMode()
 {
   if (xv_initialized)
           current_osdMode = setupStore->osdMode;
-  else current_osdMode = OSDMODE_PSEUDO;
+  else current_osdMode = OSDMODE_SOFTWARE;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cXvVideoOut::GetOSDColorkey()
+{
+  return COLOR_KEY;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1683,9 +1710,10 @@ void cXvVideoOut::CommitUnlockOsdSurface()
  */
 void cXvVideoOut::ShowOSD ()
 {
-  if (current_osdMode==OSDMODE_PSEUDO ) {
+//  if (current_osdMode==OSDMODE_PSEUDO ) {
     int x= lwidth > osd_max_width ?(lwidth - osd_max_width)/2+lxoff:lxoff;
     int y= lheight > osd_max_height ? (lheight - osd_max_height) / 2+lyoff:lyoff;
+    //printf(" %d, %d, off %d, %d dim %d, %d \n",1,1,x,y,lwidth-1,lheight-1);fflush(stdout);
     if (useShm)
       XShmPutImage (dpy, win, gc, osd_image,
           1,1,
@@ -1698,7 +1726,7 @@ void cXvVideoOut::ShowOSD ()
           1,
           x,y,
           lwidth-1,lheight-1);
-  }
+  //}
 }
 
 /* ---------------------------------------------------------------------------
@@ -1712,13 +1740,55 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
           if (xv_initialized)
                   DeInitXv();
           if ( !Reconfigure(setupStore->pixelFormat,
-                                  buf->max_width,buf->max_height) )
+                                  buf->max_width,buf->max_height) ) {
+                  printf("reconfigure failed\n");
                   return;
+          };
   };
 
-  if (!videoInitialized || !xv_initialized)
+  if (!videoInitialized)
     return;
 
+  if (!xv_initialized) { 
+          // no xv, use software scaler and yuv->rgb conversion
+          pthread_mutex_lock(&xv_mutex);
+          if (aspect_changed ||
+                          cutTop != setupStore->cropTopLines ||
+                          cutBottom != setupStore->cropBottomLines ||
+                          cutLeft != setupStore->cropLeftCols ||
+                          cutRight != setupStore->cropRightCols)
+          {
+                  XClearArea(dpy, win, 0, 0, 0, 0, False);
+                  aspect_changed = 0;
+                  cutTop = setupStore->cropTopLines;
+                  cutBottom = setupStore->cropBottomLines;
+                  cutLeft = setupStore->cropLeftCols;
+                  cutRight = setupStore->cropRightCols;
+                  ClearPicBuffer(&osdBuf);
+          }
+          if ( OSDpresent ) {
+                  CopyScalePicBufAlphaBlend(&osdBuf,buf,
+                                  sxoff, syoff,
+                                  swidth, sheight,
+                                  0,  0,
+                                  lwidth, lheight,
+                                  OsdPy,OsdPu,OsdPv,
+                                  OsdPAlphaY,OsdPAlphaUV,OSD_FULL_WIDTH,
+                                  cutTop,cutBottom,cutLeft,cutRight);
+          } else {
+                  CopyScalePicBuf(&osdBuf, buf,                   
+                                  sxoff, syoff,
+                                  swidth, sheight,
+                                  0,  0,    
+                                  lwidth, lheight,
+                                  0,0,0,0);
+          };
+          ShowOSD();
+          XSync(dpy, False);
+          pthread_mutex_unlock(&xv_mutex);
+          return;
+  };
+  
   pthread_mutex_lock(&xv_mutex);
   if (aspect_changed ||
       cutTop != setupStore->cropTopLines ||

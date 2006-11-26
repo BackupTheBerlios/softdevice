@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.14 2006/11/07 19:40:10 wachm Exp $
+ * $Id: video-shm.c,v 1.15 2006/11/26 19:00:17 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -274,15 +274,62 @@ void cShmVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
         dirtyLines=NULL;
 };
 
+int cShmVideoOut::GetOSDColorkey() {
+        SHMDEB("GetOSDColorkey\n");
+
+        CheckShmIDs();
+        if (!ctl)
+                return 0x000000;
+          
+        return ctl->colorkey;
+};
+
 void cShmVideoOut::ClearOSD() {
         SHMDEB("ClearOsd\n");
         cVideoOut::ClearOSD();
-        if (current_osdMode == OSDMODE_SOFTWARE)
+/*        if (current_osdMode == OSDMODE_SOFTWARE)
+                return;
+*/
+        CheckShmIDs();
+        if (!ctl)
                 return;
 
-        CheckShmIDs();
-        if (osd_surface)
-                memset (osd_surface, 0, ctl->osd_stride *ctl->osd_max_height);
+        SHMDEB("osd_surface %p dim: %d,%d depth %d colorkey %d \n",
+                        osd_surface,ctl->osd_max_height,ctl->osd_max_width,
+                        ctl->osd_depth,ctl->colorkey);
+        
+        if (osd_surface) {
+                uint32_t *dst32=(uint32_t*)osd_surface;
+                uint16_t *dst16=(uint16_t*)osd_surface;
+                uint8_t *dst8=(uint8_t*)osd_surface;
+                int i=ctl->osd_max_height*ctl->osd_max_width;
+                switch (ctl->osd_depth) {
+                        case 32: 
+                                while (i) {
+                                        dst32[i]=ctl->colorkey;
+                                        i--;
+                                };
+                                break;
+                        case 16: 
+                                while (i) {
+                                        ARGB_TO_RGB(RGB16,dst16,
+                                                        ctl->colorkey);
+                                        dst16++;
+                                        i--;
+                                };
+                                break;
+                        case 24: 
+                                while (i) {
+                                        ARGB_TO_RGB(RGB24,dst8,
+                                                        ctl->colorkey);
+                                        dst8+=3;
+                                        i--;
+                                };
+                                break;
+                        default:
+                                memset (osd_surface, 0, ctl->osd_stride *ctl->osd_max_height);
+                };
+        };
         ctl->new_osd++;
         sem_sig_unlock(ctl->semid,PICT_SIG);
 };
@@ -292,13 +339,6 @@ void cShmVideoOut::CommitUnlockOsdSurface() {
         ctl->new_osd++;        
         sem_sig_unlock(ctl->semid,PICT_SIG);
 };
-
-void cShmVideoOut::ProcessEvents() {
-        // I don't know if there is a timeout mechanism (which would probably the better solution),
-        // so we just signal every once and a while so that the client processes its events.
-        SIGDEB("ProcessEvents sending signal\n");
-        sem_sig_unlock(ctl->semid,PICT_SIG);
-}
 
 void cShmVideoOut::Suspend() {
         SHMDEB("Suspend shm server\n");
@@ -350,7 +390,6 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
         ctl->new_afd=current_afd;
         ctl->new_asp=GetAspect_F();
         if (OSDpresent && current_osdMode==OSDMODE_SOFTWARE) {
-
                 CopyPicBufAlphaBlend(&privBuf,buf,
                                 OsdPy,OsdPu,OsdPv,OsdPAlphaY,OsdPAlphaUV, OSD_FULL_WIDTH,
                                 cutTop,cutBottom,cutLeft,cutRight); 

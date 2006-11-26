@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.25 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video-xv.h,v 1.26 2006/11/26 19:00:17 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -145,6 +145,7 @@ public:
   int               osd_max_width,osd_max_height;
   int               xv_max_width,xv_max_height;
   sPicBuffer        privBuf;
+  sPicBuffer        osdBuf;
 
   XvImage           *dr_image[LAST_PICBUF];
   XShmSegmentInfo   dr_shminfo[LAST_PICBUF];
@@ -178,6 +179,7 @@ public:
                         int w, int h);
   virtual void ClearOSD();
   virtual void AdjustOSDMode();
+  virtual int GetOSDColorkey();
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
                                int &xPan, int &yPan);
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
@@ -185,7 +187,6 @@ public:
   virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
                   bool *&dirtyLines);
   virtual void CommitUnlockOsdSurface();
-  virtual void CloseOSD();
   virtual bool Initialize (void);
   virtual bool Reconfigure (int format = 0,
                   int width = XV_SRC_WIDTH, int height = XV_SRC_HEIGHT);

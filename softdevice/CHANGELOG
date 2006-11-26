@@ -3,6 +3,10 @@ Changelog
    - use brackets in WRITE_RGB16 macro, introduce WRITE_RGB15 (untested)
      and ARGB_TO_RGB.
    - introduce FillPicBuffer()
+   - make it possible to use a color key other than 0x000000 for video-xv,
+     video-shm and ShmClient
+   - change the default color key of xv-out to 0x001a0f00LL
+   - add support for X11 drivers without xv support
 2006-11-22:
    - remove cShmVideo::Process() method, and instead signal PICT_SIG
      from cShmRemote to simulate a timeout.

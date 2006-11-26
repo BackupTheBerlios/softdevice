@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.19 2006/11/22 22:35:54 wachm Exp $
+ * $Id: ShmClient.c,v 1.20 2006/11/26 19:00:17 wachm Exp $
  */
 
 #include <signal.h>
@@ -216,6 +216,7 @@ int main(int argc, char **argv) {
         ctl->osd_max_height=vout->osd_max_height;
         vout->GetOSDDimension(ctl->osd_width,ctl->osd_height,
                               ctl->osd_xPan,ctl->osd_yPan);
+        ctl->colorkey=vout->GetOSDColorkey();
         //printf("osd_shmid %d stride %d\n",ctl->osd_shmid,ctl->osd_stride);
 
         ctl->key=NO_KEY;
