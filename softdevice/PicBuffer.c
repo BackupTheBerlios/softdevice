@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.14 2006/11/08 21:24:14 wachm Exp $
+ * $Id: PicBuffer.c,v 1.15 2006/11/26 18:53:41 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -38,10 +38,72 @@ void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
     dest->pict_type=orig->pict_type;
 };
 
+void FillPicBuffer(sPicBuffer *Pic, int color) {
+        if (!Pic || !Pic->pixel[0])
+                return;
+        PICDEB("FillPicBuffer Pic %p pixel[0] %p max_height %d stride[0] %d\n",
+                        Pic, Pic->pixel[0], Pic->max_height, Pic->stride[0]);
+        int pixel_size=GetFormatBPP(Pic->format); 
+
+        switch (Pic->format) {
+                case PIX_FMT_RGB24 :
+                case PIX_FMT_BGR24 :
+                        {
+                                uint8_t *tmp=(uint8_t *)Pic->pixel[0];
+                                int i=Pic->max_height*
+                                      Pic->max_width*pixel_size;
+                                while (--i>0) {
+                                        *tmp=(color & 0xFF);
+                                        tmp++;
+                                        *tmp=((color>>8) & 0xFF);
+                                        tmp++;
+                                        *tmp=((color>>16) & 0xFF);
+                                        tmp++;
+                                };
+                                break;
+                        };
+                        break;                        
+                case PIX_FMT_RGB555 :
+                        {
+                                uint16_t *tmp=(uint16_t *)Pic->pixel[0];
+                                int i=Pic->max_height*
+                                      Pic->max_width*pixel_size/2;
+                                while (--i>0) {
+                                        *tmp=color;
+                                        tmp++;
+                                };
+                                break;
+                        };
+                        break;
+                case PIX_FMT_YUV420P :
+                        memset(Pic->pixel[0],(color>>16)&0xFF,
+                                        Pic->max_height*Pic->stride[0]);
+                        memset(Pic->pixel[1],(color>>8)&0xFF,
+                                        (Pic->max_height>>1)*Pic->stride[1]);
+                        memset(Pic->pixel[2],(color&0xFF),
+                                        (Pic->max_height>>1)*Pic->stride[2]);
+                        break;
+                case PIX_FMT_RGBA32 :
+                case PIX_FMT_YUV422 :
+                        {
+                                uint32_t *tmp=(uint32_t *)Pic->pixel[0];
+                                int i=Pic->max_height*
+                                      Pic->max_width*pixel_size/4;
+                                while (--i>0) {
+                                        *tmp=color;
+                                        tmp++;
+                                };
+                                break;
+                        };
+                default:
+                        fprintf(stderr,"Warning, unsupported format in FillPicBuffer!\n");
+        };
+};
+
 void ClearPicBuffer(sPicBuffer *Pic) {
         if (!Pic || !Pic->pixel[0])
                 return;
-         PICDEB("ClearPicBuffer Pic %p pixel[0] %p max_height %d stride[0] %d\n",
+        PICDEB("ClearPicBuffer Pic %p pixel[0] %p max_height %d stride[0] %d\n",
                         Pic, Pic->pixel[0], Pic->max_height, Pic->stride[0]);
         int pixel_size=GetFormatBPP(Pic->format); 
 
