@@ -5,7 +5,8 @@ Changelog
      usage in CopyScalePicBuf()
    - change CopyPicBuf_YUV420P_to_YUY() to a general YUV420P to planar
      conversion method
-   - introduce the possibility to scale the video window(for yaepg)
+   - introduce the possibility to scale the video window (for yaepg).
+   - detection of and support for the yaepg-patch.
 2006-11-26:
    - use brackets in WRITE_RGB16 macro, introduce WRITE_RGB15 (untested)
      and ARGB_TO_RGB.

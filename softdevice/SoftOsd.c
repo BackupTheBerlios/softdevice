@@ -6,11 +6,15 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.24 2006/11/16 21:03:18 wachm Exp $
+ * $Id: SoftOsd.c,v 1.25 2006/12/03 19:55:15 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
 #include "utils.h"
+
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif
 
 //#define OSDDEB(out...) {printf("soft_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -93,6 +97,10 @@ cSoftOsd::~cSoftOsd() {
         if (videoOut) {
                 voutMutex.Lock();
                 videoOut->CloseOSD();
+#ifdef HAVE_YAEPGPATCH
+                if (vidWin.bpp!=0) 
+                        videoOut->SetVidWin(0,0,0,0,0);
+#endif
                 videoOut=0;
                 voutMutex.Unlock();
         }
@@ -272,6 +280,10 @@ void cSoftOsd::Flush(void) {
         bool OSD_changed=FlushBitmaps(true);
 
         voutMutex.Lock();
+#ifdef HAVE_YAEPGPATCH
+        if (vidWin.bpp!=0) 
+                videoOut->SetVidWin(1,vidWin.x1,vidWin.y1,vidWin.x2,vidWin.y2);
+#endif
         if (OSD_changed)
                 OsdCommit();
         voutMutex.Unlock();

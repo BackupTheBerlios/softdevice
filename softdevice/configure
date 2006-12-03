@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.30 2006/09/18 10:16:31 wachm Exp $
+# $Id: configure,v 1.31 2006/12/03 19:55:15 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -41,6 +41,7 @@ with_mmx2="yes"
 with_altivec="no"
 cle266="yes"
 alsa="yes"
+yaepg="auto"
 
 function help () {
   echo "Usage: configure [options]"
@@ -55,6 +56,7 @@ function help () {
   echo "  --disable-mmx"
   echo "  --disable-mmx2"
   echo "  --disable-alsa"
+  echo "  --disable-yaepg / --enable-yapg (yaepg patch support)"
   echo "  --with-ffmpeg-path YOUR_FFMPEG_PATH"
   echo "  --with-vidix-path YOUR_VIDIX_PATH"
   echo "  --help"
@@ -76,6 +78,8 @@ do
     --disable-mmx) shift; with_mmx="no";;
     --disable-mmx2) shift; with_mmx2="no";;
     --disable-alsa) shift; alsa="no";;
+    --disable-yaepg) shift; yaepg="no";;
+    --enable-yaepg) shift; yaepg="yes";;
     --with-ffmpeg-path) shift;
       ffmpeg_path=$1 ;
       ffmpeg_use_path="yes" ;
@@ -287,6 +291,25 @@ if test "${with_fb}" = "yes" ; then
 echo "Enabled video-fb."
 else
 echo "Not Found."
+fi
+
+########################################################
+# check for yaepg patch
+if test "${yaepg}" = "auto" ; then
+echo -n "Checking for yaepg patch... "
+echo "Checking for yaepg patch.------------------" >> config.log
+
+yaepg="no";
+VDR_DIR=../../../
+
+grep vidWin $VDR_DIR/osd.h >> config.log 2>&1 && yaepg="yes"
+
+if test "${yaepg}" = "yes" ; then
+echo "Found yaepg patch."
+else
+echo "Not Found."
+fi
+
 fi
 
 #########################################################
@@ -522,6 +545,10 @@ fi
 if test "${with_altivec}" = "yes" ; then
   echo "#define USE_ALTIVEC 1" >> $TMPH
   echo "ADD_CXXFLAGS += -faltivec" >> $TMPM
+fi
+
+if test "${yaepg}" = "yes" ; then
+  echo "#define HAVE_YAEPGPATCH 1" >> $TMPH
 fi
 
 ###############################################################################
