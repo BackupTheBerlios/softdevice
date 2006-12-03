@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.13 2006/11/26 18:52:02 wachm Exp $
+ * $Id: utils.h,v 1.14 2006/12/03 19:25:08 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -57,10 +57,6 @@
 #define EMMS     
 #endif
 
-void yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2, 
-                           const int chromaWidth,
-                           const uint8_t *yc1, const uint8_t *yc2,
-                           const uint8_t *uc, const uint8_t *vc);
 
 void yv12_to_yuy2_il_c(const uint8_t *py,
                        const uint8_t *pu,
@@ -70,9 +66,9 @@ void yv12_to_yuy2_il_c(const uint8_t *py,
                        int lumStride,int chromStride,
                        int dstStride);
 
-void yv12_to_yuy2_il_mmx2(const uint8_t *py,
-                          const uint8_t *pu,
-                          const uint8_t *pv,
+void yv12_to_yuy2_il_mmx2(uint8_t *py,
+                          uint8_t *pu,
+                          uint8_t *pv,
                           uint8_t *dst,
                           int width,int height,
                           int lumStride,int chromStride,
@@ -112,16 +108,23 @@ void yuv_to_rgb (uint8_t * image, uint8_t * py,
                  int dstW, int dstH,
                  int depth, unsigned char * mask, int deintMethod);
 
-void yuv420_to_rgb32(uint8_t *dst, int dst_stride,
+typedef void (*yuv420_convert_fct)(uint8_t *dst1, uint8_t *dst2, 
+                uint8_t *py1, uint8_t *py2,uint8_t *pu, uint8_t *pv,
+                int pixel);
+
+void yuv420_to_yuy2(uint8_t *dst1, uint8_t *dst2, 
+                uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
+                int pixel);
+void yuv420_to_rgb32(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel);
-void yuv420_to_rgb24(uint8_t *dst, int dst_stride,
+void yuv420_to_rgb24(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel);
-void yuv420_to_bgr24(uint8_t *dst, int dst_stride,
+void yuv420_to_bgr24(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel);
-void yuv420_to_rgb16(uint8_t *dst, int dst_stride,
+void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel);
 

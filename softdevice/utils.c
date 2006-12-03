@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.21 2006/11/07 18:13:19 wachm Exp $
+ * $Id: utils.c,v 1.22 2006/12/03 19:25:08 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -100,19 +100,17 @@ void yv12_to_yuy2_il_c(const uint8_t *py,
 }
 
 /* ---------------------------------------------------------------------------
- * convert to lines luma and one line chroma
+ * convert two lines luma and one line chroma
  * lang: MMX2
  */
-void
-yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2, 
-                           const int chromaWidth,
-                           const uint8_t *yc1, const uint8_t *yc2,
-                           const uint8_t *uc, const uint8_t *vc)
+void yuv420_to_yuy2(uint8_t *dest1, uint8_t *dest2, 
+                uint8_t *yc1, uint8_t *yc2, uint8_t *uc, uint8_t *vc,
+                int pixel)
 {
-  int i=chromaWidth;
+  int i=pixel;
   
 #ifdef USE_MMX 
-  for(i = chromaWidth/4; i--; )
+  for(i = pixel/8; i--; )
   {
     movq_m2r(*(yc1), mm1);     // mm1 = y7 y6 y5 y4 y3 y2 y1 y0
     movq_m2r(*(yc2), mm2);     // mm2 = y7 y6 y5 y4 y3 y2 y1 y0
@@ -153,7 +151,7 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2,
    vector unsigned char uv_vec;
    vector unsigned char y_vec;
 
-   for ( i=chromaWidth; i>=16; i-=16) {
+   for ( i=pixel; i>=32; i-=32) {
         u_vec = vec_ld(0,uc); uc+=16;
         v_vec = vec_ld(0,vc); vc+=16;
         uv_vec = vec_mergeh( u_vec, v_vec);
@@ -173,7 +171,7 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2,
         vec_st( vec_mergel( y_vec, uv_vec), 0, dest2); dest2+=16;        
    }
 #endif
-   for ( ; i>=1; i-=1 ) {
+   for ( ; i>=2; i-=2 ) {
       *((uint32_t *)dest1) = (yc1[0] << 24)+ (uc[0] << 16) + (yc1[1] << 8) + (vc[0] << 0);
       *((uint32_t *)dest2) = (yc2[0] << 24)+ (uc[0] << 16) + (yc2[1] << 8) + (vc[0] << 0);
       //*idst++ = (yc[0] << 0)+ (uc[0] << 8) + (yc[1] << 16) + (vc[0] << 24);
@@ -190,9 +188,9 @@ yv12_to_yuy2_il_mmx2_line (uint8_t *dest1, uint8_t *dest2,
  * chroma: field based
  * lang: MMX2
  */
-void yv12_to_yuy2_il_mmx2(const uint8_t *py,
-                          const uint8_t *pu, const uint8_t *pv,
-                          uint8_t *dst, const int width, const int height,
+void yv12_to_yuy2_il_mmx2(uint8_t *py,
+                          uint8_t *pu, uint8_t *pv,
+                          uint8_t *dst, int width, int height,
                           const int lumStride, const int chromStride, 
                           const int dstStride)
 {
@@ -202,18 +200,16 @@ void yv12_to_yuy2_il_mmx2(const uint8_t *py,
      * take chroma line x (it's from field A) for packing with
      * luma lines y * 2 and y * 2 + 2
      */
-    yv12_to_yuy2_il_mmx2_line (dst,
-                               dst + dstStride * 2, width >> 1,
-                               py, py + lumStride *2,
-                               pu, pv);
+    yuv420_to_yuy2(dst, dst + dstStride * 2,
+                py, py + lumStride *2,pu, pv, width);
     /* -----------------------------------------------------------------------
      * take chroma line x+1 (it's from field B) for packing with
      * luma lines y * 2 + 1 and y * 2 + 3
      */
-    yv12_to_yuy2_il_mmx2_line (dst + dstStride,
-                               dst + dstStride * 3, width >> 1,
-                               py + lumStride, py + lumStride * 3,
-                               pu + chromStride, pv + chromStride);
+    yuv420_to_yuy2(dst + dstStride,dst + dstStride * 3,
+                py + lumStride, py + lumStride * 3,pu + chromStride, pv + chromStride,
+                width);
+    
     py  += 4*lumStride;
     pu  += 2*chromStride;
     pv  += 2*chromStride;
@@ -698,23 +694,24 @@ inline uint8_t clip( int x) {
     int g=(-100*u-208*v+128);           \
     int b=(516*u+128);                  \
                                         \
-    WRITE_##FMT(dst,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    WRITE_##FMT(dst1,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
     py1++;                              \
                                         \
     y=(((int) *py1)-16)*298;            \
-    WRITE_##FMT(dst+SIZE_##FMT,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    WRITE_##FMT(dst1+SIZE_##FMT,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
     py1++;                              \
                                         \
     /* second line */                   \
     y=(((int) *py2)-16)*298;            \
-    WRITE_##FMT(dst+dst_stride,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    WRITE_##FMT(dst2,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
     py2++;                              \
                                         \
     y=(((int) *py2)-16)*298;            \
-    WRITE_##FMT(dst+dst_stride+SIZE_##FMT,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
+    WRITE_##FMT(dst2+SIZE_##FMT,clip((y+r)>>8),clip((y+g)>>8),clip((y+b)>>8)); \
     py2++;                              \
                                         \
-    dst+=2*SIZE_##FMT;                  \
+    dst1+=2*SIZE_##FMT;                 \
+    dst2+=2*SIZE_##FMT;                 \
     pu++;                               \
     pv++;                               
 
@@ -956,7 +953,7 @@ static uint64_t __attribute__((aligned(8))) MMX_Constants[]= {
                   
 // end of MMX macros from libswscale
 
-void yuv420_to_rgb32(uint8_t *dst, int dst_stride,
+void yuv420_to_rgb32(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel)
 {
@@ -976,7 +973,7 @@ void yuv420_to_rgb32(uint8_t *dst, int dst_stride,
                 : "memory");
     __asm__ __volatile__ (
           WRITE_RGB32_MMX
-                : : "r" (MMX_Constants),"r" (dst)
+                : : "r" (MMX_Constants),"r" (dst1)
                 : "memory");
     
     __asm__ __volatile__ (
@@ -989,9 +986,10 @@ void yuv420_to_rgb32(uint8_t *dst, int dst_stride,
                 : "memory");
     __asm__ __volatile__ (
           WRITE_RGB32_MMX
-                : : "r" (MMX_Constants), "r" (dst+dst_stride)
+                : : "r" (MMX_Constants), "r" (dst2)
                 : "memory");
-    dst+=32;
+    dst1+=32;
+    dst2+=32;
     py1+=8;
     py2+=8;
     pu+=4;
@@ -1008,7 +1006,7 @@ void yuv420_to_rgb32(uint8_t *dst, int dst_stride,
 #endif
 };
 
-void yuv420_to_rgb24(uint8_t *dst, int dst_stride,
+void yuv420_to_rgb24(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel)
 {
@@ -1028,7 +1026,7 @@ void yuv420_to_rgb24(uint8_t *dst, int dst_stride,
                 : "memory");
     __asm__ __volatile__ (
           WRITE_RGB24_MMX
-                : : "r" (MMX_Constants),"r" (dst)
+                : : "r" (MMX_Constants),"r" (dst1)
                 : "memory");
     
     __asm__ __volatile__ (
@@ -1041,9 +1039,10 @@ void yuv420_to_rgb24(uint8_t *dst, int dst_stride,
                 : "memory");
     __asm__ __volatile__ (
           WRITE_RGB24_MMX
-                : : "r" (MMX_Constants), "r" (dst+dst_stride)
+                : : "r" (MMX_Constants), "r" (dst2)
                 : "memory");
-    dst+=24;
+    dst1+=24;
+    dst2+=24;
     py1+=8;
     py2+=8;
     pu+=4;
@@ -1060,7 +1059,7 @@ void yuv420_to_rgb24(uint8_t *dst, int dst_stride,
 #endif
 };
 
-void yuv420_to_bgr24(uint8_t *dst, int dst_stride,
+void yuv420_to_bgr24(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel)
 {
@@ -1071,7 +1070,7 @@ void yuv420_to_bgr24(uint8_t *dst, int dst_stride,
   };
 };
 
-void yuv420_to_rgb16(uint8_t *dst, int dst_stride,
+void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel)
 {
@@ -1091,7 +1090,7 @@ void yuv420_to_rgb16(uint8_t *dst, int dst_stride,
                 : "memory");
     __asm__ __volatile__ (
           WRITE_RGB16_MMX
-                : : "r" (MMX_Constants),"r" (dst)
+                : : "r" (MMX_Constants),"r" (dst1)
                 : "memory");
     __asm__ __volatile__ (
           "movd (%1), %%mm6  \n"
@@ -1103,9 +1102,10 @@ void yuv420_to_rgb16(uint8_t *dst, int dst_stride,
                 : "memory");
     __asm__ __volatile__ (
           WRITE_RGB16_MMX
-                : : "r" (MMX_Constants), "r" (dst+dst_stride)
+                : : "r" (MMX_Constants), "r" (dst2)
                 : "memory");
-    dst+=16;
+    dst1+=16;
+    dst2+=16;
     py1+=8;
     py2+=8;
     pu+=4;

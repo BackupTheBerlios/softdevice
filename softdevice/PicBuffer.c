@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.15 2006/11/26 18:53:41 wachm Exp $
+ * $Id: PicBuffer.c,v 1.16 2006/12/03 19:25:08 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -134,6 +134,25 @@ void ClearPicBuffer(sPicBuffer *Pic) {
                         };
                 default:
                         fprintf(stderr,"Warning, unsupported format in ClearPicBuffer!\n");
+        };
+};
+
+yuv420_convert_fct GetYuv420ConvertFct(PixelFormat pix_fmt) {
+        switch (pix_fmt) {
+                case PIX_FMT_RGBA32:
+                        return &yuv420_to_rgb32;
+                case PIX_FMT_BGR24:
+                        return &yuv420_to_bgr24;
+                case PIX_FMT_RGB24:
+                        return &yuv420_to_rgb24;
+                case PIX_FMT_RGB555:
+                case PIX_FMT_RGB565:
+                        return &yuv420_to_rgb16;
+                case PIX_FMT_YUV422:
+                        return &yuv420_to_yuy2;
+                default:
+                        fprintf(stderr,"unsupported format in GetYuv420ConvertFct \n");
+                        exit(-1);
         };
 };
 
@@ -418,11 +437,13 @@ void cPicBufferManager::ReleaseBuffer( sPicBuffer *pic ){
 // end of code based on ffmpeg
 
 /*------------------------------------------------------------------------*/
-static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
+static void CopyPicBuf_YUV420P_Convert(sPicBuffer *dst, sPicBuffer *src,
                 int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
-        PICDEB("CopyPicBuf_YUV420P_YUY2 width %d height %d\n",
+        PICDEB("CopyPicBuf_Convert width %d height %d\n",
                         dst->width,dst->height);
+        
+        yuv420_convert_fct yuv_convert=GetYuv420ConvertFct(dst->format);
 
         dst->interlaced_frame=src->interlaced_frame;
         uint8_t *dst_ptr=dst->pixel[0]+
@@ -454,18 +475,19 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                          * take chroma line x (it's from field A) for packing
                          * with luma lines y * 2 and y * 2 + 2
                          */
-                        yv12_to_yuy2_il_mmx2_line (dst_ptr,
-                                        dst_ptr + dstStride * 2, width >> 1,
+                        (*yuv_convert)(dst_ptr,dst_ptr + dstStride * 2,
                                         py, py + lumStride *2,
-                                        pu, pv);
+                                        pu, pv,
+                                        width);
                         /* ----------------------------------------------
                          * take chroma line x+1 (it's from field B) for packing
                          * with luma lines y * 2 + 1 and y * 2 + 3
                          */
-                        yv12_to_yuy2_il_mmx2_line (dst_ptr + dstStride,
-                               dst_ptr + dstStride * 3, width >> 1,
+                        (*yuv_convert)(dst_ptr + dstStride,
+                               dst_ptr + dstStride * 3,
                                py + lumStride, py + lumStride * 3,
-                               pu + chromStride, pv + chromStride);
+                               pu + chromStride, pv + chromStride,
+                               width);
 
                         py  += 4*lumStride;
                         pu  += 2*chromStride;
@@ -474,10 +496,10 @@ static void CopyPicBuf_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                 }
         } else {
                 for(int y=height/2; y--; ) {
-                        yv12_to_yuy2_il_mmx2_line (dst_ptr,
-                                        dst_ptr + dstStride , width >> 1,
-                                        py, py + lumStride ,
-                                        pu, pv);
+                        (*yuv_convert)(dst_ptr, dst_ptr + dstStride,
+                                        py, py + lumStride,
+                                        pu, pv,
+                                        width);
                         py  += 2*lumStride;
                         pu  += chromStride;
                         pv  += chromStride;
@@ -558,11 +580,9 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
                 CopyPicBuf_YUV420P(dst,src,
                                 cutTop,cutBottom,
                                 cutLeft,cutRight);
-        else if ( dst->format == PIX_FMT_YUV422 )
-                CopyPicBuf_YUV420P_YUY2(dst,src,
+        else CopyPicBuf_YUV420P_Convert(dst,src,
                                 cutTop,cutBottom,
                                 cutLeft,cutRight);
-        else fprintf(stderr,"Unsupported format in CopyPicBuf!\n");
 }
 
 /*------------------------------------------------------------------------*/
@@ -648,9 +668,7 @@ void CopyScalePicBuf(sPicBuffer *dst, sPicBuffer *src,
         uint8_t *convert_buf=NULL;
         uint8_t *convert_dst=NULL;
         int convert_dst_stride=0;
-        void (*yuv_to_rgb)(uint8_t *dst, int dst_stride,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
-                 int pixel)=NULL;
+        yuv420_convert_fct yuv_convert=NULL;
 
 
         if ( dst->format == PIX_FMT_YUV420P ) {
@@ -676,24 +694,8 @@ void CopyScalePicBuf(sPicBuffer *dst, sPicBuffer *src,
                         +dyoff*dst->stride[0]
                         +dxoff*GetFormatBPP(dst->format);
                 convert_dst_stride=dst->stride[0];
-                switch (dst->format) {
-                        case PIX_FMT_RGBA32:
-                                yuv_to_rgb=yuv420_to_rgb32;
-                                break;
-                        case PIX_FMT_BGR24:
-                                yuv_to_rgb=yuv420_to_bgr24;
-                                break;
-                        case PIX_FMT_RGB24:
-                                yuv_to_rgb=yuv420_to_rgb24;
-                                break;
-                        case PIX_FMT_RGB555:
-                        case PIX_FMT_RGB565:
-                                yuv_to_rgb=yuv420_to_rgb16;
-                                break;
-                        default:
-                                fprintf(stderr,"unsupported format in CopyScalePicBuffer! \n");
-                                exit(-1);
-                };
+                
+                yuv_convert=GetYuv420ConvertFct(dst->format);
         };
         
         int last_srcline=-1;
@@ -743,10 +745,10 @@ void CopyScalePicBuf(sPicBuffer *dst, sPicBuffer *src,
               
                 if (do_convert) {
                         // convert yuv to destination format
-                        (*yuv_to_rgb)(convert_dst,convert_dst_stride,
-                        //yuv420_to_rgb24(convert_dst,convert_dst_stride,
-                                        dst_ptr0,dst_ptr0+dst_stride0,
-                                        dst_ptr1,dst_ptr2,dst_width);
+                        (*yuv_convert)(convert_dst,
+                                       convert_dst+convert_dst_stride,
+                                       dst_ptr0,dst_ptr0+dst_stride0,
+                                       dst_ptr1,dst_ptr2,dst_width);
                         convert_dst+=2*convert_dst_stride;
                 } else {
                         dst_ptr0+=2*dst->stride[0];
@@ -801,9 +803,7 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
         uint8_t *convert_buf=NULL;
         uint8_t *convert_dst=NULL;
         int convert_dst_stride=0;
-        void (*yuv_to_rgb)(uint8_t *dst, int dst_stride,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
-                 int pixel)=NULL;
+        yuv420_convert_fct yuv_convert=NULL;
 
         int src_stride0=src->stride[0];
         uint8_t *blend_buf=(uint8_t*) malloc(4*src_stride0);
@@ -841,24 +841,7 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
                         +dxoff*GetFormatBPP(dst->format);
                 convert_dst_stride=dst->stride[0];
 
-                switch (dst->format) {
-                        case PIX_FMT_RGBA32:
-                                yuv_to_rgb=yuv420_to_rgb32;
-                                break;
-                        case PIX_FMT_RGB24:
-                                yuv_to_rgb=yuv420_to_rgb24;
-                                break;
-                        case PIX_FMT_BGR24:
-                                yuv_to_rgb=yuv420_to_bgr24;
-                                break;
-                        case PIX_FMT_RGB555:
-                        case PIX_FMT_RGB565:
-                                yuv_to_rgb=yuv420_to_rgb16;
-                                break;
-                        default:
-                                fprintf(stderr,"unsupported format in CopyScalePicBuffer! \n");
-                                exit(-1);
-                };
+                yuv_convert=GetYuv420ConvertFct(dst->format);
         };
         
         int last_srcline=-1;
@@ -925,9 +908,10 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
               
                 if (do_convert) {
                         // convert yuv to destination format
-                        (*yuv_to_rgb)(convert_dst,convert_dst_stride,
-                                        dst_ptr0,dst_ptr0+dst_stride0,
-                                        dst_ptr1,dst_ptr2,dst_width);
+                        (*yuv_convert)(convert_dst,
+                                       convert_dst+convert_dst_stride,
+                                       dst_ptr0,dst_ptr0+dst_stride0,
+                                       dst_ptr1,dst_ptr2,dst_width);
                         convert_dst+=2*convert_dst_stride;
                 } else {
                         dst_ptr0+=2*dst->stride[0];
@@ -941,7 +925,7 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
 };
 
 /*------------------------------------------------------------------------*/
-void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
+void CopyPicBufAlphaBlend_YUV420P_Convert(sPicBuffer *dst, sPicBuffer *src,
                 int width, int height,
                 uint8_t *OsdPy,
                 uint8_t *OsdPu,
@@ -951,12 +935,13 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                 int OsdStride,
                 int cutTop, int cutBottom,
                 int cutLeft, int cutRight) {
-        PICDEB("CopyPicBufAlphaBlend_YUV420P_YUY2 width %d height %d\n",
+        PICDEB("CopyPicBufAlphaBlend_YUV420P_Convert width %d height %d\n",
                         width,height);
 
         uint8_t tmp_y[2*width];
         uint8_t tmp_u[width];
         uint8_t tmp_v[width];
+        yuv420_convert_fct yuv_convert=GetYuv420ConvertFct(dst->format);
 
         dst->interlaced_frame=src->interlaced_frame;
         uint8_t *dst_ptr=dst->pixel[0]+
@@ -1005,10 +990,10 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                         AlphaBlend(tmp_v,osd_pv,
                                         pv,alpha_puv,width>>1);
 
-                        yv12_to_yuy2_il_mmx2_line (dst_ptr,
-                                        dst_ptr + dstStride * 2, width >> 1,
+                        (*yuv_convert)(dst_ptr, dst_ptr + dstStride * 2,
                                         tmp_y, &tmp_y[width],
-                                        tmp_u, tmp_v);
+                                        tmp_u, tmp_v,
+                                        width);
                         /* ----------------------------------------------
                          * take chroma line x+1 (it's from field B) for packing
                          * with luma lines y * 2 + 1 and y * 2 + 3
@@ -1027,10 +1012,11 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                                         pv+chromStride,
                                         alpha_puv+OsdStride/2,width>>1);
 
-                        yv12_to_yuy2_il_mmx2_line (dst_ptr+dstStride,
-                                        dst_ptr + dstStride * 3, width >> 1,
-                                        tmp_y, &tmp_y[width],
-                                        tmp_u, tmp_v);
+                        (*yuv_convert)(dst_ptr+dstStride,
+                                       dst_ptr + dstStride * 3,
+                                       tmp_y, &tmp_y[width],
+                                       tmp_u, tmp_v,
+                                       width);
 
                         osd_py += 4*OsdStride;
                         alpha_py += 4*OsdStride;
@@ -1060,10 +1046,10 @@ void CopyPicBufAlphaBlend_YUV420P_YUY2(sPicBuffer *dst, sPicBuffer *src,
                         AlphaBlend(tmp_v,osd_pv,
                                         pv,alpha_puv,width>>1);
 
-                        yv12_to_yuy2_il_mmx2_line (dst_ptr,
-                                        dst_ptr + dstStride , width >> 1,
+                        (*yuv_convert)(dst_ptr, dst_ptr + dstStride,
                                         tmp_y, &tmp_y[width],
-                                        tmp_u, tmp_v);
+                                        tmp_u, tmp_v,
+                                        width);
 
                         osd_py += 2*OsdStride;
                         alpha_py += 2*OsdStride;
@@ -1188,12 +1174,10 @@ void CopyPicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
                                 OsdPAlphaY, OsdPAlphaUV, OsdStride,
                                 cutTop,cutBottom,
                                 cutLeft,cutRight);
-        else if ( dst->format == PIX_FMT_YUV422 )
-                CopyPicBufAlphaBlend_YUV420P_YUY2(dst,src,width,height,
+        else CopyPicBufAlphaBlend_YUV420P_Convert(dst,src,width,height,
                                 OsdPy, OsdPu, OsdPv,
                                 OsdPAlphaY, OsdPAlphaUV, OsdStride,
                                 cutTop,cutBottom,
                                 cutLeft,cutRight);
-        else fprintf(stderr,"Unsupported format in CopyPicBuf!\n");
 };
 

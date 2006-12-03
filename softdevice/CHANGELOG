@@ -1,6 +1,10 @@
 Changelog
 2006-12-03:
    - applied patch from Matthias Schwarzott for vdr uint64 change.
+   - unify yuv420_to_rgbXX() and yv12_to_yuy2_line() functions to allow
+     usage in CopyScalePicBuf()
+   - change CopyPicBuf_YUV420P_to_YUY() to a general YUV420P to planar
+     conversion method
 2006-11-26:
    - use brackets in WRITE_RGB16 macro, introduce WRITE_RGB15 (untested)
      and ARGB_TO_RGB.
