@@ -7,6 +7,10 @@ Changelog
      conversion method
    - introduce the possibility to scale the video window (for yaepg).
    - detection of and support for the yaepg-patch.
+   - add open sound system support (contributed by Lubos Novak).
+     GetDelay() is commented out, this means the A/V synchronization
+     is broken.
+   - add open sound system detection to configure
 2006-11-26:
    - use brackets in WRITE_RGB16 macro, introduce WRITE_RGB15 (untested)
      and ARGB_TO_RGB.

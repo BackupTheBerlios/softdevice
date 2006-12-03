@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.75 2006/11/11 08:45:17 lucke Exp $
+ * $Id: softdevice.c,v 1.76 2006/12/03 20:38:18 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -71,6 +71,10 @@
 #include "audio-alsa.h"
 #endif
 
+#ifdef OSS_SUPPORT
+#include "audio-oss.h"
+#endif
+
 #include "audio.h"
 #include "mpeg2decoder.h"
 #include "utils.h"
@@ -85,6 +89,7 @@ static const char *MAINMENUENTRY  = "Softdevice";
 
 #define AOUT_ALSA   1
 #define AOUT_DUMMY  2
+#define AOUT_OSS    3
 
 //#define SOFTDEB(out...) {printf("softdeb[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -231,6 +236,13 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         break;
 #else
         fprintf(stderr,"[softdevice] No alsa support compiled in. Using dummy-audio\n");
+#endif
+      case AOUT_OSS:
+#ifdef OSS_SUPPORT
+        audioOut=new cOSSAudioOut(&setupStore);
+        break;
+#else
+        fprintf(stderr,"[softdevice] No oss support compiled in. Using dummy-audio\n");
 #endif
       case AOUT_DUMMY:
         audioOut=new cDummyAudioOut(&setupStore);
@@ -705,9 +717,14 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   // Return a string that describes all known command line options.
   return
 #ifdef ALSA_SUPPORT
+  "  -ao alsa:                use alsa for audio\n"
   "  -ao alsa:mixer           volume control via alsa mixer\n"
   "  -ao alsa:pcm=dev_name#   alsa output device for analog and PCM out\n"
   "  -ao alsa:ac3=dev_name#   alsa output device for AC3 passthrough\n"
+#endif
+#ifdef OSS_SUPPORT
+  "  -ao oss:                 use oss for audio\n"
+/*  "  -ao oss:mixer            volume control via oss mixer\n"*/
 #endif
   "  -ao dummy:               dummy output device\n"
 #ifdef XV_SUPPORT
@@ -948,6 +965,10 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
             }
 
           }
+        } else if (!strncmp(ao_argv, "oss:", 4)) {
+          ao_argv += 4;
+          setupStore.aoArgs = ao_argv;
+          aoutMethod = AOUT_OSS;
         } else if (!strncmp(ao_argv, "dummy:", 6)) {
           ao_argv += 6;
           setupStore.aoArgs = ao_argv;

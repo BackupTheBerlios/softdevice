@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.34 2006/09/18 10:06:38 wachm Exp $
+# $Id: Makefile,v 1.35 2006/12/03 20:38:18 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -232,6 +232,10 @@ ALL_OBJS = $(OBJS)
 ifdef ALSA_SUPPORT
   LIBS += -lasound
   OBJS += audio-alsa.o audio-ac3pt.o
+endif
+
+ifdef OSS_SUPPORT
+  OBJS += audio-oss.o
 endif
   
 ifdef DFB_SUPPORT
