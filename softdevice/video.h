@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.48 2006/12/03 18:26:21 lucke Exp $
+ * $Id: video.h,v 1.49 2006/12/03 19:32:59 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -73,6 +73,7 @@ protected:
     bool    OSDpresent,
             OSDpseudo_alpha;
     int     current_osdMode;
+    int     scaleVid, vidX1, vidX2, vidY1, vidY2;
     int     Xres, Yres, Bpp; // the child class MUST set these params (for OSD Drawing)
     int     dx, dy,
             dwidth, dheight,
@@ -185,6 +186,8 @@ public:
     // clear the OSD buffer
 
     virtual void OpenOSD();
+    virtual void SetVidWin(int ScaleVid, int VidX1, int VidY1, 
+                    int VidX2, int VidY2);
     virtual int GetOSDColorkey();
     virtual void CloseOSD();
 

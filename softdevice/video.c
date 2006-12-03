@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.70 2006/11/16 21:03:18 wachm Exp $
+ * $Id: video.c,v 1.71 2006/12/03 19:32:59 wachm Exp $
  */
 
 #include <fcntl.h>
@@ -34,6 +34,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   sxoff = syoff = lxoff = lyoff = 0;
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
+  scaleVid = vidX1 = vidY1 = vidX2 = vidY2 = 0;
   Osd_changed = 0;
   aspect_F = 4.1 / 3.0;
   aspect_I = 0;
@@ -435,6 +436,21 @@ void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
 void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
                                 sPicBuffer *pic)
 {
+  sPicBuffer *scale_pic=NULL;
+  if (scaleVid != 0) {
+          scale_pic=GetBuffer(pic->format,pic->max_width,pic->max_height);
+          CopyScalePicBuf(scale_pic, pic,
+                                  0, 0,
+                                  pic->width, pic->height,
+                                  vidX1, vidY1,
+                                  vidX2, vidY2,
+                                  0,0,0,0);
+          CopyPicBufferContext(scale_pic,pic);
+          scale_pic->width=pic->width;
+          scale_pic->height=pic->height;
+          pic=scale_pic;
+  };
+
   Sync(syncTimer, delay);
   oldPictureMutex.Lock();
 
@@ -448,6 +464,8 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
 
   oldPictureMutex.Unlock();
   ProcessEvents();
+  if (scale_pic)
+          ReleaseBuffer(scale_pic);
 }
 
 /* ---------------------------------------------------------------------------
@@ -497,6 +515,14 @@ void cVideoOut::OpenOSD()
 {
   OSDDEB("OpenOSD\n");
 }
+
+void cVideoOut::SetVidWin(int ScaleVid, int VidX1, int VidY1,
+                int VidX2, int VidY2) 
+{
+  OSDDEB("SetVidWin ScaleVid %d: %d,%d  %d,%d\n",
+                  ScaleVid,VidX1,VidY1,VidX2,VidY2);
+  scaleVid=ScaleVid;vidX1=VidX1;vidY1=VidY1;vidX2=VidX2;vidY2=VidY2;
+};
 
 int cVideoOut::GetOSDColorkey()
 {
