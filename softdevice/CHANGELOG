@@ -1,4 +1,6 @@
 Changelog
+2006-12-03:
+   - applied patch from Matthias Schwarzott for vdr uint64 change.
 2006-11-26:
    - use brackets in WRITE_RGB16 macro, introduce WRITE_RGB15 (untested)
      and ARGB_TO_RGB.
@@ -13,10 +15,10 @@ Changelog
    - fix ShmClient not forwarding to key presses to vdr on AMD64
      (patch by peterw2k@vdr-portal)
 2006-11-20:
-   - send fake key events to disable any screen saver (patch by 
+   - send fake key events to disable any screen saver (patch by
      peterw2k@vdr-portal)
 2006-11-16:
-   - fix wrong colors when using GRAB with the cle266 hardware decoder 
+   - fix wrong colors when using GRAB with the cle266 hardware decoder
      (patch by Laz)
    - better colorkey support in SoftOsd.c, with interface to video.c
    - fix a bug which causes bad resolution on upscaling

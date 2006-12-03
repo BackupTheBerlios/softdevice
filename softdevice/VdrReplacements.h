@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: VdrReplacements.h,v 1.2 2006/04/27 20:29:30 wachm Exp $
+ * $Id: VdrReplacements.h,v 1.3 2006/12/03 18:26:21 lucke Exp $
  */
 
 #ifndef __VDRREPLACEMENTS_H__
@@ -30,7 +30,6 @@
 
 #define tr(out) out
 
-typedef unsigned long long int uint64;
 typedef int eKeys;
 
 class cSoftRemote {

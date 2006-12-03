@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.47 2006/11/16 21:03:18 wachm Exp $
+ * $Id: video.h,v 1.48 2006/12/03 18:26:21 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -39,7 +39,7 @@ class cSoftRemote : public cRemote {
   public:
           cSoftRemote(const char *Name) : cRemote(Name) {};
           virtual ~cSoftRemote() {};
-          virtual bool PutKey(uint64 Code, bool Repeat = false,
+          virtual bool PutKey(uint64_t Code, bool Repeat = false,
                           bool Release = false)
           { return Put(Code,Repeat,Release); };
 };

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.47 2006/11/05 22:05:59 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.48 2006/12/03 18:26:21 lucke Exp $
  */
 
 #include <string.h>
@@ -416,13 +416,13 @@ void cSetupStore::CropModeNext(void)
 
 /* ---------------------------------------------------------------------------
  */
-bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64 key)
+bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64_t key)
 {
 #ifndef STAND_ALONE
     char  buffer[32];
     eKeys keySym;
 
-  snprintf(buffer, sizeof(buffer), "%016LX", (uint64) key);
+  snprintf(buffer, sizeof(buffer), "%016LX", (uint64_t) key);
   keySym = Keys.Get(remoteName, buffer);
   if (keySym >= kUser1 && keySym <= kUser9)
   {
