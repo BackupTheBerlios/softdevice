@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.7 2006/07/25 20:03:33 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.8 2006/12/14 22:51:47 wachm Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -47,8 +47,8 @@ class cSoftPlayer : public cPlayer, cThread {
        char title[60];
        char author[60];
        char album[60];
-       int duration;
-       int start_time;
+       int64_t duration;
+       int64_t start_time;
        
        char filename[200];
        bool newFile;
