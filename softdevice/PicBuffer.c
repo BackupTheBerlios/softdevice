@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.16 2006/12/03 19:25:08 wachm Exp $
+ * $Id: PicBuffer.c,v 1.17 2006/12/14 22:34:30 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -634,7 +634,10 @@ void CopyScalePicBuf(sPicBuffer *dst, sPicBuffer *src,
                 int cutLeft, int cutRight) {
         PICDEB("CopyScalePicBuf_YUV420P width %d height %d\n",
                         dst->max_width,dst->max_height);
-
+        
+        if ( dst_height == 0 || dst_width == 0)
+                return;
+        
         if (src_width+sxoff > src->max_width)
                 src_width=src->max_width-sxoff;
         if (src_height+syoff > src->max_height)
@@ -769,6 +772,9 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
                 int cutLeft, int cutRight) {
         PICDEB("CopyScalePicBufAlphaBlend width %d height %d\n",
                         dst->max_width,dst->max_height);
+
+        if ( dst_height == 0 || dst_width == 0)
+                return;
 
         if (src_width+sxoff > src->max_width)
                 src_width=src->max_width-sxoff;

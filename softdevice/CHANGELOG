@@ -2,6 +2,8 @@ Changelog
 2006-12-13:
    - don't undefine X cursur on keypresses, to prevent the fake shift key
      press from producing flickering of the mouse cursor.
+   - fix possible segfault.
+   - fix possible division by zero.
 2006-12-03:
    - applied patch from Matthias Schwarzott for vdr uint64 change.
    - unify yuv420_to_rgbXX() and yv12_to_yuy2_line() functions to allow
