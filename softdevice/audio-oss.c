@@ -5,7 +5,7 @@
  *
  * Support for the Open Sound System contributed by Lubos Novak
  * 
- * $Id: audio-oss.c,v 1.1 2006/12/03 20:38:18 wachm Exp $
+ * $Id: audio-oss.c,v 1.2 2006/12/14 23:09:53 wachm Exp $
  */
 #include "audio-oss.h"
 
@@ -106,8 +106,7 @@ void cOSSAudioOut::Play(void)
  */
 int cOSSAudioOut::GetDelay(void)
 {
-    return 0;
-/*    audio_buf_info buf_info;
+    audio_buf_info buf_info;
     int res = 0;
     
     handleMutex.Lock();
@@ -120,12 +119,10 @@ int cOSSAudioOut::GetDelay(void)
     }
 
     int used_buffer = buf_info.fragstotal * buf_info.fragsize - buf_info.bytes;
-    res = (long)((double)used_buffer / (double)(currContext.samplerate * currContext.channels) * 1000);
+    res = (long)((double)used_buffer / (double)(currContext.samplerate * currContext.channels * 2) * 10000);
 
-    isyslog("Pouzito %d B, postaci na %d/10 ms\n", used_buffer, res);
-    
     handleMutex.Unlock();
-    return res;*/
+    return res;
 }
 
 /* ---------------------------------------------------------------------------
