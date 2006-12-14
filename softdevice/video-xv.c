@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.67 2006/11/26 19:00:17 wachm Exp $
+ * $Id: video-xv.c,v 1.68 2006/12/14 22:31:57 wachm Exp $
  */
 
 #include <unistd.h>
@@ -620,13 +620,6 @@ void cXvVideoOut::ProcessEvents ()
         }
         break;
       case KeyPress:
-        if(cursor_visible == False) {
-          XUndefineCursor(dpy, win);
-          cursor_visible = True;
-        }
-        gettimeofday(&current_time, NULL);
-        button_time = current_time.tv_sec;
-
         XLookupString (&event.xkey, buffer, 80, &keysym, &compose);
         switch (keysym)
         {
