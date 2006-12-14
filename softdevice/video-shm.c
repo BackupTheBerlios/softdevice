@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.15 2006/11/26 19:00:17 wachm Exp $
+ * $Id: video-shm.c,v 1.16 2006/12/14 22:33:07 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -302,7 +302,7 @@ void cShmVideoOut::ClearOSD() {
                 uint32_t *dst32=(uint32_t*)osd_surface;
                 uint16_t *dst16=(uint16_t*)osd_surface;
                 uint8_t *dst8=(uint8_t*)osd_surface;
-                int i=ctl->osd_max_height*ctl->osd_max_width;
+                int i=ctl->osd_max_height*ctl->osd_max_width-1;
                 switch (ctl->osd_depth) {
                         case 32: 
                                 while (i) {
