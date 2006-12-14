@@ -18,7 +18,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  * 
- * $Id: xscreensaver.c,v 1.5 2006/11/20 19:36:31 wachm Exp $
+ * $Id: xscreensaver.c,v 1.6 2006/12/14 22:36:32 wachm Exp $
  */
 
 #ifndef STAND_ALONE
@@ -117,7 +117,7 @@ void cScreensaver::MaybeSendKeyEvent(void) {
     if (current.tv_sec - lastKeyEvent > INTERVAL_KEYEVENT) {
       lastKeyEvent = current.tv_sec;
 
-      dsyslog("[softdevice-xscreensaver]: faking left shift pushing\n");
+      //dsyslog("[softdevice-xscreensaver]: faking left shift pushing\n");
       XKeyEvent keyEvent;
       keyEvent.window = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
       keyEvent.root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
