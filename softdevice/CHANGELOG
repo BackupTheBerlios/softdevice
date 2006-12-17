@@ -1,4 +1,8 @@
 Changelog
+2006-12-17:
+   - Silence some warnings with gcc 4.1.1.
+   - Adjust MMX and C version of fast_memcpy() to the same return type.
+   - Fix wrong colors in yuv420_to_yuy2() when all MMX is disabled.
 2006-12-13:
    - don't undefine X cursur on keypresses, to prevent the fake shift key
      press from producing flickering of the mouse cursor.
