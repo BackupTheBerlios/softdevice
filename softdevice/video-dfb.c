@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.74 2006/11/16 20:41:36 wachm Exp $
+ * $Id: video-dfb.c,v 1.75 2006/12/17 22:39:52 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -967,8 +967,10 @@ void cDFBVideoOut::SetParams()
           {
             int     *dst, i, j;
             int     pitch;
+            void    *tmp_dst;
 
-            videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
+            videoSurface->Lock(DSLF_WRITE, &tmp_dst, &pitch);
+            dst = (int *) tmp_dst;
             for(i = 0; i < vidDsc.height; ++i, dst += pitch/4)
               for (j = 0; j < vidDsc.width / 2; ++j)
                 dst [j] = 0x80008000;
@@ -1054,7 +1056,7 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
                                      bool *&DirtyLines)
 {
   int               pitch;
-  uint8_t           *dst;
+  void              *dst;
 
   dirtyLines = DirtyLines = NULL;
   osd = NULL;
@@ -1070,9 +1072,9 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
     memset(dirtyLines,false,sizeof(bool)*Yres);
 
     tmpOsdSurface = (useStretchBlit) ? osdSurface : scrSurface;
-    tmpOsdSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch) ;
+    tmpOsdSurface->Lock(DSLF_WRITE, &dst, &pitch) ;
     //printf("GetLockOsdSurface %p\n",tmpOsdSurface);fflush(stdout);
-    osd=dst;stride=pitch;
+    osd=(uint8_t *)dst;stride=pitch;
   }
   catch (DFBException *ex)
   {
@@ -1245,6 +1247,7 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
   IDirectFBSurface      *flipSurface;
 
   uint8_t               *dst;
+  void                  *tmp_dst;
   int                   pitch;
   int                   hi;
   uint8_t               *Py = buf->pixel[0] +
@@ -1284,7 +1287,8 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
       videoSurface->Blit(mpegfb[currentFB], NULL, 0, 0);
     } else {
 #endif // HAVE_CLE266_MPEG_DECODER
-      videoSurface->Lock(DSLF_WRITE, (void **)&dst, &pitch);
+      videoSurface->Lock(DSLF_WRITE, &tmp_dst, &pitch);
+      dst = (uint8_t *) tmp_dst;
       if (pixelformat == DSPF_I420 || pixelformat == DSPF_YV12)
       {
 #if HAVE_SetSourceLocation

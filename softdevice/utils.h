@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.14 2006/12/03 19:25:08 wachm Exp $
+ * $Id: utils.h,v 1.15 2006/12/17 22:39:52 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -141,7 +141,7 @@ void mmx_unpack_24rgb (uint8_t * image, int lines, int stride);
 extern void (*mmx_unpack)(uint8_t * image, int lines, int stride);
 
 
-void * fast_memcpy(void * to, const void * from, size_t len);
+void fast_memcpy(void * to, const void * from, size_t len);
 
 // RGB pixel write macros
 #define WRITE_RGB32(dst,r,g,b) \

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.22 2006/12/03 19:25:08 wachm Exp $
+ * $Id: utils.c,v 1.23 2006/12/17 22:39:52 lucke Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -103,13 +103,13 @@ void yv12_to_yuy2_il_c(const uint8_t *py,
  * convert two lines luma and one line chroma
  * lang: MMX2
  */
-void yuv420_to_yuy2(uint8_t *dest1, uint8_t *dest2, 
+void yuv420_to_yuy2(uint8_t *dest1, uint8_t *dest2,
                 uint8_t *yc1, uint8_t *yc2, uint8_t *uc, uint8_t *vc,
                 int pixel)
 {
   int i=pixel;
-  
-#ifdef USE_MMX 
+
+#ifdef USE_MMX
   for(i = pixel/8; i--; )
   {
     movq_m2r(*(yc1), mm1);     // mm1 = y7 y6 y5 y4 y3 y2 y1 y0
@@ -140,14 +140,14 @@ void yuv420_to_yuy2(uint8_t *dest1, uint8_t *dest2,
 #elif USE_ALTIVEC
 
 /* This altivec optimization is based on vlc's i420_yuy2.c with the copyright notice:
- * 
+ *
  * Copyright (C) 2000, 2001 the VideoLAN team
  *
  * Authors: Samuel Hocevar <sam@zoy.org>
  */
-  
+
    vector unsigned char u_vec;
-   vector unsigned char v_vec; 
+   vector unsigned char v_vec;
    vector unsigned char uv_vec;
    vector unsigned char y_vec;
 
@@ -159,16 +159,16 @@ void yuv420_to_yuy2(uint8_t *dest1, uint8_t *dest2,
         vec_st( vec_mergeh( y_vec, uv_vec), 0, dest1); dest1+=16;
         vec_st( vec_mergel( y_vec, uv_vec), 0, dest1); dest1+=16;
         y_vec = vec_ld( 0, yc2); yc2+=16;
-        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest2); dest2+=16;        
-        vec_st( vec_mergel( y_vec, uv_vec), 0, dest2); dest2+=16;             
-        
+        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest2); dest2+=16;
+        vec_st( vec_mergel( y_vec, uv_vec), 0, dest2); dest2+=16;
+
         uv_vec = vec_mergel( u_vec, v_vec);
         y_vec = vec_ld( 0, yc1); yc1+=16;
         vec_st( vec_mergeh( y_vec, uv_vec), 0, dest1); dest1+=16;
         vec_st( vec_mergel( y_vec, uv_vec), 0, dest1); dest1+=16;
         y_vec = vec_ld( 0, yc2); yc2+=16;
-        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest2); dest2+=16;        
-        vec_st( vec_mergel( y_vec, uv_vec), 0, dest2); dest2+=16;        
+        vec_st( vec_mergeh( y_vec, uv_vec), 0, dest2); dest2+=16;
+        vec_st( vec_mergel( y_vec, uv_vec), 0, dest2); dest2+=16;
    }
 #endif
    for ( ; i>=2; i-=2 ) {
@@ -191,7 +191,7 @@ void yuv420_to_yuy2(uint8_t *dest1, uint8_t *dest2,
 void yv12_to_yuy2_il_mmx2(uint8_t *py,
                           uint8_t *pu, uint8_t *pv,
                           uint8_t *dst, int width, int height,
-                          const int lumStride, const int chromStride, 
+                          const int lumStride, const int chromStride,
                           const int dstStride)
 {
   for(int y=0; y<height/4; y++)
@@ -209,7 +209,7 @@ void yv12_to_yuy2_il_mmx2(uint8_t *py,
     yuv420_to_yuy2(dst + dstStride,dst + dstStride * 3,
                 py + lumStride, py + lumStride * 3,pu + chromStride, pv + chromStride,
                 width);
-    
+
     py  += 4*lumStride;
     pu  += 2*chromStride;
     pv  += 2*chromStride;
@@ -263,7 +263,7 @@ void yv12_to_yuy2_fr_mmx2(const uint8_t *ysrc,
                           uint8_t *dst, int width, int height,
                           int lumStride, int chromStride, int dstStride)
 {
-#ifdef USE_MMX 
+#ifdef USE_MMX
   for (int i=0; i<height; i++)
   {
       const uint8_t *pu, *pv, *py;
@@ -713,7 +713,7 @@ inline uint8_t clip( int x) {
     dst1+=2*SIZE_##FMT;                 \
     dst2+=2*SIZE_##FMT;                 \
     pu++;                               \
-    pv++;                               
+    pv++;
 
 // MMX macros taken from libswscale
 /*
@@ -723,7 +723,7 @@ inline uint8_t clip( int x) {
  * Author: Olie Lho <ollie@sis.com.tw>
  *
  * This file is part of mpeg2dec, a free MPEG-2 video decoder
- * 
+ *
  * 15,24 bpp and dithering from Michael Niedermayer (michaelni@gmx.at)
  * MMX/MMX2 Template stuff from Michael Niedermayer (needed for fast movntq support)
  * context / deglobalize stuff by Michael Niedermayer
@@ -758,8 +758,8 @@ static uint64_t __attribute__((aligned(8))) MMX_Constants[]= {
         0x0400040004000400ULL, /* V_OFFSET   */
         0x00ff00ff00ff00ffULL, /* mask_00ff  */
         0xf8f8f8f8f8f8f8f8ULL, /* red_mask   */
-        0xfcfcfcfcfcfcfcfcULL, /* green_mask */ 
-        0x00FF0000FF0000FFULL, /* M24A */  
+        0xfcfcfcfcfcfcfcfcULL, /* green_mask */
+        0x00FF0000FF0000FFULL, /* M24A */
         0xFF0000FF0000FF00ULL, /* M24B */
         0x0000FF0000FF0000ULL, /* M24C */
 };
@@ -950,11 +950,11 @@ static uint64_t __attribute__((aligned(8))) MMX_Constants[]= {
 \
 	"pxor %%mm4, %%mm4\n" /* zero mm4 */\
 
-                  
+
 // end of MMX macros from libswscale
 
 void yuv420_to_rgb32(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel)
 {
 #ifdef USE_MMX
@@ -975,7 +975,7 @@ void yuv420_to_rgb32(uint8_t *dst1, uint8_t *dst2,
           WRITE_RGB32_MMX
                 : : "r" (MMX_Constants),"r" (dst1)
                 : "memory");
-    
+
     __asm__ __volatile__ (
           "movd (%1), %%mm6  \n"
           "movd (%2), %%mm0  \n"
@@ -1000,14 +1000,14 @@ void yuv420_to_rgb32(uint8_t *dst1, uint8_t *dst2,
 #else
   pixel/=2;
   while (pixel) {
-    YUV420P_TO_RGB(RGB32);  
+    YUV420P_TO_RGB(RGB32);
     pixel--;
   };
 #endif
 };
 
 void yuv420_to_rgb24(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel)
 {
 #ifdef USE_MMX2
@@ -1028,7 +1028,7 @@ void yuv420_to_rgb24(uint8_t *dst1, uint8_t *dst2,
           WRITE_RGB24_MMX
                 : : "r" (MMX_Constants),"r" (dst1)
                 : "memory");
-    
+
     __asm__ __volatile__ (
           "movd (%1), %%mm6  \n"
           "movd (%2), %%mm0  \n"
@@ -1053,25 +1053,25 @@ void yuv420_to_rgb24(uint8_t *dst1, uint8_t *dst2,
 #else
   pixel/=2;
   while (pixel) {
-    YUV420P_TO_RGB(RGB24);  
+    YUV420P_TO_RGB(RGB24);
     pixel--;
   };
 #endif
 };
 
 void yuv420_to_bgr24(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel)
 {
   pixel/=2;
   while (pixel) {
-    YUV420P_TO_RGB(BGR24);  
+    YUV420P_TO_RGB(BGR24);
     pixel--;
   };
 };
 
 void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel)
 {
 #ifdef USE_MMX
@@ -1116,7 +1116,7 @@ void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
 #else
   pixel/=2;
   while (pixel) {
-    YUV420P_TO_RGB(RGB16);  
+    YUV420P_TO_RGB(RGB16);
     pixel--;
   };
 #endif
@@ -1189,7 +1189,7 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        EMMS;
 #endif //USE_MMX
 
-#ifdef USE_ALTIVEC 
+#ifdef USE_ALTIVEC
        vector unsigned char zero = vec_splat_u8(0);
        vector unsigned short one = vec_splat_u16(1);
        vector unsigned short seven = vec_splat_u16(7);
@@ -1205,19 +1205,19 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
                 p1l = (vector short) vec_mergel( zero, (vector unsigned char) p1h);
                 p2l = (vector short) vec_mergel( zero, (vector unsigned char) p2h);
                 ah  = (vector short) vec_ld(0,alpha);
-                
+
                 p1h = (vector short) vec_mergeh( zero, (vector unsigned char) p1h);
                 p2h = (vector short) vec_mergeh( zero, (vector unsigned char) p2h);
-                
+
                 al = (vector short) vec_mergel( zero, (vector unsigned char) ah);
                 ah = (vector short) vec_mergeh( zero, (vector unsigned char) ah);
-                
+
                 p1h = vec_subs(p1h,p2h);
                 p1l = vec_subs(p1l,p2l);
-                
+
                 ah = vec_sr(ah, one);
                 al = vec_sr(al, one);
-       
+
                 p1h = vec_mladd( p1h, ah, (vector short) zero);
                 p1l = vec_mladd( p1l, al, (vector short) zero);
 
@@ -1230,14 +1230,14 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
                 p1h = (vector short) vec_packsu(p1h,p1l);
 
                 vec_st((vector unsigned char) p1h, 0, dest);
-                
+
                 P1+=16;
                 P2+=16;
                 alpha+=16;
                 dest+=16;
        }
 #endif // USE_ALTIVEC
-       
+
        //fallback version and the last missing bytes...
        for (int i=0; i < count; i++){
           dest[i]=(((uint16_t) P1[i] *(uint16_t) alpha[i]) +
@@ -1283,7 +1283,7 @@ char *getFBName(void)
 
 #ifndef USE_MMX
 
-void * fast_memcpy(void * to, const void * from, size_t len) {
+void fast_memcpy(void * to, const void * from, size_t len) {
         memcpy(to,from,len);
 }
 
@@ -1313,11 +1313,9 @@ __asm__ __volatile__(\
 	: "memory");\
 }
 
-void * fast_memcpy(void * to, const void * from, size_t len)
+void fast_memcpy(void * to, const void * from, size_t len)
 {
-	void *retval;
 	size_t i;
-	retval = to;
 #ifdef USE_MMX2
         /* PREFETCH has effect even for MOVSB instruction ;) */
 	__asm__ __volatile__ (
@@ -1412,7 +1410,6 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 	 *	Now do the tail of the block
 	 */
 	if(len) small_memcpy(to, from, len);
-	return retval;
 }
 
 #endif // USE_MMX
