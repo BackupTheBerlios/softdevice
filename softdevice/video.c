@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.71 2006/12/03 19:32:59 wachm Exp $
+ * $Id: video.c,v 1.72 2007/01/15 20:30:08 wachm Exp $
  */
 
 #include <fcntl.h>
@@ -443,7 +443,7 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
                                   0, 0,
                                   pic->width, pic->height,
                                   vidX1, vidY1,
-                                  vidX2, vidY2,
+                                  vidX2-vidX1, vidY2-vidY1,
                                   0,0,0,0);
           CopyPicBufferContext(scale_pic,pic);
           scale_pic->width=pic->width;
