@@ -2,6 +2,9 @@ Changelog
 2007-01-15:
    - introduce yuv420_to_rgb15() (mmx acceleration still missing).
    - properly start cShmRemote thread in ShmClient.
+   - avoid "BadWindow" errors by using an errror handler. Also fix 
+     "BadWindow" errors which occur after the xscreensaver has once been 
+     active.
 2006-12-17:
    - Silence some warnings with gcc 4.1.1.
    - Adjust MMX and C version of fast_memcpy() to the same return type.

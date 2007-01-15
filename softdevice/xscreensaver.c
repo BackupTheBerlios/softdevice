@@ -18,7 +18,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  * 
- * $Id: xscreensaver.c,v 1.6 2006/12/14 22:36:32 wachm Exp $
+ * $Id: xscreensaver.c,v 1.7 2007/01/15 20:25:39 wachm Exp $
  */
 
 #ifndef STAND_ALONE
@@ -83,6 +83,9 @@ void cScreensaver::DisableScreensaver(bool disable) {
   lastKeyEvent = current.tv_sec;
   this->disabled = disable;
 
+  if ( disable )
+          window = FindWindow();
+
 #ifdef LIBXDPMS_SUPPORT
   if ((DPMSQueryExtension(dpy, &dpms_dummy, &dpms_dummy)) && (DPMSCapable(dpy))) {
     Status stat;
@@ -117,6 +120,9 @@ void cScreensaver::MaybeSendKeyEvent(void) {
     if (current.tv_sec - lastKeyEvent > INTERVAL_KEYEVENT) {
       lastKeyEvent = current.tv_sec;
 
+      // set error handler
+      old_handler = XSetErrorHandler(BadWindow_ehandler);
+
       //dsyslog("[softdevice-xscreensaver]: faking left shift pushing\n");
       XKeyEvent keyEvent;
       keyEvent.window = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
@@ -132,7 +138,8 @@ void cScreensaver::MaybeSendKeyEvent(void) {
       keyEvent.type = KeyPress; 
       keyEvent.keycode = XKeysymToKeycode(this->dpy, XK_Shift_L);
 
-      if (!XSendEvent (dpy, window, True, KeyPressMask, (XEvent *)&keyEvent)) {
+      if (!XSendEvent (dpy, RootWindowOfScreen( DefaultScreenOfDisplay( dpy )),
+                       True, KeyPressMask, (XEvent *)&keyEvent)) {
         esyslog("[softdevice-xscreensaver]: failed to send left shift key event\n");
         return;
       }
@@ -140,11 +147,16 @@ void cScreensaver::MaybeSendKeyEvent(void) {
 
       keyEvent.type = KeyRelease;
 
-      if (!XSendEvent (dpy, window, True, KeyPressMask, (XEvent *)&keyEvent)) {
+      if (!XSendEvent (dpy, RootWindowOfScreen( DefaultScreenOfDisplay( dpy )),
+                       True, KeyPressMask, (XEvent *)&keyEvent)) {
         esyslog("[softdevice-xscreensaver]: failed to send left shift released key event\n");
         return;
       }
       XSync (dpy, 0);
+
+      // restore default error handler
+      XSetErrorHandler(old_handler);
+      old_handler = 0;
     }
   }
 }
@@ -157,6 +169,9 @@ void cScreensaver::MaybeSendDeactivate(void) {
     if (current.tv_sec - last > INTERVAL) {
       last = current.tv_sec;
       //dsyslog("[softdevice-xscreensaver]: sending xscreensaver deactivation command DPMS\n");
+
+      // set error handler
+      old_handler = XSetErrorHandler(BadWindow_ehandler);
 
       XEvent event;
       event.xany.type = ClientMessage;
@@ -171,6 +186,9 @@ void cScreensaver::MaybeSendDeactivate(void) {
         return;
       }
       XSync (dpy, 0);
+      
+      // restore error handler
+      XSetErrorHandler(old_handler);
     }
   }
 }
