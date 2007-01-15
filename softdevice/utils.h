@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.15 2006/12/17 22:39:52 lucke Exp $
+ * $Id: utils.h,v 1.16 2007/01/15 19:35:13 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -128,6 +128,10 @@ void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
                  uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
                  int pixel);
 
+void yuv420_to_rgb15(uint8_t *dst1, uint8_t *dst2,
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 int pixel);
+
 void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        uint8_t *alpha,uint16_t count);
    // performes alpha blending in software
@@ -178,7 +182,7 @@ void fast_memcpy(void * to, const void * from, size_t len);
 
 #define WRITE_RGB15(dst,r,g,b) \
         do { \
-            ((uint8_t *)dst)[0]=(((b) >> 3)& 0x1F) | (((g) & 0x1F) << 3); \
+            ((uint8_t *)dst)[0]=(((b) >> 3)& 0x1F) | (((g) & 0x38) << 2); \
             ((uint8_t *)dst)[1]=(((r) & 0xF8)>>1) | ((g) >> 6); \
         } while (0)
 #define SIZE_RGB15  2

@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.17 2006/12/14 22:34:30 wachm Exp $
+ * $Id: PicBuffer.c,v 1.18 2007/01/15 19:35:13 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -146,6 +146,7 @@ yuv420_convert_fct GetYuv420ConvertFct(PixelFormat pix_fmt) {
                 case PIX_FMT_RGB24:
                         return &yuv420_to_rgb24;
                 case PIX_FMT_RGB555:
+                        return &yuv420_to_rgb15;
                 case PIX_FMT_RGB565:
                         return &yuv420_to_rgb16;
                 case PIX_FMT_YUV422:

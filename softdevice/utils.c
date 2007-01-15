@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.24 2006/12/17 22:50:10 lucke Exp $
+ * $Id: utils.c,v 1.25 2007/01/15 19:35:13 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -1120,6 +1120,17 @@ void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
     pixel--;
   };
 #endif
+};
+
+void yuv420_to_rgb15(uint8_t *dst1, uint8_t *dst2,
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 int pixel)
+{
+  pixel/=2;
+  while (pixel) {
+    YUV420P_TO_RGB(RGB15);  
+    pixel--;
+  };
 };
 
 void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
