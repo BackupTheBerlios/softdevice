@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.20 2006/11/26 19:00:17 wachm Exp $
+ * $Id: ShmClient.c,v 1.21 2007/01/15 19:37:08 wachm Exp $
  */
 
 #include <signal.h>
@@ -32,7 +32,7 @@ void sig_handler(int signal) {
         active=false;
 };
 
-class cShmRemote : public cSoftRemote, cThread {
+class cShmRemote : public cSoftRemote, public cThread {
         protected:
                 bool running;
         public:
@@ -222,6 +222,7 @@ int main(int argc, char **argv) {
         ctl->key=NO_KEY;
         // wakeup remote thread to unsuspend video/audio
         sem_sig_unlock(ctl->semid,KEY_SIG);
+        (dynamic_cast<cShmRemote*>(xvRemote))->Start();
 
         while (active) {
                 //SHMDEB("wait for signal\n");
