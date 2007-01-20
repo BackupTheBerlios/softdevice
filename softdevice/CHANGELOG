@@ -1,9 +1,12 @@
 Changelog
+2007-01-20:
+   - Fixed video-dfb for VIA-unichrome with current DirectFB cvs. In directfbrc
+     pixelformat=AiRGB must be specified.
 2007-01-15:
    - introduce yuv420_to_rgb15() (mmx acceleration still missing).
    - properly start cShmRemote thread in ShmClient.
-   - avoid "BadWindow" errors by using an errror handler. Also fix 
-     "BadWindow" errors which occur after the xscreensaver has once been 
+   - avoid "BadWindow" errors by using an errror handler. Also fix
+     "BadWindow" errors which occur after the xscreensaver has once been
      active.
    - fix vidWin for non zero VidX1 and VidY1.
 2006-12-17:

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.75 2006/12/17 22:39:52 lucke Exp $
+ * $Id: video-dfb.c,v 1.76 2007/01/20 13:36:39 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -422,7 +422,13 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
                fmt, DFB_BITS_PER_PIXEL(fmt));
       Bpp = DFB_BITS_PER_PIXEL(fmt);
 
-      /* ------------------------------------------------------------------------
+      /* ---------------------------------------------------------------------
+       * In case of of AiRGB we have to reset clearAlpha value for VIA
+       */
+      if (fmt == DSPF_AiRGB && isVIAUnichrome)
+        clearAlpha = 0;
+
+      /* ---------------------------------------------------------------------
        * clear screen surface at startup
        */
       scrSurface->Clear(0,0,0,0);
