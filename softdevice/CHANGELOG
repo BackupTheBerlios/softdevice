@@ -1,4 +1,9 @@
 Changelog
+2007-01-27:
+   - video-dfb: - Limit VIA-unichrome name compare to 19 chars.
+                - Detect a patched DirectFB version for VIA CN700 support,
+                  and set some parameters for video layer V3:
+                    pixelformat YUY2, NO hardware decoding support .
 2007-01-20:
    - Fixed video-dfb for VIA-unichrome with current DirectFB cvs. In directfbrc
      pixelformat=AiRGB must be specified.
