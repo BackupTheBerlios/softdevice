@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.76 2007/01/20 13:36:39 lucke Exp $
+ * $Id: video-dfb.c,v 1.77 2007/01/27 09:50:58 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -358,14 +358,33 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
     /* --------------------------------------------------------------------------
      * check for VIA Unichrome presence
      */
-    if (!strcmp (videoLayerDescription.name, "VIA Unichrome Video"))
+    if (!strncmp (videoLayerDescription.name, "VIA Unichrome Video", 19))
     {
       isVIAUnichrome = true;
       clearAlpha = 0xff;
+      if (!strcmp (videoLayerDescription.name, "VIA Unichrome Video 3")) {
+        /* -------------------------------------------------------------------
+         * DirectFB patched for CN700 support: restrict pixelformat to YUY2,
+         * and disable hardware decoding support.
+         * I420 == 0, YV12 == 1, YUY2 == 2
+         */
 #ifdef HAVE_CLE266_MPEG_DECODER
-      if (setupStore->cle266HWdecode) {
+        setupStore->cle266HWdecode = false;
+        fprintf(stderr,
+                "[dfb] disabling hw-decode support for this layer\n");
+#endif
+        currentPixelFormat = setupStore->pixelFormat = 2;
+        setupStore->pixelFormatLocked = true;
+        setupStore->useStretchBlit = 0;
+        setupStore->stretchBlitLocked = true;
+        useStretchBlit = false;
+      }
+#ifdef HAVE_CLE266_MPEG_DECODER
+      else if (setupStore->cle266HWdecode) {
           if (!SetupCle266Buffers(swidth, sheight)) {
-              fprintf(stderr, "Error allocating hardware buffers for CLE266 decoding: reverting to software decoding\n");
+              fprintf(stderr,
+                      "[dfb] Error allocating hardware buffers for "
+                      "CLE266 decoding: reverting to software decoding\n");
               setupStore->cle266HWdecode = false;
           } else {
               // Need YV12 pixel format for blitting from harware buffer
@@ -423,17 +442,17 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       Bpp = DFB_BITS_PER_PIXEL(fmt);
 
       /* ---------------------------------------------------------------------
-       * In case of of AiRGB we have to reset clearAlpha value for VIA
+       * In case of of AiRGB we have to reset clearAlpha value
        */
-      if (fmt == DSPF_AiRGB && isVIAUnichrome)
+      if (fmt == DSPF_AiRGB)
         clearAlpha = 0;
 
       /* ---------------------------------------------------------------------
        * clear screen surface at startup
        */
-      scrSurface->Clear(0,0,0,0);
+      scrSurface->Clear(0,0,0,clearAlpha);
       scrSurface->Flip();
-      scrSurface->Clear(0,0,0,0);
+      scrSurface->Clear(0,0,0,clearAlpha);
 
       osdDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
                                                    DSDESC_WIDTH |
