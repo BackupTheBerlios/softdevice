@@ -6,6 +6,7 @@ Changelog
    - add architecture "x86_64" to configure and report unsupported 
      architectures.
    - add StealToBitmap() for OSD in grabbed image.
+   - add OSD with alpha blending to grabbed images.
 2007-01-27:
    - video-dfb: - Limit VIA-unichrome name compare to 19 chars.
                 - Detect a patched DirectFB version for VIA CN700 support,
