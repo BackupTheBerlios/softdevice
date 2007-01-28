@@ -1,6 +1,8 @@
 Changelog
 2007-01-28:
    - don't lock NULL pictures in cVideo::GetLockLastPic().
+   - implement avcodec_decode_audio2() interface to libavcodec.
+   - set ic->bp.is_streamed to true, to avoid calls to unimlemented seek method.
 2007-01-27:
    - video-dfb: - Limit VIA-unichrome name compare to 19 chars.
                 - Detect a patched DirectFB version for VIA CN700 support,

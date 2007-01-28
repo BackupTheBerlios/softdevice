@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.70 2006/11/07 19:01:37 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.71 2007/01/28 19:29:53 wachm Exp $
  */
 
 #include <math.h>
@@ -426,8 +426,14 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
   }
   while ( size > 0 && active ) {
     BUFDEB("start decode audio. pkt size: %d \n",size);
+#if LIBAVCODEC_VERSION_INT >= ((51<<16)+(29<<8)+0)
+    audio_size=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+    len=avcodec_decode_audio2(context, (short *)audiosamples,
+                 &audio_size, data, size);
+#else
     len=avcodec_decode_audio(context, (short *)audiosamples,
                  &audio_size, data, size);
+#endif
     BUFDEB("end decode audio\n");
     if (len < 0) {
       printf("[mpegdecoder] Error while decoding audio frame %d\n", frame);
@@ -1121,6 +1127,7 @@ void cMpeg2Decoder::initStream() {
    init_put_byte(&ic->pb, NULL,dvb_buf_size[setupStore.bufferMode]/2, 0, this,
        read_packet_RingBuffer,NULL,seek_RingBuffer);
    ic->pb.buf_end=NULL;
+   ic->pb.is_streamed=true;
    CMDDEB("init put byte finished\n");
 };
 
