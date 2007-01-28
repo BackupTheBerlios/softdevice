@@ -1,4 +1,6 @@
 Changelog
+2007-01-28:
+   - don't lock NULL pictures in cVideo::GetLockLastPic().
 2007-01-27:
    - video-dfb: - Limit VIA-unichrome name compare to 19 chars.
                 - Detect a patched DirectFB version for VIA CN700 support,

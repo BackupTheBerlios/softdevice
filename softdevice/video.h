@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.49 2006/12/03 19:32:59 wachm Exp $
+ * $Id: video.h,v 1.50 2007/01/28 19:28:11 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -156,7 +156,8 @@ public:
     {
             oldPictureMutex.Lock();
             pic=oldPicture;
-            LockBuffer(oldPicture);
+            if (oldPicture)
+		LockBuffer(oldPicture);
             oldPictureMutex.Unlock();
     };
 
