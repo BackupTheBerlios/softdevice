@@ -4,7 +4,8 @@ Changelog
    - implement avcodec_decode_audio2() interface to libavcodec.
    - set ic->bp.is_streamed to true, to avoid calls to unimlemented seek method.
    - add architecture "x86_64" to configure and report unsupported 
-     architectures
+     architectures.
+   - add StealToBitmap() for OSD in grabbed image.
 2007-01-27:
    - video-dfb: - Limit VIA-unichrome name compare to 19 chars.
                 - Detect a patched DirectFB version for VIA CN700 support,

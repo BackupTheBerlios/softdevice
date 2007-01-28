@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.11 2006/11/16 21:03:18 wachm Exp $
+ * $Id: SoftOsd.h,v 1.12 2007/01/28 19:36:50 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -94,6 +94,13 @@ public:
     cSoftOsd(cVideoOut *VideoOut, int XOfs, int XOfs);
     virtual ~cSoftOsd();
     virtual void Flush(void);
+
+    // Create a copy of the osd layer for the Grab() method.
+    // Does *not* change anything in the osd!!
+    void StealToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
+		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    int Ystride, int UVstride,
+                    int dest_Width, int dest_Height);
 
 protected:
     bool SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
