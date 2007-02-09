@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.77 2007/01/28 19:38:06 wachm Exp $
+ * $Id: softdevice.c,v 1.78 2007/02/09 23:55:22 lucke Exp $
  */
 
 #include "softdevice.h"
@@ -525,6 +525,12 @@ int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 # endif
 {
   SOFTDEB("PlayAudio... %p length %d\n",Data,Length);
+#if VDRVERSNUM >= 10342
+  if (setupStore.shouldSuspend && !Transferring()) {
+    usleep(10000); // avoid burning CPU
+    return 0;
+  }
+#endif
   if (! packetMode)
     return decoder->Decode(Data, Length);
 
@@ -579,20 +585,26 @@ int  cSoftDevice::GetAudioChannelDevice(void)
  */
 int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 {
-   SOFTDEB("PlayVideo %x length %d\n",Data,Length);
-   if (! packetMode)
+  SOFTDEB("PlayVideo %x length %d\n",Data,Length);
+#if VDRVERSNUM >= 10342
+  if (setupStore.shouldSuspend && !Transferring()) {
+    usleep(10000); // avoid burning CPU
+    return 0;
+  }
+#endif
+  if (! packetMode)
     return decoder->Decode(Data, Length);
 
   if (Length==-1) {
      // Length = -1 : pass pointer to format context
      ic=(AVFormatContext *) Data;
      return -1;
-  };
+  }
   if ( packetMode && ic && Length == -2 ) {
      // Length = -2 : pass pointer to packet
      decoder->QueuePacket(ic,( AVPacket &) *Data,true);
      return -2;
-  };
+  }
   return 0;
 }
 
@@ -609,7 +621,7 @@ uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
   videoOut->GetLockLastPic(orig_pic);
 
   if (!orig_pic) {
-    // got no video picture, but maybe there is OSD, so allocate a 
+    // got no video picture, but maybe there is OSD, so allocate a
     // black picture as a background.
     orig_pic=(sPicBuffer*) malloc(sizeof(sPicBuffer));
     AllocatePicBuffer(orig_pic,PIX_FMT_YUV420P,SRC_HEIGHT,SRC_WIDTH);
@@ -626,13 +638,13 @@ uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
 
   if (Quality<0)
     Quality=100;
- 
+
   sPicBuffer dst;
   AllocatePicBuffer(&dst,PIX_FMT_BGR24,SizeX,SizeY);
 
   cSoftOsd *Osd=dynamic_cast<cSoftOsd*>(cSoftOsdProvider::GetOsd());
   if (!Osd && self_allocated_pic) {
-    // no osd and no picture... return null to avoid 
+    // no osd and no picture... return null to avoid
     // "Empty JPEG image (DNL not supported)" error message from libjpeg
     DeallocatePicBuffer(orig_pic);
     free(orig_pic);
@@ -644,7 +656,7 @@ uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
      uint8_t *OsdPu=(uint8_t*)malloc(OSD_HEIGHT*OSD_STRIDE/4+8);
      uint8_t *OsdPv=(uint8_t*)malloc(OSD_HEIGHT*OSD_STRIDE/4+8);
      uint8_t *OsdPAlphaY=(uint8_t*)malloc(OSD_HEIGHT*OSD_STRIDE+16);
-     uint8_t *OsdPAlphaUV=(uint8_t*)malloc(OSD_HEIGHT*OSD_STRIDE/4+8); 
+     uint8_t *OsdPAlphaUV=(uint8_t*)malloc(OSD_HEIGHT*OSD_STRIDE/4+8);
      Osd->StealToBitmap(OsdPy,OsdPu,OsdPv,OsdPAlphaY,OsdPAlphaUV,
                     OSD_STRIDE, OSD_STRIDE/2,
                     SizeX, SizeY);
@@ -652,9 +664,9 @@ uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
 	   0,0,orig_pic->width,orig_pic->height,
 	   0,0,SizeX,SizeY,
 	   OsdPy,OsdPv,OsdPu,OsdPAlphaY,OsdPAlphaUV,
-           OSD_STRIDE, 
+           OSD_STRIDE,
 	   0,0,0,0);
-     free(OsdPy); free(OsdPu); free(OsdPv); 
+     free(OsdPy); free(OsdPu); free(OsdPv);
      free(OsdPAlphaY); free(OsdPAlphaUV);
   } else {
      CopyScalePicBuf(&dst,orig_pic,
@@ -664,7 +676,7 @@ uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
   };
   SizeX=dst.width;
   SizeY=dst.height;
-  if (!self_allocated_pic) 
+  if (!self_allocated_pic)
     videoOut->UnlockBuffer(orig_pic);
   else {
     DeallocatePicBuffer(orig_pic);
