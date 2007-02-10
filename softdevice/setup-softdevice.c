@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.48 2006/12/03 18:26:21 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.49 2007/02/10 00:02:14 lucke Exp $
  */
 
 #include <string.h>
@@ -71,17 +71,6 @@ const char *ac3ModeNames[SETUP_AC3MODENAMES];
 const char *userKeyUsage[SETUP_USERKEYS];
 
 const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
-
-/* ----------------------------------------------------------------------------
- */
-static inline int clamp (int min, int val, int max)
-{
-  if (val < min)
-    return min;
-  if (val > max)
-    return max;
-  return val;
-}
 
 /* ----------------------------------------------------------------------------
  */
@@ -203,6 +192,8 @@ cSetupStore::cSetupStore ()
   syncTimerNames[1] = "rtc";
   syncTimerNames[2] = "sig";
   syncTimerNames[3] = NULL;
+
+  softlog = new cSetupSoftlog();
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
@@ -378,7 +369,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     vidSaturation = clamp (-1, vidSaturation, 100);
     fprintf(stderr, "[setup-softdevice] vidSaturation: %d\n", vidSaturation);
   }  else
-    return false;
+    return softlog->Parse (Name, Value);
 
   return true;
 }

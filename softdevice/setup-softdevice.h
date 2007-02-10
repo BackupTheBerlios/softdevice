@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.36 2006/12/03 18:26:21 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.37 2007/02/10 00:02:14 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -17,6 +17,8 @@
 #else
 #include "VdrReplacements.h"
 #endif
+
+#include "setup-softlog.h"
 
 #ifdef HAVE_CONFIG
 # include "config.h"
@@ -172,10 +174,23 @@ class cSetupStore {
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
     char  *voArgs;
     char  *aoArgs;
+
+    cSetupSoftlog *softlog;
 };
 
 #define OSDMODE_PSEUDO    0
 #define OSDMODE_SOFTWARE  1
+
+/* ----------------------------------------------------------------------------
+ */
+static inline int clamp (int min, int val, int max)
+{
+  if (val < min)
+    return min;
+  if (val > max)
+    return max;
+  return val;
+}
 
 extern cSetupStore setupStore;
 

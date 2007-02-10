@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.h,v 1.1 2006/04/23 19:55:53 wachm Exp $
+ * $Id: setup-softdevice-menu.h,v 1.2 2007/02/10 00:02:14 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_MENU_H
@@ -58,6 +58,7 @@ class cMenuSetupPostproc : public cOsdMenu
 class cMenuSetupSoftdevice : public cMenuSetupPage {
   private:
     cSetupStore *data, copyData;
+    cPlugin     *plugin;
 
   protected:
     virtual eOSState ProcessKey(eKeys Key);

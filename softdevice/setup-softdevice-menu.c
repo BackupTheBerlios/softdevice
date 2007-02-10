@@ -3,11 +3,12 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.8 2006/09/09 10:35:37 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.9 2007/02/10 00:02:14 lucke Exp $
  */
 
 //#include "video.h"
 #include "setup-softdevice-menu.h"
+#include "setup-softlog-menu.h"
 
 /* ---------------------------------------------------------------------------
  */
@@ -273,6 +274,7 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
 {
   if (plugin)
     SetPlugin(plugin);
+  this->plugin = plugin;
 
   copyData = setupStore;
   data = &setupStore;
@@ -284,6 +286,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   {
     Add(new cOsdItem(tr("Video out")));
   }
+
+  Add(new cOsdItem(tr("Logging")));
 
 #if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
@@ -407,6 +411,10 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
           else if (!strcmp(Get(Current())->Text(),tr("Video out")))
           {
             return AddSubMenu (new cMenuSetupVideoParm(tr("Video out")));
+          }
+          else if (!strcmp(Get(Current())->Text(),tr("Logging")))
+          {
+            return AddSubMenu (new cMenuSetupSoftlog(plugin, tr("Logging")));
           }
           Store();
           state = osBack;

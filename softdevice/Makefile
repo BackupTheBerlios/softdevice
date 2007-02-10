@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.35 2006/12/03 20:38:18 wachm Exp $
+# $Id: Makefile,v 1.36 2007/02/10 00:02:14 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -226,7 +226,11 @@ DEFINES += -DPLUGINLIBDIR='"$(PLUGINLIBDIR)"'
 
 TARGETS = libvdr-$(PLUGIN).so
 LIBS = $(FFMPEGLIBS)
-OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o audio.o video-dummy.o setup-softdevice.o setup-softdevice-menu.o sync-timer.o SoftOsd.o PicBuffer.o VideoFilter.o
+OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o \
+				audio.o video-dummy.o \
+				setup-softdevice.o setup-softdevice-menu.o \
+				setup-softlog.o setup-softlog-menu.o\
+				sync-timer.o SoftOsd.o PicBuffer.o VideoFilter.o
 ALL_OBJS = $(OBJS)
 
 ifdef ALSA_SUPPORT
@@ -237,7 +241,7 @@ endif
 ifdef OSS_SUPPORT
   OBJS += audio-oss.o
 endif
-  
+
 ifdef DFB_SUPPORT
   ifdef USE_SUBPLUGINS
     DFB_OBJS  = utils.o video.o video-dfb.o PicBuffer.o
@@ -363,7 +367,8 @@ VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../remote.o ../../../i18n.o ../../../keys.o \
 		      ../../../config.o ../../../plugin.o\
 		      ../../../sources.o
-SHM_CLIENT_OBJS  = video_shm.o video-xv_shm.o setup-softdevice_shm.o\
+SHM_CLIENT_OBJS  = video_shm.o video-xv_shm.o \
+			 setup-softdevice_shm.o setup-softlog_shm.o \
 		   xscreensaver_shm.o utils_shm.o VdrReplacements_shm.o\
 		   ShmClient_shm.o PicBuffer_shm.o
 
