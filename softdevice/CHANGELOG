@@ -1,9 +1,13 @@
 Changelog
+2007-02-10:
+   - Pause the playback of recordings when suspended (by Marko Mäkelä)
+   - add configurable logging
+   - report Xrun audio duration
 2007-01-28:
    - don't lock NULL pictures in cVideo::GetLockLastPic().
    - implement avcodec_decode_audio2() interface to libavcodec.
    - set ic->bp.is_streamed to true, to avoid calls to unimlemented seek method.
-   - add architecture "x86_64" to configure and report unsupported 
+   - add architecture "x86_64" to configure and report unsupported
      architectures.
    - add StealToBitmap() for OSD in grabbed image.
    - add OSD with alpha blending to grabbed images.

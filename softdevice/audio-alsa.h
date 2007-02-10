@@ -3,13 +3,16 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.h,v 1.2 2006/11/05 22:05:59 lucke Exp $
+ * $Id: audio-alsa.h,v 1.3 2007/02/10 00:05:45 lucke Exp $
  */
 #ifndef __AUDIO_ALSA_H__
 #define __AUDIO_ALSA_H__
 
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #define ALSA_PCM_NEW_SW_PARAMS_API
+
+#include <sys/time.h>
+
 #include <alsa/asoundlib.h>
 #include <vdr/plugin.h>
 

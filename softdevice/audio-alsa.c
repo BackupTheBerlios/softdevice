@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.4 2006/11/07 18:16:57 wachm Exp $
+ * $Id: audio-alsa.c,v 1.5 2007/02/10 00:05:45 lucke Exp $
  */
 #include "audio-alsa.h"
 
@@ -250,7 +250,13 @@ void cAlsaAudioOut::Xrun(void)
 		exit(EXIT_FAILURE);
 	}
 	if (snd_pcm_status_get_state(status) == SND_PCM_STATE_XRUN) {
-//		snd_pcm_status_get_trigger_tstamp(status, &tstamp);
+      struct timeval now, diff, tstamp;
+    gettimeofday(&now, 0);
+    snd_pcm_status_get_trigger_tstamp(status, &tstamp);
+    timersub(&now, &tstamp, &diff);
+    setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                             "[softdevice-audio]: Xrun (at least %.3f ms long)\n",
+                             diff.tv_sec * 1000 + diff.tv_usec / 1000.0);
 		if ((res = snd_pcm_prepare(handle))<0) {
       esyslog("[softdevice-audio]: Xrun prepare error: %s FATAL exiting",
               snd_strerror(res));
