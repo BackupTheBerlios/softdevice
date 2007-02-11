@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.1 2007/02/09 23:46:47 lucke Exp $
+ * $Id: setup-softlog.c,v 1.2 2007/02/11 10:31:27 lucke Exp $
  */
 
 #include "setup-softlog.h"
@@ -78,7 +78,10 @@ int cSetupSoftlog::SetLogPriorities(int newPriorities)
 {
     int oldenabledPriorities = enabledPriorities;
 
-  enabledPriorities = newPriorities;
+  /* -------------------------------------------------------------------------
+   * set new priority flags, but error messages are allways enabled
+   */
+  enabledPriorities = (newPriorities | SOFT_LOG_ERROR);
   return oldenabledPriorities;
 }
 
@@ -104,6 +107,27 @@ int cSetupSoftlog::SetTraceFlags(int newFlags)
 int cSetupSoftlog::GetTraceFlags()
 {
   return traceFlags;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cSetupSoftlog::SetAppendMode(int newMode)
+{
+    int oldMode = appendPID;
+
+  if (newMode != appendPID) {
+    appendPID = newMode;
+    SetLogFile(logFileName);
+  }
+
+  return oldMode;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+int cSetupSoftlog::GetAppendMode()
+{
+  return appendPID;
 }
 
 /* ---------------------------------------------------------------------------
@@ -203,6 +227,8 @@ bool cSetupSoftlog::Parse(const char *name, const char *value)
     SetLogPriorities(atoi(value));
   else if (!strcasecmp(name,"softlog-file"))
     SetLogFile(value);
+  else if (!strcasecmp(name,"softlog-appendpid"))
+    SetAppendMode(atoi(value));
   else
     return false;
 

@@ -1,7 +1,7 @@
 /*
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softlog-menu.h,v 1.1 2007/02/09 23:46:47 lucke Exp $
+ * $Id: setup-softlog-menu.h,v 1.2 2007/02/11 10:31:27 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTLOG_MENU_H
@@ -21,8 +21,9 @@
  */
 class cMenuSetupSoftlog : public cMenuSetupPage {
   private:
-    char  *newLogFileName;
+    char  newLogFileName[256];
     int   newLogPriorities;
+    int   newAppendMode;
 
   protected:
     virtual eOSState ProcessKey(eKeys Key);

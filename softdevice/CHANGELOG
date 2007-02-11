@@ -1,4 +1,6 @@
 Changelog
+2007-02-11:
+   - Some more options selectable via log menu.
 2007-02-10:
    - Pause the playback of recordings when suspended (by Marko Mäkelä)
    - add configurable logging

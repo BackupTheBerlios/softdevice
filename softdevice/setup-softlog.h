@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.h,v 1.1 2007/02/09 23:46:47 lucke Exp $
+ * $Id: setup-softlog.h,v 1.2 2007/02/11 10:31:27 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTLOG_H
@@ -48,6 +48,8 @@ class cSetupSoftlog {
                   GetLogPriorities(),
                   SetTraceFlags(int newFlags),
                   GetTraceFlags(),
+                  SetAppendMode(int newMode),
+                  GetAppendMode(),
                   SetLogFile(const char *fileName);
     virtual char  *GetLogFileName();
     virtual bool  Parse(const char *name, const char *value);
