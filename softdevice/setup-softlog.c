@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.2 2007/02/11 10:31:27 lucke Exp $
+ * $Id: setup-softlog.c,v 1.3 2007/02/13 20:03:59 lucke Exp $
  */
 
 #include "setup-softlog.h"
@@ -183,8 +183,6 @@ void cSetupSoftlog::DisableLog2File()
   logFile = NULL;
 }
 
-_syscall0(pid_t, gettid)
-
 /* ---------------------------------------------------------------------------
  */
 void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
@@ -198,7 +196,7 @@ void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
 
   va_start(argList, format);
   priority = LogPriority(currPriority);
-  snprintf(fmt, sizeof(fmt), "[%d] %s", gettid(), format);
+  snprintf(fmt, sizeof(fmt), "[%ld] %s", syscall(__NR_gettid), format);
 
   if (priority != NO_LOG)
     vsyslog(priority, fmt, argList);
@@ -209,9 +207,9 @@ void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
 
     gettimeofday(&now, NULL);
     tmp = localtime(&now.tv_sec);
-    snprintf(fmt, sizeof(fmt), "%02d:%02d:%02d.%04d [%d] %s",
+    snprintf(fmt, sizeof(fmt), "%02d:%02d:%02d.%04d [%ld] %s",
              tmp->tm_hour, tmp->tm_min, tmp->tm_sec, (int) now.tv_usec/1000,
-             gettid(), format);
+             syscall(__NR_gettid), format);
     vfprintf(logFile, fmt, argList);
     fflush(logFile);
   }
