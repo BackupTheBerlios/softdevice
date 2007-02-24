@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.h,v 1.2 2007/02/11 10:31:27 lucke Exp $
+ * $Id: setup-softlog.h,v 1.3 2007/02/24 14:04:14 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTLOG_H
@@ -36,6 +36,7 @@ class cSetupSoftlog {
 
     int   IsEnabled(int priority),
           LogPriority(int priority);
+    char  Priority2Char(int priority);
     void  CloseLogFile();
 
   public:

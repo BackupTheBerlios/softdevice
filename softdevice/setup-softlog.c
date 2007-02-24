@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.3 2007/02/13 20:03:59 lucke Exp $
+ * $Id: setup-softlog.c,v 1.4 2007/02/24 14:04:14 lucke Exp $
  */
 
 #include "setup-softlog.h"
@@ -59,6 +59,21 @@ int cSetupSoftlog::LogPriority(int priority)
 
   // unknown logtype -> return invalid priority
   return NO_LOG;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+char cSetupSoftlog::Priority2Char(int priority)
+{
+  if (priority & SOFT_LOG_TRACE)
+    return 'T';
+  if (priority & SOFT_LOG_ERROR)
+    return 'E';
+  if (priority & SOFT_LOG_INFO)
+    return 'I';
+  if (priority & SOFT_LOG_DEBUG)
+    return 'D';
+  return '?';
 }
 
 /* ---------------------------------------------------------------------------
@@ -207,8 +222,9 @@ void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
 
     gettimeofday(&now, NULL);
     tmp = localtime(&now.tv_sec);
-    snprintf(fmt, sizeof(fmt), "%02d:%02d:%02d.%04d [%ld] %s",
+    snprintf(fmt, sizeof(fmt), "%02d:%02d:%02d.%04d %c [%ld] %s",
              tmp->tm_hour, tmp->tm_min, tmp->tm_sec, (int) now.tv_usec/1000,
+             Priority2Char(currPriority),
              syscall(__NR_gettid), format);
     vfprintf(logFile, fmt, argList);
     fflush(logFile);

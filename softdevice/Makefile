@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.36 2007/02/10 00:02:14 lucke Exp $
+# $Id: Makefile,v 1.37 2007/02/24 14:04:14 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -26,6 +26,9 @@ VDRDIR     = ../../..
 LIBDIR     = ../../lib
 TMPDIR     = /tmp
 PLUGINLIBDIR = ./PLUGINS/lib
+
+# for older file-utils, option -f had the same effect
+CPOPTS = --remove-destination
 
 -include config.mak
 
@@ -323,29 +326,29 @@ all: $(TARGETS)
 
 libvdr-$(PLUGIN).so: $(OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
+	@cp $(CPOTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 ifdef USE_SUBPLUGINS
 
 lib$(PLUGIN)-dfb.so: $(DFB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(DFB_OBJS) $(DFB_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
+	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-fb.so: $(FB_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(FB_OBJS) $(FB_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
+	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-xv.so: $(XV_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(XV_OBJS) $(XV_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
+	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(VIDIX_OBJS) $(VIDIX_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
+	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-shm.so: $(SHM_OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(SHM_OBJS) $(SHM_LIBS) -o $@
-	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
+	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 endif
 

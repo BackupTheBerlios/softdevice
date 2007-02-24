@@ -1,4 +1,9 @@
 Changelog
+2007-02-24:
+   - Makefile: add --remove-destination , so that "make plugins" does not
+     disturb a running vdr.
+   - softlog: added indicator for priority I(nfo), E(rror), D(ebug), T(race).
+   - video-vidix: shifted prints via softlog.
 2007-02-13:
    - fix gettid compile error on some systems.
 2007-02-11:
