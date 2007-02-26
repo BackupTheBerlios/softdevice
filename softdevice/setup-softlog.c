@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.4 2007/02/24 14:04:14 lucke Exp $
+ * $Id: setup-softlog.c,v 1.5 2007/02/26 21:01:14 lucke Exp $
  */
 
 #include "setup-softlog.h"
@@ -131,8 +131,11 @@ int cSetupSoftlog::SetAppendMode(int newMode)
     int oldMode = appendPID;
 
   if (newMode != appendPID) {
+      char *oldName = strdup (logFileName);
+
     appendPID = newMode;
-    SetLogFile(logFileName);
+    SetLogFile(oldName);
+    free (oldName);
   }
 
   return oldMode;
@@ -149,6 +152,14 @@ int cSetupSoftlog::GetAppendMode()
  */
 int cSetupSoftlog::SetLogFile(const char *fileName)
 {
+  /* -------------------------------------------------------------------------
+   * Ignore zero length file names
+   */
+  if (!strlen (fileName)) {
+    Log (SOFT_LOG_ERROR, 0, "[softlog] ignoring zero length fileName\n");
+    return 0;
+  }
+
   /* -------------------------------------------------------------------------
    * Don't close stderr. Handle fileName "stderr" special so that it is
    * possible to switch back from file logging to stderr.
@@ -167,14 +178,12 @@ int cSetupSoftlog::SetLogFile(const char *fileName)
       snprintf (realName, sizeof(realName), "%s", fileName);
 
     if (!(logFile = fopen (realName, "w+"))) {
-      syslog(LOG_ERR,
-             "[softlog] could not open logfile (%s), using stderr",
-             realName);
-      fprintf(stderr,
-              "[softlog] could not open logfile (%s), using stderr",
-              realName);
       logFile = stderr;
       logFileName = strdup("stderr");
+
+      Log (SOFT_LOG_ERROR, 0,
+              "[softlog] X could not open logfile (%s) len %d %s, using stderr\n",
+              realName, strlen (fileName), fileName);
       return 0;
     }
   }
