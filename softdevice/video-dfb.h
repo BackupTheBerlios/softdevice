@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.24 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video-dfb.h,v 1.25 2007/02/26 21:04:32 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -47,8 +47,11 @@ class cDFBVideoOut : public cVideoOut {
     int   prevOsdMode;
     int   videoLayerLevel;
 
-    void SetParams();
-    void EnableFieldParity(IDirectFBDisplayLayer *layer);
+    void  SetParams();
+    void  EnableFieldParity(IDirectFBDisplayLayer *layer),
+          ReportSurfaceCapabilities (IDirectFBSurface *surf,char *name),
+          BESColorkeyState(IDirectFBDisplayLayer *layer, bool state),
+          ReportLayerInfo(IDirectFBDisplayLayer *layer, char *name);
 
 #ifdef HAVE_CLE266_MPEG_DECODER
     IDirectFBSurface* mpegfb[LAST_PICBUF];

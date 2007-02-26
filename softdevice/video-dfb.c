@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.77 2007/01/27 09:50:58 lucke Exp $
+ * $Id: video-dfb.c,v 1.78 2007/02/26 21:04:32 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -173,31 +173,6 @@ static void reportCardInfo (IDirectFB *dfb)
 
 /* ---------------------------------------------------------------------------
  */
-static void reportSurfaceCapabilities (char *name, IDirectFBSurface *surf)
-{
-    DFBSurfaceCapabilities        scaps;
-
-  scaps = surf->GetCapabilities();
-  fprintf(stderr,"[surface capabilities] %s: ", name);
-
-  if (scaps == DSCAPS_NONE) fprintf(stderr,"none ");
-  if (scaps & DSCAPS_PRIMARY) fprintf(stderr,"primary ");
-  if (scaps & DSCAPS_SYSTEMONLY) fprintf(stderr,"systemonly ");
-  if (scaps & DSCAPS_VIDEOONLY) fprintf(stderr,"videoonly ");
-  if (scaps & DSCAPS_DOUBLE) fprintf(stderr,"double-buffered ");
-  if (scaps & DSCAPS_FLIPPING) fprintf(stderr,"flipping ");
-  if (scaps & DSCAPS_SUBSURFACE) fprintf(stderr,"subsurface ");
-  if (scaps & DSCAPS_INTERLACED) fprintf(stderr,"interlaced ");
-  if (scaps & DSCAPS_SEPARATED) fprintf(stderr,"separated ");
-  if (scaps & DSCAPS_STATIC_ALLOC) fprintf(stderr,"static-alloc ");
-  if (scaps & DSCAPS_TRIPLE) fprintf(stderr,"triple-buffered ");
-
-  fprintf(stderr, "PixelFormat = 0x%08x ", surf->GetPixelFormat());
-  fprintf(stderr,"\n");
-}
-
-/* ---------------------------------------------------------------------------
- */
 // List Video Modes
 static DFBEnumerationResult EnumVideoModeCallback(int x, int y, int bpp, void *data)
 {
@@ -207,64 +182,12 @@ static DFBEnumerationResult EnumVideoModeCallback(int x, int y, int bpp, void *d
 
 /* ---------------------------------------------------------------------------
  */
-static void BESColorkeyState(IDirectFBDisplayLayer *layer, bool state)
-{
-  if (layer)
-  {
-      DFBDisplayLayerConfig       dlc;
-    dlc.flags = DLCONF_OPTIONS;
-    dlc.options = (state) ? DLOP_DST_COLORKEY : DLOP_NONE;
-    try
-    {
-      layer->SetConfiguration(dlc);
-      layer->SetDstColorKey(COLORKEY);
-    }
-    catch (DFBException *ex)
-    {
-      fprintf (stderr,"[dfb] BES-%s: action=%s, result=%s\n",
-               (state) ? "ON" : "OFF",
-               ex->GetAction(), ex->GetResult());
-      delete ex;
-    }
-  }
-}
-
-/* ---------------------------------------------------------------------------
- */
-static void ReportLayerInfo(IDirectFBDisplayLayer *layer, char *name)
-{
-      DFBDisplayLayerConfig layerConfiguration;
-
-  if (!layer)
-  {
-    fprintf (stderr, "[dfb] no layer info. layer == NULL\n");
-    return;
-  }
-
-  layer->GetConfiguration(&layerConfiguration);
-  {
-    fprintf(stderr,
-            "[dfb] (%s): flags, options, pixelformat: %08x, %08x %08x\n",
-            name,
-            layerConfiguration.flags,
-            layerConfiguration.options,
-            layerConfiguration.pixelformat);
-    fprintf(stderr,
-            "[dfb] (%s): width, height:               %d %d\n",
-            name,
-            layerConfiguration.width,
-            layerConfiguration.height);
-  }
-}
-
-/* ---------------------------------------------------------------------------
- */
 cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
               : cVideoOut(setupStore)
 {
     tLayerSelectItem              *layerInfo;
 
-  fprintf(stderr,"[dfb] init\n");
+  setupStore->softlog->Log(SOFT_LOG_INFO, 0, "[dfb] init\n");
   /* --------------------------------------------------------------------------
    * default settings: source, destination and logical widht/height
    * are set to our well known dimensions (except fwidth+fheight).
@@ -297,7 +220,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
     reportCardInfo (dfb);
 
-    fprintf(stderr,"[dfb] Supported video Modes are: ");
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+              "[dfb] Supported video Modes are:\n");
     dfb->EnumVideoModes(EnumVideoModeCallback, NULL);
     fprintf(stderr,"\n");
 
@@ -305,17 +229,20 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
      * Thats for dfb access during layer enumeration
      */
     DFBWrapper=dfb;
-    fprintf(stderr,"[dfb] Enumerating display Layers\n");
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+              "[dfb] Enumerating display Layers\n");
 
     osdLayer=dfb->GetDisplayLayer(DLID_PRIMARY);
     if (!osdLayer) {
-      fprintf(stderr,"[dfb] no OSD layer exiting\n");
+      setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                "[dfb] no OSD layer exiting\n");
       exit(EXIT_FAILURE);
     }
 
     if (!setupStore->useMGAtv)
     {
-      fprintf(stderr,"[dfb] Configuring CooperativeLevel for OSD\n");
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] Configuring CooperativeLevel for OSD\n");
       osdLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
     }
 
@@ -342,14 +269,16 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
     if (setupStore->useMGAtv && !videoLayer) {
       layerInfo = &layerList [CRTC2_LAYER_OLD];
-      fprintf(stderr, "[dfb] New layer name allocation failed. Trying old (dfb-0.9.20) layer name\n");
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] New layer name allocation failed. Trying old (dfb-0.9.20) layer name\n");
       dfb->EnumDisplayLayers(EnumCallBack, layerInfo);
       videoLayer = layerInfo->layer;
     }
 
     if (!videoLayer)
     {
-      fprintf(stderr,"[dfb]: could not find suitable videolayer\n");
+      setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                "[dfb]: could not find suitable videolayer\n");
       exit(EXIT_FAILURE);
     }
 
@@ -370,8 +299,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
          */
 #ifdef HAVE_CLE266_MPEG_DECODER
         setupStore->cle266HWdecode = false;
-        fprintf(stderr,
-                "[dfb] disabling hw-decode support for this layer\n");
+        setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                  "[dfb] disabling hw-decode support for this layer\n");
 #endif
         currentPixelFormat = setupStore->pixelFormat = 2;
         setupStore->pixelFormatLocked = true;
@@ -382,9 +311,9 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 #ifdef HAVE_CLE266_MPEG_DECODER
       else if (setupStore->cle266HWdecode) {
           if (!SetupCle266Buffers(swidth, sheight)) {
-              fprintf(stderr,
-                      "[dfb] Error allocating hardware buffers for "
-                      "CLE266 decoding: reverting to software decoding\n");
+              setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                        "[dfb] Error allocating hardware buffers for "
+                        "CLE266 decoding: reverting to software decoding\n");
               setupStore->cle266HWdecode = false;
           } else {
               // Need YV12 pixel format for blitting from harware buffer
@@ -401,11 +330,13 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
     ReportLayerInfo(osdLayer, "osdLayer");
     if (osdLayerDescription.caps & DLCAPS_ALPHACHANNEL) {
-      fprintf(stderr, "[dfb] osdLayer has alpha channel\n");
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] osdLayer has alpha channel\n");
       osdLayerConfiguration.options = DLOP_ALPHACHANNEL;
       videoLayerLevel = -1;
     } else {
-      fprintf(stderr, "[dfb] osdLayer without !! alpha channel\n");
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] osdLayer without !! alpha channel\n");
     }
 
     osdLayer->SetCooperativeLevel(DLSCL_EXCLUSIVE);
@@ -418,7 +349,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
     scrSurface = osdLayer->GetSurface();
 
-    reportSurfaceCapabilities ("scrSurface", scrSurface);
+    ReportSurfaceCapabilities (scrSurface, "scrSurface");
 
     if (scrSurface)
     {
@@ -426,9 +357,9 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       double                displayRatio;
 
       scrSurface->GetSize(&Xres,&Yres);
-      fprintf (stderr,
-               "[dfb] width = %d, height = %d\n",
-               Xres, Yres);
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] width = %d, height = %d\n",
+                Xres, Yres);
       lwidth  = dwidth  = Xres;
       lheight = dheight = Yres;
 
@@ -436,9 +367,9 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       SetParValues(displayRatio, displayRatio);
 
       fmt = scrSurface->GetPixelFormat();
-      fprintf (stderr,
-               "[dfb] got fmt = 0x%08x bpp = %d\n",
-               fmt, DFB_BITS_PER_PIXEL(fmt));
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] got fmt = 0x%08x bpp = %d\n",
+                fmt, DFB_BITS_PER_PIXEL(fmt));
       Bpp = DFB_BITS_PER_PIXEL(fmt);
 
       /* ---------------------------------------------------------------------
@@ -492,12 +423,12 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
       osdSurface->Flip(); // Flip the field
       osdSurface->Clear(0,0,0,clearAlpha); //clear and
 
-      fprintf(stderr,
-              "[dfb] Using this layer for OSD: (%s - [%dx%d])\n",
-              osdLayerDescription.name,
-              osdSurface->GetWidth(), osdSurface->GetHeight());
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] Using this layer for OSD: (%s - [%dx%d])\n",
+                osdLayerDescription.name,
+                osdSurface->GetWidth(), osdSurface->GetHeight());
 
-      reportSurfaceCapabilities ("osdSurface", osdSurface);
+      ReportSurfaceCapabilities (osdSurface, "osdSurface");
 
       vidDsc.flags = (DFBSurfaceDescriptionFlags) (DSDESC_CAPS |
                                                    DSDESC_WIDTH |
@@ -510,7 +441,8 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
       if (!setupStore->useMGAtv)
       {
-        fprintf(stderr,"[dfb] Configuring CooperativeLevel for Overlay\n");
+        setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                  "[dfb] Configuring CooperativeLevel for Overlay\n");
         videoLayer->SetCooperativeLevel(DLSCL_ADMINISTRATIVE);
 
         if ((videoLayerLevel == 1))
@@ -531,13 +463,14 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
         videoSurface->Flip(); // Flip the field
       }
 
-      reportSurfaceCapabilities ("videoSurface", videoSurface);
+      ReportSurfaceCapabilities (videoSurface, "videoSurface");
 
-      fprintf(stderr,
-              "[dfb] Using this layer for OSD:        %s\n"
-              "[dfb] Using this layer for Video out:  %s\n",
-              osdLayerDescription.name,
-              videoLayerDescription.name);
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] Using this layer for OSD:        %s\n",
+                osdLayerDescription.name);
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "[dfb] Using this layer for Video out:  %s\n",
+                videoLayerDescription.name);
     }
 
     GetDisplayFrameTime();
@@ -547,10 +480,91 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
   }
   catch (DFBException *ex)
   {
-    fprintf (stderr,"[dfb] init EXITING:action=%s, result=%s\n",
-             ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] init EXITING:action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
     exit(EXIT_FAILURE);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::ReportSurfaceCapabilities (IDirectFBSurface *surf,
+                                              char *name)
+{
+    DFBSurfaceCapabilities        scaps;
+
+  scaps = surf->GetCapabilities();
+  setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+            "[dfb] surface capabilities for (%s): "
+            "%s%s%s%s%s%s%s%s%s%s%sPixelFormat = 0x%08x\n",
+            name,
+            (scaps == DSCAPS_NONE) ? "none, ": "",
+            (scaps & DSCAPS_PRIMARY) ? "primary, ": "",
+            (scaps & DSCAPS_SYSTEMONLY) ? "systemonly, ": "",
+            (scaps & DSCAPS_VIDEOONLY) ? "videoonly, ": "",
+            (scaps & DSCAPS_DOUBLE) ? "double-buffered, ": "",
+            (scaps & DSCAPS_FLIPPING) ? "flipping, ": "",
+            (scaps & DSCAPS_SUBSURFACE) ? "subsurface, ": "",
+            (scaps & DSCAPS_INTERLACED) ? "interlaced, ": "",
+            (scaps & DSCAPS_SEPARATED) ? "separated, ": "",
+            (scaps & DSCAPS_STATIC_ALLOC) ? "static-alloc, ": "",
+            (scaps & DSCAPS_TRIPLE) ? "triple-buffered, ": "",
+            surf->GetPixelFormat());
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::BESColorkeyState(IDirectFBDisplayLayer *layer, bool state)
+{
+  if (layer)
+  {
+      DFBDisplayLayerConfig       dlc;
+    dlc.flags = DLCONF_OPTIONS;
+    dlc.options = (state) ? DLOP_DST_COLORKEY : DLOP_NONE;
+    try
+    {
+      layer->SetConfiguration(dlc);
+      layer->SetDstColorKey(COLORKEY);
+    }
+    catch (DFBException *ex)
+    {
+      setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                "[dfb] BES-%s: action=%s, result=%s\n",
+                (state) ? "ON" : "OFF",
+                ex->GetAction(), ex->GetResult());
+      delete ex;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::ReportLayerInfo(IDirectFBDisplayLayer *layer, char *name)
+{
+      DFBDisplayLayerConfig layerConfiguration;
+
+  if (!layer)
+  {
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+              "[dfb] no layer info. layer == NULL\n");
+    return;
+  }
+
+  layer->GetConfiguration(&layerConfiguration);
+  {
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            "[dfb] (%s): flags, options, pixelformat: %08x, %08x %08x\n",
+            name,
+            layerConfiguration.flags,
+            layerConfiguration.options,
+            layerConfiguration.pixelformat);
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            "[dfb] (%s): width, height:               %d %d\n",
+            name,
+            layerConfiguration.width,
+            layerConfiguration.height);
   }
 }
 
@@ -566,7 +580,8 @@ void cDFBVideoOut::EnableFieldParity(IDirectFBDisplayLayer *layer)
   dlc.flags = (DFBDisplayLayerConfigFlags)
                 (DLCONF_PIXELFORMAT | DLCONF_BUFFERMODE | DLCONF_OPTIONS);
   dlc.buffermode = DLBM_TRIPLE;
-  fprintf(stderr,"[dfb] Set DLBM_TRIPLE for layer [%s]\n", desc.name);
+  setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            "[dfb] Set DLBM_TRIPLE for layer [%s]\n", desc.name);
 
   dlc.pixelformat = DSPF_ARGB;
   clearBackCount = 3;             // 3 for triple, 2 for double buffering
@@ -574,16 +589,16 @@ void cDFBVideoOut::EnableFieldParity(IDirectFBDisplayLayer *layer)
   if (desc.caps & DLCAPS_FIELD_PARITY)
   {
     dlc.options = DLOP_FIELD_PARITY;
-    fprintf(stderr,
-            "[dfb] DLOP_FIELD_PARITY supported by layer [%s]\n",
-            desc.name);
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+              "[dfb] DLOP_FIELD_PARITY supported by layer [%s]\n",
+              desc.name);
   }
   else
   {
     dlc.options = DLOP_NONE;
-    fprintf(stderr,
-            "[dfb] DLOP_FIELD_PARITY not supported by layer [%s]\n",
-            desc.name);
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+              "[dfb] DLOP_FIELD_PARITY not supported by layer [%s]\n",
+              desc.name);
   }
 
   try
@@ -596,8 +611,9 @@ void cDFBVideoOut::EnableFieldParity(IDirectFBDisplayLayer *layer)
   }
   catch(DFBException *ex)
   {
-    fprintf (stderr,"[dfb] EnableFieldParity: action=%s, result=%s\n",
-             ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] EnableFieldParity: action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
   }
 }
@@ -620,14 +636,16 @@ void cDFBVideoOut::GetDisplayFrameTime (void)
     }
     catch (DFBException *ex)
     {
-      fprintf (stderr,"[dfb] GetDisplayFrameTime: action=%s, result=%s\n",
-               ex->GetAction(), ex->GetResult());
+      setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                "[dfb] GetDisplayFrameTime: action=%s, result=%s\n",
+                ex->GetAction(), ex->GetResult());
       delete ex;
       tv1.tv_sec = tv2.tv_sec = tv1.tv_usec = tv2.tv_usec = 0;
     }
     t1 = (tv1.tv_sec & 1) * 1000000 + tv1.tv_usec;
     t2 = (tv2.tv_sec & 1) * 1000000 + tv2.tv_usec;
-    fprintf (stderr,"[dfb] Display frame time is %d microseconds\n", t2 - t1);
+    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+              "[dfb] Display frame time is %d microseconds\n", t2 - t1);
     displayTimeUS = t2 - t1;
   }
 }
@@ -710,9 +728,9 @@ void cDFBVideoOut::SetParams()
       cutLeft   = setupStore->cropLeftCols;
       cutRight  = setupStore->cropRightCols;
 
-      fprintf(stderr,
-              "[dfb] (re)configuring Videolayer to %d x %d (%dx%d)\n",
-              fwidth,fheight,swidth,sheight);
+      setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                "[dfb] (re)configuring Videolayer to %d x %d (%dx%d)\n",
+                fwidth,fheight,swidth,sheight);
       dlc.flags   = (DFBDisplayLayerConfigFlags)(DLCONF_WIDTH | DLCONF_HEIGHT | DLCONF_PIXELFORMAT | DLCONF_OPTIONS);
 
       useStretchBlit = false;
@@ -814,8 +832,9 @@ void cDFBVideoOut::SetParams()
           }
           catch (DFBException *ex)
           {
-            fprintf (stderr,"[dfb] SetParams: action=%s, result=%s Failed: SetLevel()\n",
-                     ex->GetAction(), ex->GetResult());
+            setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                      "[dfb] SetParams: action=%s, result=%s Failed: SetLevel()\n",
+                      ex->GetAction(), ex->GetResult());
             delete ex;
           }
         }
@@ -842,7 +861,8 @@ void cDFBVideoOut::SetParams()
         if (setupStore->useMGAtv || setupStore->viaTv) {
           dlc.options = (DFBDisplayLayerOptions)((int)dlc.options|
                                                  DLOP_FIELD_PARITY);
-          fprintf(stderr, "[dfb] SetParams: Enabling DLOP_FIELD_PARITY\n");
+          setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                    "[dfb] SetParams: Enabling DLOP_FIELD_PARITY\n");
         }
         /*
          * --------------------------------------------------------------------
@@ -864,8 +884,9 @@ void cDFBVideoOut::SetParams()
           {
             if (failed & DLCONF_BUFFERMODE)
             {
-              fprintf(stderr, "[dfb]: SetParms (): failed to set buffermode "
-                      "to triple, will try back video\n");
+              setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                        "[dfb]: SetParms (): failed to set buffermode "
+                        "to triple, will try back video\n");
               dlc.buffermode = DLBM_UNKNOWN;
             }
             delete ex;
@@ -882,14 +903,15 @@ void cDFBVideoOut::SetParams()
           {
             if (failed & DLCONF_BUFFERMODE)
             {
-              fprintf(stderr, "[dfb]: SetParams: failed to set buffermode "
+              setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                      "[dfb]: SetParams: failed to set buffermode "
                       "to back video, reverting to normal\n");
               dlc.buffermode = DLBM_FRONTONLY;
             } else {
-              fprintf(stderr,
-                      "[dfb]: Testconfiguration failed flags: %08x "
-                      "(disabling failed flags)\n",
-                      failed);
+              setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                        "[dfb]: Testconfiguration failed flags: %08x "
+                        "(disabling failed flags)\n",
+                        failed);
               dlc.flags = (DFBDisplayLayerConfigFlags) (dlc.flags & ~failed);
             }
             delete ex;
@@ -908,8 +930,9 @@ void cDFBVideoOut::SetParams()
         }
         catch (DFBException *ex)
         {
-          fprintf (stderr,"[dfb] SetParams: action=%s, result=%s\n",
-                   ex->GetAction(), ex->GetResult());
+          setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                    "[dfb] SetParams: action=%s, result=%s\n",
+                    ex->GetAction(), ex->GetResult());
           delete ex;
         }
         if (videoLayerDescription.caps & DLCAPS_SCREEN_LOCATION)
@@ -928,16 +951,17 @@ void cDFBVideoOut::SetParams()
           }
           catch (DFBException *ex)
           {
-            fprintf (stderr,
-                     "[dfb] SetParams() SetScreenLocation(): "
-                     "action=%s, result=%s\n",
-                     ex->GetAction(), ex->GetResult());
+            setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                      "[dfb] SetParams() SetScreenLocation(): "
+                      "action=%s, result=%s\n",
+                      ex->GetAction(), ex->GetResult());
             delete ex;
           }
         }
         else
         {
-          fprintf(stderr,"Can't configure ScreenLocation. Hope it is Fullscreen\n");
+          setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                    "Can't configure ScreenLocation. Hope it is Fullscreen\n");
         }
 
         /* --------------------------------------------------------------------
@@ -954,15 +978,17 @@ void cDFBVideoOut::SetParams()
         }
         catch (DFBException *ex)
         {
-          fprintf (stderr, "[dfb] SetParams (a) EXITING: action=%s, result=%s\n",
-                   ex->GetAction(), ex->GetResult());
+          setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                    "[dfb] SetParams (a) EXITING: action=%s, result=%s\n",
+                    ex->GetAction(), ex->GetResult());
           delete ex;
           exit(EXIT_FAILURE);
         }
       }
       else
       {
-        fprintf (stderr, "[dfb] creating new surface (stretchBlit)\n");
+        setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                  "[dfb] creating new surface (stretchBlit)\n");
         try
         {
           if (videoSurface)
@@ -1004,20 +1030,23 @@ void cDFBVideoOut::SetParams()
         }
         catch (DFBException *ex)
         {
-          fprintf (stderr, "[dfb] SetParams (b) EXITING: action=%s, result=%s\n",
-                   ex->GetAction(), ex->GetResult());
+          setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                    "[dfb] SetParams (b) EXITING: action=%s, result=%s\n",
+                    ex->GetAction(), ex->GetResult());
           delete ex;
           exit(EXIT_FAILURE);
         }
       }
-      reportSurfaceCapabilities ("videoSurface", videoSurface);
+      ReportSurfaceCapabilities (videoSurface, "videoSurface");
 
-      fprintf(stderr,"[dfb] (re)configured 0x%08x\n",pixelformat);
+      setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                "[dfb] (re)configured 0x%08x\n",pixelformat);
     }
   }
   else
   {
-    fprintf(stderr,"No Videolayer available. Exiting...\n");
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "No Videolayer available. Exiting...\n");
     exit(EXIT_FAILURE);
   }
 }
@@ -1047,8 +1076,9 @@ void cDFBVideoOut::OpenOSD ()
   }
   catch (DFBException *ex)
   {
-    fprintf (stderr,"[dfb] OpenOSD: action=%s, result=%s\n",
-             ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] OpenOSD: action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
   }
 }
@@ -1069,8 +1099,9 @@ void cDFBVideoOut::OSDStart()
   }
   catch (DFBException *ex)
   {
-    fprintf (stderr,"[dfb] OSDStart: action=%s, result=%s\n",
-             ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] OSDStart: action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
   }
 }
@@ -1103,8 +1134,9 @@ void cDFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
   }
   catch (DFBException *ex)
   {
-    fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
-        ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] Refresh: action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
   }
 }
@@ -1151,8 +1183,9 @@ void cDFBVideoOut::CommitUnlockOsdSurface()
   }
   catch (DFBException *ex)
   {
-    fprintf (stderr,"[dfb] Refresh: action=%s, result=%s\n",
-        ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] Refresh: action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
   }
   //printf("CommitUnlockOsdSurface %p 4\n",tmpOsdSurface);fflush(stdout);
@@ -1224,8 +1257,9 @@ void cDFBVideoOut::CloseOSD()
   }
   catch (DFBException *ex)
   {
-    fprintf (stderr,"[dfb] CloseOSD: action=%s, result=%s\n",
-             ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] CloseOSD: action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
   }
 }
@@ -1432,8 +1466,9 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
 
   }
   catch (DFBException *ex) {
-    fprintf (stderr, "[dfb] YUV: action=%s, result=%s\n",
-             ex->GetAction(), ex->GetResult());
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "[dfb] YUV: action=%s, result=%s\n",
+              ex->GetAction(), ex->GetResult());
     delete ex;
   }
 }
@@ -1448,14 +1483,15 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
   int mpegfb_stride;
   char *fbName = getFBName();
 
-  fprintf(stderr, "Initialising CLE266 decoder (%s): ", fbName);
   if (!CLE266MPEGInitialise(fbName)) {
-      fprintf(stderr, "failed!\n");
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "Initialising CLE266 decoder (%s): failed!\n", fbName);
       free(fbName);
       return false;
   } else {
       free(fbName);
-      fprintf(stderr, "success!\n");
+      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+                "Initialising CLE266 decoder (%s): success!\n", fbName);
   }
 
   dsc.flags = (DFBSurfaceDescriptionFlags)(DSDESC_WIDTH |
@@ -1469,13 +1505,15 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
   dsc.height = height;
 
 /* Create the 4 MPEG buffers for decoding */
-  fprintf(stderr, "CLE266: Creating buffers for decoder\n");
+  setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            "CLE266: Creating buffers for decoder\n");
   for (int j=0; j < LAST_PICBUF; j++)
           mpegfb[j]=NULL;
 
   try {
     for (i = 0; i < 4; i++) {
-      fprintf(stderr, "CLE266: Creating buffer number %i\n", i);
+      setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                "CLE266: Creating buffer number %i\n", i);
       mpegfb[i] = dfb->CreateSurface(dsc);
 
       mpegfb[i]->Clear(0,0,0,0);
@@ -1484,8 +1522,8 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
 
       if ( PicBuffer[i].use_count>0 ||
            PicBuffer[i].max_width>0 || PicBuffer[i].max_height>0) {
-              esyslog("Fatal error setting up CLE266 buffers!");
-              fprintf(stderr,"Fatal error setting up CLE266 buffers!\n");
+              setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                        "Fatal error setting up CLE266 buffers!\n");
               exit(-1);
       };
 
@@ -1505,20 +1543,23 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
   }
   catch (DFBException *ex)
   {
-    fprintf(stderr, "CLE266: Error creating buffer: action=%s, result=%s\n",
+    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+              "CLE266: Error creating buffer: action=%s, result=%s\n",
                   ex->GetAction(), ex->GetResult());
     delete ex;
     return false;
   }
 
   /* Pass info to the decoder...*/
-  fprintf(stderr, "CLE266: passing mpegfb_stride\n");
+  setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+            "CLE266: passing mpegfb_stride\n");
   CLE266MPEGSetStride(mpegfb_stride, mpegfb_stride >> 1 );
 
   height = (height + 15) & ~15;
   width  = (width  + 15) & ~15;
 
-  fprintf(stderr, "CLE266: passing buffers to decoder\n");
+  setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+            "CLE266: passing buffers to decoder\n");
   for (i = 0; i < 4; i++) {
     y_offset = mpegfb_ofs[i];
     v_offset = y_offset + (mpegfb_stride * height);
@@ -1533,7 +1574,7 @@ bool cDFBVideoOut::SetupCle266Buffers(int width, int height)
  */
 cDFBVideoOut::~cDFBVideoOut()
 {
-  fprintf(stderr,"Releasing DFB\n");
+  setupStore->softlog->Log(SOFT_LOG_DEBUG, 0, "Releasing DFB\n");
 
   setupStore->osdMode = prevOsdMode;
 
