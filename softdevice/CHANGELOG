@@ -1,4 +1,9 @@
 Changelog
+2007-02-26:
+   - softlog: sanitycheck for zero length filenames and fix use filename member
+              when changeing append mode.
+   - video-dfb: shifted most prints via softlog.
+   - video sync: preparation for new changeable sync parameters.
 2007-02-24:
    - Makefile: add --remove-destination , so that "make plugins" does not
      disturb a running vdr.
