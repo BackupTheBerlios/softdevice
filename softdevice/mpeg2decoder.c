@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.71 2007/01/28 19:29:53 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.72 2007/02/26 23:00:34 lucke Exp $
  */
 
 #include <math.h>
@@ -600,10 +600,9 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
 
   // init A-V syncing variables
   offset=0;
-  delay=0;
-  hurry_up=0;
   syncTimer = new cSyncTimer ((eSyncMode) setupStore.syncTimerMode);
   syncTimer->Reset();
+  videoOut->ResetDelay();
 
   default_frametime = DEFAULT_FRAMETIME;
   trickspeed = Trickspeed;
@@ -633,7 +632,9 @@ void cVideoStreamDecoder::Freeze(bool freeze)
 };
 
 uint64_t cVideoStreamDecoder::GetPTS() {
-  return pts - (delay + syncTimer->GetRelTime(false))/100;
+  return pts;
+// Was pts of next frame reduced by time to display next frame.
+//  return pts - (delay + syncTimer->GetRelTime(false))/100;
 }
 
 int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_picture,
@@ -888,12 +889,8 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   if (pic->pts != AV_NOPTS_VALUE )
           pts=pic->pts;
 
-  if (!hurry_up || frame % 2 ) {
-    MPGDEB("DrawVideo...delay : %d\n",delay);
-    videoOut->DrawVideo_420pl(syncTimer, &delay, pic);
-    MPGDEB("end DrawVideo\n");
-  } else
-    fprintf(stderr,"+");
+  videoOut->DrawVideo_420pl(syncTimer, pic);
+
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
   // the A-V syncing code is partly based on MPlayer...
@@ -901,42 +898,11 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   // update video pts
   cClock::AdjustVideoPTS(pts);
 
-  if ( aPTS )
-    offset = aPTS - pts ;
-  else offset = 0;
-  if ( abs(offset) > 100000)
-          offset=0;
-
-  // this few lines does the whole syncing
-  int pts_corr;
-
-  // calculate pts correction. Correct 1/10 of offset at a time
-  pts_corr = offset/10;
-
-  //Max. correction is 2/10 frametime.
-  if (pts_corr > 2*frametime() / 10 )
-    pts_corr = 2*frametime() / 10;
-  else if (pts_corr < -2*frametime() / 10 )
-    pts_corr = -2*frametime() / 10;
-
-  // calculate delay
-  delay += ( frametime() - pts_corr  ) * 100;
+  videoOut->EvaluateDelay (aPTS, pts, frametime());
   // update video pts
   pts += frametime();
 
-  if (delay > 2*frametime()*100)
-    delay = 2*frametime()*100;
-  else if (delay < -frametime()*100)
-    delay = -frametime()*100;
-
-  if (offset >  8*frametime())
-     hurry_up=1;
-  else if ( (offset < 2*frametime()) && (hurry_up > 0) )
-     hurry_up=0;
-
-#if 1
-  int dispTime=syncTimer->GetRelTime();
-  delay-=dispTime;
+#if 0
   if (!(frame % 1) || context->hurry_up) {
     MPGDEB("Frame# %-5d A-V(ms) %-5d delay %d FrameT: %s, dispTime(ms): %1.2f\n",
       frame,(int)(clock->GetPTS()-pts),delay,
@@ -948,7 +914,8 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   }
 #endif
 
-#ifdef AV_STATS
+#if 0
+//#ifdef AV_STATS
   {
     const int Freq=10;
     static float offsetSum=0;

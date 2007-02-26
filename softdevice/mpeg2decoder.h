@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.38 2006/06/17 16:27:35 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.39 2007/02/26 23:00:34 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -237,9 +237,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
     cVideoOut           *videoOut;
 
     // A-V syncing stuff
-    int                hurry_up;
     int                offset;
-    int                delay;
     int                trickspeed;
     int                default_frametime;
     inline int frametime()

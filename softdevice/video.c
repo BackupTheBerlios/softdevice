@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.72 2007/01/15 20:30:08 wachm Exp $
+ * $Id: video.c,v 1.73 2007/02/26 23:00:34 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -24,6 +24,8 @@
 #define OSDDEB(out...)
 #endif
 
+/* ---------------------------------------------------------------------------
+ */
 cVideoOut::cVideoOut(cSetupStore *setupStore)
 {
   OsdWidth=OSD_FULL_WIDTH;
@@ -49,6 +51,18 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   freezeMode=false;
   videoInitialized = false;
   oldPicture = NULL;
+
+  hurryUp = 0;
+  delay   = 0;
+  repeatedFrames  = droppedFrames = frame = 0;
+  offsetInHold    = false;
+  dropStart       =  80;
+  dropEnd         =  20;
+  dropInterval    =   2;
+  offsetClampLow  =  -2;
+  offsetClampHigh =   2;
+  offsetUse       =   1;
+  useAverage4Drop =   false;
 
   for (int i = 0; i < SETUP_VIDEOASPECTNAMES_COUNT; ++i)
     parValues [i] = 1.0;
@@ -433,9 +447,17 @@ void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
 
 /* ---------------------------------------------------------------------------
  */
-void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
+void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer,
                                 sPicBuffer *pic)
 {
+  if (hurryUp && (frame % dropInterval) == 0) {
+    ++frame;
+    ++droppedFrames;
+    fprintf(stderr,"X");
+    delay -= dispTime = syncTimer->GetRelTime();
+    return;
+  }
+
   sPicBuffer *scale_pic=NULL;
   if (scaleVid != 0) {
           scale_pic=GetBuffer(pic->format,pic->max_width,pic->max_height);
@@ -451,7 +473,10 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
           pic=scale_pic;
   };
 
-  Sync(syncTimer, delay);
+  if (delay > frametime * 100)
+    ++repeatedFrames;
+
+  Sync(syncTimer, &delay);
   oldPictureMutex.Lock();
 
   OsdRefreshCounter=0;
@@ -463,9 +488,12 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
   SetOldPicture(pic);
 
   oldPictureMutex.Unlock();
+  delay -= dispTime = syncTimer->GetRelTime();
+
   ProcessEvents();
   if (scale_pic)
           ReleaseBuffer(scale_pic);
+  ++frame;
 }
 
 /* ---------------------------------------------------------------------------
@@ -483,6 +511,113 @@ void cVideoOut::DrawStill_420pl(sPicBuffer *buf)
   oldPictureMutex.Unlock();
 
   ProcessEvents();
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::EvaluateDelay(int aPTS, int pts, int frametime)
+{
+    int   offset,
+          dropOffset,
+          pts_corr;
+
+  this->frametime = frametime;
+  offset = (aPTS) ? aPTS - pts : 0;
+
+  if (abs(offset) > 100000)
+    offset=0;
+
+  if (offsetCount >= AVRG_OFF_CNT) {
+    offsetSum -= offsetHistory[offsetIndex];
+    offsetCount--;
+  }
+
+  offsetHistory[offsetIndex] = offset;
+  offsetSum += offset;
+  offsetCount++;
+  offsetAverage = offsetSum / offsetCount;
+  offsetIndex++;
+  offsetIndex %= AVRG_OFF_CNT;
+
+  setupStore->softlog->Log(SOFT_LOG_TRACE, 0,
+                  "[VideoOut] A/V (%d - %d) off = %d avoff = %d\n",
+                  aPTS, pts, offset, offsetAverage);
+
+  if (0) {
+    // should be moved to contructor of video-dfb for TV-out
+
+    dropStart       =  25;
+    dropEnd         =  15;
+    dropInterval    =   8;
+    //offsetClampLow  = -10;
+    //offsetClampHigh =  10;
+    //offsetUse       =   4;
+    //offset = offsetAverage;
+    //useAverage4Drop = true;
+  }
+
+  dropOffset = (useAverage4Drop) ? offsetAverage : offset;
+
+  /* -------------------------------------------------------------------------
+   * this few lines does the whole syncing
+   * calculate pts correction. Correct offsetUse / 10 of offset at a time
+   */
+  pts_corr = (offsetUse * offset) / 10;
+
+  //Max. correction is limited to offsetClampLow|High / 10 frametime.
+  pts_corr = clamp ((offsetClampLow * frametime) / 10,
+                    pts_corr,
+                    (offsetClampHigh * frametime) / 10);
+
+  if (dropOffset > (dropStart * frametime) / 10)
+    hurryUp = 1;
+  else if ((dropOffset < (dropEnd * frametime) / 10) && (hurryUp > 0))
+    hurryUp = 0;
+
+  // calculate delay
+  delay += ( frametime - pts_corr  ) * 100;
+
+  delay = clamp (-frametime*100, delay, 2*frametime*100);
+
+  if (frame < 100) {
+    setupStore->softlog->Log(SOFT_LOG_TRACE, 0,
+                  "[VideoOut] %d %d %d \n",
+                  frame, offset, offsetAverage);
+  }
+
+  if (frame > 8  && frame < 200) {
+    if (!offsetInHold) {
+      if (abs(offset) < frametime) {
+        offsetInHold = true;
+        setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+                  "[VideoOut] video now synced (%d - %d)\n",
+                  frame, offset);
+      }
+    }
+  }
+  if (frame && !(frame % 7500)) {
+    setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+              "[VideoOut] sync info: repF = %d, drpF = %d, totF = %d\n",
+              repeatedFrames, droppedFrames, frame);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::ResetDelay()
+{
+  hurryUp = 0;
+  delay = 0;
+  offsetInHold = false;
+
+  offsetIndex = offsetCount = offsetAverage = offsetSum = 0;
+  memset (offsetHistory, 0, sizeof(offsetHistory));
+
+  setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+            "[VideoOut] reset: sync info: repF = %d, drpF = %d, totF = %d\n",
+            repeatedFrames, droppedFrames, frame);
+
+  repeatedFrames = droppedFrames = frame = 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -517,7 +652,7 @@ void cVideoOut::OpenOSD()
 }
 
 void cVideoOut::SetVidWin(int ScaleVid, int VidX1, int VidY1,
-                int VidX2, int VidY2) 
+                int VidX2, int VidY2)
 {
   OSDDEB("SetVidWin ScaleVid %d: %d,%d  %d,%d\n",
                   ScaleVid,VidX1,VidY1,VidX2,VidY2);

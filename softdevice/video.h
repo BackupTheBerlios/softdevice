@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.50 2007/01/28 19:28:11 wachm Exp $
+ * $Id: video.h,v 1.51 2007/02/26 23:00:34 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -33,6 +33,8 @@
 
 #define SRC_HEIGHT         576
 #define SRC_WIDTH          736
+
+#define AVRG_OFF_CNT        16
 
 #ifndef STAND_ALONE
 class cSoftRemote : public cRemote {
@@ -118,6 +120,30 @@ protected:
      */
     virtual bool IsSoftOSDMode();
 
+    /* -----------------------------------------------------------------------
+     */
+    int     frame,
+            droppedFrames,
+            repeatedFrames;
+    bool    offsetInHold;
+    int     hurryUp;
+    int     delay;
+    int     dispTime;
+    int     frametime;
+    int     offsetHistory[AVRG_OFF_CNT];
+    int     offsetIndex;
+    int     offsetCount;
+    int     offsetAverage;
+    int     offsetSum;
+    int     dropStart,
+            dropEnd,
+            dropInterval,
+            offsetClampHigh,
+            offsetClampLow,
+            offsetUse;
+    bool    useAverage4Drop;
+
+
 public:
     cVideoOut(cSetupStore *setupStore);
     virtual ~cVideoOut();
@@ -135,9 +161,11 @@ public:
     virtual void CheckAspect(int new_afd, double new_asp);
     virtual void CheckAspectDimensions (sPicBuffer *pic);
     virtual void CheckArea(int w, int h);
-    virtual void DrawVideo_420pl(cSyncTimer *syncTimer, int *delay,
-                                  sPicBuffer *pic);
+    virtual void DrawVideo_420pl(cSyncTimer *syncTimer,
+                                 sPicBuffer *pic);
     virtual void DrawStill_420pl(sPicBuffer *buf);
+    virtual void EvaluateDelay(int aPTS, int pts, int frametime);
+    virtual void ResetDelay(void);
     virtual bool Initialize(void) {videoInitialized = true; return 1;};
     virtual bool Reconfigure (int format = 0,
                     int width = SRC_WIDTH, int height = SRC_HEIGHT)
@@ -187,7 +215,7 @@ public:
     // clear the OSD buffer
 
     virtual void OpenOSD();
-    virtual void SetVidWin(int ScaleVid, int VidX1, int VidY1, 
+    virtual void SetVidWin(int ScaleVid, int VidX1, int VidY1,
                     int VidX2, int VidY2);
     virtual int GetOSDColorkey();
     virtual void CloseOSD();
