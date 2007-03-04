@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.33 2007/01/28 19:31:15 wachm Exp $
+# $Id: configure,v 1.34 2007/03/04 17:45:38 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -114,20 +114,20 @@ esac
 
 cpu_arch=`uname -m`
 case "$cpu_arch" in
-  i[3-6]86*|x86_64) 
+  i[3-6]86*|x86_64)
         cpu_arch="i386"
         ;;
-  ppc|"Power Macintosh") 
+  ppc|"Power Macintosh")
         cpu_arch="PowerPC"
-        with_mmx="no" 
+        with_mmx="no"
         with_mmx2="no"
         with_altivec="yes"
         ;;
   *)
-	echo "'$cpu_arch' is unknown..." 
+	echo "'$cpu_arch' is unknown..."
         cpu_arch="unknown"
-        with_mmx="no" 
-        with_mmx2="no"  
+        with_mmx="no"
+        with_mmx2="no"
         ;;
 esac
 
@@ -365,7 +365,7 @@ if test "${dfb}" = "yes" ; then
 dfb_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs directfb dfb++ 2>> config.log`
 dfb_opts="${dfb_cflags} ${dfb_libs}"
 dfb_device_desc="yes"
-dfb_sourcelocation="yes"
+dfb_sourcerectangle="yes"
 dfb_dscaps_double="yes"
 dfb_dief_repeat="yes"
 
@@ -388,7 +388,7 @@ int main(void) {
   return 0;
 }
 EOF
-$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_sourcelocation="no"
+$cc $CFLAGS $dfb_opts -o $TMPE $TMPC >> config.log 2>&1 || dfb_sourcerectangle="no"
 
 cat > ${TMPC} << EOF
 #include <stdio.h>
@@ -483,7 +483,7 @@ if test "${dfb}" = "yes" ; then
   else
     echo "Not found, not supported by DirectFB or disabled by argument."
   fi
-else 
+else
   cle266="no"
 fi
 
@@ -614,10 +614,10 @@ if test "${dfb}" = "yes" ; then
   echo "DFB_LIBS = ${dfb_libs}" >> $TMPM
   echo "DFB_CFLAGS = ${dfb_cflags}" >> $TMPM
 
-  if test "${dfb_sourcelocation}" = "yes" ; then
-    echo "#define HAVE_SetSourceLocation          1" >> $TMPH
+  if test "${dfb_sourcerectangle}" = "yes" ; then
+    echo "#define HAVE_SetSourceRectangle         1" >> $TMPH
   else
-    echo "#define HAVE_SetSourceLocation          0" >> $TMPH
+    echo "#define HAVE_SetSourceRectangle         0" >> $TMPH
   fi
 
   if test "${dfb_device_desc}" = "yes" ; then

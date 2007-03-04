@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.78 2007/02/26 21:04:32 lucke Exp $
+ * $Id: video-dfb.c,v 1.79 2007/03/04 17:45:38 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -17,7 +17,7 @@
 #ifdef HAVE_CONFIG
 # include "config.h"
 #else
-# define HAVE_SetSourceLocation 0
+# define HAVE_SetSourceRectangle 0
 # if (DIRECTFB_MAJOR_VERSION == 0) && (DIRECTFB_MINOR_VERSION == 9) && (DIRECTFB_MICRO_VERSION < 23)
 #   define HAVE_GraphicsDeviceDescription 0
 #   define HAVE_DIEF_REPEAT               0
@@ -210,6 +210,14 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore)
 
   if(setupStore->viaTv)
     setupStore->tripleBuffering = 1;
+
+#if HAVE_SetSourceRectangle
+  setupStore->setSourceRectangleLocked = false;
+  useSetSourceRectangle = setupStore->useSetSourceRectangle;
+#else
+  useSetSourceRectangle = setupStore->useSetSourceRectangle = false;
+  setupStore->setSourceRectangleLocked = true;
+#endif
 
   try
   {
@@ -720,7 +728,8 @@ void cDFBVideoOut::SetParams()
         cutBottom != setupStore->cropBottomLines ||
         cutLeft != setupStore->cropLeftCols ||
         cutRight != setupStore->cropRightCols ||
-        useStretchBlit != setupStore->useStretchBlit )
+        useStretchBlit != setupStore->useStretchBlit ||
+        useSetSourceRectangle != setupStore->useSetSourceRectangle)
     {
 
       cutTop    = setupStore->cropTopLines;
@@ -734,6 +743,8 @@ void cDFBVideoOut::SetParams()
       dlc.flags   = (DFBDisplayLayerConfigFlags)(DLCONF_WIDTH | DLCONF_HEIGHT | DLCONF_PIXELFORMAT | DLCONF_OPTIONS);
 
       useStretchBlit = false;
+      useSetSourceRectangle = setupStore->useSetSourceRectangle;
+
       /* ---------------------------------------------------------------------
        * if we are in video underlay mode (videoLayerLevel == -1), we have
        * real alpha blending with videoLayer and osdLayer.
@@ -759,29 +770,19 @@ void cDFBVideoOut::SetParams()
         }
       }
 
-#if HAVE_SetSourceLocation
-      /* ----------------------------------------------------------------------
-       * this should be the settings if SetSourceRectangle is working for
-       * all drivers.
-       * SetSourceRectangle() moved, after layer is reconfigured
-       */
-      dlc.width   = fwidth;
-      dlc.height  = fheight;
-#else
-      /* ----------------------------------------------------------------------
-       * for now we have to do another trick
-       */
-      if (useStretchBlit)
-      {
+      if (useSetSourceRectangle || useStretchBlit) {
+        /* --------------------------------------------------------------------
+         * this should be the settings if SetSourceRectangle is working for
+         * all drivers.
+         * SetSourceRectangle() moved, after layer is reconfigured
+         */
         dlc.width   = fwidth;
         dlc.height  = fheight;
-      }
-      else
-      {
+      } else {
         dlc.width   = swidth;
         dlc.height  = sheight;
       }
-#endif
+
       dlc.flags = (DFBDisplayLayerConfigFlags)((int) dlc.flags |
                                                       DLCONF_OPTIONS);
       dlc.options       = DLOP_FIELD_PARITY;
@@ -924,8 +925,9 @@ void cDFBVideoOut::SetParams()
         try
         {
           videoLayer->SetConfiguration(dlc);
-#if HAVE_SetSourceLocation
-          videoLayer->SetSourceRectangle (sxoff, syoff, swidth, sheight);
+#if HAVE_SetSourceRectangle
+          if (useSetSourceRectangle)
+            videoLayer->SetSourceRectangle (sxoff, syoff, swidth, sheight);
 #endif
         }
         catch (DFBException *ex)
@@ -1342,71 +1344,83 @@ void cDFBVideoOut::YUV(sPicBuffer *buf)
     }
 
     if (setupStore->cle266HWdecode && currentFB < 4 && currentFB >= 0) {
-      // we use an internal buffer and CLE266 HW decoding
-      videoSurface->Blit(mpegfb[currentFB], NULL, 0, 0);
+
+      if (useSetSourceRectangle) {
+        // we use an internal buffer and CLE266 HW decoding
+        videoSurface->Blit(mpegfb[currentFB], NULL, 0, 0);
+      } else {
+          DFBRectangle  sRect;
+
+        sRect.x = sxoff + 2 * cutLeft;
+        sRect.y = syoff + 2 * cutTop;
+        sRect.w = swidth  - 2 * (cutLeft + cutRight);
+        sRect.h = sheight - 2 * (cutTop  + cutBottom);
+        videoSurface->Blit(mpegfb[currentFB], &sRect, cutLeft * 2, cutTop * 2);
+      }
+
     } else {
 #endif // HAVE_CLE266_MPEG_DECODER
       videoSurface->Lock(DSLF_WRITE, &tmp_dst, &pitch);
       dst = (uint8_t *) tmp_dst;
       if (pixelformat == DSPF_I420 || pixelformat == DSPF_YV12)
       {
-#if HAVE_SetSourceLocation
-        Py += Ystride  * cutTop * 2 + cutLeft * 2;
-        Pv += UVstride * cutTop + cutLeft;
-        Pu += UVstride * cutTop + cutLeft;
+        if (useSetSourceRectangle) {
+          Py += Ystride  * cutTop * 2 + cutLeft * 2;
+          Pv += UVstride * cutTop + cutLeft;
+          Pu += UVstride * cutTop + cutLeft;
 
-        dst += pitch * cutTop * 2;
+          dst += pitch * cutTop * 2;
 
-        for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
-          fast_memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
-          Py  += Ystride;
-          dst += pitch;
+          for(hi=cutTop*2; hi < Height-cutBottom*2; hi++){
+            fast_memcpy(dst + cutLeft * 2, Py, Width - (cutLeft + cutRight) * 2);
+            Py  += Ystride;
+            dst += pitch;
+          }
+
+          dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
+
+          for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
+            fast_memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
+            Pu  += UVstride;
+            dst += pitch / 2;
+          }
+
+          dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
+
+          for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
+            fast_memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
+            Pv  += UVstride;
+            dst += pitch / 2;
+          }
+        } else {
+          Py += (Ystride  * syoff)   + Ystride  * cutTop * 2;
+          Pv += (UVstride * syoff/2) + UVstride * cutTop;
+          Pu += (UVstride * syoff/2) + UVstride * cutTop;
+
+          dst += pitch * cutTop * 2;
+
+          for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
+            fast_memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
+            Py  += Ystride;
+            dst += pitch;
+          }
+
+          dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
+
+          for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
+            fast_memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+            Pu  += UVstride;
+            dst += pitch / 2;
+          }
+
+          dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
+
+          for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
+            fast_memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
+            Pv  += UVstride;
+            dst += pitch / 2;
+          }
         }
-
-        dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
-
-        for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-          fast_memcpy(dst + cutLeft, Pu, Width/2 - (cutLeft + cutRight));
-          Pu  += UVstride;
-          dst += pitch / 2;
-        }
-
-        dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
-
-        for(hi=cutTop; hi < Height/2-cutBottom; hi++) {
-          fast_memcpy(dst + cutLeft, Pv, Width/2 - (cutLeft + cutRight));
-          Pv  += UVstride;
-          dst += pitch / 2;
-        }
-#else
-        Py += (Ystride  * syoff)   + Ystride  * cutTop * 2;
-        Pv += (UVstride * syoff/2) + UVstride * cutTop;
-        Pu += (UVstride * syoff/2) + UVstride * cutTop;
-
-        dst += pitch * cutTop * 2;
-
-        for(hi=cutTop*2; hi < sheight-cutBottom*2; hi++){
-          fast_memcpy(dst+cutLeft*2, Py+sxoff+cutLeft*2, swidth-(cutLeft+cutRight)*2);
-          Py  += Ystride;
-          dst += pitch;
-        }
-
-        dst += pitch * cutBottom * 2 + pitch * cutTop / 2;
-
-        for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-          fast_memcpy(dst+cutLeft, Pu+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
-          Pu  += UVstride;
-          dst += pitch / 2;
-        }
-
-        dst += pitch * cutBottom / 2 + pitch * cutTop / 2;
-
-        for(hi=cutTop; hi < sheight/2-cutBottom; hi++) {
-          fast_memcpy(dst+cutLeft, Pv+sxoff/2+cutLeft, swidth/2-(cutLeft+cutRight));
-          Pv  += UVstride;
-          dst += pitch / 2;
-        }
-#endif
       } else if (pixelformat == DSPF_YUY2) {
 
         if (interlaceMode) {

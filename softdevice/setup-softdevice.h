@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.37 2007/02/10 00:02:14 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.38 2007/03/04 17:45:38 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -170,6 +170,8 @@ class cSetupStore {
           vidSaturation,
           vidDeinterlace,
           vidCaps;
+    int   useSetSourceRectangle,
+          setSourceRectangleLocked;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
     char  *voArgs;

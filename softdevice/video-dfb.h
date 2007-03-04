@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.25 2007/02/26 21:04:32 lucke Exp $
+ * $Id: video-dfb.h,v 1.26 2007/03/04 17:45:38 lucke Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -38,6 +38,7 @@ class cDFBVideoOut : public cVideoOut {
     bool deinterlace;
     bool alphablend;
     bool useStretchBlit;
+    bool useSetSourceRectangle;
     bool osdClrBack;
     bool isVIAUnichrome;
     int   clearAlpha;

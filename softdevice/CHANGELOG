@@ -1,4 +1,7 @@
 Changelog
+2007-03-04:
+   - video-dfb: Make use of SetSourceRectangle() runtime selectable,
+                changed *SetSourceLocation* to SetSourceRectangle.
 2007-02-26:
    - softlog: sanitycheck for zero length filenames and fix use filename member
               when changeing append mode.

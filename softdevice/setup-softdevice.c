@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.49 2007/02/10 00:02:14 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.50 2007/03/04 17:45:38 lucke Exp $
  */
 
 #include <string.h>
@@ -122,6 +122,9 @@ cSetupStore::cSetupStore ()
   zoomFactor          = 0;
   zoomCenterX         = 0;
   zoomCenterY         = 0;
+
+  useSetSourceRectangle = false;
+  setSourceRectangleLocked = false;
 
   strcpy (alsaDevice, "");
   strcpy (alsaAC3Device, "");
@@ -309,6 +312,10 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
   } else if(!strcasecmp(Name, "UseStretchBlit")) {
     useStretchBlit = clamp (0, atoi(Value), 1);
     fprintf(stderr,"[softdevice] UseStretchBlitset to %s\n",
+            useStretchBlit ? "on" : "off");
+  } else if(!strcasecmp(Name, "UseSetSourceRectangle")) {
+    useSetSourceRectangle = clamp (0, atoi(Value), 1);
+    fprintf(stderr,"[softdevice] UseSetSourceRectangle to %s\n",
             useStretchBlit ? "on" : "off");
   } else if (!strcasecmp(Name, "SyncAllFrames")) {
     syncOnFrames = atoi(Value);

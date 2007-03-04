@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.9 2007/02/10 00:02:14 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.10 2007/03/04 17:45:38 lucke Exp $
  */
 
 //#include "video.h"
@@ -377,11 +377,16 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                               pix_fmt));
   }
 
-  if (data->outputMethod == VOUT_DFB &&
-      !data->stretchBlitLocked)
-  {
-    Add(new cMenuEditBoolItem(tr("Use StretchBlit"),
-                              &data->useStretchBlit, tr("off"), tr("on")));
+  if (data->outputMethod == VOUT_DFB) {
+    if (!data->stretchBlitLocked)
+      Add(new cMenuEditBoolItem(tr("Use StretchBlit"),
+                                &data->useStretchBlit,
+                                tr("off"), tr("on")));
+
+    if (!data->setSourceRectangleLocked)
+      Add(new cMenuEditBoolItem(tr("Use SourceRectangle"),
+                                &data->useSetSourceRectangle,
+                                tr("off"), tr("on")));
   }
 
   Add(new cMenuEditBoolItem(tr("Hide main menu entry"),
@@ -462,6 +467,7 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("Postprocess Quality", setupStore.ppQuality);
   SetupStore ("PixelFormat",        setupStore.pixelFormat);
   SetupStore ("UseStretchBlit",     setupStore.useStretchBlit);
+  SetupStore ("UseSetSourceRectangle",     setupStore.useSetSourceRectangle);
   SetupStore ("Picture mirroring",  setupStore.mirror);
   SetupStore ("avOffset",           setupStore.avOffset);
   SetupStore ("AlsaDevice",         setupStore.alsaDevice);
