@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.78 2007/02/09 23:55:22 lucke Exp $
+ * $Id: softdevice.c,v 1.79 2007/03/12 20:10:54 wachm Exp $
  */
 
 #include "softdevice.h"
@@ -843,7 +843,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
       if (argc > 0) {
           char *vo_argv = argv[i];
 
-	  printf("vo_argv: %s \n",vo_argv);
         if (!strncmp (vo_argv, "xv:", 3)) {
           vo_argv += 3;
           setupStore.voArgs = vo_argv;
@@ -1034,6 +1033,11 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           ao_argv += 4;
           setupStore.aoArgs = ao_argv;
           aoutMethod = AOUT_OSS;
+          if (!strncmp(ao_argv, "mixer", 5)) {
+                printf("mixer argv: '%s' \n",ao_argv);
+              ao_argv += 5;
+              setupStore.useMixer = 1;
+          }
         } else if (!strncmp(ao_argv, "dummy:", 6)) {
           ao_argv += 6;
           setupStore.aoArgs = ao_argv;

@@ -5,7 +5,7 @@
  *
  * Support for the Open Sound System contributed by Lubos Novak
  * 
- * $Id: audio-oss.c,v 1.2 2006/12/14 23:09:53 wachm Exp $
+ * $Id: audio-oss.c,v 1.3 2007/03/12 20:10:54 wachm Exp $
  */
 #include "audio-oss.h"
 
@@ -17,9 +17,10 @@
 #define DSP_DEVICE "/dev/dsp"
 #define MIXER_DEVICE "/dev/mixer"
 
-cOSSAudioOut::cOSSAudioOut(cSetupStore *setupStore)
+cOSSAudioOut::cOSSAudioOut(cSetupStore *SetupStore)
 {
     struct stat file_info;
+    setupStore=SetupStore;
 
     if (-1 == stat(DSP_DEVICE, &file_info))
     {
@@ -41,9 +42,7 @@ cOSSAudioOut::cOSSAudioOut(cSetupStore *setupStore)
     
     paused=false;
     isyslog("[softdevice-audio-oss] Device open!");
-#ifdef NO_MIXER    
     scale_Factor = 0x7FFF;
-#endif
 }
 
 cOSSAudioOut::~cOSSAudioOut()
@@ -60,9 +59,8 @@ void cOSSAudioOut::Write(uchar *Data, int Length)
     ssize_t done = 0;
     ssize_t wsize;
 
-#ifdef NO_MIXER
-    Scale((int16_t*)Data, Length / 2, scale_Factor);
-#endif
+    if (!setupStore->useMixer) 
+            Scale((int16_t*)Data, Length / 2, scale_Factor);
     
     while (Length > done)
     {
@@ -187,9 +185,11 @@ int cOSSAudioOut::SetParams(SampleContext &context)
  */
 void cOSSAudioOut::SetVolume (int vol)
 {
-#ifdef NO_MIXER
-    scale_Factor = CalcScaleFactor(vol);
-#else
+    if (!setupStore->useMixer) {
+            scale_Factor = CalcScaleFactor(vol);
+            return;
+    };
+
     struct stat file_info;
 
     if (-1 == stat(MIXER_DEVICE, &file_info))
@@ -233,6 +233,5 @@ void cOSSAudioOut::SetVolume (int vol)
 	esyslog("[softdevice-audio-oss]: Volume set FAIL\n");
 
     close (fdMixer);
-#endif
     return;
 }

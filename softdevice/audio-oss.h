@@ -5,7 +5,7 @@
  *
  * Support for the Open Sound System contributed by Lubos Novak
  * 
- * $Id: audio-oss.h,v 1.1 2006/12/03 20:38:18 wachm Exp $
+ * $Id: audio-oss.h,v 1.2 2007/03/12 20:10:54 wachm Exp $
  */
 #ifndef _AUDIO_OSS_H_
 #define _AUDIO_OSS_H_
@@ -18,9 +18,8 @@ private:
     volatile bool paused;
     int fdDSP;
     int fdMixer;
-#ifdef NO_MIXER
     int scale_Factor;
-#endif
+    cSetupStore *setupStore;
 public:
     cOSSAudioOut(cSetupStore *setupStore);
     virtual ~cOSSAudioOut();
