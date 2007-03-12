@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.18 2007/01/15 19:35:13 wachm Exp $
+ * $Id: PicBuffer.c,v 1.19 2007/03/12 20:43:26 wachm Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -562,7 +562,7 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
         dst->edge_height=0;
 
         if ( src->width+src->edge_width <= dst->max_width) {
-                dst->edge_width = src->edge_width;
+                dst->edge_width = 0; //src->edge_width;
                 dst->width = src->width;
         } else {
                 dst->width = dst->max_width;
@@ -570,7 +570,7 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
         };
 
         if ( src->height+src->edge_height <= dst->max_height) {
-                dst->edge_height = src->edge_height;
+                dst->edge_height = 0; //src->edge_height;
                 dst->height = src->height;
         } else {
                 dst->height = dst->max_height;
@@ -1154,7 +1154,7 @@ void CopyPicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
         dst->edge_height=0;
 
         if ( src->width+src->edge_width <= dst->max_width) {
-                dst->edge_width = src->edge_width;
+                dst->edge_width = 0; //src->edge_width;
                 width = dst->width = src->width;
         } else {
                 width = dst->width = dst->max_width;
@@ -1162,7 +1162,7 @@ void CopyPicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
         };
 
         if ( src->height+src->edge_height <= dst->max_height) {
-                dst->edge_height = src->edge_height;
+                dst->edge_height = 0; //src->edge_height;
                 dst->height = height = src->height;
         } else {
                 height = dst->height = dst->max_height;

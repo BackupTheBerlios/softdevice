@@ -1,4 +1,13 @@
 Changelog
+2007-03-12:
+   - compile fix for recent ffmpeg SVN
+   - include ffmpeg headers as 'extern "C"'
+   - enable and use as default the software mixer. The old behaviour (use the
+     system's mixer) can be selected via -vo oss:mixer.
+   - increase the stepsize of the software mixer.
+   - don't scale audio if the volume is at maximum.
+   - set edge_width/_height always to zero. Fixes picture shiftes with
+     the ShmClient. This is not the optimal(/final) solution...
 2007-03-04:
    - video-dfb: Make use of SetSourceRectangle() runtime selectable,
                 changed *SetSourceLocation* to SetSourceRectangle.
