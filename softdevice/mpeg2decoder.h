@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.39 2007/02/26 23:00:34 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.40 2007/03/12 20:05:44 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -13,8 +13,10 @@
 #endif
 
 #include <sys/time.h>
+extern "C" {
 #include <avcodec.h>
 #include <avformat.h>
+}
 
 #include <vdr/plugin.h>
 #include <vdr/ringbuffer.h>

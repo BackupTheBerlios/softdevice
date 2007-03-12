@@ -6,12 +6,14 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.6 2006/11/26 18:53:41 wachm Exp $
+ * $Id: PicBuffer.h,v 1.7 2007/03/12 20:05:44 wachm Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
 
+extern "C" {
 #include <avcodec.h>
+}
 
 #ifndef STAND_ALONE
 #include <vdr/plugin.h>
