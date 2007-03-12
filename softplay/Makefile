@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.7 2006/11/02 19:01:08 wachm Exp $
+# $Id: Makefile,v 1.8 2007/03/12 21:32:03 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -20,7 +20,7 @@ VERSION = $(shell grep 'static const char \*VERSION *=' $(PLUGIN).c | awk '{ pri
 ### The C++ compiler and options:
 
 CXX      ?= g++
-CXXFLAGS ?= -g -O2 -Wall -Woverloaded-virtual -L$(LIBFFMPEG) -L$(LIBFFMPEG)/libavformat -L$(LIBFFMPEG)/libavcodec -L$(LIBFFMPEG)/libavutil 
+CXXFLAGS ?= -g -O2 -Wall -Woverloaded-virtual  
 
 ### The directory environment:
 
@@ -52,14 +52,14 @@ PACKAGE = vdr-$(ARCHIVE)
 
 INCLUDES += -I$(VDRDIR)/include -I$(DVBDIR)/include -I$(LIBFFMPEG) -I$(LIBFFMPEG)/libavformat -I$(LIBFFMPEG)/libavcodec -I$(LIBFFMPEG)/libavutil 
 
-DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
+DEFINES += -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 
 ### The object files (add further files here):
 
 OBJS = $(PLUGIN).o SoftPlayer.o PlayList.o PlayListMenu.o i18n.o FileIndex.o Receiver.o Setup.o
 
-LIBS = -lavformat -lavcodec -lz
+LIBS = -L$(LIBFFMPEG) -L$(LIBFFMPEG)/libavformat -L$(LIBFFMPEG)/libavcodec -L$(LIBFFMPEG)/libavutil -lavformat -lavcodec -lz
 
 ### recent ffmpegs require -lavutil: 
 

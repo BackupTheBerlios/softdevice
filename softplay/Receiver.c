@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: Receiver.c,v 1.1 2006/03/12 20:23:23 wachm Exp $
+ * $Id: Receiver.c,v 1.2 2007/03/12 21:32:03 wachm Exp $
  */
 
 #include "Receiver.h"
@@ -34,7 +34,11 @@ static inline uint64_t getTimeMillis(void) {
 
 cSoftplayReceiver::cSoftplayReceiver(const cChannel *Channel, cDevice *Device,
                 PacketHandlesV100 &SoftHandles) 
+#if VDRVERSNUM >= 10500
+        : cReceiver(Channel->GetChannelID(),1,Channel->Vpid()),startChannel(*Channel),
+#else
         : cReceiver(Channel->Ca(),0,Channel->Vpid()),startChannel(*Channel),
+#endif
           currChannel(*Channel) {
                 RECEIVER_DEB("cSoftplayReceiver");
                 device=Device;

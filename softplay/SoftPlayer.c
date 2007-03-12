@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.15 2006/07/25 20:03:33 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.16 2007/03/12 21:32:03 wachm Exp $
  */
 
 #include "SoftPlayer.h"
@@ -330,7 +330,11 @@ void cSoftPlayer::Action() {
                 const cChannel *channel=Channels.GetByNumber(cDevice::CurrentChannel());
                 Receiver=new cSoftplayReceiver(channel,
                                 cDevice::PrimaryDevice(),SoftHandles);
+#if VDRVERSNUM >= 10500 
+                cDevice *receiveDev=cDevice::GetDevice(channel,1,false);
+#else
                 cDevice *receiveDev=cDevice::GetDevice(channel,1);
+#endif
                 if (receiveDev)
                         receiveDev->AttachReceiver(Receiver);
         };
@@ -516,13 +520,21 @@ void cSoftPlayer::ChannelUpDown( int i) {
         delete Receiver;
         Receiver=NULL;
                
-        cDevice *receiveDev=cDevice::GetDevice(channel, 1);
+#if VDRVERSNUM >= 10500 
+        cDevice *receiveDev=cDevice::GetDevice(channel,1,false);
+#else
+        cDevice *receiveDev=cDevice::GetDevice(channel,1);
+#endif
 
         if (!receiveDev) {
                 printf("Didn't get device!\n");
                 Skins.Message(mtError, tr("Channel not available!"));
                 channel = Channels.GetByNumber( currChannelNo );
-                receiveDev=cDevice::GetDevice(channel, 1);
+#if VDRVERSNUM >= 10500 
+                receiveDev=cDevice::GetDevice(channel,1,false);
+#else
+                receiveDev=cDevice::GetDevice(channel,1);
+#endif
                 if (!receiveDev) {
                         printf("Jetzt bin ich angeschmiert\n");
                         return;
@@ -830,8 +842,10 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
                         // track skips
 		case k9: if (playList) {
 				 const char * nextFile=playList->NextFile();
+                                 printf("nextfile %p ReturnToLiveTv() %d\n",
+                                                 nextFile,SoftplaySetup.ReturnToLiveTV());
 				 if ( nextFile 
-                                      && SoftplaySetup.ReturnToLiveTV() )
+                                      || !SoftplaySetup.ReturnToLiveTV() )
 					 SoftPlayer->PlayFile(nextFile);
                                  else {  // last file
                                          SoftPlayer->Stop();
@@ -853,7 +867,8 @@ eOSState cSoftControl::ProcessKey(eKeys Key) {
                          // album skips
 		case k6: if (playList) {
 				 const char * nextFile=playList->NextAlbumFile();
-				 if (nextFile)
+				 if ( nextFile
+                                      || !SoftplaySetup.ReturnToLiveTV() )
 					 SoftPlayer->PlayFile(nextFile);
                                  else {  // last file
                                          SoftPlayer->Stop();
