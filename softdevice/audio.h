@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.13 2007/03/12 20:12:48 wachm Exp $
+ * $Id: audio.h,v 1.14 2007/03/12 20:27:03 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -27,7 +27,8 @@ void Scale(int16_t *Data, int size,int scale_Factor);
 
 static inline int CalcScaleFactor(int vol) 
 { return (vol <= 0 ? 0 
-          : (int) (pow(10.0, -2.5+2.5*vol/256.0)*0x7FFF)); };
+          : ( vol >=255 ? 0x7FFF : 
+	                 (int) (pow(10.0, -2.5+2.5*vol/256.0)*0x7FFF))); };
 
 /* ---------------------------------------------------------------------------
  * Abstract class for an audio device

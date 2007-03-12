@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.26 2006/07/10 19:40:25 wachm Exp $
+ * $Id: audio.c,v 1.27 2007/03/12 20:27:03 wachm Exp $
  */
 
 #include <unistd.h>
@@ -28,6 +28,9 @@ cAudioOut::~cAudioOut() {
 
 void Scale(int16_t *Data, int size,int scale_Factor) 
 {
+  if (scale_Factor == 0x7FFF) // max. volume, don't change anything
+          return;
+
   while (size>0) {
     register int32_t tmp=(int32_t)(*Data) * scale_Factor;
     *Data=(int16_t) (tmp>>15);
