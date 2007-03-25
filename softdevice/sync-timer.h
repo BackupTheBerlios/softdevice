@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.h,v 1.4 2006/10/03 19:50:43 wachm Exp $
+ * $Id: sync-timer.h,v 1.5 2007/03/25 08:54:12 wachm Exp $
  */
 #ifndef SYNCTIMER_H
 #define SYNCTIMER_H
@@ -16,9 +16,8 @@ class cRelTimer {
       inline int64_t GetTime()
       {
         struct timeval tv;
-        struct timezone tz;
-        gettimeofday(&tv,&tz);
-        return tv.tv_sec*1000000+tv.tv_usec;
+        gettimeofday(&tv,NULL);
+        return (int64_t)tv.tv_sec*1000000+(int64_t)tv.tv_usec;
       };
 
    public:

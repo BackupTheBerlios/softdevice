@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.40 2007/03/12 20:05:44 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.41 2007/03/25 08:54:12 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -71,9 +71,8 @@ public:
     static int64_t GetTime()
     {
       struct timeval tv;
-      struct timezone tz;
-      gettimeofday(&tv,&tz);
-      return tv.tv_sec*10000+tv.tv_usec/100;
+      gettimeofday(&tv,NULL);
+      return (int64_t)tv.tv_sec*10000+(int64_t)tv.tv_usec/100;
     };
 
     static inline void AdjustAudioPTS(int64_t aPTS) {
