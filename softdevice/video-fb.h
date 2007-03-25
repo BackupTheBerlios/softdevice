@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.9 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video-fb.h,v 1.10 2007/03/25 09:08:22 wachm Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -21,25 +21,19 @@ private:
   int orig_cmaplen;
   __u16 * orig_cmap;
 
-  uint8_t *PixelMask;
   size_t size;
   int line_len;
   unsigned char * fb;	// Framebuffer memory
+  sPicBuffer privBuf;
 public:
   cFBVideoOut(cSetupStore *setupStore);
   virtual ~cFBVideoOut();
-  virtual void OpenOSD();
-  virtual void ClearOSD();
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
 		  bool &IsYUV, uint8_t *&pixelmask)
-  { Depth=16;HasAlpha=false;IsYUV=false;pixelmask=PixelMask; };
-  virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
-                  bool *&dirtyLines);
-  virtual void CommitUnlockOsdSurface();
+  { IsYUV=true;};
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
                                int &xPan, int &yPan);
   virtual void YUV(sPicBuffer *Pic);
-  virtual void Pause(void);
 };
 
 #endif // FRAMEBUFFER_H

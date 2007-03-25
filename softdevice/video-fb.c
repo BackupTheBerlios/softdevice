@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.17 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video-fb.c,v 1.18 2007/03/25 09:08:22 wachm Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -45,8 +45,35 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
 
     fb_orig_vinfo = fb_vinfo;
 
-    switch (fb_finfo.visual) {
+    size = fb_finfo.smem_len;
+    line_len = fb_finfo.line_length;
+    if ((fb = (unsigned char *) mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fbdev, 0)) == (unsigned char *) -1) {
+        printf("[video-fb] Can't mmap\n");
+        exit(1);
+    }
 
+    // set up picture buffer;
+    privBuf.pixel[0]=fb;
+    privBuf.stride[0]=line_len;
+    if (fb_vinfo.red.length==5 && fb_vinfo.green.length==5
+         && fb_vinfo.blue.length==5 ) 
+            Bpp=15;
+    else Bpp=fb_vinfo.bits_per_pixel;
+    switch (Bpp) {
+            case 32 : privBuf.format=PIX_FMT_RGBA32;
+                      break;
+            case 24 : privBuf.format=PIX_FMT_RGB24;
+                      break;
+            case 16 : 
+                      privBuf.format=PIX_FMT_RGB565;
+                      break;
+            default:
+                      privBuf.format=PIX_FMT_RGB555;
+    };
+    privBuf.max_width=dwidth=fb_vinfo.xres;
+    privBuf.max_height=dheight=fb_vinfo.yres;
+
+    switch (fb_finfo.visual) {
        case FB_VISUAL_TRUECOLOR:
            printf("[video-fb] Truecolor FB found\n");
            break;
@@ -58,7 +85,7 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
 
            printf("[video-fb] DirectColor FB found\n");
 
-           orig_cmaplen = 32;
+           orig_cmaplen = 1<<fb_vinfo.green.length;
            orig_cmap = (__u16 *) malloc ( 3 * orig_cmaplen * sizeof(*orig_cmap) );
 
            if ( orig_cmap == NULL ) {
@@ -81,7 +108,6 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
                red[i]   = (65535/(orig_cmaplen+1))*i;
                green[i] = (65535/(orig_cmaplen+1))*i;
                blue[i] =  (65535/(orig_cmaplen+1))*i;
-               //(i<<8)|i;
            }
 
            cmap.start  = 0;
@@ -99,147 +125,67 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
            break;
 
        default:
-           printf("cFBVideoOut: Unsupported FB. Don't know if it will work.\n");
+           printf("cFBVideoOut: Unsupported FB(%d). Don't know if it will work.\n",fb_finfo.visual);
     }
-
-
-    // currently we support only 16 bit FB's
-
-    size = fb_finfo.smem_len;
-    line_len = fb_finfo.line_length;
-    if ((fb = (unsigned char *) mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fbdev, 0)) == (unsigned char *) -1) {
-        printf("[video-fb] Can't mmap\n");
-        exit(1);
-    }
-
-    Xres=fb_vinfo.xres;
-    Yres=fb_vinfo.yres;
-    Bpp = fb_vinfo.bits_per_pixel;
-    if (Bpp != 16 && Bpp != 15) {
-        printf ("[video-fb] In software-mode only 15/16 bit Framebuffer supported\n");
-        exit(1);
-    }
-
-    // set rgb unpack method
-    mmx_unpack=mmx_unpack_16rgb;
-    if (fb_vinfo.red.length==5 && fb_vinfo.green.length==5
-         && fb_vinfo.blue.length==5 ) {
-      mmx_unpack=mmx_unpack_15rgb;
-      printf("[video-fb] Using mmx_unpack_15rgb\n");
-    };
-
-    int OsdYres=Yres>OSD_FULL_HEIGHT?Yres:OSD_FULL_HEIGHT;
-    PixelMask = (unsigned char *)malloc(OsdYres*line_len / ((Bpp+7) / 8) / 8); // where the Video window should be transparent
-
-    OSDpresent=false;
 
     printf("[video-fb] init %d x %d (Size: %zu Bytes LineLen %d) Bpp: %d\n",fb_vinfo.xres, fb_vinfo.yres, size, line_len, fb_vinfo.bits_per_pixel);
     // clear screens
     printf("[video-fb] Clearing the FB\n");
-    unsigned char * fbinit;
-    fbinit=fb;
-    for (int i = 0; i <Yres*line_len; i++) {
-        *fbinit=0;
-        fbinit++;
-    }
+
+    ClearPicBuffer(&privBuf);
+
     screenPixelAspect = -1;
 }
 
 /* ---------------------------------------------------------------------------
  */
-void cFBVideoOut::Pause(void)
-{
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cFBVideoOut::OpenOSD()
-{
-  cVideoOut::OpenOSD();
-  //OSDxOfs = X & ~7;
-  //OSDyOfs = Y & ~1;
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cFBVideoOut::ClearOSD()
-{
-  cVideoOut::ClearOSD();
-  if (videoInitialized && PixelMask)
-    memset(PixelMask, 0, Xres * Yres/8);
-};
-
-/* ---------------------------------------------------------------------------
- */
 void cFBVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
-                                  int &xPan, int &yPan) {
-   switch (current_osdMode) {
-      case OSDMODE_PSEUDO :
-                OsdWidth=Xres;
-                OsdHeight=Yres;
-                xPan = yPan = 0;
-             break;
-    }
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cFBVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
-                  bool *&dirtyLines)
-{
-  pthread_mutex_lock(&fb_mutex);
-
-  osd = NULL;
-  stride = 0;
-  if (!videoInitialized)
-    return;
-
-  osd=fb;
-  stride=line_len;
-  dirtyLines=NULL;
-}
-
-/* ---------------------------------------------------------------------------
- */
-void cFBVideoOut::CommitUnlockOsdSurface()
-{
-  pthread_mutex_unlock(&fb_mutex);
-  cVideoOut::CommitUnlockOsdSurface();
-}
+                int &xPan, int &yPan) {
+  OsdWidth=swidth;
+  OsdHeight=sheight;
+  xPan = sxoff;
+  yPan = syoff;
+};
 
 /* ---------------------------------------------------------------------------
  */
 void cFBVideoOut::YUV(sPicBuffer *buf)
 {
-  uint8_t *Py=buf->pixel[0]
-                +(buf->edge_height)*buf->stride[0]
-                +buf->edge_width;
-  uint8_t *Pu=buf->pixel[1]+(buf->edge_height/2)*buf->stride[1]
-                +buf->edge_width/2;
-  uint8_t *Pv=buf->pixel[2]+(buf->edge_height/2)*buf->stride[2]
-                +buf->edge_width/2;
-  int Ystride=buf->stride[0];
-  int UVstride=buf->stride[1];
-  int Width=buf->width;
-  int Height=buf->height;
 
   if (!videoInitialized)
     return;
 
   pthread_mutex_lock(&fb_mutex);
-  if (OSDpresent) {
-    yuv_to_rgb (fb, Py, Pu, Pv,
-                Width, Height, line_len,
-                Ystride,UVstride,
-                Xres,Yres,
-                Bpp, PixelMask, setupStore->deintMethod);
-  } else {
-    yuv_to_rgb (fb, Py, Pu, Pv,
-                Width, Height, line_len,
-                Ystride,UVstride,
-                Xres,Yres,
-                Bpp, NULL, setupStore->deintMethod);
+  if (aspect_changed ||
+      cutTop != setupStore->cropTopLines ||
+      cutBottom != setupStore->cropBottomLines ||
+      cutLeft != setupStore->cropLeftCols ||
+      cutRight != setupStore->cropRightCols)
+  {
+    aspect_changed = 0;
+    cutTop = setupStore->cropTopLines;
+    cutBottom = setupStore->cropBottomLines;
+    cutLeft = setupStore->cropLeftCols;
+    cutRight = setupStore->cropRightCols;
+    ClearPicBuffer(&privBuf);
   }
+  if ( OSDpresent ) {
+    CopyScalePicBufAlphaBlend(&privBuf,buf,
+        sxoff, syoff,
+        swidth, sheight,
+        lxoff,  lyoff,
+        lwidth, lheight,
+        OsdPy,OsdPu,OsdPv,
+        OsdPAlphaY,OsdPAlphaUV,OSD_FULL_WIDTH,
+        cutTop,cutBottom,cutLeft,cutRight);
+  } else {
+    CopyScalePicBuf(&privBuf, buf,                   
+        sxoff, syoff,
+        swidth, sheight,
+        lxoff,  lyoff,    
+        lwidth, lheight,
+        cutTop,cutBottom,cutLeft,cutRight);
+  };
   pthread_mutex_unlock(&fb_mutex);
 }
 

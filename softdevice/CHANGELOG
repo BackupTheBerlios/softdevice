@@ -2,6 +2,9 @@ Changelog
 2007-03-25:
    - fix types in GetTime().
    - pts values are stored in uint64_t
+   - almost complete rewrite of video-fb. Supported are now 15,16,24 and 32 bit
+     depth framebuffers. The osd is rendered with software alpha blending,
+     and it is even faster :-)
 2007-03-12:
    - compile fix for recent ffmpeg SVN
    - include ffmpeg headers as 'extern "C"'
