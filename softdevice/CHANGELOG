@@ -1,4 +1,7 @@
 Changelog
+2007-03-25:
+   - fix types in GetTime().
+   - pts values are stored in uint64_t
 2007-03-12:
    - compile fix for recent ffmpeg SVN
    - include ffmpeg headers as 'extern "C"'
