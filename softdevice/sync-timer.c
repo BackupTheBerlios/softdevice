@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: sync-timer.c,v 1.6 2006/10/03 19:50:43 wachm Exp $
+ * $Id: sync-timer.c,v 1.7 2007/04/03 19:51:00 wachm Exp $
  */
 
 #include <math.h>
@@ -12,7 +12,14 @@
 #include <vdr/plugin.h>
 
 #include <sys/ioctl.h>
+
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif
+
+#ifdef LINUX_RTC
 #include <linux/rtc.h>
+#endif
 
 #include "sync-timer.h"
 
@@ -91,6 +98,7 @@ cSyncTimer::cSyncTimer(eSyncMode mode)
   rtcFd = -1;
   switch (mode)
   {
+#ifdef LINUX_RTC
     case emRtcTimer:
       if ( (rtcFd = open("/dev/rtc",O_RDONLY)) < 0 )
         fprintf(stderr,"Could not open /dev/rtc \n");
@@ -114,7 +122,9 @@ cSyncTimer::cSyncTimer(eSyncMode mode)
       if (rtcFd < 0)
         syncMode = emUsleepTimer;
       break;
+#endif
     default:
+        syncMode = emUsleepTimer;
       break;
   }
 }

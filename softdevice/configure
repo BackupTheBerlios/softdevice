@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.35 2007/03/12 20:00:00 wachm Exp $
+# $Id: configure,v 1.36 2007/04/03 19:51:00 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -589,6 +589,10 @@ fi
 if test "${yaepg}" = "yes" ; then
   echo "#define HAVE_YAEPGPATCH 1" >> $TMPH
 fi
+
+if test "${system}" = "Linux"; then
+  echo "#define LINUX_RTC 1" >> $TMPH
+fi  
 
 ###############################################################################
 # alsa defines
