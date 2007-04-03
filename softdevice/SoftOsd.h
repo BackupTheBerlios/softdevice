@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.12 2007/01/28 19:36:50 wachm Exp $
+ * $Id: SoftOsd.h,v 1.13 2007/04/03 19:40:29 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -75,11 +75,12 @@ protected:
     void (*OutputConvert)(uint8_t * dest, color * pixmap, int Pixel, int odd);
     uint8_t *pixelMask;
     enum PixFormat {
-	    PF_None,
-	    PF_ARGB32,
-	    PF_inverseAlpha_ARGB32,
-	    PF_pseudoAlpha_ARGB32,
-	    PF_AYUV
+            PF_None,
+            PF_ARGB32,
+            PF_inverseAlpha_ARGB32,
+            PF_pseudoAlpha_ARGB32,
+            PF_AYUV,
+            PF_BGRA32
     };
     PixFormat bitmap_Format;
 
@@ -117,6 +118,8 @@ protected:
 
     static void ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel);
     static void ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel,
+                    int odd);
+    static void ARGB_to_BGRA32(uint8_t * dest, color * pixmap, int Pixel,
                     int odd);
     static void ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel,
                     int odd);

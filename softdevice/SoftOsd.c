@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.26 2007/01/28 19:36:50 wachm Exp $
+ * $Id: SoftOsd.c,v 1.27 2007/04/03 19:40:29 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -190,8 +190,10 @@ void cSoftOsd::OsdCommit() {
                 modeChanged = true;
         }
 
-        if (modeChanged)
+        if (modeChanged) {
+                OSDDEB("mode changed\n");
                 videoOut->ClearOSD();
+        };
 
         if (IsYUV) {
                 uint8_t *osdPy; uint8_t *osdPu; uint8_t *osdPv;
@@ -229,6 +231,7 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
                         bitmap_Format= PF_AYUV;
                         Clear();
                         FlushBitmaps(false);
+                        OSDDEB("SetMode switched to YUV mode\n");
                         return true;
                 };
                 return false;
@@ -266,7 +269,9 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
         // we have to redraw everything on format change...
         if (old_bitmap_Format != bitmap_Format) {
                 Clear();
-                FlushBitmaps(false);
+		FlushBitmaps(false);
+                OSDDEB("SetMode switched old_bitmap_Format %d -> bitmap_Format %d\n",
+                        old_bitmap_Format,bitmap_Format);
                 return true;
         };
 
@@ -289,7 +294,10 @@ void cSoftOsd::Flush(void) {
         voutMutex.Unlock();
 
         // give priority to the other threads
+#ifndef __APPLE__
         pthread_yield();
+#endif
+
         if (!active && !close)
                 Start();
 }
@@ -500,6 +508,20 @@ void cSoftOsd::ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel) {
                  "pandn %%mm3, %%mm4 \n"                        \
                  "por %%mm4, %%mm1\n"                           
  
+/*---------------------------------------------------------------------*/
+void cSoftOsd::ARGB_to_BGRA32(uint8_t * dest1, color * pixmap, int Pixel,
+                int odd) {
+        unsigned int c;
+        uint32_t *dest=(uint32_t*) dest1;
+        while (Pixel>0) {
+                c=*pixmap;
+                *dest++ = SET_A(GET_R(c)) | SET_R(GET_G(c)) | SET_G(GET_B(c)) | SET_B(GET_A(c));
+                pixmap++;
+                Pixel--;
+        };
+};
+
+
 /*---------------------------------------------------------------------*/
 void cSoftOsd::ARGB_to_ARGB32(uint8_t * dest, color * pixmap, int Pixel,
                 int odd) {
@@ -1348,8 +1370,8 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
 void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *dest, int linesize,
                 int dest_Width, int dest_Height, bool RefreshAll,
                 bool *dest_dirtyLines) {
-
-        OSDDEB("CopyToBitmap RGB down\n");
+        OSDDEB("CopyToBitmap RGB no scale\n");
+	
         if ( bitmap_Format == PF_AYUV ) {
                 fprintf(stderr,"cSoftOsd error did not call SetMode()!\n");
                 // convert bitmap to argb
