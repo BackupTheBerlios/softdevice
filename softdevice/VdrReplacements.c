@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: VdrReplacements.c,v 1.1 2006/04/23 19:55:53 wachm Exp $
+ * $Id: VdrReplacements.c,v 1.2 2007/04/03 19:21:10 wachm Exp $
  */
 
 #include "VdrReplacements.h"
@@ -16,7 +16,11 @@
 cMutex::cMutex() {
         pthread_mutexattr_t attr;
         pthread_mutexattr_init(&attr);
+#ifdef __APPLE__
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+#else
         pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK_NP);
+#endif
         pthread_mutex_init(&mutex, &attr);
 };
 
@@ -42,6 +46,7 @@ void StartThread(cThread *thread) {
 
 cThread::cThread() {
         active=false;
+        childTid=0;
 };
 
 cThread::~cThread() {
@@ -72,6 +77,7 @@ void cThread::Cancel(int TimeOut) {
         };
 
         if (active) {
+                fprintf(stderr,"Thread %d won't end. Canceling it.\n",childTid);
                 pthread_cancel(childTid);
                 childTid=0;
                 active=false;
