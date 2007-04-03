@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.73 2007/04/03 19:06:17 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.74 2007/04/03 19:23:30 wachm Exp $
  */
 
 #include <math.h>
@@ -520,8 +520,13 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
 #if LIBAVCODEC_BUILD >  4713
   avcodec_align_dimensions(c, &w, &h);
 #endif
-
+ 
+#ifdef USE_ALTIVEC 
+#define EDGE_WIDTH 32
+#else
 #define EDGE_WIDTH 16
+#endif
+
   bool EmuEdge=c->flags&CODEC_FLAG_EMU_EDGE;
   if(!EmuEdge){
     w+= EDGE_WIDTH*2;

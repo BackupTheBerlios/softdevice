@@ -1,6 +1,8 @@
 Changelog
 2007-04-03:
    - add automatic border detection, based on a patch by Roland Praml.
+   - altivec needs 16 byte alignment
+   - compile fix for Darwin
 2007-03-25:
    - fix types in GetTime().
    - pts values are stored in uint64_t
