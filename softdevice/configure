@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.36 2007/04/03 19:51:00 wachm Exp $
+# $Id: configure,v 1.37 2007/04/03 20:03:41 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -43,6 +43,7 @@ cle266="yes"
 alsa="yes"
 oss="yes"
 yaepg="auto"
+cpu_bigendian="no"
 
 function help () {
   echo "Usage: configure [options]"
@@ -122,6 +123,7 @@ case "$cpu_arch" in
         with_mmx="no"
         with_mmx2="no"
         with_altivec="yes"
+        cpu_bigendian="yes"
         ;;
   *)
 	echo "'$cpu_arch' is unknown..."
@@ -584,6 +586,10 @@ fi
 if test "${with_altivec}" = "yes" ; then
   echo "#define USE_ALTIVEC 1" >> $TMPH
   echo "ADD_CXXFLAGS += -faltivec" >> $TMPM
+fi
+
+if test "${cpu_bigendian}" = "yes" ; then
+  echo "#define CPU_BIGENDIAN 1" >> $TMPH
 fi
 
 if test "${yaepg}" = "yes" ; then

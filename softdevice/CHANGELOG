@@ -6,6 +6,7 @@ Changelog
    - make flag for shared linking a variable
    - add BGRA32 mode to SoftOsd
    - compile linux RTC syncing mode support only on Linux.
+   - detect cpu endianness and define CPU_BIGENDIAN if necessary.
 2007-03-25:
    - fix types in GetTime().
    - pts values are stored in uint64_t
