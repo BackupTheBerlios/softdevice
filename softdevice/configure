@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.37 2007/04/03 20:03:41 wachm Exp $
+# $Id: configure,v 1.38 2007/04/03 20:21:04 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -109,7 +109,10 @@ echo "$cc -dumpmache: `$cc -dumpmachine `" >> config.log
 system=`uname -s`
 case "$system" in
   Linux) system="Linux";;
-  Darwin) system="Darwin";;
+  Darwin) 
+        system="Darwin"
+        #with_subplugins="no"
+        ;;
   *) system="unknown";;
 esac
 
@@ -601,6 +604,18 @@ if test "${system}" = "Linux"; then
 fi  
 
 ###############################################################################
+# Darwin defines
+#
+if test "${system}" = "Darwin"; then
+  echo "SHARED_FLAG = -dynamiclib -Wl,-single_module,-undefined,dynamic_lookup " >> $TMPM
+  echo "QUARTZ_SUPPORT = 1" >> $TMPM
+  echo "#define QUARTZ_SUPPORT 1 ">> $TMPH
+  echo "MACOSAO_SUPPORT = 1" >> $TMPM
+  echo "#define MACOSAO_SUPPORT 1 ">> $TMPH
+  echo "MACVDRCLIENT_SUPPORT = 1" >> $TMPM
+fi
+
+###############################################################################
 # alsa defines
 #
 if test "${alsa}" = "yes" ; then
@@ -677,7 +692,7 @@ fi
 if test "${xv}" = "yes" ; then
   echo "XV_SUPPORT       = 1" >> $TMPM
   if test "${with_shm}" = "yes" ; then
-    echo "SHM_SUPPORT = 1" >> $TMPM
+    echo "SHMCLIENT_SUPPORT = 1" >> $TMPM
   fi
   if test "${xinerama}" = "yes" ; then
     echo "XINERAMA_SUPPORT = 1" >> $TMPM
@@ -688,6 +703,13 @@ if test "${xv}" = "yes" ; then
   echo "XV_LIBS          = ${xv_libs}"  >> $TMPM
   echo "#define XV_SUPPORT       1" >> $TMPH
   echo "#define LIBXDPMS_SUPPORT 1" >> $TMPH
+fi
+
+###############################################################################
+# generate defines for shared memory server
+#
+if test "${with_shm}" = "yes" ; then
+  echo "SHM_SUPPORT = 1" >> $TMPM
 fi
 
 ###############################################################################

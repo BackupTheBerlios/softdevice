@@ -3,9 +3,8 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.79 2007/03/12 20:10:54 wachm Exp $
+ * $Id: softdevice.c,v 1.80 2007/04/03 20:21:04 wachm Exp $
  */
-
 #include "softdevice.h"
 
 #include <getopt.h>
@@ -67,6 +66,17 @@
 
 #endif
 
+#ifdef QUARTZ_SUPPORT
+#include "video-quartz.h"
+
+#ifndef VOUT_DEFAULT
+#define VOUT_DEFAULT  VOUT_QUARTZ
+#endif
+
+#endif
+
+#include "audio.h"
+
 #ifdef ALSA_SUPPORT
 #include "audio-alsa.h"
 #endif
@@ -75,7 +85,10 @@
 #include "audio-oss.h"
 #endif
 
-#include "audio.h"
+#ifdef MACOSAO_SUPPORT
+#include "audio-macos.h"
+#endif
+
 #include "mpeg2decoder.h"
 #include "utils.h"
 #include "setup-softdevice.h"
@@ -90,6 +103,7 @@ static const char *MAINMENUENTRY  = "Softdevice";
 #define AOUT_ALSA   1
 #define AOUT_DUMMY  2
 #define AOUT_OSS    3
+#define AOUT_MACOS  4 
 
 //#define SOFTDEB(out...) {printf("softdeb[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -223,6 +237,11 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         videoOut=new cVidixVideoOut(&setupStore);
         videoOut->Initialize();
 #endif
+      case VOUT_QUARTZ:
+#ifdef QUARTZ_SUPPORT
+        videoOut=new cQuartzVideoOut(&setupStore);
+        videoOut->Initialize();
+#endif
         break;
       case VOUT_DUMMY:
         videoOut=new cDummyVideoOut(&setupStore);
@@ -245,7 +264,14 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         audioOut=new cAlsaAudioOut(&setupStore);
         break;
 #else
-        fprintf(stderr,"[softdevice] No alsa support compiled in. Using dummy-audio\n");
+        fprintf(stderr,"[softdevice] audio-alsa not compiled in. Using audio dummy!\n");
+#endif
+      case AOUT_MACOS:
+#ifdef MACOSAO_SUPPORT
+        audioOut=new cMacOsAudioOut(&setupStore);
+        break;
+#else
+        fprintf(stderr,"[softdevice] audio-macos not compiled in. Using audio dummy!\n");
 #endif
       case AOUT_OSS:
 #ifdef OSS_SUPPORT
@@ -261,6 +287,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     fprintf(stderr,"[softdevice] Audio out seems to be OK\n");
     fprintf(stderr,"[softdevice] A/V devices initialized, now initializing MPEG2 Decoder\n");
     decoder= new cMpeg2Decoder(audioOut, videoOut);
+    videoOut->Start();
 }
 
 /* ----------------------------------------------------------------------------
@@ -296,7 +323,7 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
 #endif
 
   void *handle = dlopen (subPluginFileName, RTLD_NOW);
-  char *err = dlerror();
+  const char *err = dlerror();
   if (!err)
   {
       void  *(*creator)(cSetupStore *store);
@@ -958,6 +985,14 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #else
           fprintf(stderr,"[softdevice] vidix support not compiled in\n");
           ret = false;
+#endif
+        } else if (!strncmp (vo_argv, "quartz:", 7)) {
+          vo_argv += 6;
+          setupStore.voArgs = vo_argv;
+#ifdef QUARTZ_SUPPORT
+          voutMethod = VOUT_QUARTZ;
+#else
+          fprintf(stderr,"[softdevice] quartz support not compiled in\n");
 #endif
         } else if (!strncmp (vo_argv, "dummy:", 6)) {
           vo_argv += 6;

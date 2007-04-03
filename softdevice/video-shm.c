@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.16 2006/12/14 22:33:07 wachm Exp $
+ * $Id: video-shm.c,v 1.17 2007/04/03 20:21:04 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -130,10 +130,15 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore)
         curr_pict=NULL;
         osd_surface=NULL;
         ctl->key=NO_KEY;
+#ifdef __APPLE__ // FIXME... should be decided at run time
+        remote = new cShmRemote("softdevice-quartz",this);
+#else
         remote = new cShmRemote("softdevice-xv",this);
+#endif
 };
 
 cShmVideoOut::~cShmVideoOut() {
+        SHMDEB("cShmVideoOut destructor\n");
         // stop&delete remote
         remote->Stop();
         
@@ -159,6 +164,10 @@ cShmVideoOut::~cShmVideoOut() {
 };
 
 void cShmVideoOut::AdjustOSDMode() {
+  if ( curr_osd_shmid==-1 ) {
+        current_osdMode=OSDMODE_SOFTWARE;
+        return;
+  }
   current_osdMode = setupStore->osdMode;
 }
 
@@ -183,7 +192,7 @@ void cShmVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
 
 void cShmVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                 bool &IsYUV, uint8_t *&PixelMask) {
-        if (current_osdMode==OSDMODE_SOFTWARE) {
+        if ( current_osdMode==OSDMODE_SOFTWARE ) {
                 IsYUV=true;
                 PixelMask=NULL;
                 return;
@@ -193,6 +202,7 @@ void cShmVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
         Depth=ctl->osd_depth;
         HasAlpha=false;
         PixelMask=NULL;
+        AlphaInversed=false;
 };       
 
 void cShmVideoOut::CheckShmIDs() {

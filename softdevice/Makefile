@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.40 2007/04/03 19:44:39 wachm Exp $
+# $Id: Makefile,v 1.41 2007/04/03 20:21:04 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -240,6 +240,16 @@ OBJS = $(PLUGIN).o utils.o i18n.o video.o mpeg2decoder.o \
 				sync-timer.o SoftOsd.o PicBuffer.o VideoFilter.o
 ALL_OBJS = $(OBJS)
 
+ifdef MACOSAO_SUPPORT
+  OBJS += audio-macos.o
+  LIBS += -framework Carbon -framework CoreAudio -framework AudioUnit -framework AudioToolbox 
+endif
+
+ifdef QUARTZ_SUPPORT
+  OBJS += video-quartz.o
+  LIBS += -framework Carbon -framework AGL -framework OpenGL 
+endif
+
 ifdef ALSA_SUPPORT
   LIBS += -lasound
   OBJS += audio-alsa.o audio-ac3pt.o
@@ -305,8 +315,15 @@ ifdef SHM_SUPPORT
   else
     OBJS += video-shm.o
   endif
-  TARGETS += ShmClient
   DEFINES += -DSHM_SUPPORT
+endif
+
+ifdef SHMCLIENT_SUPPORT
+  TARGETS += ShmClient
+endif
+
+ifdef MACVDRCLIENT_SUPPORT
+  TARGETS += MacVdrClient
 endif
 
 ### Implicit rules:
@@ -368,7 +385,7 @@ dist-clean: clean
 	@-rm -f config.h config.mak
 
 clean:
-	@-rm -f $(OBJS) $(DEPFILE) ShmClient *.so *.o *.tgz core* *~
+	@-rm -f $(OBJS) $(DEPFILE) ShmClient MacVdrClient *.so *.o *.tgz core* *~
 
 VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
 		      ../../../remote.o ../../../i18n.o ../../../keys.o \
@@ -384,3 +401,9 @@ SHM_CLIENT_OBJS  = video_shm.o video-xv_shm.o \
 
 ShmClient: $(SHM_CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) $(XV_LIBS)  $(SHM_CLIENT_OBJS) -lpthread -o $@
+
+
+MacVdrClient_obj = video_shm.o video-quartz_shm.o setup-softdevice_shm.o utils_shm.o VdrReplacements_shm.o PicBuffer_shm.o setup-softlog_shm.o MacVdrClient_shm.o
+MacVdrClient: $(MacVdrClient_obj)
+	$(CXX) $(LDFLAGS) $(MacVdrClient_obj)  -framework Carbon -framework AGL -framework OpenGL -lpthread -o $@
+	cp $@ ./MacVdrClient.app/Contents/MacOS/MacVdrClient
