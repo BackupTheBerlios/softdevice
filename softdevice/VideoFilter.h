@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.h,v 1.1 2006/05/27 19:12:41 wachm Exp $
+ * $Id: VideoFilter.h,v 1.2 2007/04/03 19:06:17 wachm Exp $
  */
 #ifndef __VIDEOFILTER_H__
 #define __VIDEOFILTER_H__
@@ -64,6 +64,21 @@ class cImageConvert : public cVideoFilter {
 public:
         cImageConvert(cVideoOut *VideoOut);
         virtual ~cImageConvert();
+   
+        virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
+};
+
+class cBorderDetect : public cVideoFilter {
+private:
+        double currOrigAspect;
+        double currDetAspect;
+        double newDetAspect;
+        int currBlackBorder;
+        int frame_count;
+
+public:
+        cBorderDetect(cVideoOut *VideoOut);
+        virtual ~cBorderDetect();
    
         virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
 };

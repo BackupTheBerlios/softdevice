@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.72 2007/02/26 23:00:34 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.73 2007/04/03 19:06:17 wachm Exp $
  */
 
 #include <math.h>
@@ -552,19 +552,20 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
     const int v_shift= i==0 ? 0 : v_chroma_shift;
 
     pic->base[i]= buf->pixel[i];
-    if(EmuEdge) {
+    if(EmuEdge) 
       pic->data[i] = buf->pixel[i];
-      buf->edge_width=buf->edge_height=0;
-    } else {
-      buf->edge_width=buf->edge_height=EDGE_WIDTH;
+     else 
       pic->data[i] = buf->pixel[i] + (buf->stride[i]*
           EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift);
       //pic->data[i] = buf->pixel[i] + ALIGN((buf->stride[i]*
       //              EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift),
       //              STRIDE_ALIGN);
-    };
     pic->linesize[i]= buf->stride[i];
   }
+  if(EmuEdge) 
+    buf->edge_width=buf->edge_height=0;
+  else 
+    buf->edge_width=buf->edge_height=EDGE_WIDTH;
   pic->age=buf->age;
 
   return 1;
@@ -587,7 +588,7 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
                                          int Trickspeed,
                                          bool packetMode)
      : cStreamDecoder(Context, packetMode), Mirror(VideoOut),
-       DeintLibav(VideoOut)
+       DeintLibav(VideoOut), BorderDetect(VideoOut)
 #ifdef PP_LIBAVCODEC
        ,LibAvPostProc(VideoOut)
 #endif
@@ -877,6 +878,9 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     if (setupStore.deintMethod == 1)
       DeintLibav.Filter(pic,pic);
 
+    if (setupStore.autodetectAspect)
+            BorderDetect.Filter(pic,pic);
+    
 #ifdef PP_LIBAVCODEC
 #ifdef FB_SUPPORT
     if (setupStore.deintMethod > 2 || setupStore.ppMethod!=0 )

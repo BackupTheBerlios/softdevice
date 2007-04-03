@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.10 2007/03/04 17:45:38 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.11 2007/04/03 19:06:17 wachm Exp $
  */
 
 //#include "video.h"
@@ -311,6 +311,9 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             SETUP_VIDEOASPECTNAMES_COUNT,
                             videoAspectNames));
 
+  Add(new cMenuEditBoolItem(tr("Autodetect Movie Aspect"),
+                            &data->autodetectAspect, tr("no"), tr("yes")));
+
   if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_VIDIX
       || data->outputMethod == VOUT_SHM )
   {
@@ -483,4 +486,7 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("vidContrast",          setupStore.vidContrast);
   SetupStore ("vidHue",               setupStore.vidHue);
   SetupStore ("vidSaturation",        setupStore.vidSaturation);
+  SetupStore ("ExpandTopBottomLines", setupStore.expandTopBottomLines);
+  SetupStore ("ExpandLeftRightCols",  setupStore.expandLeftRightCols);
+  SetupStore ("autodetectAspect",     setupStore.autodetectAspect);
 }

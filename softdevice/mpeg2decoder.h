@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.41 2007/03/25 08:54:12 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.42 2007/04/03 19:06:17 wachm Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -231,6 +231,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
 
     cVideoMirror        Mirror;
     cDeintLibav         DeintLibav;
+    cBorderDetect       BorderDetect;
 #ifdef PP_LIBAVCODEC
     cLibAvPostProc      LibAvPostProc;
 #endif //PP_LIBAVCODEC

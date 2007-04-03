@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.50 2007/03/04 17:45:38 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.51 2007/04/03 19:06:17 wachm Exp $
  */
 
 #include <string.h>
@@ -91,6 +91,7 @@ cSetupStore::cSetupStore ()
   cropRightCols     = 0;
   expandTopBottomLines = 0;
   expandLeftRightCols = 0;
+  autodetectAspect = 0;
   deintMethod   = 0;
   ppMethod   = 0;
   ppQuality   = 0;
@@ -279,6 +280,11 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     expandLeftRightCols = clamp (0, expandLeftRightCols, MAX_CROP_COLS/2);
     fprintf(stderr,"[setup-softdevice] Expanding %d columns at left and right\n",
             expandLeftRightCols);
+  } else if(!strcasecmp(Name,"autodetectAspect")) {
+    autodetectAspect = atoi(Value);
+    autodetectAspect = clamp (0, autodetectAspect, 1);
+    fprintf(stderr,"[setup-softdevice] autodetectAspect %d\n",
+            autodetectAspect);
   } else if (!strcasecmp(Name,"PixelFormat")) {
     pixelFormat = atoi(Value);
     pixelFormat = clamp (0, pixelFormat, 2);

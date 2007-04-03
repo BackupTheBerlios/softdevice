@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.3 2006/05/30 18:57:21 wachm Exp $
+ * $Id: VideoFilter.c,v 1.4 2007/04/03 19:06:17 wachm Exp $
  */
 #include "VideoFilter.h"
 
@@ -41,6 +41,7 @@ bool cVideoFilter::AllocateCheckBuffer(sPicBuffer *&dest, sPicBuffer *orig) {
                 if (!dest) 
                         return false;
         };
+        dest->edge_width=dest->edge_height=0;
         return true;
 };
 
@@ -268,6 +269,142 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                 return;
         }
     CopyPicBufferContext(dest,orig);
+}
+
+/*---------------------------cBorderDetect---------------------------------*/
+/*
+
+Based on a patch by Roland Praml.
+
+How Borderdetection works:
+Scan the picture from top and bottom to the middle for bright lines, omitting
+1/6 of the width on left and right side. After BODER_MIN_SIZE lines which are
+on average brigther than BORDER_BLACK, stop scanning. During the scan, edges
+are detected by subtracting the top (bottom) pixel from the current pixel. 
+If more than 1/6*width of the differences are greater than EDGE_DIFF, the
+position is marked as an edge.
+
+*/
+#define BORDER_MIN_SIZE 4
+#define FRAMES_BEFORE_SWITCH 25
+#define BORDER_BLACK 10
+#define EDGE_DIFF 30
+
+cBorderDetect::cBorderDetect(cVideoOut *vOut) 
+        : cVideoFilter(vOut), currOrigAspect(-1.0), currDetAspect(-1.0),
+          newDetAspect(-1.0),currBlackBorder(0),frame_count(0) {
+        
+};
+
+cBorderDetect::~cBorderDetect() {
+};
+
+void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
+    int black_border=0;
+
+    dest = orig; // "copy" do not modify
+
+    double tmp_asp = currDetAspect;
+    
+    if (orig->aspect_ratio > 1.43) 
+            // 16/9 Frame
+            return;
+
+    int width=orig->width/6;
+    int height=orig->height/4;
+    int not_black_count=0;
+        
+    // 4/3 Frame
+    // start of first line
+    uint8_t *pic_start=orig->pixel[0]
+            +(orig->edge_height+1)*orig->stride[0]
+            +orig->edge_width;
+    // start of last line
+    uint8_t *pic_end=orig->pixel[0]
+            +(orig->edge_height+orig->height-2)*orig->stride[0]
+            +orig->edge_width;
+
+    int brightness;
+    int edge_pixel;
+    int edge_pos=-1;
+    int stride=orig->stride[0];
+    // scan 1/6 from top and bottom border
+    for (black_border=1; black_border < height; black_border++) {
+            brightness=0;
+            edge_pixel=0;
+
+            // scan 4/6 of line
+            for (int y = width ; y < width*5; y++) {
+                    // scan upper border (4/6)
+                    brightness += *(pic_start+y);
+                    edge_pixel += !!(((int)*(pic_start-stride+y))
+                                    -((int)*(pic_start+y)) < -EDGE_DIFF);
+                    // scan lower border (4/6)
+                    brightness += *(pic_end+y);
+                    edge_pixel += !!(((int)*(pic_end+stride+y))
+                                    -((int)*(pic_end+y))  < -EDGE_DIFF);
+            }
+            brightness -= width*8*16;
+            brightness /= width * 8;
+
+            if (edge_pixel > width)
+                    edge_pos=black_border;
+
+            if (brightness > BORDER_BLACK) 
+                    not_black_count++;
+            else not_black_count=0;
+
+            // break if we have found BORDER_MIN_SIZE non black lines
+            if (not_black_count>BORDER_MIN_SIZE)
+                    break;
+
+            // next lines
+            pic_start+=stride;
+            pic_end-=stride;
+    }
+    if (edge_pos>0) {
+#if 0
+            // show detected edge
+            memset(orig->pixel[1]
+                +(orig->edge_height+edge_pos)/2*orig->stride[1]
+                +(orig->edge_width+width)/2,0xFF,4*width/2);
+            memset(orig->pixel[1]
+                +(orig->edge_height+orig->height-edge_pos-1)/2*orig->stride[1]
+                +(orig->edge_width+width)/2,0xFF,4*width/2);
+#endif
+            //printf("Picture is bright enough\n");
+            // calculate new aspect with the detected borders
+            float new_aspect = orig->aspect_ratio * float(orig->height) 
+                    / (float)(orig->height - edge_pos * 2);
+
+            // 4/3 = 1.33  16/9 = 1.77  mid = 1,55
+            if (new_aspect > 1.65) 
+                    tmp_asp = 16.0 / 9.0;
+            else if (new_aspect > 1.45) 
+                    tmp_asp = 14.0 / 9.0; //4.0 / 3.0;
+            else tmp_asp = 4.0 / 3.0;
+            //printf("Bordersize: %d  Calculated aspect %f\n",edge_pos, new_aspect);
+    }
+
+    if (tmp_asp == newDetAspect && newDetAspect != currDetAspect ) {
+            frame_count++;
+            if ( frame_count > FRAMES_BEFORE_SWITCH ) { 
+                    currDetAspect=tmp_asp;
+                    currBlackBorder=edge_pos;
+                    fprintf(stderr,"new Aspect detected %f\n", tmp_asp);
+            };
+    } else  frame_count=0;
+    newDetAspect=tmp_asp;
+#if 1
+    if (currDetAspect>0.0) {
+            orig->aspect_ratio=currDetAspect;
+            orig->edge_height+=currBlackBorder;
+            orig->height-=2*currBlackBorder;
+/*            printf("%f %d edge_height %d height %d\n",
+                            currDetAspect,currBlackBorder, 
+                            orig->edge_height, orig->height);*/  
+    }
+#endif
 }
 
 /*---------------------------cLibAvPostProc---------------------------------*/

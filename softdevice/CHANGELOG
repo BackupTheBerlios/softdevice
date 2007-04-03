@@ -1,4 +1,6 @@
 Changelog
+2007-04-03:
+   - add automatic border detection, based on a patch by Roland Praml.
 2007-03-25:
    - fix types in GetTime().
    - pts values are stored in uint64_t
