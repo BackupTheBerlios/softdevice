@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.39 2007/04/03 19:06:17 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.40 2007/04/03 21:00:40 wachm Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -30,6 +30,7 @@
 #define VOUT_VIDIX    4
 #define VOUT_DUMMY    5
 #define VOUT_SHM      6
+#define VOUT_QUARTZ   7
 
 #define ALSA_DEVICE_NAME_LENGTH  64
 
