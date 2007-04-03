@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.38 2007/03/12 20:00:00 wachm Exp $
+# $Id: Makefile,v 1.39 2007/04/03 19:31:48 wachm Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -198,10 +198,13 @@ endif  # WITH_CONFIGURE
 
 ### normally you shoudn't have to touch something below this line
 
-CXX      ?= g++
+CXX      ?= g++-2.95
+#CXXFLAGS ?=  -g -Wall -fPIC -Woverloaded-virtual 
 CXXFLAGS ?= -O2 -g -Wall -fPIC -Woverloaded-virtual 
 CXXFLAGS += $(ADD_CXXFLAGS)
 DEFINES  += -D__STDC_CONSTANT_MACROS
+
+SHARED_FLAG ?= -shared
 
 ### The directory environment:
 
@@ -317,8 +320,8 @@ endif
 
 MAKEDEP = g++ -MM -MG
 DEPFILE = .dependencies
-$(DEPFILE): Makefile
-	@$(MAKEDEP) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.c) > $@
+$(DEPFILE): Makefile 
+	$(MAKEDEP) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.c) > $@
 
 -include $(DEPFILE)
 
@@ -327,29 +330,29 @@ $(DEPFILE): Makefile
 all: $(TARGETS)
 
 libvdr-$(PLUGIN).so: $(OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(SHARED_FLAG) $(OBJS) $(LIBS) -o $@
 	@cp $(CPOTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 ifdef USE_SUBPLUGINS
 
 lib$(PLUGIN)-dfb.so: $(DFB_OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(DFB_OBJS) $(DFB_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(SHARED_FLAG) $(DFB_OBJS) $(DFB_LIBS) -o $@
 	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-fb.so: $(FB_OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(FB_OBJS) $(FB_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(SHARED_FLAG) $(FB_OBJS) $(FB_LIBS) -o $@
 	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-xv.so: $(XV_OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(XV_OBJS) $(XV_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(SHARED_FLAG) $(XV_OBJS) $(XV_LIBS) -o $@
 	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-vidix.so: $(VIDIX_OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(VIDIX_OBJS) $(VIDIX_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(SHARED_FLAG) $(VIDIX_OBJS) $(VIDIX_LIBS) -o $@
 	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 lib$(PLUGIN)-shm.so: $(SHM_OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(SHM_OBJS) $(SHM_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(SHARED_FLAG) $(SHM_OBJS) $(SHM_LIBS) -o $@
 	@cp $(CPOPTS) $@ $(LIBDIR)/$@.$(APIVERSION)
 
 endif
