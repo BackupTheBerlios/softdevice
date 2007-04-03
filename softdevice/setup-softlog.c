@@ -3,11 +3,14 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.5 2007/02/26 21:01:14 lucke Exp $
+ * $Id: setup-softlog.c,v 1.6 2007/04/03 19:24:31 wachm Exp $
  */
 
 #include "setup-softlog.h"
 
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif 
 #include <stdarg.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -209,6 +212,17 @@ void cSetupSoftlog::DisableLog2File()
 
 /* ---------------------------------------------------------------------------
  */
+int SoftdeviceGetTid() 
+{
+#ifdef __APPLE__ 
+  return getpid();
+#else
+  return syscall(__NR_gettid);
+#endif
+};
+
+/* ---------------------------------------------------------------------------
+ */
 void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
 {
     va_list argList;
@@ -220,7 +234,7 @@ void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
 
   va_start(argList, format);
   priority = LogPriority(currPriority);
-  snprintf(fmt, sizeof(fmt), "[%ld] %s", syscall(__NR_gettid), format);
+  snprintf(fmt, sizeof(fmt), "[%ld] %s",SoftdeviceGetTid(), format);
 
   if (priority != NO_LOG)
     vsyslog(priority, fmt, argList);
@@ -234,7 +248,7 @@ void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
     snprintf(fmt, sizeof(fmt), "%02d:%02d:%02d.%04d %c [%ld] %s",
              tmp->tm_hour, tmp->tm_min, tmp->tm_sec, (int) now.tv_usec/1000,
              Priority2Char(currPriority),
-             syscall(__NR_gettid), format);
+             SoftdeviceGetTid(), format);
     vfprintf(logFile, fmt, argList);
     fflush(logFile);
   }

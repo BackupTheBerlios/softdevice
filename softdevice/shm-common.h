@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: shm-common.h,v 1.7 2006/11/26 19:00:17 wachm Exp $
+ * $Id: shm-common.h,v 1.8 2007/04/03 19:24:31 wachm Exp $
  */
 #ifndef __SHM_COMMON_H__
 #define __SHM_COMMON_H__
@@ -20,12 +20,13 @@
 
 #define CTL_KEY 5680
 
+#ifndef __APPLE__ // should rather be #ifdef LINUX
 union semun {
         int val;                  
         struct semid_ds *buf;     
         unsigned short *array;    
 };
-
+#endif
 
 #define PICT_SIG 0
 #define PICT_MUT 1
