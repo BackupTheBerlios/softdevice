@@ -1,4 +1,8 @@
 Changelog
+2007-04-11: softdevice-0.4.0
+   - xv-out: activate suspend/resume key (r/R) via configure (by Artur Skawina).
+   - i18n: some german translations.
+   - osd: moved aspect detection entry to "Cropping" sub menu.
 2007-04-03:
    - add automatic border detection, based on a patch by Roland Praml.
    - altivec needs 16 byte alignment
