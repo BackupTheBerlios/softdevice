@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.19 2006/04/21 05:47:24 lucke Exp $
+ * $Id: i18n.c,v 1.20 2007/04/11 08:23:55 lucke Exp $
  */
 
 #include "i18n.h"
@@ -677,7 +677,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "software",     //  1
-    "",             //  2 TODO
+    "software",     //  2 TODO
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -722,8 +722,8 @@ const tI18nPhrase Phrases[] = {
     "",             // 20 TODO
 #endif
   },
-  { "good seeking", //  1
-    "",             //  2 TODO
+  { "good seeking",         //  1
+    "suchlauf optimiert",   //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -907,7 +907,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Video out",    //  1
-    "",             //  2 TODO
+    "Videoausgabe", //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -976,7 +976,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Hue",          //  1
-    "",             //  2 TODO
+    "Farbart",      //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -999,7 +999,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Saturation",   //  1
-    "",             //  2 TODO
+    "Farbkontrast", //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -1091,7 +1091,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Expand top/bottom lines",   //  1
-    "",             //  2 TODO
+    "Zeilen vergrößern (ob./un.)", //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -1114,7 +1114,7 @@ const tI18nPhrase Phrases[] = {
 #endif
   },
   { "Expand left/right columns",   //  1
-    "",             //  2 TODO
+    "Spalten vergrößen (li./re.)", //  2
     "",             //  3 TODO
     "",             //  4 TODO
     "",             //  5 TODO
@@ -1122,6 +1122,167 @@ const tI18nPhrase Phrases[] = {
     "",             //  7 TODO
     "",             //  8 TODO
     "Levitä reunimmaiset sarakkeet",//  9
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Logging",         //  1
+    "Protokollierung", //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Info Messages",         //  1
+    "Info Nachrichten",      //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Debug Messages",         //  1
+    "Debug Nachrichten",      //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Trace Messages",        //  1
+    "Test Nachrichten",      //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Logfile",         //  1
+    "Protokolldatei",  //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Append PID",   //  1
+    "PID ergänzen", //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
+    "",             // 10 TODO
+    "",             // 11 TODO
+    "",             // 12 TODO
+    "",             // 13 TODO
+    "",             // 14 TODO
+    "",             // 15 TODO
+    "",             // 16 TODO
+#if VDRVERSNUM >= 10316
+    "",             // 17 TODO
+    "",             // 18 TODO
+    "",             // 19 TODO
+    "",             // 20 TODO
+#endif
+  },
+  { "Autodetect Movie Aspect",   //  1
+    "Formaterkennung (16:9/4:3)", //  2
+    "",             //  3 TODO
+    "",             //  4 TODO
+    "",             //  5 TODO
+    "",             //  6 TODO
+    "",             //  7 TODO
+    "",             //  8 TODO
+    "",             //  9 TODO
     "",             // 10 TODO
     "",             // 11 TODO
     "",             // 12 TODO
