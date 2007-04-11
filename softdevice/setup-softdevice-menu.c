@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.11 2007/04/03 19:06:17 wachm Exp $
+ * $Id: setup-softdevice-menu.c,v 1.12 2007/04/11 08:26:05 lucke Exp $
  */
 
 //#include "video.h"
@@ -100,6 +100,9 @@ cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
                             &data->cropModeToggleKey,
                             (SETUP_USERKEYS-1),
                             userKeyUsage));
+
+  Add(new cMenuEditBoolItem(tr("Autodetect Movie Aspect"),
+                            &data->autodetectAspect, tr("no"), tr("yes")));
 
 #if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
@@ -310,9 +313,6 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             &data->screenPixelAspect,
                             SETUP_VIDEOASPECTNAMES_COUNT,
                             videoAspectNames));
-
-  Add(new cMenuEditBoolItem(tr("Autodetect Movie Aspect"),
-                            &data->autodetectAspect, tr("no"), tr("yes")));
 
   if (data->outputMethod == VOUT_XV || data->outputMethod == VOUT_VIDIX
       || data->outputMethod == VOUT_SHM )
