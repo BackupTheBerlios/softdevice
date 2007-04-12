@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.39 2007/04/11 08:15:36 lucke Exp $
+# $Id: configure,v 1.40 2007/04/12 07:58:18 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -61,7 +61,7 @@ function help () {
   echo "  --disable-alsa"
   echo "  --disable-oss"
   echo "  --disable-suspendkey"
-  echo "  --disable-yaepg / --enable-yapg (yaepg patch support)"
+  echo "  --disable-yaepg / --enable-yaepg (yaepg patch support)"
   echo "  --with-ffmpeg-path YOUR_FFMPEG_PATH"
   echo "  --with-vidix-path YOUR_VIDIX_PATH"
   echo "  --help"
@@ -742,9 +742,12 @@ echo "FFMPEGCFLAGS = ${ffmpeg_cflags}" >> $TMPM
 ###############################################################################
 # checking for differences to previous results
 #
+clean_dep_file="no"
+
 diff $TMPH config.h >/dev/null 2>&1
 if test $? -ne 0 ; then
   mv -f $TMPH config.h
+  clean_dep_file="yes"
   echo "updated config.h"
 else
   echo "config.h is unchanged"
@@ -753,9 +756,14 @@ fi
 diff $TMPM config.mak >/dev/null 2>&1
 if test $? -ne 0 ; then
   mv -f $TMPM config.mak
+  clean_dep_file="yes"
   echo "updated config.mak"
 else
   echo "config.mak is unchanged"
+fi
+
+if test "${clean_dep_file}" = "yes" ; then
+  rm -f .dependencies
 fi
 
 echo "Configure is finished. Please check config.log in case of problems."
