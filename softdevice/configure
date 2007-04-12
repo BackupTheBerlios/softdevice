@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.40 2007/04/12 07:58:18 lucke Exp $
+# $Id: configure,v 1.41 2007/04/12 08:01:25 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -59,6 +59,7 @@ function help () {
   echo "  --disable-mmx"
   echo "  --disable-mmx2"
   echo "  --disable-alsa"
+  echo "  --disable-xinerama"
   echo "  --disable-oss"
   echo "  --disable-suspendkey"
   echo "  --disable-yaepg / --enable-yaepg (yaepg patch support)"
@@ -83,6 +84,7 @@ do
     --disable-mmx) shift; with_mmx="no";;
     --disable-mmx2) shift; with_mmx2="no";;
     --disable-alsa) shift; alsa="no";;
+    --disable-xinerama) shift; xinerama="no";;
     --disable-oss) shift; oss="no";;
     --disable-suspendkey) shift; suspendkey="no";;
     --disable-yaepg) shift; yaepg="no";;
