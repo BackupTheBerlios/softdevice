@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.51 2007/04/03 19:06:17 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.52 2007/04/12 08:09:15 lucke Exp $
  */
 
 #include <string.h>
@@ -113,6 +113,7 @@ cSetupStore::cSetupStore ()
   syncTimerMode = 2;
   vidCaps = 0;
   vidBrightness = vidHue = vidContrast = vidSaturation = -1;
+  osdMode = 1;
 
   /* --------------------------------------------------------------------------
    * these screen width/height values are operating in square pixel mode.
