@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.21 2007/01/15 19:37:08 wachm Exp $
+ * $Id: ShmClient.c,v 1.22 2007/04/12 08:31:33 lucke Exp $
  */
 
 #include <signal.h>
@@ -82,6 +82,19 @@ void cShmRemote::Action() {
 int main(int argc, char **argv) {
         cSetupStore SetupStore;
         SetupStore.xvFullscreen=0;
+
+        if (argc > 1) {
+                if (strcmp(argv[1], "-f") == 0) {
+                        SetupStore.xvFullscreen=1;
+                } else {
+                        // unknown or -h option: report available options.
+                        printf ("Shared-Memory-Client for vdr-softdevice\n");
+                        printf ("Options:\n");
+                        printf ("  -f   Start fullscreen\n");
+                        return 0;
+                }
+        }
+
         cXvVideoOut *vout=new cXvVideoOut(&SetupStore);
         xvRemote= new cShmRemote("softdevice-xv");
 
@@ -109,16 +122,16 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"Check if vdr and the softdevice are running with the option -vo shm:\n");
                 exit(-1);
         };
-        
+
         if ( !vout->Initialize()  ) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
         };
-       
-        while (!vout->Reconfigure(SetupStore.pixelFormat) 
+
+        while (!vout->Reconfigure(SetupStore.pixelFormat)
                         && SetupStore.pixelFormat < 3 )
                 SetupStore.pixelFormat++;
-        
+
         if ( vout->useShm && vout->xv_image ) {
                 ctl->pict_shmid= vout->shminfo.shmid;
                 ctl->max_width=vout->xv_image->width;
@@ -148,7 +161,7 @@ int main(int argc, char **argv) {
                                 ctl->stride1=ctl->stride2=0;
                                 break;
                 };
-                
+
                 picture.pixel[0]=picture.pixel[1]=picture.pixel[2]=NULL;
                 picture.stride[0]=picture.stride[1]=picture.stride[2]=0;
                 picture.edge_width=picture.edge_height=0;
