@@ -1,4 +1,10 @@
 Changelog
+2007-04-12:
+   - configure: fix typo (yaepg),
+                rm .dependencies in case of changes,
+                new opt: --disable-xinerama (by Matthias Schwarzott)
+   - fix osdMode not initialized (by Matthias Schwarzott)
+   - ShmClient: full screann start option (by Matthias Schwarzott)
 2007-04-11: softdevice-0.4.0
    - xv-out: activate suspend/resume key (r/R) via configure (by Artur Skawina).
    - i18n: some german translations.
