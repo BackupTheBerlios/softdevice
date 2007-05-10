@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.79 2007/03/04 17:45:38 lucke Exp $
+ * $Id: video-dfb.c,v 1.80 2007/05/10 19:49:51 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -699,8 +699,10 @@ void cDFBVideoOut::ProcessEvents ()
       case DIKS_ALTGR: case DIKS_META: case DIKS_SUPER: case DIKS_HYPER:
         break;
       default:
-        if (!setupStore->CatchRemoteKey(dfbRemote->Name(), event.key_symbol))
-        {
+        if ( CatchRemoteKey(dfbRemote->Name(), event.key_symbol,
+                        setupStore->cropModeToggleKey) ) {
+                setupStore->CropModeNext();
+        } else {
 #if HAVE_DIEF_REPEAT
           dfbRemote->PutKey(event.key_symbol, event.flags & DIEF_REPEAT);
 #else

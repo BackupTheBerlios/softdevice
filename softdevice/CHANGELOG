@@ -1,4 +1,9 @@
 Changelog
+2007-05-10:
+   - move setupStore into a shared memory block. This allows ShmClient to
+     have acces to the setupStore.
+   - move CatchRemoteKey() into utils.c, else setup-softdevice.o would
+     have to be linked into libsoftdevice-xv.so and -dfb.so
 2007-04-12:
    - ShmClient: revertet previous change, as it breaks argument style
                 of softdevice.

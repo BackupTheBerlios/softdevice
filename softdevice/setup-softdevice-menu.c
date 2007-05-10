@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.12 2007/04/11 08:26:05 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.13 2007/05/10 19:49:51 wachm Exp $
  */
 
 //#include "video.h"
@@ -14,8 +14,8 @@
  */
 cMenuSetupVideoParm::cMenuSetupVideoParm(const char *name) : cOsdMenu(name, 33)
 {
-  copyData = setupStore;
-  data = &setupStore;
+  copyData = *setupStore;
+  data = setupStore;
 
   if (data->vidCaps & CAP_BRIGHTNESS)
   {
@@ -73,7 +73,7 @@ eOSState cMenuSetupVideoParm::ProcessKey(eKeys Key)
       }
       break;
     case osBack:
-      setupStore = copyData;
+      *setupStore = copyData;
       fprintf (stderr, "[setup-videoparm] restoring setup state\n");
       break;
     default:
@@ -86,8 +86,8 @@ eOSState cMenuSetupVideoParm::ProcessKey(eKeys Key)
  */
 cMenuSetupCropping::cMenuSetupCropping(const char *name) : cOsdMenu(name, 33)
 {
-  copyData = setupStore;
-  data = &setupStore;
+  copyData = *setupStore;
+  data = setupStore;
 
   crop_str[0] = tr("none");
   Add(new cMenuEditStraItem(tr("CropMode"),
@@ -188,7 +188,7 @@ eOSState cMenuSetupCropping::ProcessKey(eKeys Key)
       }
       break;
     case osBack:
-      setupStore = copyData;
+      *setupStore = copyData;
       fprintf (stderr, "[setup-cropping] restoring setup state\n");
       break;
     default:
@@ -201,8 +201,8 @@ eOSState cMenuSetupCropping::ProcessKey(eKeys Key)
  */
 cMenuSetupPostproc::cMenuSetupPostproc(const char *name) : cOsdMenu(name, 33)
 {
-  copyData = setupStore;
-  data = &setupStore;
+  copyData = *setupStore;
+  data = setupStore;
 
   deint_str[0] = tr("none");
   if (data->outputMethod == VOUT_FB)
@@ -262,7 +262,7 @@ eOSState cMenuSetupPostproc::ProcessKey(eKeys Key)
       }
       break;
     case osBack:
-      setupStore = copyData;
+      *setupStore = copyData;
       fprintf (stderr, "[setup-postproc] restoring setup state\n");
       break;
     default:
@@ -279,8 +279,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
     SetPlugin(plugin);
   this->plugin = plugin;
 
-  copyData = setupStore;
-  data = &setupStore;
+  copyData = *setupStore;
+  data = setupStore;
 
   Add(new cOsdItem(tr("Cropping")));
   Add(new cOsdItem(tr("Post processing")));
@@ -432,7 +432,7 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
       }
       break;
     case osBack:
-      setupStore = copyData;
+      *setupStore = copyData;
       fprintf (stderr, "[setup-softdevice] restoring setup state\n");
       break;
     default:
@@ -446,7 +446,7 @@ eOSState cMenuSetupSoftdevice::ProcessKey(eKeys Key)
 void cMenuSetupSoftdevice::Store(void)
 {
 #if 0
-  if (setupStore.deintMethod != data.deintMethod) {
+  if (setupStore->deintMethod != data.deintMethod) {
     fprintf(stderr,
             "[setup-softdevice] deinterlace method changed to (%d) %s\n",
             data.deintMethod, deint_str [data.deintMethod]);
@@ -456,37 +456,37 @@ void cMenuSetupSoftdevice::Store(void)
 
   fprintf (stderr, "[setup-softdevice] storing data\n");
 //  setupStore = data;
-  SetupStore ("Xv-Aspect",          setupStore.xvAspect);
+  SetupStore ("Xv-Aspect",          setupStore->xvAspect);
   // don't save max area value as it is ignored on load
-  //SetupStore ("Xv-MaxArea",         setupStore.xvMaxArea);
-  SetupStore ("CropMode",           setupStore.cropMode);
-  SetupStore ("CropModeToggleKey",     setupStore.cropModeToggleKey);
-  SetupStore ("CropTopLines",        setupStore.cropTopLines);
-  SetupStore ("CropBottomLines",     setupStore.cropBottomLines);
-  SetupStore ("CropLeftCols",        setupStore.cropLeftCols);
-  SetupStore ("CropRightCols",       setupStore.cropRightCols);
-  SetupStore ("Deinterlace Method", setupStore.deintMethod);
-  SetupStore ("Postprocess Method", setupStore.ppMethod);
-  SetupStore ("Postprocess Quality", setupStore.ppQuality);
-  SetupStore ("PixelFormat",        setupStore.pixelFormat);
-  SetupStore ("UseStretchBlit",     setupStore.useStretchBlit);
-  SetupStore ("UseSetSourceRectangle",     setupStore.useSetSourceRectangle);
-  SetupStore ("Picture mirroring",  setupStore.mirror);
-  SetupStore ("avOffset",           setupStore.avOffset);
-  SetupStore ("AlsaDevice",         setupStore.alsaDevice);
-  SetupStore ("AlsaAC3Device",      setupStore.alsaAC3Device);
-  SetupStore ("PixelAspect",        setupStore.screenPixelAspect);
-  SetupStore ("Suspend",            setupStore.shouldSuspend);
-  SetupStore ("OSDalphablend",      setupStore.osdMode);
-  SetupStore ("AC3Mode",            setupStore.ac3Mode);
-  SetupStore ("bufferMode",           setupStore.bufferMode);
-  SetupStore ("mainMenu",             setupStore.mainMenu);
-  SetupStore ("syncTimerMode",        setupStore.syncTimerMode);
-  SetupStore ("vidBrightness",        setupStore.vidBrightness);
-  SetupStore ("vidContrast",          setupStore.vidContrast);
-  SetupStore ("vidHue",               setupStore.vidHue);
-  SetupStore ("vidSaturation",        setupStore.vidSaturation);
-  SetupStore ("ExpandTopBottomLines", setupStore.expandTopBottomLines);
-  SetupStore ("ExpandLeftRightCols",  setupStore.expandLeftRightCols);
-  SetupStore ("autodetectAspect",     setupStore.autodetectAspect);
+  //SetupStore ("Xv-MaxArea",         setupStore->xvMaxArea);
+  SetupStore ("CropMode",           setupStore->cropMode);
+  SetupStore ("CropModeToggleKey",     setupStore->cropModeToggleKey);
+  SetupStore ("CropTopLines",        setupStore->cropTopLines);
+  SetupStore ("CropBottomLines",     setupStore->cropBottomLines);
+  SetupStore ("CropLeftCols",        setupStore->cropLeftCols);
+  SetupStore ("CropRightCols",       setupStore->cropRightCols);
+  SetupStore ("Deinterlace Method", setupStore->deintMethod);
+  SetupStore ("Postprocess Method", setupStore->ppMethod);
+  SetupStore ("Postprocess Quality", setupStore->ppQuality);
+  SetupStore ("PixelFormat",        setupStore->pixelFormat);
+  SetupStore ("UseStretchBlit",     setupStore->useStretchBlit);
+  SetupStore ("UseSetSourceRectangle",     setupStore->useSetSourceRectangle);
+  SetupStore ("Picture mirroring",  setupStore->mirror);
+  SetupStore ("avOffset",           setupStore->avOffset);
+  SetupStore ("AlsaDevice",         setupStore->alsaDevice);
+  SetupStore ("AlsaAC3Device",      setupStore->alsaAC3Device);
+  SetupStore ("PixelAspect",        setupStore->screenPixelAspect);
+  SetupStore ("Suspend",            setupStore->shouldSuspend);
+  SetupStore ("OSDalphablend",      setupStore->osdMode);
+  SetupStore ("AC3Mode",            setupStore->ac3Mode);
+  SetupStore ("bufferMode",           setupStore->bufferMode);
+  SetupStore ("mainMenu",             setupStore->mainMenu);
+  SetupStore ("syncTimerMode",        setupStore->syncTimerMode);
+  SetupStore ("vidBrightness",        setupStore->vidBrightness);
+  SetupStore ("vidContrast",          setupStore->vidContrast);
+  SetupStore ("vidHue",               setupStore->vidHue);
+  SetupStore ("vidSaturation",        setupStore->vidSaturation);
+  SetupStore ("ExpandTopBottomLines", setupStore->expandTopBottomLines);
+  SetupStore ("ExpandLeftRightCols",  setupStore->expandLeftRightCols);
+  SetupStore ("autodetectAspect",     setupStore->autodetectAspect);
 }

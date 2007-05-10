@@ -1,7 +1,7 @@
 /*
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softlog-menu.c,v 1.2 2007/02/11 10:31:27 lucke Exp $
+ * $Id: setup-softlog-menu.c,v 1.3 2007/05/10 19:49:51 wachm Exp $
  */
 
 
@@ -15,9 +15,9 @@ cMenuSetupSoftlog::cMenuSetupSoftlog(cPlugin *plugin, const char *name)
   if (plugin)
     SetPlugin(plugin);
 
-  strncpy(newLogFileName, setupStore.softlog->GetLogFileName(), 256);
-  newLogPriorities = setupStore.softlog->GetLogPriorities();
-  newAppendMode = setupStore.softlog->GetAppendMode();
+  strncpy(newLogFileName, setupStore->softlog->GetLogFileName(), 256);
+  newLogPriorities = setupStore->softlog->GetLogPriorities();
+  newAppendMode = setupStore->softlog->GetAppendMode();
 
   Add(new cMenuEditBitItem(tr("Info Messages"),
                            (uint *) &newLogPriorities,
@@ -76,15 +76,15 @@ eOSState cMenuSetupSoftlog::ProcessKey(eKeys Key)
  */
 void cMenuSetupSoftlog::Store(void)
 {
-  if (strcmp(newLogFileName, setupStore.softlog->GetLogFileName()))
-    setupStore.softlog->SetLogFile(newLogFileName);
-  SetupStore ("softlog-file",       setupStore.softlog->GetLogFileName());
+  if (strcmp(newLogFileName, setupStore->softlog->GetLogFileName()))
+    setupStore->softlog->SetLogFile(newLogFileName);
+  SetupStore ("softlog-file",       setupStore->softlog->GetLogFileName());
 
-  setupStore.softlog->SetAppendMode(newAppendMode);
-  SetupStore ("softlog-appendpid",  setupStore.softlog->GetAppendMode());
+  setupStore->softlog->SetAppendMode(newAppendMode);
+  SetupStore ("softlog-appendpid",  setupStore->softlog->GetAppendMode());
 
-  if (newLogPriorities != setupStore.softlog->GetLogPriorities())
-    setupStore.softlog->SetLogPriorities(newLogPriorities);
-  SetupStore ("softlog-priorities", setupStore.softlog->GetLogPriorities());
+  if (newLogPriorities != setupStore->softlog->GetLogPriorities())
+    setupStore->softlog->SetLogPriorities(newLogPriorities);
+  SetupStore ("softlog-priorities", setupStore->softlog->GetLogPriorities());
 
 }

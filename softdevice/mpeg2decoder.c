@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.74 2007/04/03 19:23:30 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.75 2007/05/10 19:49:51 wachm Exp $
  */
 
 #include <math.h>
@@ -136,7 +136,7 @@ int64_t  cClock::GetPTS() {
 // --- cStreamDecoder ---------------------------------------------------------
 
 cStreamDecoder::cStreamDecoder(AVCodecContext *Context, bool packetMode)
-        : PacketQueue(packet_buf_size[setupStore.bufferMode])
+        : PacketQueue(packet_buf_size[setupStore->bufferMode])
 {
   context=Context;
   if (context)
@@ -334,7 +334,7 @@ cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
 uint64_t cAudioStreamDecoder::GetPTS()
 {
   MPGDEB("pts %lld aDelay: %d ",pts,audioOut->GetDelay());
-  uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset*10;
+  uint64_t PTS= pts - audioOut->GetDelay() + setupStore->avOffset*10;
  return PTS;
 };
 
@@ -375,7 +375,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
 
   if (context->codec_id == CODEC_ID_AC3)
   {
-    switch(setupStore.ac3Mode)
+    switch(setupStore->ac3Mode)
     {
       case 0:
         // get the AC3 -> 2CH stereo data
@@ -405,7 +405,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
           pts = pkt->pts;
           pkt->pts=AV_NOPTS_VALUE;
         }
-        PTS = pts - audioOut->GetDelay() + setupStore.avOffset*10;
+        PTS = pts - audioOut->GetDelay() + setupStore->avOffset*10;
 #if AC3_PTS_TRACE
         fprintf (stderr, "audio pts offset %lld %d\n",
                  cClock::GetTime()-PTS, delta_pts);
@@ -486,7 +486,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       pts = pkt->pts;
       pkt->pts=AV_NOPTS_VALUE;
     }
-    uint64_t PTS= pts - audioOut->GetDelay() + setupStore.avOffset*10;
+    uint64_t PTS= pts - audioOut->GetDelay() + setupStore->avOffset*10;
 
     MPGDEB("audio pts offset %lld\n",cClock::GetTime()-PTS);
     cClock::AdjustAudioPTS(PTS);
@@ -606,7 +606,7 @@ cVideoStreamDecoder::cVideoStreamDecoder(AVCodecContext *Context,
 
   // init A-V syncing variables
   offset=0;
-  syncTimer = new cSyncTimer ((eSyncMode) setupStore.syncTimerMode);
+  syncTimer = new cSyncTimer ((eSyncMode) setupStore->syncTimerMode);
   syncTimer->Reset();
   videoOut->ResetDelay();
 
@@ -832,7 +832,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
     BUFDEB("start decode video stream %d data: %p size: %d \n",
         pkt->stream_index,data,size);
 #ifdef HAVE_CLE266_MPEG_DECODER
-    if (setupStore.cle266HWdecode && context->codec_id == CODEC_ID_MPEG2VIDEO)
+    if (setupStore->cle266HWdecode && context->codec_id == CODEC_ID_MPEG2VIDEO)
             len = DecodePicture_cle266(pic, got_picture,
                                 data, size, pkt->pts);
     else
@@ -877,20 +877,20 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
       continue;
 
     // postproc stuff....
-    if (setupStore.mirror == 1)
+    if (setupStore->mirror == 1)
       Mirror.Filter(pic,pic);
 
-    if (setupStore.deintMethod == 1)
+    if (setupStore->deintMethod == 1)
       DeintLibav.Filter(pic,pic);
 
-    if (setupStore.autodetectAspect)
+    if (setupStore->autodetectAspect)
             BorderDetect.Filter(pic,pic);
     
 #ifdef PP_LIBAVCODEC
 #ifdef FB_SUPPORT
-    if (setupStore.deintMethod > 2 || setupStore.ppMethod!=0 )
+    if (setupStore->deintMethod > 2 || setupStore->ppMethod!=0 )
 #else
-    if (setupStore.deintMethod > 1 || setupStore.ppMethod!=0 )
+    if (setupStore->deintMethod > 1 || setupStore->ppMethod!=0 )
 #endif //FB_SUPPORT
       LibAvPostProc.Filter(pic,pic);
 #endif //PP_LIBAVCODEC
@@ -1100,7 +1100,7 @@ void cMpeg2Decoder::initStream() {
        printf("Failed to open input stream.Error %d\n",err);
    };
 
-   init_put_byte(&ic->pb, NULL,dvb_buf_size[setupStore.bufferMode]/2, 0, this,
+   init_put_byte(&ic->pb, NULL,dvb_buf_size[setupStore->bufferMode]/2, 0, this,
        read_packet_RingBuffer,NULL,seek_RingBuffer);
    ic->pb.buf_end=NULL;
    ic->pb.is_streamed=true;
@@ -1309,7 +1309,7 @@ void cMpeg2Decoder::Start(bool GetMutex)
   	delete StreamBuffer;
 	StreamBuffer=NULL;
   };
-  StreamBuffer=new cSoftRingBufferLinear(dvb_buf_size[setupStore.bufferMode],0);
+  StreamBuffer=new cSoftRingBufferLinear(dvb_buf_size[setupStore->bufferMode],0);
   StreamBuffer->Clear();
   initStream();
 
@@ -1340,14 +1340,14 @@ void cMpeg2Decoder::Resume()
   if (!videoOut->Resume()) {
         fprintf(stderr,"Could not open video out! Sleeping again...\n");
         videoOut->Suspend();
-        setupStore.shouldSuspend=true;
+        setupStore->shouldSuspend=true;
         IsSuspended=true;
         return;
   };
 
   if (!audioOut->Resume()) {
         fprintf(stderr,"Could not open audio out! Sleeping again...\n");
-        setupStore.shouldSuspend=true;
+        setupStore->shouldSuspend=true;
         IsSuspended=true;
         videoOut->Suspend();
         return;
@@ -1616,11 +1616,11 @@ int cMpeg2Decoder::Decode(const uchar *Data, int Length)
 {
   BUFDEB("Decode %p, Length %d\n",Data,Length);
 
-  if (running && !IsSuspended && setupStore.shouldSuspend)
+  if (running && !IsSuspended && setupStore->shouldSuspend)
      // still running and should suspend
      Suspend();
 
-  if (!running && IsSuspended && !setupStore.shouldSuspend)
+  if (!running && IsSuspended && !setupStore->shouldSuspend)
      // not running and should resume
      Resume();
 

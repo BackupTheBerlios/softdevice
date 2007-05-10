@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.25 2007/01/15 19:35:13 wachm Exp $
+ * $Id: utils.c,v 1.26 2007/05/10 19:49:51 wachm Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -1287,6 +1287,27 @@ char *getFBName(void)
   }
 
   return NULL;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+bool CatchRemoteKey(const char *remoteName, uint64_t key,
+                const int cropModeToggleKey)
+{
+#ifndef STAND_ALONE
+  char  buffer[32];
+  eKeys keySym;
+
+  snprintf(buffer, sizeof(buffer), "%016LX", (uint64_t) key);
+  keySym = Keys.Get(remoteName, buffer);
+  if (keySym >= kUser1 && keySym <= kUser9)
+  {
+    keySym = (eKeys) (keySym - kUser1 + 1);
+    if (cropModeToggleKey && cropModeToggleKey == keySym)
+      return true;
+  }
+#endif
+  return false;
 }
 
 /* taken from MPlayer's aclib */

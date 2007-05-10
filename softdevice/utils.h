@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.16 2007/01/15 19:35:13 wachm Exp $
+ * $Id: utils.h,v 1.17 2007/05/10 19:49:51 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -138,6 +138,8 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
 
 uint64_t  getTimeMilis(void);
 char      *getFBName(void);
+bool  CatchRemoteKey(const char *remoteName, uint64_t key, 
+                const int ToggleKey);
 
 void mmx_unpack_16rgb (uint8_t * image, int lines, int stride);
 void mmx_unpack_15rgb (uint8_t * image, int lines, int stride);

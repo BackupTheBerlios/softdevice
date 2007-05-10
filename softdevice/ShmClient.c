@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.23 2007/04/12 17:58:11 lucke Exp $
+ * $Id: ShmClient.c,v 1.24 2007/05/10 19:49:51 wachm Exp $
  */
 
 #include <signal.h>
@@ -80,10 +80,7 @@ void cShmRemote::Action() {
 };
 
 int main(int argc, char **argv) {
-        cSetupStore SetupStore;
-        SetupStore.xvFullscreen=0;
-        cXvVideoOut *vout=new cXvVideoOut(&SetupStore);
-        xvRemote= new cShmRemote("softdevice-xv");
+        cSetupStore *SetupStore=NULL;
 
         signal(SIGINT,sig_handler);
         signal(SIGQUIT,sig_handler);
@@ -109,15 +106,27 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"Check if vdr and the softdevice are running with the option -vo shm:\n");
                 exit(-1);
         };
-        
+
+        if ( (SetupStore = (cSetupStore *) shmat(ctl->setup_shmid,NULL,0))
+                        == (cSetupStore *) -1 ) {
+                fprintf(stderr,"Error attatching to setupStore shm (id: %d)!\n",
+                                ctl->setup_shmid);
+                exit(-1);
+        };
+
+        cXvVideoOut *vout=new cXvVideoOut(SetupStore);
+        xvRemote= new cShmRemote("softdevice-xv");
+        //SetupStore.InitSetupStore();
+        SetupStore->xvFullscreen=0;
+
         if ( !vout->Initialize()  ) {
                 fprintf(stderr,"Could not init video out!\n");
                 exit(-1);
         };
        
-        while (!vout->Reconfigure(SetupStore.pixelFormat) 
-                        && SetupStore.pixelFormat < 3 )
-                SetupStore.pixelFormat++;
+        while (!vout->Reconfigure(SetupStore->pixelFormat) 
+                        && SetupStore->pixelFormat < 3 )
+                SetupStore->pixelFormat++;
         
         if ( vout->useShm && vout->xv_image ) {
                 ctl->pict_shmid= vout->shminfo.shmid;

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.40 2007/04/03 21:00:40 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.41 2007/05/10 19:49:51 wachm Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -115,16 +115,15 @@ extern const char *suspendVideo[SETUP_SUSPENDVIDEO];
 
 /* ---------------------------------------------------------------------------
  */
-class cSetupStore {
+struct cSetupStore {
   public:
-                  cSetupStore ();
-    virtual       ~cSetupStore () {};
+    void InitSetupStore();
     bool          SetupParse(const char *Name, const char *Value);
     char          *getPPdeintValue(void);
     char          *getPPValue(void);
-    void          CropModeNext(void);
-
-    virtual bool  CatchRemoteKey(const char *remoteName, uint64_t key);
+    inline void CropModeNext(void) {
+       cropMode = (cropMode == (SETUP_CROPMODES-1)) ? 0 : cropMode + 1;
+    };
 
     int   xvAspect;
     int   xvMaxArea;
@@ -176,8 +175,6 @@ class cSetupStore {
           setSourceRectangleLocked;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
-    char  *voArgs;
-    char  *aoArgs;
 
     cSetupSoftlog *softlog;
 };
@@ -196,6 +193,7 @@ static inline int clamp (int min, int val, int max)
   return val;
 }
 
-extern cSetupStore setupStore;
+extern cSetupStore *setupStore;
+extern int setupStoreShmId;
 
 #endif //__SETUP_SOFTDEVICE_H

@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.68 2006/12/14 22:31:57 wachm Exp $
+ * $Id: video-xv.c,v 1.69 2007/05/10 19:49:51 wachm Exp $
  */
 
 #include <unistd.h>
@@ -695,9 +695,13 @@ void cXvVideoOut::ProcessEvents ()
             setupStore->shouldSuspend=!setupStore->shouldSuspend;
 #endif
           default:
-            if (xvRemote &&
-                !setupStore->CatchRemoteKey(xvRemote->Name(), keysym)) {
-              xvRemote->PutKey (keysym);
+            if (xvRemote) {
+              if ( CatchRemoteKey(xvRemote->Name(), keysym,
+                                  setupStore->cropModeToggleKey) ) {
+                 setupStore->CropModeNext();
+              } else {
+                 xvRemote->PutKey(keysym);
+              };
             }
             break;
         }

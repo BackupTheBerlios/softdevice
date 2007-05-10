@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.52 2007/04/12 08:09:15 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.53 2007/05/10 19:49:51 wachm Exp $
  */
 
 #include <string.h>
@@ -74,9 +74,10 @@ const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
 
 /* ----------------------------------------------------------------------------
  */
-cSetupStore setupStore;
+cSetupStore *setupStore=NULL;
+int setupStoreShmId=-1;
 
-cSetupStore::cSetupStore ()
+void cSetupStore::InitSetupStore()
 {
   xvAspect      = 1;   // XV_FORMAT_NORMAL;
   xvMaxArea     = 0;
@@ -130,7 +131,6 @@ cSetupStore::cSetupStore ()
 
   strcpy (alsaDevice, "");
   strcpy (alsaAC3Device, "");
-  voArgs = aoArgs = NULL;
 
   xv_startup_aspect[0] = tr("16:9 wide");
   xv_startup_aspect[1] = tr("4:3 normal");
@@ -412,33 +412,4 @@ char *cSetupStore::getPPValue(void)
   return NULL;
 }
 
-/* ---------------------------------------------------------------------------
- */
-void cSetupStore::CropModeNext(void)
-{
-  cropMode = (cropMode == (SETUP_CROPMODES-1)) ? 0 : cropMode + 1;
-}
-
-/* ---------------------------------------------------------------------------
- */
-bool cSetupStore::CatchRemoteKey(const char *remoteName, uint64_t key)
-{
-#ifndef STAND_ALONE
-    char  buffer[32];
-    eKeys keySym;
-
-  snprintf(buffer, sizeof(buffer), "%016LX", (uint64_t) key);
-  keySym = Keys.Get(remoteName, buffer);
-  if (keySym >= kUser1 && keySym <= kUser9)
-  {
-    keySym = (eKeys) (keySym - kUser1 + 1);
-    if (cropModeToggleKey && cropModeToggleKey == keySym)
-    {
-      CropModeNext();
-      return true;
-    }
-  }
-#endif
-  return false;
-}
 

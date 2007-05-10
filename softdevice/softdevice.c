@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.81 2007/04/11 08:35:57 lucke Exp $
+ * $Id: softdevice.c,v 1.82 2007/05/10 19:49:51 wachm Exp $
  */
 #include "softdevice.h"
 
@@ -152,7 +152,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     fprintf(stderr,
             "[softdevice] ffmpeg build(%d)\n",
              LIBAVCODEC_BUILD);
-    setupStore.outputMethod = method;
+    setupStore->outputMethod = method;
 #ifdef USE_SUBPLUGINS
     switch (method) {
       case VOUT_XV:
@@ -182,7 +182,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 #endif
         break;
       case VOUT_DUMMY:
-        videoOut=new cDummyVideoOut(&setupStore);
+        videoOut=new cDummyVideoOut(setupStore);
         break;
       default:
         esyslog("[softdevice] NO video out specified exiting\n");
@@ -193,18 +193,18 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     switch (method) {
       case VOUT_XV:
 #ifdef XV_SUPPORT
-        videoOut = new cXvVideoOut (&setupStore);
+        videoOut = new cXvVideoOut(setupStore);
         if ( videoOut->Initialize() ) {
 
           if (!videoOut->Reconfigure()) {
                   // XVideo intialization failed, try different pix formats
-                  setupStore.pixelFormat=0;
-                  while (!videoOut->Reconfigure(setupStore.pixelFormat)
-                                  && setupStore.pixelFormat < 3)
-                          setupStore.pixelFormat++;
+                  setupStore->pixelFormat=0;
+                  while (!videoOut->Reconfigure(setupStore->pixelFormat)
+                                  && setupStore->pixelFormat < 3)
+                          setupStore->pixelFormat++;
                   // reset to default if all failed...
-                  if (setupStore.pixelFormat == 3)
-                          setupStore.pixelFormat = 0;
+                  if (setupStore->pixelFormat == 3)
+                          setupStore->pixelFormat = 0;
           };
 
           fprintf (stderr, "[softdevice] Xv out OK !\n");
@@ -216,35 +216,35 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         break;
       case VOUT_FB:
 #ifdef FB_SUPPORT
-        videoOut=new cFBVideoOut(&setupStore);
+        videoOut=new cFBVideoOut(setupStore);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_SHM:
 #ifdef SHM_SUPPORT
-        videoOut=new cShmVideoOut(&setupStore);
+        videoOut=new cShmVideoOut(setupStore);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_DFB:
 #ifdef DFB_SUPPORT
-        videoOut=new cDFBVideoOut(&setupStore);
+        videoOut=new cDFBVideoOut(setupStore);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_VIDIX:
 #ifdef VIDIX_SUPPORT
-        videoOut=new cVidixVideoOut(&setupStore);
+        videoOut=new cVidixVideoOut(setupStore);
         videoOut->Initialize();
 #endif
       case VOUT_QUARTZ:
 #ifdef QUARTZ_SUPPORT
-        videoOut=new cQuartzVideoOut(&setupStore);
+        videoOut=new cQuartzVideoOut(setupStore);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_DUMMY:
-        videoOut=new cDummyVideoOut(&setupStore);
+        videoOut=new cDummyVideoOut(setupStore);
         videoOut->Initialize();
         break;
       default:
@@ -261,27 +261,27 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     switch (audioMethod) {
       case AOUT_ALSA:
 #ifdef ALSA_SUPPORT
-        audioOut=new cAlsaAudioOut(&setupStore);
+        audioOut=new cAlsaAudioOut(setupStore);
         break;
 #else
         fprintf(stderr,"[softdevice] audio-alsa not compiled in. Using audio dummy!\n");
 #endif
       case AOUT_MACOS:
 #ifdef MACOSAO_SUPPORT
-        audioOut=new cMacOsAudioOut(&setupStore);
+        audioOut=new cMacOsAudioOut(setupStore);
         break;
 #else
         fprintf(stderr,"[softdevice] audio-macos not compiled in. Using audio dummy!\n");
 #endif
       case AOUT_OSS:
 #ifdef OSS_SUPPORT
-        audioOut=new cOSSAudioOut(&setupStore);
+        audioOut=new cOSSAudioOut(setupStore);
         break;
 #else
         fprintf(stderr,"[softdevice] No oss support compiled in. Using dummy-audio\n");
 #endif
       case AOUT_DUMMY:
-        audioOut=new cDummyAudioOut(&setupStore);
+        audioOut=new cDummyAudioOut(setupStore);
         break;
     }
     fprintf(stderr,"[softdevice] Audio out seems to be OK\n");
@@ -332,7 +332,7 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
     err = dlerror();
     if (!err)
     {
-      videoOut = (cVideoOut *) creator (&setupStore);
+      videoOut = (cVideoOut *) creator(setupStore);
     }
     else
     {
@@ -553,7 +553,7 @@ int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
   SOFTDEB("PlayAudio... %p length %d\n",Data,Length);
 #if VDRVERSNUM >= 10342
-  if (setupStore.shouldSuspend && !Transferring()) {
+  if (setupStore->shouldSuspend && !Transferring()) {
     usleep(10000); // avoid burning CPU
     return 0;
   }
@@ -614,7 +614,7 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 {
   SOFTDEB("PlayVideo %x length %d\n",Data,Length);
 #if VDRVERSNUM >= 10342
-  if (setupStore.shouldSuspend && !Transferring()) {
+  if (setupStore->shouldSuspend && !Transferring()) {
     usleep(10000); // avoid burning CPU
     return 0;
   }
@@ -784,6 +784,70 @@ cPluginSoftDevice::cPluginSoftDevice(void)
   aoutMethod = AOUT_ALSA;
   pluginPath = PLUGINLIBDIR;
   runtimePluginPath = GetLibPath();
+
+#ifndef VOUT_SHM 
+  setupStore = (cSetupStore *) malloc( sizeof(cSetupStore) );
+  setupStore->InitSetupStore();
+#else
+  int ctl_shmid;
+  ShmCtlBlock *ctl=NULL;
+  key_t ctl_key=CTL_KEY;
+
+  // try to get an existing ShmCltBlock
+  if  ( (ctl_shmid = shmget(ctl_key,sizeof(ShmCtlBlock), 0666)) >= 0 ) {
+          fprintf(stderr,"softdevice: Got ctl_shmid %d shm ctl!\n",ctl_shmid);
+  }; 
+
+  // attach to the control block
+  if ( ctl_shmid>0 && ( (ctl = (ShmCtlBlock*)shmat(ctl_shmid,NULL,0)) 
+                          == (ShmCtlBlock*) -1 )) {
+          fprintf(stderr,"softdevice: Error attatching shm ctl!\n");
+          ctl=NULL;
+  };
+
+  if ( ctl && ctl->setup_shmid>0 ) {
+          setupStoreShmId=ctl->setup_shmid;
+          // try to attach to an existing setupStore
+          if ( (setupStore = (cSetupStore*)shmat(setupStoreShmId,NULL,0)) 
+                          == (cSetupStore*) -1 ) {
+                  fprintf(stderr,"softdevice: Error attatching existing setupStore shm!\n");
+                  setupStoreShmId=-1;
+                  setupStore=NULL;
+                  printf("setupStoreShmId %d setupStore %p\n",
+                                  setupStoreShmId,setupStore);
+          } else fprintf(stderr,"softdevice: Attatched to setupStore %d at %p\n",
+                          setupStoreShmId,setupStore);
+                                 
+  };
+
+  if ( !setupStore ) {
+          if ( (setupStoreShmId = shmget(IPC_PRIVATE,sizeof(cSetupStore), 
+                                          IPC_CREAT | 0666)) >= 0 ) {
+                  fprintf(stderr,"softdevice: Created setupStoreId %d!\n",
+                                  setupStoreShmId);
+          };
+          // try to attach to the new setupStore
+          if ( (setupStore = (cSetupStore*)shmat(setupStoreShmId,NULL,0)) 
+                          == (cSetupStore*) -1 ) {
+                  fprintf(stderr,"softdevice: Error attatching setupStore shm!\n");
+                  exit(-1);
+          } else 
+                  fprintf(stderr,"softdevice: Attatched to setupStoreId %d at %p.\n",
+                          setupStoreShmId,setupStore);
+          
+          if (ctl>0)
+                  ctl->setup_shmid=setupStoreShmId;
+                          // request removing after detaching
+          if ( setupStoreShmId > 0)
+                        shmctl(setupStoreShmId, IPC_RMID, 0);
+
+  };
+  if ( ctl>0 ) {
+          shmdt(ctl);
+          ctl=NULL;
+  };
+  setupStore->InitSetupStore();
+#endif
 }
 
 cPluginSoftDevice::~cPluginSoftDevice()
@@ -799,7 +863,7 @@ const char *cPluginSoftDevice::Description(void)
 
 const char *cPluginSoftDevice::MainMenuEntry(void)
 {
-  if (setupStore.mainMenu)
+  if (setupStore->mainMenu)
     return tr(MAINMENUENTRY);
   return NULL;
 }
@@ -872,7 +936,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 
         if (!strncmp (vo_argv, "xv:", 3)) {
           vo_argv += 3;
-          setupStore.voArgs = vo_argv;
 #ifdef XV_SUPPORT
           voutMethod = VOUT_XV;
           while (strlen(vo_argv) > 1) {
@@ -884,12 +947,12 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               if (!strncmp (vo_argv, "wide", 4)) {
                 fprintf (stderr,
                          "[ProcessArgs] xv: startup aspect ratio set to wide (16:9)\n");
-                setupStore. xvAspect = XV_FORMAT_WIDE;
+                setupStore->xvAspect = XV_FORMAT_WIDE;
                 vo_argv += 4;
               } else if (!strncmp (vo_argv, "normal", 6)) {
                 fprintf (stderr,
                          "[ProcessArgs] xv: startup aspect ratio set to normal (4:3)\n");
-                setupStore. xvAspect = XV_FORMAT_NORMAL;
+                setupStore->xvAspect = XV_FORMAT_NORMAL;
                 vo_argv += 6;
               } else {
                 fprintf (stderr,
@@ -899,19 +962,19 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
                 break;
               }
             } else if (!strncmp (vo_argv, "max-area", 8)) {
-              setupStore.xvMaxArea = 1;
+              setupStore->xvMaxArea = 1;
               fprintf (stderr,
                        "[ProcessArgs] xv: using max available area\n");
               vo_argv += 8;
             } else if (!strncmp (vo_argv, "full", 4)) {
-              setupStore.xvFullscreen = 1;
+              setupStore->xvFullscreen = 1;
               fprintf (stderr,
                        "[ProcessArgs] xv: start up fullscreen\n");
               vo_argv += 4;
             } else if (!strncmp (vo_argv, "use-defaults", 12)) {
               fprintf (stderr,
                        "[ProcessArgs] xv: don't change brigtness etc on startup\n");
-              setupStore.xvUseDefaults=true;
+              setupStore->xvUseDefaults=true;
               vo_argv += 12;
             } else {
                fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
@@ -926,7 +989,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "fb:", 3)) {
           vo_argv += 3;
-          setupStore.voArgs = vo_argv;
 #ifdef FB_SUPPORT
           voutMethod = VOUT_FB;
 #else
@@ -934,7 +996,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "shm:", 3)) {
           vo_argv += 4;
-          setupStore.voArgs = vo_argv;
 #ifdef SHM_SUPPORT
           voutMethod = VOUT_SHM;
 #else
@@ -942,7 +1003,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "dfb:", 4)) {
           vo_argv += 4;
-          setupStore.voArgs = vo_argv;
 #ifdef DFB_SUPPORT
           voutMethod = VOUT_DFB;
           while (strlen(vo_argv) > 1) {
@@ -950,20 +1010,20 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
                ++vo_argv;
 
             if (!strncmp (vo_argv, "mgatv", 5)) {
-              setupStore.useMGAtv = 1;
+              setupStore->useMGAtv = 1;
               vo_argv += 5;
             } else if (!strncmp (vo_argv, "viatv", 5)) {
-              setupStore.viaTv = 1;
+              setupStore->viaTv = 1;
               fprintf(stderr,"[softdevice] enabling field parity\n");
               vo_argv += 5;
 #ifdef HAVE_CLE266_MPEG_DECODER
             } else if (!strncmp (vo_argv, "cle266", 6)) {
-              setupStore.cle266HWdecode = 1;
+              setupStore->cle266HWdecode = 1;
               vo_argv += 6;
               fprintf(stderr,"[softdevice] enabling CLE266 HW decoding\n");
 #endif // HAVE_CLE266_MPEG_DECODER
             } else if (!strncmp (vo_argv, "triple", 6)) {
-              setupStore.tripleBuffering = 1;
+              setupStore->tripleBuffering = 1;
               vo_argv += 6;
               fprintf(stderr,"[softdevice] enabling triple buffering\n");
             } else {
@@ -979,7 +1039,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "vidix:", 6)) {
           vo_argv += 6;
-          setupStore.voArgs = vo_argv;
 #ifdef VIDIX_SUPPORT
           voutMethod = VOUT_VIDIX;
 #else
@@ -988,7 +1047,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "quartz:", 7)) {
           vo_argv += 6;
-          setupStore.voArgs = vo_argv;
 #ifdef QUARTZ_SUPPORT
           voutMethod = VOUT_QUARTZ;
 #else
@@ -996,7 +1054,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
 #endif
         } else if (!strncmp (vo_argv, "dummy:", 6)) {
           vo_argv += 6;
-          setupStore.voArgs = vo_argv;
           voutMethod = VOUT_DUMMY;
           fprintf(stderr,"[softdevice] using dummy video out\n");
         } else {
@@ -1013,7 +1070,6 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
           char *ao_argv = argv[i];
         if (!strncmp(ao_argv, "alsa:", 5)) {
           ao_argv += 5;
-          setupStore.aoArgs = ao_argv;
           aoutMethod = AOUT_ALSA;
           while (strlen(ao_argv) > 1) {
               char  *sep;
@@ -1034,10 +1090,10 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               len = (len > ALSA_DEVICE_NAME_LENGTH) ?
                       ALSA_DEVICE_NAME_LENGTH : len;
               if (len) {
-                strncpy(setupStore.alsaDevice, ao_argv, len);
-                setupStore.alsaDevice [len] = 0;
+                strncpy(setupStore->alsaDevice, ao_argv, len);
+                setupStore->alsaDevice[len]= 0;
                 fprintf (stderr, "[softdevice] using PCM alsa device %s\n",
-                         setupStore.alsaDevice);
+                         setupStore->alsaDevice);
               }
               ao_argv += len;
             } else if (!strncmp(ao_argv, "ac3=", 4)) {
@@ -1046,36 +1102,34 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               len = (len > ALSA_DEVICE_NAME_LENGTH) ?
                       ALSA_DEVICE_NAME_LENGTH : len;
               if (len) {
-                strncpy(setupStore.alsaAC3Device, ao_argv, len);
-                setupStore.alsaAC3Device [len] = 0;
+                strncpy(setupStore->alsaAC3Device, ao_argv, len);
+                setupStore->alsaAC3Device[len] = 0;
                 fprintf (stderr, "[softdevice] using AC3 alsa device %s\n",
-                         setupStore.alsaAC3Device);
+                         setupStore->alsaAC3Device);
               }
               ao_argv += len;
             } else if (!strncmp(ao_argv, "mixer", 5)) {
               ao_argv += 5;
-              setupStore.useMixer = 1;
+              setupStore->useMixer = 1;
               fprintf(stderr,
                       "[softdevice] using alsa mixer for volume control\n");
             } else {
               fprintf(stderr, "[softdevice] using alsa device %s\n", ao_argv);
-              strncpy(setupStore.alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);
+              strncpy(setupStore->alsaDevice, ao_argv, ALSA_DEVICE_NAME_LENGTH);
               ao_argv += strlen(ao_argv);
             }
 
           }
         } else if (!strncmp(ao_argv, "oss:", 4)) {
           ao_argv += 4;
-          setupStore.aoArgs = ao_argv;
           aoutMethod = AOUT_OSS;
           if (!strncmp(ao_argv, "mixer", 5)) {
                 printf("mixer argv: '%s' \n",ao_argv);
               ao_argv += 5;
-              setupStore.useMixer = 1;
+              setupStore->useMixer = 1;
           }
         } else if (!strncmp(ao_argv, "dummy:", 6)) {
           ao_argv += 6;
-          setupStore.aoArgs = ao_argv;
           aoutMethod = AOUT_DUMMY;
         } else {
           fprintf(stderr,"[softdevice] ignoring unrecognized option \"%s\"!\n",argv[i]);
@@ -1187,7 +1241,7 @@ cMenuSetupPage *cPluginSoftDevice::SetupMenu(void)
 bool cPluginSoftDevice::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
-  return setupStore.SetupParse(Name, Value);
+  return setupStore->SetupParse(Name, Value);
 }
 
 VDRPLUGINCREATOR(cPluginSoftDevice); // Don't touch this!

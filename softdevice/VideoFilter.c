@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.4 2007/04/03 19:06:17 wachm Exp $
+ * $Id: VideoFilter.c,v 1.5 2007/05/10 19:49:51 wachm Exp $
  */
 #include "VideoFilter.h"
 
@@ -90,7 +90,7 @@ void cVideoMirror::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
             fprintf(stderr,
                 "[softdevice] no picture buffer is allocated for mirroring !\n"
                 "[softdevice] switching mirroring off !\n");
-            setupStore.mirror = 0;
+            setupStore->mirror = 0;
             return;
     }
 
@@ -159,7 +159,7 @@ void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
             fprintf(stderr,
                 "[softdevice] no picture buffer is allocated for deinterlacing!\n"
                 "[softdevice] switching deinterlacing off !\n");
-            setupStore.deintMethod = 0;
+            setupStore->deintMethod = 0;
             return;
     }
 
@@ -190,7 +190,7 @@ void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
             fprintf(stderr,
                             "[softdevice] error, libavcodec deinterlacer failure\n"
                             "[softdevice] switching deinterlacing off !\n");
-            setupStore.deintMethod = 0;
+            setupStore->deintMethod = 0;
             return;
     }
     CopyPicBufferContext(dest,orig);
@@ -440,7 +440,7 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                 fprintf(stderr,
                                 "[softdevice] no picture buffer is allocated for post processing!\n"
                                 "[softdevice] switching post processing off !\n");
-                setupStore.deintMethod = setupStore.ppMethod = 0;
+                setupStore->deintMethod = setupStore->ppMethod = 0;
                 return;
         }
 
@@ -479,26 +479,26 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         }
         
         if ( ppmode == NULL 
-                        || currentDeintMethod != setupStore.deintMethod 
-                        || currentppMethod != setupStore.ppMethod
-                        || currentppQuality != setupStore.ppQuality ) {
+                        || currentDeintMethod != setupStore->deintMethod 
+                        || currentppMethod != setupStore->ppMethod
+                        || currentppQuality != setupStore->ppQuality ) {
                 // reallocate ppmode if method or quality changed
-                currentDeintMethod = setupStore.deintMethod;
-                currentppMethod = setupStore.ppMethod;
-                currentppQuality = setupStore.ppQuality;
+                currentDeintMethod = setupStore->deintMethod;
+                currentppMethod = setupStore->ppMethod;
+                currentppQuality = setupStore->ppQuality;
 
                 if (ppmode)  {
                         pp_free_mode (ppmode);
                         ppmode = NULL;
                 }
                 char mode[60]="";
-                if (setupStore.getPPdeintValue() && setupStore.getPPValue())
-                        sprintf(mode,"%s,%s",setupStore.getPPdeintValue(),
-                                        setupStore.getPPValue());
-                else if (setupStore.getPPdeintValue() )
-                        sprintf(mode,"%s",setupStore.getPPdeintValue());
-                else if (setupStore.getPPValue() )
-                        sprintf(mode,"%s",setupStore.getPPValue());
+                if (setupStore->getPPdeintValue() && setupStore->getPPValue())
+                        sprintf(mode,"%s,%s",setupStore->getPPdeintValue(),
+                                        setupStore->getPPValue());
+                else if (setupStore->getPPdeintValue() )
+                        sprintf(mode,"%s",setupStore->getPPdeintValue());
+                else if (setupStore->getPPValue() )
+                        sprintf(mode,"%s",setupStore->getPPValue());
 
                 ppmode = pp_get_mode_by_name_and_quality(mode, currentppQuality);
         }
@@ -507,8 +507,8 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                 fprintf(stderr,
                         "[softdevice] pp-filter %s couldn't be initialized,\n"
                         "[softdevice] switching postprocessing off !\n",
-                        setupStore.getPPValue());
-                setupStore.deintMethod = setupStore.ppMethod = 0;
+                        setupStore->getPPValue());
+                setupStore->deintMethod = setupStore->ppMethod = 0;
                 return;
         }
 

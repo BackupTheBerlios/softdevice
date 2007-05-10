@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: shm-common.h,v 1.8 2007/04/03 19:24:31 wachm Exp $
+ * $Id: shm-common.h,v 1.9 2007/05/10 19:49:51 wachm Exp $
  */
 #ifndef __SHM_COMMON_H__
 #define __SHM_COMMON_H__
@@ -18,7 +18,7 @@
 #include <sys/sem.h> 
 
 
-#define CTL_KEY 5680
+#define CTL_KEY 5681
 
 #ifndef __APPLE__ // should rather be #ifdef LINUX
 union semun {
@@ -76,6 +76,9 @@ struct ShmCtlBlock {
 
         /* keypress events */
         uint64_t key;
+
+        /* setupStore shm id */
+        int setup_shmid;
 };
 
 inline void sem_wait_lock(int semid, int idx, int flag=0) 
