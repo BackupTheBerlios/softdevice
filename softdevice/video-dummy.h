@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dummy.h,v 1.4 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video-dummy.h,v 1.5 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef VIDEO_DUMMY_H
@@ -13,7 +13,7 @@
 class cDummyVideoOut : public cVideoOut {
 private:
 public:
-  cDummyVideoOut(cSetupStore *setupStore);
+  cDummyVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog);
   virtual ~cDummyVideoOut();
 
   virtual void Refresh(cBitmap *Bitmap);

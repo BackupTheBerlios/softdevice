@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-macos.c,v 1.1 2007/04/03 20:21:04 wachm Exp $
+ * $Id: audio-macos.c,v 1.2 2007/05/10 19:54:44 wachm Exp $
  */
 
 /*
@@ -117,7 +117,7 @@ OSStatus cMacOsAudioOut::Render(UInt32 inNumFrames, AudioBufferList *ioData) {
  	return noErr;
 }
 
-cMacOsAudioOut::cMacOsAudioOut(cSetupStore *store) : cAudioOut() {
+cMacOsAudioOut::cMacOsAudioOut() : cAudioOut() {
         ComponentDescription desc; 
         Component comp; 
         OSStatus err;

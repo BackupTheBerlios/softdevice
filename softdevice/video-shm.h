@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.h,v 1.9 2006/11/26 19:00:17 wachm Exp $
+ * $Id: video-shm.h,v 1.10 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef __VIDEO_SHM_H__
@@ -40,7 +40,7 @@ class cShmVideoOut : public cVideoOut {
         uint8_t *osd_surface;
 
         public:
-        cShmVideoOut(cSetupStore *setupStore);
+        cShmVideoOut(cSetupStore *setupStore, cSetupSoftlog *softlog);
         ~cShmVideoOut();
         
         virtual void AdjustOSDMode();

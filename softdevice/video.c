@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.74 2007/03/25 09:00:11 wachm Exp $
+ * $Id: video.c,v 1.75 2007/05/10 19:54:44 wachm Exp $
  */
 
 #include <fcntl.h>
@@ -26,7 +26,7 @@
 
 /* ---------------------------------------------------------------------------
  */
-cVideoOut::cVideoOut(cSetupStore *setupStore)
+cVideoOut::cVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
 {
   OsdWidth=OSD_FULL_WIDTH;
   OsdHeight=OSD_FULL_HEIGHT;
@@ -48,6 +48,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore)
   OsdRefreshCounter=0;
   displayTimeUS = 0;
   this->setupStore=setupStore;
+  softlog=Softlog;
   freezeMode=false;
   videoInitialized = false;
   oldPicture = NULL;
@@ -539,7 +540,7 @@ void cVideoOut::EvaluateDelay(uint64_t aPTS, uint64_t pts, int frametime)
   offsetIndex++;
   offsetIndex %= AVRG_OFF_CNT;
 
-  setupStore->softlog->Log(SOFT_LOG_TRACE, 0,
+  softlog->Log(SOFT_LOG_TRACE, 0,
                   "[VideoOut] A/V (%d - %d) off = %d avoff = %d\n",
                   aPTS, pts, offset, offsetAverage);
 
@@ -580,7 +581,7 @@ void cVideoOut::EvaluateDelay(uint64_t aPTS, uint64_t pts, int frametime)
   delay = clamp (-frametime*100, delay, 2*frametime*100);
 
   if (frame < 100) {
-    setupStore->softlog->Log(SOFT_LOG_TRACE, 0,
+    softlog->Log(SOFT_LOG_TRACE, 0,
                   "[VideoOut] %d %d %d \n",
                   frame, offset, offsetAverage);
   }
@@ -589,14 +590,14 @@ void cVideoOut::EvaluateDelay(uint64_t aPTS, uint64_t pts, int frametime)
     if (!offsetInHold) {
       if (abs(offset) < frametime) {
         offsetInHold = true;
-        setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+        softlog->Log(SOFT_LOG_DEBUG, 0,
                   "[VideoOut] video now synced (%d - %d)\n",
                   frame, offset);
       }
     }
   }
   if (frame && !(frame % 7500)) {
-    setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+    softlog->Log(SOFT_LOG_DEBUG, 0,
               "[VideoOut] sync info: repF = %d, drpF = %d, totF = %d\n",
               repeatedFrames, droppedFrames, frame);
   }
@@ -613,7 +614,7 @@ void cVideoOut::ResetDelay()
   offsetIndex = offsetCount = offsetAverage = offsetSum = 0;
   memset (offsetHistory, 0, sizeof(offsetHistory));
 
-  setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+  softlog->Log(SOFT_LOG_DEBUG, 0,
             "[VideoOut] reset: sync info: repF = %d, drpF = %d, totF = %d\n",
             repeatedFrames, droppedFrames, frame);
 

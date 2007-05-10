@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.25 2007/02/24 14:04:14 lucke Exp $
+ * $Id: video-vidix.c,v 1.26 2007/05/10 19:54:44 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -27,15 +27,15 @@ uint64_t startTime;
 
 /* ---------------------------------------------------------------------------
  */
-cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
-                  : cVideoOut(setupStore)
+cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
+                  : cVideoOut(setupStore,Softlog)
 {
     int     err;
     double  displayRatio;
     char    *fbName = getFBName();
 
     if ((fbdev = open(fbName, O_RDWR)) == -1) {
-        setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+        softlog->Log(SOFT_LOG_ERROR, 0,
                   "[cVidixVideoOut] Can't open framebuffer exiting\n");
         free(fbName);
         exit(1);
@@ -43,12 +43,12 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     free(fbName);
 
     if (ioctl(fbdev, FBIOGET_VSCREENINFO, &fb_vinfo)) {
-        setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+        softlog->Log(SOFT_LOG_ERROR, 0,
                   "[cVidixVideoOut] Can't get VSCREENINFO exiting\n");
         exit(1);
     }
     if (ioctl(fbdev, FBIOGET_FSCREENINFO, &fb_finfo)) {
-        setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+        softlog->Log(SOFT_LOG_ERROR, 0,
                   "[cVidixVideoOut] Can't get FSCREENINFO exiting\n");
         exit(1);
     }
@@ -56,7 +56,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     switch (fb_finfo.visual) {
 
        case FB_VISUAL_TRUECOLOR:
-           setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+           softlog->Log(SOFT_LOG_INFO, 0,
                      "[cVidixVideoOut] Truecolor FB found\n");
            break;
 
@@ -65,14 +65,14 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
            struct fb_cmap cmap;
            __u16 red[256], green[256], blue[256];
 
-           setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+           softlog->Log(SOFT_LOG_INFO, 0,
                      "[cVidixVideoOut] DirectColor FB found\n");
 
            orig_cmaplen = 256;
            orig_cmap = (__u16 *) malloc ( 3 * orig_cmaplen * sizeof(*orig_cmap) );
 
            if ( orig_cmap == NULL ) {
-               setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+               softlog->Log(SOFT_LOG_ERROR, 0,
                          "[cVidixVideoOut] Can't alloc memory for cmap exiting\n");
                exit(1);
            }
@@ -84,7 +84,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
            cmap.transp = NULL;
 
            if ( ioctl(fbdev, FBIOGETCMAP, &cmap)) {
-               setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+               softlog->Log(SOFT_LOG_ERROR, 0,
                          "[cVidixVideoOut] Can't get cmap\n");
            }
 
@@ -100,14 +100,14 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
            cmap.transp = NULL;
 
            if ( ioctl(fbdev, FBIOPUTCMAP, &cmap)) {
-               setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+               softlog->Log(SOFT_LOG_ERROR, 0,
                          "[cVidixVideoOut] Can't put cmap\n");
            }
 
            break;
 
        default:
-           setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+           softlog->Log(SOFT_LOG_ERROR, 0,
                      "[cVidixVideoOut] Unsupported FB. Don't know if it will work.\n");
     }
 
@@ -129,17 +129,17 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     displayRatio = (double) Xres / (double) Yres;
     SetParValues(displayRatio, displayRatio);
 
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] xres = %d yres= %d \n", fb_vinfo.xres, fb_vinfo.yres);
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] line length = %d \n", fb_line_len);
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] bpp = %d\n", fb_vinfo.bits_per_pixel);
 
     fb = (uint8_t *) mmap(0, fb_finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbdev, 0);
 
     if ( fb == (uint8_t *) -1 ) {
-       setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+       softlog->Log(SOFT_LOG_ERROR, 0,
                  "[cVidixVideoOut] Can't mmap framebuffer memory exiting\n");
        exit(1);
      }
@@ -148,26 +148,26 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
 
     vidix_version = vdlGetVersion();
 
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] vidix version: %i\n", vidix_version);
 
     vidix_handler = vdlOpen(VIDIX_DIR, NULL, TYPE_OUTPUT, 0);
 
     if( !vidix_handler )
     {
-       setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+       softlog->Log(SOFT_LOG_ERROR, 0,
                  "[cVidixVideoOut] Couldn't find working VIDIX driver exiting\n");
        exit(1);
     }
 
     if( (err = vdlGetCapability(vidix_handler,&vidix_cap)) != 0)
     {
-       setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+       softlog->Log(SOFT_LOG_ERROR, 0,
                  "[cVidixVideoOut] Couldn't get capability: %s exiting\n",
                  strerror(err) );
        exit(1);
     }
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] capabilities:  0x%0x\n", vidix_cap.flags );
 
     OSDpseudo_alpha = true;
@@ -186,7 +186,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     {
       if (!MatchPixelFormat())
       {
-        setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+        softlog->Log(SOFT_LOG_ERROR, 0,
                   "[cVidixVideoOut] no matching pixel format found exiting\n");
         exit(1);
       }
@@ -210,7 +210,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
     vidix_play.dest.h       = Yres;
     vidix_play.num_frames   = 2;
 
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] fourcc.flags:  0x%0x\n",vidix_fourcc.flags);
     AllocLayer();
 
@@ -218,47 +218,47 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
      * check presence of equalizer capability
      */
     vidix_video_eq_t tmpeq;
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] capabilities\n");
 
     if(!vdlPlaybackGetEq(vidix_handler, &tmpeq)) {
         vidix_curr_eq=tmpeq;
-        setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+        softlog->Log(SOFT_LOG_INFO, 0,
                   "[cVidixVideoOut] EQ cap: %x:\n",
                   vidix_curr_eq.cap);
         if (vidix_curr_eq.cap & VEQ_CAP_BRIGHTNESS) {
-            setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            softlog->Log(SOFT_LOG_INFO, 0,
                       "[cVidixVideoOut]  brightness (%d)\n",
                       vidix_curr_eq.brightness);
             setupStore->vidCaps |= CAP_BRIGHTNESS;
         }
         if (vidix_curr_eq.cap & VEQ_CAP_CONTRAST) {
-            setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            softlog->Log(SOFT_LOG_INFO, 0,
                       "[cVidixVideoOut]  contrast (%d)\n",
                       vidix_curr_eq.contrast);
             setupStore->vidCaps |= CAP_CONTRAST;
         }
         if (vidix_curr_eq.cap & VEQ_CAP_SATURATION) {
-            setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            softlog->Log(SOFT_LOG_INFO, 0,
                       "[cVidixVideoOut]  saturation (%d)\n",
                       vidix_curr_eq.saturation);
             setupStore->vidCaps |= CAP_SATURATION;
         }
         if (vidix_curr_eq.cap & VEQ_CAP_HUE) {
-            setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            softlog->Log(SOFT_LOG_INFO, 0,
                       "[cVidixVideoOut]  hue (%d)\n",
                       vidix_curr_eq.hue);
             setupStore->vidCaps |= CAP_HUE;
         }
         if (vidix_curr_eq.cap & VEQ_CAP_RGB_INTENSITY) {
-            setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+            softlog->Log(SOFT_LOG_INFO, 0,
                       "[cVidixVideoOut]  RGB-intensity (%d, %d, %d)\n",
                       vidix_curr_eq.red_intensity,
                       vidix_curr_eq.green_intensity,
                       vidix_curr_eq.blue_intensity );
         }
     } else {
-       setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+       softlog->Log(SOFT_LOG_INFO, 0,
                  "[cVidixVideoOut] Couldn't get EQ capability\n");
     }
 
@@ -269,7 +269,7 @@ cVidixVideoOut::cVidixVideoOut(cSetupStore *setupStore)
 
     if (!vdlPlaybackGetDeint(vidix_handler, &vidix_deint) &&
         !vdlPlaybackSetDeint(vidix_handler, &vidix_deint)) {
-        setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+        softlog->Log(SOFT_LOG_INFO, 0,
                   "[cVidixVideoOut]  HW-deinterlace (%x,%x)\n",
                   vidix_deint.flags,
                   vidix_deint.deinterlace_pattern);
@@ -313,14 +313,14 @@ void cVidixVideoOut::SetParams(int Ystride, int UVstride)
     cutTop    = setupStore->cropTopLines;
     cutBottom = setupStore->cropBottomLines;
 
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] Video changed format to %dx%d\n",
               fwidth, fheight);
 
     if((Xres > fwidth || Yres > fheight) &&
        (vidix_cap.flags & FLAG_UPSCALER) != FLAG_UPSCALER)
     {
-      setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+      softlog->Log(SOFT_LOG_ERROR, 0,
                 "[cVidixVideoOut] vidix driver can't "
                 "upscale image (%dx%d -> %dx%d) exiting\n",
                 fwidth, fheight, Xres, Yres);
@@ -330,7 +330,7 @@ void cVidixVideoOut::SetParams(int Ystride, int UVstride)
     if((Xres < fwidth || Yres < fheight) &&
        (vidix_cap.flags & FLAG_DOWNSCALER) != FLAG_DOWNSCALER)
     {
-      setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+      softlog->Log(SOFT_LOG_ERROR, 0,
                 "[cVidixVideoOut] vidix driver can't "
                 "downscale image (%dx%d -> %dx%d) exiting\n",
                 fwidth, fheight, Xres, Yres);
@@ -351,7 +351,7 @@ void cVidixVideoOut::SetParams(int Ystride, int UVstride)
       {
         if (!MatchPixelFormat())
         {
-          setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+          softlog->Log(SOFT_LOG_ERROR, 0,
                     "[cVidixVideoOut]: no matching pixel "
                     "format found exiting\n");
           exit(1);
@@ -404,11 +404,11 @@ void cVidixVideoOut::SetParams(int Ystride, int UVstride)
       vidix_curr_eq.saturation != vidix_video_eq.saturation ||
       vidix_curr_eq.hue != vidix_video_eq.hue ) {
 
-      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+      softlog->Log(SOFT_LOG_INFO, 0,
                 "[cVidixVideoOut] set eq values\n");
       vidix_curr_eq = vidix_video_eq;
       if( (err = vdlPlaybackSetEq(vidix_handler, &vidix_curr_eq)) != 0) {
-          setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+          softlog->Log(SOFT_LOG_ERROR, 0,
                     "[cVidixVideoOut] Couldn't set EQ "
                     "capability: %s (FAILED)\n",
                     strerror(err) );
@@ -459,7 +459,7 @@ void cVidixVideoOut::SetParams(int Ystride, int UVstride)
       }
       vdlPlaybackSetDeint(vidix_handler, &vidix_deint);
       vdlPlaybackGetDeint(vidix_handler, &vidix_deint);
-      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+      softlog->Log(SOFT_LOG_INFO, 0,
                 "[cVidixVideoOut] Deinterlacer: %x %x\n",
                 vidix_deint.flags,
                 vidix_deint.deinterlace_pattern);
@@ -479,7 +479,7 @@ void cVidixVideoOut::AllocLayer(void)
 
   if ((err = vdlPlaybackOff(vidix_handler)) != 0)
   {
-    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+    softlog->Log(SOFT_LOG_ERROR, 0,
               "[cVidixVideoOut] Can't stop playback: %s exiting\n",
               strerror(err));
     exit(1);
@@ -487,7 +487,7 @@ void cVidixVideoOut::AllocLayer(void)
 
   if ((err = vdlConfigPlayback(vidix_handler, &vidix_play)) != 0)
   {
-    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+    softlog->Log(SOFT_LOG_ERROR, 0,
                "[cVidixVideoOut] Can't configure playback: %s exiting\n",
                strerror(err));
     exit(1);
@@ -495,7 +495,7 @@ void cVidixVideoOut::AllocLayer(void)
 
   if ((err = vdlPlaybackOn(vidix_handler)) != 0)
   {
-    setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+    softlog->Log(SOFT_LOG_ERROR, 0,
               "[cVidixVideoOut] Can't start playback: %s exiting\n",
               strerror(err));
     exit(1);
@@ -505,7 +505,7 @@ void cVidixVideoOut::AllocLayer(void)
   {
     int res = 0;
 
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] set colorkey\n");
     vdlGetGrKeys(vidix_handler, &gr_key);
 
@@ -522,13 +522,13 @@ void cVidixVideoOut::AllocLayer(void)
 #endif
     gr_key.ckey.red = gr_key.ckey.green = gr_key.ckey.blue = 0;
     res = vdlSetGrKeys(vidix_handler, &gr_key);
-    setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+    softlog->Log(SOFT_LOG_INFO, 0,
               "[cVidixVideoOut] vdlSetGrKeys() = %d\n", res);
 
     if (res) {
       gr_key.ckey.op = CKEY_TRUE;
       res = vdlSetGrKeys(vidix_handler, &gr_key);
-      setupStore->softlog->Log(SOFT_LOG_INFO, 0,
+      softlog->Log(SOFT_LOG_INFO, 0,
                 "[cVidixVideoOut] vdlSetGrKeys() = %d (noAlpha)\n", res);
       useVidixAlpha = false;
     }
@@ -845,12 +845,12 @@ cVidixVideoOut::~cVidixVideoOut()
 {
     int err;
 
-    setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+    softlog->Log(SOFT_LOG_DEBUG, 0,
               "[cVidixVideoOut] destructor\n");
 
     if(vidix_handler) {
         if((err = vdlPlaybackOff(vidix_handler)) != 0) {
-           setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+           softlog->Log(SOFT_LOG_ERROR, 0,
                      "[cVidixVideoOut] Can't stop playback: %s\n",
                      strerror(err));
         }
@@ -871,7 +871,7 @@ cVidixVideoOut::~cVidixVideoOut()
                cmap.transp = NULL;
 
                if ( ioctl(fbdev, FBIOPUTCMAP, &cmap)) {
-                   setupStore->softlog->Log(SOFT_LOG_ERROR, 0,
+                   softlog->Log(SOFT_LOG_ERROR, 0,
                              "[cVidixVideoOut] Can't put cmap\n");
                }
 
@@ -889,8 +889,8 @@ cVidixVideoOut::~cVidixVideoOut()
 /* ---------------------------------------------------------------------------
  */
 extern "C" void *
-SubPluginCreator(cSetupStore *s)
+SubPluginCreator(cSetupStore *s, cSetupSoftlog *log)
 {
-  return new cVidixVideoOut(s);
+  return new cVidixVideoOut(s,log);
 }
 #endif

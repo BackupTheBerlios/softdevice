@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.10 2007/03/25 09:08:22 wachm Exp $
+ * $Id: video-fb.h,v 1.11 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -26,7 +26,7 @@ private:
   unsigned char * fb;	// Framebuffer memory
   sPicBuffer privBuf;
 public:
-  cFBVideoOut(cSetupStore *setupStore);
+  cFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog);
   virtual ~cFBVideoOut();
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
 		  bool &IsYUV, uint8_t *&pixelmask)

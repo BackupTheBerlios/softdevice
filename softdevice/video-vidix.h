@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.12 2006/11/11 08:45:17 lucke Exp $
+ * $Id: video-vidix.h,v 1.13 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -42,7 +42,7 @@ private:
     void SetParams(int Ystride, int UVstride);
 
 public:
-  cVidixVideoOut(cSetupStore *setupStore);
+  cVidixVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog);
   virtual ~cVidixVideoOut();
 
   virtual void ClearOSD();

@@ -72,7 +72,7 @@ private:
 public:
         int osd_shm_id;
         int pic_shm_id;
-        cQuartzVideoOut(cSetupStore *setupStore);
+        cQuartzVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog);
         virtual ~cQuartzVideoOut();
 
         virtual void ProcessEvents();

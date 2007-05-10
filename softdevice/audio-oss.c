@@ -5,7 +5,7 @@
  *
  * Support for the Open Sound System contributed by Lubos Novak
  * 
- * $Id: audio-oss.c,v 1.3 2007/03/12 20:10:54 wachm Exp $
+ * $Id: audio-oss.c,v 1.4 2007/05/10 19:54:44 wachm Exp $
  */
 #include "audio-oss.h"
 
@@ -17,10 +17,9 @@
 #define DSP_DEVICE "/dev/dsp"
 #define MIXER_DEVICE "/dev/mixer"
 
-cOSSAudioOut::cOSSAudioOut(cSetupStore *SetupStore)
+cOSSAudioOut::cOSSAudioOut()
 {
     struct stat file_info;
-    setupStore=SetupStore;
 
     if (-1 == stat(DSP_DEVICE, &file_info))
     {

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.52 2007/03/25 09:05:56 wachm Exp $
+ * $Id: video.h,v 1.53 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -107,6 +107,7 @@ protected:
     bool    videoInitialized;
 
     cSetupStore *setupStore;
+    cSetupSoftlog *softlog;
 
     bool active;
     volatile uint16_t OsdRefreshCounter;
@@ -145,7 +146,7 @@ protected:
 
 
 public:
-    cVideoOut(cSetupStore *setupStore);
+    cVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog);
     virtual ~cVideoOut();
 
     virtual void ProcessEvents ()

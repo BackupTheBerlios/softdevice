@@ -483,7 +483,8 @@ void cQuartzVideoOut::CreateWindow(uint32_t d_width, uint32_t d_height, WindowAt
 }
 
 
-cQuartzVideoOut::cQuartzVideoOut(cSetupStore *store) : cVideoOut(store),
+cQuartzVideoOut::cQuartzVideoOut(cSetupStore *store, cSetupSoftlog* Softlog) 
+		: cVideoOut(store, Softlog),
         theWindow(NULL), winGroup(NULL), winLevel(1) {
         QDEB("cQuartVideoOut\n");
 	WindowAttributes	windowAttrs;

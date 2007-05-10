@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.h,v 1.26 2007/03/04 17:45:38 lucke Exp $
+ * $Id: video-dfb.h,v 1.27 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef VIDEO_DFB_H
@@ -67,7 +67,7 @@ class cDFBVideoOut : public cVideoOut {
 
   public:
     IDirectFB	*dfb;
-    cDFBVideoOut(cSetupStore *setupStore);
+    cDFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog);
     virtual ~cDFBVideoOut();
     void ProcessEvents ();
     void GetDisplayFrameTime();

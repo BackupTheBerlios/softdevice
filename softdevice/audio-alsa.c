@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.5 2007/02/10 00:05:45 lucke Exp $
+ * $Id: audio-alsa.c,v 1.6 2007/05/10 19:54:44 wachm Exp $
  */
 #include "audio-alsa.h"
 
@@ -22,7 +22,7 @@
 
 /*--------------------------------------------------------------------------
 */
-cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
+cAlsaAudioOut::cAlsaAudioOut() {
     int err;
 
     if (strlen(setupStore->alsaDevice) == 0)
@@ -49,7 +49,6 @@ cAlsaAudioOut::cAlsaAudioOut(cSetupStore *setupStore) {
     oldContext.samplerate = currContext.samplerate=48000;
     dsyslog("[softdevice-audio] Device opened! Ready to play");
     scale_Factor=0x7FFF;
-    this->setupStore = setupStore;
 }
 
 /* ----------------------------------------------------------------------------
@@ -254,7 +253,7 @@ void cAlsaAudioOut::Xrun(void)
     gettimeofday(&now, 0);
     snd_pcm_status_get_trigger_tstamp(status, &tstamp);
     timersub(&now, &tstamp, &diff);
-    setupStore->softlog->Log(SOFT_LOG_DEBUG, 0,
+    softlog->Log(SOFT_LOG_DEBUG, 0,
                              "[softdevice-audio]: Xrun (at least %.3f ms long)\n",
                              diff.tv_sec * 1000 + diff.tv_usec / 1000.0);
 		if ((res = snd_pcm_prepare(handle))<0) {

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-macos.h,v 1.1 2007/04/03 20:21:04 wachm Exp $
+ * $Id: audio-macos.h,v 1.2 2007/05/10 19:54:44 wachm Exp $
  */
 #ifndef __AUDIO_MACOS_H__
 #define __AUDIO_MACOS_H__
@@ -48,7 +48,7 @@ class cMacOsAudioOut : public cAudioOut  {
                 int read_buffer(unsigned char* data, int len);
 
         public:
-                cMacOsAudioOut(cSetupStore *setupStore);
+                cMacOsAudioOut();
                 virtual ~cMacOsAudioOut();
                 OSStatus Render(UInt32 inNumFrames, AudioBufferList *ioData); 
 

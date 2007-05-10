@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.26 2006/11/26 19:00:17 wachm Exp $
+ * $Id: video-xv.h,v 1.27 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -169,7 +169,7 @@ private:
   void  ClearXvArea(uint8_t y, uint8_t u, uint8_t v);
 
 public:
-  cXvVideoOut(cSetupStore *setupStore);
+  cXvVideoOut(cSetupStore *setupStore, cSetupSoftlog *softlog);
   virtual ~cXvVideoOut();
   virtual void ProcessEvents ();
   void ShowOSD ();

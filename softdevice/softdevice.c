@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.82 2007/05/10 19:49:51 wachm Exp $
+ * $Id: softdevice.c,v 1.83 2007/05/10 19:54:44 wachm Exp $
  */
 #include "softdevice.h"
 
@@ -182,7 +182,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
 #endif
         break;
       case VOUT_DUMMY:
-        videoOut=new cDummyVideoOut(setupStore);
+        videoOut=new cDummyVideoOut(setupStore,softlog);
         break;
       default:
         esyslog("[softdevice] NO video out specified exiting\n");
@@ -193,7 +193,7 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     switch (method) {
       case VOUT_XV:
 #ifdef XV_SUPPORT
-        videoOut = new cXvVideoOut(setupStore);
+        videoOut = new cXvVideoOut(setupStore,softlog);
         if ( videoOut->Initialize() ) {
 
           if (!videoOut->Reconfigure()) {
@@ -216,35 +216,35 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
         break;
       case VOUT_FB:
 #ifdef FB_SUPPORT
-        videoOut=new cFBVideoOut(setupStore);
+        videoOut=new cFBVideoOut(setupStore,softlog);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_SHM:
 #ifdef SHM_SUPPORT
-        videoOut=new cShmVideoOut(setupStore);
+        videoOut=new cShmVideoOut(setupStore,softlog);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_DFB:
 #ifdef DFB_SUPPORT
-        videoOut=new cDFBVideoOut(setupStore);
+        videoOut=new cDFBVideoOut(setupStore,softlog);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_VIDIX:
 #ifdef VIDIX_SUPPORT
-        videoOut=new cVidixVideoOut(setupStore);
+        videoOut=new cVidixVideoOut(setupStore,softlog);
         videoOut->Initialize();
 #endif
       case VOUT_QUARTZ:
 #ifdef QUARTZ_SUPPORT
-        videoOut=new cQuartzVideoOut(setupStore);
+        videoOut=new cQuartzVideoOut(setupStore,softlog);
         videoOut->Initialize();
 #endif
         break;
       case VOUT_DUMMY:
-        videoOut=new cDummyVideoOut(setupStore);
+        videoOut=new cDummyVideoOut(setupStore,softlog);
         videoOut->Initialize();
         break;
       default:
@@ -261,27 +261,27 @@ cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
     switch (audioMethod) {
       case AOUT_ALSA:
 #ifdef ALSA_SUPPORT
-        audioOut=new cAlsaAudioOut(setupStore);
+        audioOut=new cAlsaAudioOut();
         break;
 #else
         fprintf(stderr,"[softdevice] audio-alsa not compiled in. Using audio dummy!\n");
 #endif
       case AOUT_MACOS:
 #ifdef MACOSAO_SUPPORT
-        audioOut=new cMacOsAudioOut(setupStore);
+        audioOut=new cMacOsAudioOut();
         break;
 #else
         fprintf(stderr,"[softdevice] audio-macos not compiled in. Using audio dummy!\n");
 #endif
       case AOUT_OSS:
 #ifdef OSS_SUPPORT
-        audioOut=new cOSSAudioOut(setupStore);
+        audioOut=new cOSSAudioOut();
         break;
 #else
         fprintf(stderr,"[softdevice] No oss support compiled in. Using dummy-audio\n");
 #endif
       case AOUT_DUMMY:
-        audioOut=new cDummyAudioOut(setupStore);
+        audioOut=new cDummyAudioOut();
         break;
     }
     fprintf(stderr,"[softdevice] Audio out seems to be OK\n");
@@ -326,13 +326,13 @@ void cSoftDevice::LoadSubPlugin(char *outMethodName,
   const char *err = dlerror();
   if (!err)
   {
-      void  *(*creator)(cSetupStore *store);
+      void  *(*creator)(cSetupStore *store, cSetupSoftlog *log);
 
-    creator = (void *(*)(cSetupStore *))dlsym(handle, "SubPluginCreator");
+    creator = (void *(*)(cSetupStore *, cSetupSoftlog *log))dlsym(handle, "SubPluginCreator");
     err = dlerror();
     if (!err)
     {
-      videoOut = (cVideoOut *) creator(setupStore);
+      videoOut = (cVideoOut *) creator(setupStore, softlog);
     }
     else
     {
@@ -785,6 +785,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
   pluginPath = PLUGINLIBDIR;
   runtimePluginPath = GetLibPath();
 
+  softlog = new cSetupSoftlog();
 #ifndef VOUT_SHM 
   setupStore = (cSetupStore *) malloc( sizeof(cSetupStore) );
   setupStore->InitSetupStore();
@@ -837,9 +838,11 @@ cPluginSoftDevice::cPluginSoftDevice(void)
           
           if (ctl>0)
                   ctl->setup_shmid=setupStoreShmId;
-                          // request removing after detaching
+#ifndef __APPLE__
+	  // request removing after detaching
           if ( setupStoreShmId > 0)
                         shmctl(setupStoreShmId, IPC_RMID, 0);
+#endif
 
   };
   if ( ctl>0 ) {

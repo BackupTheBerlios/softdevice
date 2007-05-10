@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.18 2007/03/25 09:08:22 wachm Exp $
+ * $Id: video-fb.c,v 1.19 2007/05/10 19:54:44 wachm Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -20,8 +20,8 @@
 
 static  pthread_mutex_t fb_mutex = PTHREAD_MUTEX_INITIALIZER;
 // --- cFrameBuffer --------------------------------------------------------
-cFBVideoOut::cFBVideoOut(cSetupStore *setupStore)
-              : cVideoOut(setupStore)
+cFBVideoOut::cFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
+              : cVideoOut(setupStore, Softlog)
 {
     char    *fbName = getFBName();
 
@@ -225,8 +225,8 @@ cFBVideoOut::~cFBVideoOut()
 /* ---------------------------------------------------------------------------
  */
 extern "C" void *
-SubPluginCreator(cSetupStore *s)
+SubPluginCreator(cSetupStore *s, cSetupSoftlog *log)
 {
-  return new cFBVideoOut(s);
+  return new cFBVideoOut(s,log);
 }
 #endif

@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.17 2007/04/03 20:21:04 wachm Exp $
+ * $Id: video-shm.c,v 1.18 2007/05/10 19:54:44 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -60,8 +60,8 @@ void cShmRemote::Action(void) {
 
 
 /*----------------------------------------------------------------------------*/
-cShmVideoOut::cShmVideoOut(cSetupStore *setupStore) 
-        : cVideoOut(setupStore) {
+cShmVideoOut::cShmVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog) 
+        : cVideoOut(setupStore, Softlog) {
         ctl_key = CTL_KEY;
         bool Clear_Ctl=false;
         InitPicBuffer(&privBuf);
@@ -422,8 +422,8 @@ void cShmVideoOut::YUV(sPicBuffer *buf) {
 /* ---------------------------------------------------------------------------
  */
 extern "C" void *
-SubPluginCreator(cSetupStore *s)
+SubPluginCreator(cSetupStore *s, cSetupSoftlog *log)
 {
-  return new cShmVideoOut(s);
+  return new cShmVideoOut(s,log);
 }
 #endif

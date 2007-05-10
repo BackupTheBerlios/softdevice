@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.h,v 1.3 2007/02/10 00:05:45 lucke Exp $
+ * $Id: audio-alsa.h,v 1.4 2007/05/10 19:54:44 wachm Exp $
  */
 #ifndef __AUDIO_ALSA_H__
 #define __AUDIO_ALSA_H__
@@ -32,7 +32,6 @@ private:
                     ac3SpdifPro;
   SampleContext     oldContext;
   cAlsaAC3pt        ac3pt;
-  cSetupStore       *setupStore;
 
   bool  SetAC3PassThroughMode(bool on);
   void  Xrun(void);
@@ -40,7 +39,7 @@ private:
 
 protected:
 public:
-  cAlsaAudioOut(cSetupStore *setupStore);
+  cAlsaAudioOut();
   virtual ~cAlsaAudioOut();
 
   virtual void  Write(uchar *Data, int Length);

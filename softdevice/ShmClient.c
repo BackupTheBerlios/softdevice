@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: ShmClient.c,v 1.24 2007/05/10 19:49:51 wachm Exp $
+ * $Id: ShmClient.c,v 1.25 2007/05/10 19:54:44 wachm Exp $
  */
 
 #include <signal.h>
@@ -81,6 +81,7 @@ void cShmRemote::Action() {
 
 int main(int argc, char **argv) {
         cSetupStore *SetupStore=NULL;
+        cSetupSoftlog *softlog=new cSetupSoftlog();
 
         signal(SIGINT,sig_handler);
         signal(SIGQUIT,sig_handler);
@@ -114,7 +115,7 @@ int main(int argc, char **argv) {
                 exit(-1);
         };
 
-        cXvVideoOut *vout=new cXvVideoOut(SetupStore);
+        cXvVideoOut *vout=new cXvVideoOut(SetupStore, softlog);
         xvRemote= new cShmRemote("softdevice-xv");
         //SetupStore.InitSetupStore();
         SetupStore->xvFullscreen=0;

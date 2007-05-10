@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.41 2007/05/10 19:49:51 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.42 2007/05/10 19:54:44 wachm Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -175,8 +175,6 @@ struct cSetupStore {
           setSourceRectangleLocked;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
-
-    cSetupSoftlog *softlog;
 };
 
 #define OSDMODE_PSEUDO    0
@@ -193,6 +191,7 @@ static inline int clamp (int min, int val, int max)
   return val;
 }
 
+extern cSetupSoftlog *softlog;
 extern cSetupStore *setupStore;
 extern int setupStoreShmId;
 

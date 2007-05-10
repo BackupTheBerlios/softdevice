@@ -1,5 +1,9 @@
 Changelog
 2007-05-10:
+   - remove softlog from setupStore. Pointers aren't valid in a shared memory
+     block.
+   - remove private variable setupStore from audio out methods. They can 
+     access the global variable.
    - move setupStore into a shared memory block. This allows ShmClient to
      have acces to the setupStore.
    - move CatchRemoteKey() into utils.c, else setup-softdevice.o would

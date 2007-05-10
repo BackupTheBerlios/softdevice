@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.c,v 1.27 2007/03/12 20:27:03 wachm Exp $
+ * $Id: audio.c,v 1.28 2007/05/10 19:54:44 wachm Exp $
  */
 
 #include <unistd.h>
@@ -41,7 +41,7 @@ void Scale(int16_t *Data, int size,int scale_Factor)
 
 /* ---------------------------------------------------------------------------
  */
-cDummyAudioOut::cDummyAudioOut(cSetupStore *setupStore)
+cDummyAudioOut::cDummyAudioOut()
 {
   paused=false;
   dsyslog("[softdevice-audio-dummy] Device opened! Using dummy device -> no audio!");

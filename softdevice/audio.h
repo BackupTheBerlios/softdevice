@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio.h,v 1.14 2007/03/12 20:27:03 wachm Exp $
+ * $Id: audio.h,v 1.15 2007/05/10 19:54:44 wachm Exp $
  */
 #ifndef AUDIO_H
 #define AUDIO_H
@@ -59,7 +59,7 @@ class cDummyAudioOut : public cAudioOut  {
 private:
   volatile bool paused;
 public:
-  cDummyAudioOut(cSetupStore *setupStore);
+  cDummyAudioOut();
   virtual ~cDummyAudioOut() { return; };
   virtual void Write(uchar *Data, int Length);
   virtual void WriteAC3(uchar *Data, int Length);

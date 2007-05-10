@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.69 2007/05/10 19:49:51 wachm Exp $
+ * $Id: video-xv.c,v 1.70 2007/05/10 19:54:44 wachm Exp $
  */
 
 #include <unistd.h>
@@ -760,8 +760,8 @@ void cXvVideoOut::ProcessEvents ()
 
 /* ---------------------------------------------------------------------------
  */
-cXvVideoOut::cXvVideoOut(cSetupStore *setupStore)
-              : cVideoOut(setupStore)
+cXvVideoOut::cXvVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
+              : cVideoOut(setupStore, Softlog)
 {
   OSDpresent = false;
   OSDpseudo_alpha = true;
@@ -1901,8 +1901,8 @@ cXvVideoOut::~cXvVideoOut()
 /* ---------------------------------------------------------------------------
  */
 extern "C" void *
-SubPluginCreator(cSetupStore *s)
+SubPluginCreator(cSetupStore *s, cSetupSoftlog *log)
 {
-  return new cXvVideoOut(s);
+  return new cXvVideoOut(s,log);
 }
 #endif

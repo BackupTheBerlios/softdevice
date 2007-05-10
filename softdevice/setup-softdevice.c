@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.53 2007/05/10 19:49:51 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.54 2007/05/10 19:54:44 wachm Exp $
  */
 
 #include <string.h>
@@ -75,6 +75,7 @@ const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
 /* ----------------------------------------------------------------------------
  */
 cSetupStore *setupStore=NULL;
+cSetupSoftlog *softlog=NULL;
 int setupStoreShmId=-1;
 
 void cSetupStore::InitSetupStore()
@@ -197,8 +198,6 @@ void cSetupStore::InitSetupStore()
   syncTimerNames[1] = "rtc";
   syncTimerNames[2] = "sig";
   syncTimerNames[3] = NULL;
-
-  softlog = new cSetupSoftlog();
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
