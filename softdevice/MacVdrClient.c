@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: MacVdrClient.c,v 1.1 2007/04/03 21:43:35 wachm Exp $
+ * $Id: MacVdrClient.c,v 1.2 2007/05/10 19:57:19 wachm Exp $
  */
 
 #include <signal.h>
@@ -80,13 +80,10 @@ void cShmRemote::Action() {
 };
 
 int main(int argc, char **argv) {
-        cSetupStore SetupStore;
+        cSetupStore *SetupStore=NULL;
+        cSetupSoftlog *softlog=new cSetupSoftlog();
         int pict_shmid_sav;
         int osd_shmid_sav;
-        SetupStore.xvFullscreen=0;
-        cQuartzVideoOut *vout=new cQuartzVideoOut(&SetupStore);
-        quartzRemote= new cShmRemote("softdevice-quartz");
-
         signal(SIGINT,sig_handler);
         signal(SIGQUIT,sig_handler);
 
@@ -102,16 +99,25 @@ int main(int argc, char **argv) {
         if ((ctl_shmid = shmget(ctl_key, sizeof( ShmCtlBlock ), 0666)) < 0) {
                 fprintf(stderr,"ctl_shmid error in shmget!\n");
                 fprintf(stderr,"Check if the Vdr is running with the softdevice and the option \"-vo shm:\"!\n");
-                delete vout;
                 exit(1);
         }
 
         if ( (ctl = (ShmCtlBlock *)shmat(ctl_shmid,NULL,0))
                         == (ShmCtlBlock *) -1 ) {
                 fprintf(stderr,"ctl_shmid error attatching shm ctl %d!\n",ctl_shmid);
-                delete vout;
                 exit(-1);
         };
+
+        if ( (SetupStore = (cSetupStore *) shmat(ctl->setup_shmid,NULL,0))
+                        == (cSetupStore *) -1 ) {
+                fprintf(stderr,"Error attatching to setupStore shm (id: %d)!\n",
+                                ctl->setup_shmid);
+                exit(-1);
+        };
+
+        cQuartzVideoOut *vout=new cQuartzVideoOut(SetupStore,softlog);
+        quartzRemote= new cShmRemote("softdevice-quartz");
+        SetupStore->xvFullscreen=0;
 
         if ( !vout->Initialize() ) {
                 fprintf(stderr,"Could not init video out!\n");
