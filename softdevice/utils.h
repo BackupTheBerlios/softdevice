@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.17 2007/05/10 19:49:51 wachm Exp $
+ * $Id: utils.h,v 1.18 2007/05/10 21:57:26 wachm Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -101,13 +101,6 @@ void yv12_to_yuy2( const uint8_t *ysrc,
                    int dstStride
                  );
 
-void yuv_to_rgb (uint8_t * image, uint8_t * py,
-                 uint8_t * pu, uint8_t * pv,
-                 int width, int height,
-                 int rgb_stride, int y_stride, int uv_stride,
-                 int dstW, int dstH,
-                 int depth, unsigned char * mask, int deintMethod);
-
 typedef void (*yuv420_convert_fct)(uint8_t *dst1, uint8_t *dst2, 
                 uint8_t *py1, uint8_t *py2,uint8_t *pu, uint8_t *pv,
                 int pixel);
@@ -140,11 +133,6 @@ uint64_t  getTimeMilis(void);
 char      *getFBName(void);
 bool  CatchRemoteKey(const char *remoteName, uint64_t key, 
                 const int ToggleKey);
-
-void mmx_unpack_16rgb (uint8_t * image, int lines, int stride);
-void mmx_unpack_15rgb (uint8_t * image, int lines, int stride);
-void mmx_unpack_24rgb (uint8_t * image, int lines, int stride);
-extern void (*mmx_unpack)(uint8_t * image, int lines, int stride);
 
 
 void fast_memcpy(void * to, const void * from, size_t len);

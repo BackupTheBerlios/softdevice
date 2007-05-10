@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.27 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-xv.h,v 1.28 2007/05/10 21:57:26 wachm Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -183,7 +183,7 @@ public:
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
                                int &xPan, int &yPan);
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-                  bool &IsYUV, uint8_t *&PixelMask);
+                  bool &IsYUV);
   virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
                   bool *&dirtyLines);
   virtual void CommitUnlockOsdSurface();

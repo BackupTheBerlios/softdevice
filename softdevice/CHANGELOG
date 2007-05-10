@@ -1,5 +1,9 @@
 Changelog
 2007-05-10:
+   - remove left over code from the old video-fb.
+   - remove pixel mask option from SoftOsd.[hc] and video*, which was only used
+     by the old video-fb.
+   - adapt MacVdrClient.c to the setupStore in shared memory.
    - remove softlog from setupStore. Pointers aren't valid in a shared memory
      block.
    - remove private variable setupStore from audio out methods. They can 

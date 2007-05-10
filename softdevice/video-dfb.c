@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.81 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-dfb.c,v 1.82 2007/05/10 21:57:26 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -1203,13 +1203,12 @@ void cDFBVideoOut::CommitUnlockOsdSurface()
 /* ---------------------------------------------------------------------------
  */
 void cDFBVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-                              bool &IsYUV, uint8_t *&PixelMask)
+                              bool &IsYUV)
 {
   Depth=Bpp;
   HasAlpha=!OSDpseudo_alpha;
   AlphaInversed=isVIAUnichrome;
   IsYUV=false;
-  PixelMask=NULL;
 }
 
 /* ---------------------------------------------------------------------------

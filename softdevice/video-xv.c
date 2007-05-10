@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.70 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-xv.c,v 1.71 2007/05/10 21:57:26 wachm Exp $
  */
 
 #include <unistd.h>
@@ -1661,17 +1661,15 @@ void cXvVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
 /* ---------------------------------------------------------------------------
  */
 void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-                  bool &IsYUV, uint8_t *&PixelMask) {
+                  bool &IsYUV) {
         if (current_osdMode==OSDMODE_SOFTWARE) {
                 IsYUV=true;
-                PixelMask=NULL;
                 return;
         };
 
         IsYUV=false;
         Depth=osd_image->bits_per_pixel;
         HasAlpha=false;
-        PixelMask=NULL;
 };
 
 /* ---------------------------------------------------------------------------

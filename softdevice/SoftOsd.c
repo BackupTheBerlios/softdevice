@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.27 2007/04/03 19:40:29 wachm Exp $
+ * $Id: SoftOsd.c,v 1.28 2007/05/10 21:57:26 wachm Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -50,7 +50,6 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         : cOsd(X, Y),active(false),close(false) {
         OSDDEB("cSoftOsd constructor\n");
         OutputConvert=&cSoftOsd::ARGB_to_ARGB32;
-        pixelMask=NULL;
         bitmap_Format=PF_None; // forces a clear after first SetMode
         OSD_Bitmap=new uint32_t[OSD_STRIDE*(OSD_HEIGHT+4)];
 
@@ -64,12 +63,10 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         xOfs=X;yOfs=Y;
         ScreenOsdWidth=ScreenOsdHeight=0;
         int Depth=16; bool HasAlpha=false; bool AlphaInversed=false;
-        bool IsYUV=false; uint8_t *PixelMask=NULL;
+        bool IsYUV=false; 
         videoOut->AdjustOSDMode();
-        videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
-                        IsYUV,PixelMask);
-        SetMode(Depth,HasAlpha,AlphaInversed,
-                        IsYUV,PixelMask);
+        videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV);
+        SetMode(Depth,HasAlpha,AlphaInversed,IsYUV);
         voutMutex.Unlock();
 };
 
@@ -131,11 +128,9 @@ void cSoftOsd::Action() {
                 }
 
                 int Depth=16; bool HasAlpha=false; bool AlphaInversed=false;
-                bool IsYUV=false; uint8_t *PixelMask=NULL;
-                videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,
-                                IsYUV,PixelMask);
-                bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,
-                                IsYUV,PixelMask);
+                bool IsYUV=false; 
+                videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV);
+                bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV);
 
                 if (newXPan != xPan || newYPan != yPan) {
                         xPan = newXPan;
@@ -179,9 +174,9 @@ void cSoftOsd::OsdCommit() {
         };
 
         int Depth=16; bool HasAlpha=false; bool AlphaInversed=false;
-        bool IsYUV=false; uint8_t *PixelMask=NULL;
-        videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
-        bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV,PixelMask);
+        bool IsYUV=false; 
+        videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV);
+        bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV);
 
         if (newXPan != xPan || newYPan != yPan) {
                 xPan = newXPan;
@@ -221,9 +216,9 @@ void cSoftOsd::OsdCommit() {
 
 /* --------------------------------------------------------------------------*/
 bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
-                bool IsYUV,uint8_t *PixelMask) {
-        //OSDDEB("SetMode Depth %d HasAlpha %d IsYUV %d AlphaInversed %d PixelMask %p\n",
-        //                Depth,HasAlpha,IsYUV,AlphaInversed,PixelMask);
+                bool IsYUV) {
+        //OSDDEB("SetMode Depth %d HasAlpha %d IsYUV %d AlphaInversed %d\n",
+        //                Depth,HasAlpha,IsYUV,AlphaInversed);
 
         if (IsYUV) {
                 if ( bitmap_Format!= PF_AYUV) {
@@ -237,7 +232,6 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
                 return false;
         };
 
-        pixelMask=PixelMask;
         switch (Depth) {
                 case 32: if (HasAlpha)
                                  OutputConvert=&cSoftOsd::ARGB_to_ARGB32;
@@ -249,10 +243,7 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
                          break;
                 case 16:
                          HasAlpha=false;
-                         if (PixelMask)
-                                 OutputConvert=&cSoftOsd::ARGB_to_RGB16_PixelMask;
-                         else
-                                 OutputConvert=&cSoftOsd::ARGB_to_RGB16;
+                         OutputConvert=&cSoftOsd::ARGB_to_RGB16;
                          break;
                 default:
                          OutputConvert=&cSoftOsd::ARGB_to_RGB16;
@@ -920,44 +911,7 @@ void cSoftOsd::ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel,
                 pixmap++;
         };
 };
-/*---------------------------------------------------------------------------*/
 
-void cSoftOsd::ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
-                int Pixel, int odd) {
-        uint8_t *end_dest=dest+2*Pixel;
-        int PixelCount=0;
-        int c;
-        while (end_dest>dest) {
-                c=*pixmap;
-                if ( IS_BACKGROUND(GET_A(c)) && (((intptr_t)pixmap) & 0x4)
-                                || IS_TRANSPARENT(GET_A(c)) ) {
-                        // transparent, don't draw anything !
-                } else {
-                        // FIXME 15/16bit mode? Probably broken!
-                        dest[0] = ((GET_B(c) >> 3)& 0x1F) |
-                                ((GET_G(c) & 0x1C) << 3);
-                        dest[1] = ((GET_R(c) ) & 0xF8)
-                                | ((GET_G(c) >> 5) );
-                }
-                dest+=2;
-                pixmap++;
-                PixelCount++;
-        };
-};
-
-void cSoftOsd::CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel) {
-        int CurrPixel=0;
-        int c;
-        while (CurrPixel<Pixel) {
-                c = *pixmap;
-                if ( (IS_BACKGROUND(GET_A(c)) && !(((intptr_t)pixmap) & 0x4)  )
-                                || IS_OPAQUE(GET_A(c)) )
-                        dest[CurrPixel/8]|=(1<<CurrPixel%8);
-                 else dest[CurrPixel/8]&=~(1<<CurrPixel%8);
-                pixmap++;
-                CurrPixel++;
-        };
-};
 //---------------------------YUV modes ----------------------
 void cSoftOsd::CopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                     uint8_t *PAlphaY,uint8_t *PAlphaUV,
@@ -1339,9 +1293,7 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
                 //printf("Copy to destination y: %d\n",y);
                 buf=dest+y*linesize;
                 (*OutputConvert)(buf,tmp_pixmap+1,dest_Width-2,y&1);
-                if (pixelMask)
-                        CreatePixelMask(pixelMask+y*linesize/16,
-                                        tmp_pixmap+1,dest_Width-2);
+                
                 if (dest_dirtyLines)
                         dest_dirtyLines[y]=true;
 
@@ -1352,9 +1304,7 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
                         y++;
                         buf=dest+y*linesize;
                         (*OutputConvert)(buf,((color*)src)+1,dest_Width-2,y&1);
-                        if (pixelMask)
-                                CreatePixelMask(pixelMask+y*linesize/16,
-                                                ((color*)src)+1,dest_Width-2);
+                        
                         if (dest_dirtyLines)
                                 dest_dirtyLines[y]=true;
                         start_pos+=new_pixel_height;
@@ -1406,9 +1356,6 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *dest, int linesize,
                 buf=dest+y*linesize;
                 //printf("copy to destination %d\n",y);
                 (*OutputConvert)(buf,tmp_pixmap+1,dest_Width-2,y&1);
-                if (pixelMask)
-                        CreatePixelMask(pixelMask+y*linesize/16,
-                                        tmp_pixmap+1,dest_Width-2);
                 if (dest_dirtyLines)
                         dest_dirtyLines[y]=true;
 
@@ -1482,9 +1429,6 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
                 buf=dest+y*linesize;
                 //printf("copy to destination %d\n",y);
                 (*OutputConvert)(buf,tmp_pixmap+1,dest_Width-2,y&1);
-                if (pixelMask)
-                        CreatePixelMask(pixelMask+y*linesize/16,
-                                        tmp_pixmap+1,dest_Width-2);
                 if (dest_dirtyLines)
                         dest_dirtyLines[y]=true;
 

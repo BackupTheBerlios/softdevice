@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.26 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-vidix.c,v 1.27 2007/05/10 21:57:26 wachm Exp $
  */
 
 #include <sys/mman.h>
@@ -782,13 +782,12 @@ void cVidixVideoOut::AdjustOSDMode()
 /* ---------------------------------------------------------------------------
  */
 void cVidixVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-                              bool &IsYUV, uint8_t *&PixelMask)
+                              bool &IsYUV)
 {
   Depth         = Bpp;
   HasAlpha      = useVidixAlpha;
   AlphaInversed = false;
   IsYUV         = (current_osdMode == OSDMODE_SOFTWARE);
-  PixelMask     = NULL;
 }
 
 /* ---------------------------------------------------------------------------

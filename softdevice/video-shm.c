@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.18 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-shm.c,v 1.19 2007/05/10 21:57:26 wachm Exp $
  */
 
 #include "video-shm.h"
@@ -191,17 +191,15 @@ void cShmVideoOut::GetOSDDimension(int &OsdWidth,int &OsdHeight,
 };
 
 void cShmVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-                bool &IsYUV, uint8_t *&PixelMask) {
+                bool &IsYUV) {
         if ( current_osdMode==OSDMODE_SOFTWARE ) {
                 IsYUV=true;
-                PixelMask=NULL;
                 return;
         };
 
         IsYUV=false; 
         Depth=ctl->osd_depth;
         HasAlpha=false;
-        PixelMask=NULL;
         AlphaInversed=false;
 };       
 

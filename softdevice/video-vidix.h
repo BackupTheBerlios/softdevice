@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.h,v 1.13 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-vidix.h,v 1.14 2007/05/10 21:57:26 wachm Exp $
  */
 
 #ifndef VIDEO_VIDIX_H
@@ -52,8 +52,7 @@ public:
   virtual void GetOSDMode(int &Depth,
                           bool &HasAlpha,
                           bool &AlphaInversed,
-		                      bool &IsYUV,
-		                      uint8_t *&PixelMask);
+		                      bool &IsYUV);
   virtual void GetLockOsdSurface(uint8_t *&osd,
                                  int &stride,
                                  bool *&dirtyLines);

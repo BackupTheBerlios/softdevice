@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.13 2007/04/03 19:40:29 wachm Exp $
+ * $Id: SoftOsd.h,v 1.14 2007/05/10 21:57:26 wachm Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -73,7 +73,6 @@ protected:
     cMutex dirty_Mutex;
 
     void (*OutputConvert)(uint8_t * dest, color * pixmap, int Pixel, int odd);
-    uint8_t *pixelMask;
     enum PixFormat {
             PF_None,
             PF_ARGB32,
@@ -104,8 +103,7 @@ public:
                     int dest_Width, int dest_Height);
 
 protected:
-    bool SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
-                 bool IsYUV, uint8_t *PixelMask=NULL);
+    bool SetMode(int Depth, bool HasAlpha, bool AlphaInversed, bool IsYUV);
 
     bool FlushBitmaps(bool OnlyDirty);
     bool DrawConvertBitmap(cBitmap *Bitmap, bool OnlyDirty);
@@ -127,11 +125,6 @@ protected:
                     int odd);
     static void ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel,
                     int odd);
-    static void ARGB_to_RGB16_PixelMask(uint8_t * dest, color * pixmap,
-                    int Pixel, int odd);
-
-    void CreatePixelMask(uint8_t * dest, color * pixmap, int Pixel);
-
 
     static void AYUV_to_AYUV420P(uint8_t *PY1,uint8_t *PY2,
 		    uint8_t *PU, uint8_t *PV,

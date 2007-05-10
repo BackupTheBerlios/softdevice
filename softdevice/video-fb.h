@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.h,v 1.11 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-fb.h,v 1.12 2007/05/10 21:57:26 wachm Exp $
  */
 
 #ifndef VIDEO_FB_H
@@ -29,7 +29,7 @@ public:
   cFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog);
   virtual ~cFBVideoOut();
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-		  bool &IsYUV, uint8_t *&pixelmask)
+		  bool &IsYUV)
   { IsYUV=true;};
   virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
                                int &xPan, int &yPan);

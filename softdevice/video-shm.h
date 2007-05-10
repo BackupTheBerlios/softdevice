@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.h,v 1.10 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-shm.h,v 1.11 2007/05/10 21:57:26 wachm Exp $
  */
 
 #ifndef __VIDEO_SHM_H__
@@ -49,7 +49,7 @@ class cShmVideoOut : public cVideoOut {
                                      int &xPan, int &yPan);
 
         virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-                    bool &IsYUV, uint8_t *&PixelMask);
+                    bool &IsYUV);
 
         virtual void YUV(sPicBuffer* buf);
         virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.53 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video.h,v 1.54 2007/05/10 21:57:26 wachm Exp $
  */
 
 #ifndef VIDEO_H
@@ -231,9 +231,8 @@ public:
     { OsdWidth=-1;OsdHeight=-1; xPan = yPan = 0;};
 
     virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
-                    bool &IsYUV, uint8_t *&PixelMask)
-    { Depth=32; HasAlpha=true; AlphaInversed=false; IsYUV=false;
-            PixelMask=NULL;};
+                    bool &IsYUV)
+    { Depth=32; HasAlpha=true; AlphaInversed=false; IsYUV=false; };
     // should be implemented by all video out method to set the OSD pixel mode
 
     // RGB modes
