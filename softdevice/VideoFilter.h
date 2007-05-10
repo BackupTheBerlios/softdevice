@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.h,v 1.2 2007/04/03 19:06:17 wachm Exp $
+ * $Id: VideoFilter.h,v 1.3 2007/05/10 22:03:03 wachm Exp $
  */
 #ifndef __VIDEOFILTER_H__
 #define __VIDEOFILTER_H__
@@ -59,8 +59,17 @@ public:
         virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
 };
 
+#ifdef USE_SWSCALE
+#include <swscale.h>
+#endif
 class cImageConvert : public cVideoFilter {
         sPicBuffer *outBuf;
+#ifdef USE_SWSCALE
+        struct SwsContext *img_convert_ctx;
+        int ctx_width;
+        int ctx_height;
+        int ctx_fmt;
+#endif
 public:
         cImageConvert(cVideoOut *VideoOut);
         virtual ~cImageConvert();

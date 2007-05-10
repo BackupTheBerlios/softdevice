@@ -1,5 +1,6 @@
 Changelog
 2007-05-10:
+   - use libswscale if available.
    - remove left over code from the old video-fb.
    - remove pixel mask option from SoftOsd.[hc] and video*, which was only used
      by the old video-fb.

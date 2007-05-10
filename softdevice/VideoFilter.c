@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.5 2007/05/10 19:49:51 wachm Exp $
+ * $Id: VideoFilter.c,v 1.6 2007/05/10 22:03:03 wachm Exp $
  */
 #include "VideoFilter.h"
 
@@ -200,7 +200,12 @@ void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 /*---------------------------cImageConvert---------------------------------*/
 
 cImageConvert::cImageConvert(cVideoOut *vOut) 
-        : cVideoFilter(vOut), outBuf(NULL) {
+        : cVideoFilter(vOut), outBuf(NULL)
+#ifdef USE_SWSCALE
+          , img_convert_ctx(NULL), ctx_width(0),
+          ctx_height(0), ctx_fmt(0)
+#endif
+{
 };
 
 cImageConvert::~cImageConvert() {
@@ -225,11 +230,7 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 
                 dest->width = orig->width;
                 dest->height = orig->height;
-                dest->pts=orig->pts;
                 dest->edge_width=dest->edge_height=0;
-                dest->dtg_active_format=orig->dtg_active_format;
-                dest->aspect_ratio=orig->aspect_ratio;
-                dest->interlaced_frame=orig->interlaced_frame;
         };
         dest=outBuf;
 
@@ -238,7 +239,29 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                 fprintf(stderr,"[softdevice] no picture buffer is allocated for image converting!\n");
                 return;
         }
+#ifdef USE_SWSCALE
+        if ( ctx_width != orig->width || ctx_height != orig->height
+               || ctx_fmt != orig->format ) {
+                free(img_convert_ctx);
+                img_convert_ctx=NULL;
+        };
 
+        if (!img_convert_ctx) {
+                img_convert_ctx = sws_getContext(orig->width, orig->height,
+                                PIX_FMT_YUV420P,
+                                orig->width, orig->height,
+                                orig->format,
+                                SWS_BICUBIC, NULL, NULL, NULL);
+                if (!img_convert_ctx) {
+                        fprintf(stderr,"[softdevice] could not get SWScaler context. No image converting!\n");
+                        dest=orig;
+                        return;
+                };
+                ctx_width=orig->width;
+                ctx_height=orig->height;
+                ctx_fmt=orig->format;
+        };
+#endif
         int h_shift;
         int v_shift;
         avcodec_get_chroma_sub_sample(orig->format,&h_shift,&v_shift);
@@ -260,6 +283,10 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         memcpy(avpic_dest.data,dest->pixel,sizeof(avpic_dest.data));
         memcpy(avpic_dest.linesize,dest->stride,sizeof(avpic_dest.linesize));
 
+#ifdef USE_SWSCALE
+       sws_scale(img_convert_ctx, avpic_src.data, avpic_src.linesize,
+                        0, orig->height, avpic_dest.data, avpic_dest.linesize);
+#else
         if (img_convert(&avpic_dest,PIX_FMT_YUV420P,
                                 &avpic_src, orig->format,
                                 orig->width, orig->height) < 0) {
@@ -268,7 +295,8 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                                 "[softdevice] error, libavcodec img_convert failure\n");
                 return;
         }
-    CopyPicBufferContext(dest,orig);
+#endif
+        CopyPicBufferContext(dest,orig);
 }
 
 /*---------------------------cBorderDetect---------------------------------*/

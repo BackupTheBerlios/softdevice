@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.41 2007/04/12 08:01:25 lucke Exp $
+# $Id: configure,v 1.42 2007/05/10 22:03:03 wachm Exp $
 #
 
 TMPDIR1="/tmp"
@@ -24,6 +24,7 @@ system="Linux"
 cpu_arch="i386"
 use_pkgconfig="yes"
 ffmpeg="yes"
+libswscale="no"
 ffmpeg_use_path="no"
 dfb="yes"
 libpostproc="no"
@@ -237,6 +238,62 @@ if test "${ffmpeg}" = "no" ; then
 fi
 
 echo "Ok."
+
+####################################################################################
+echo -n "Checking for ffmpeg/libswscale... "
+echo  "Checking for ffmpeg/libswscale.------------------------------------" >> config.log
+
+test_swscale()
+{
+  swscale="yes";
+cat > ${TMPC} << EOF
+#define __STDC_CONSTANT_MACROS
+#include <stdlib.h>
+#include <avcodec.h>
+#include <avformat.h>
+#include <swscale.h>
+int main(void) {
+/*  if ( avcodec_build() != LIBAVCODEC_BUILD ) {
+     fprintf(stderr,"Fatal Error! Libavcodec library build(%d) doesn't match avcodec.h build(%d)!!!\n",avcodec_build(),LIBAVCODEC_BUILD);
+     fprintf(stderr,"Check your ffmpeg installation / the pathes in the Makefile!!!\n");
+     exit(-1);
+  };
+*/
+  avcodec_init();
+  avcodec_register_all();
+  struct SwsContext *img_convert_ctx = sws_getContext(120, 120,
+                                PIX_FMT_YUV420P,
+                                100, 100,
+                                PIX_FMT_YUV420P,
+                                SWS_BICUBIC, NULL, NULL, NULL);
+
+ return 0;
+}
+EOF
+  $cc $CFLAGS $ffmpeg_cflags $swscale_cflags -o $TMPE $TMPC $swscale_libs $ffmpeg_libs >> config.log 2>&1 || swscale="no"
+};
+
+swscale_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs libswscale 2>> config.log` || libswscale="no"
+swscale_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags libswscale 2>> config.log`
+
+#test if it works
+test_swscale
+
+if test "${swscale}" = "no" ; then
+  echo "pkg-config failed, try the default/parameter path." >> config.log
+  swscale_libs="-L${ffmpeg_path}/libswscale/ -lswscale -lz"
+  swscale_cflags="-I${ffmpeg_path}/libswscale/ "
+
+  test_swscale
+fi
+
+if test "${swscale}" = "yes" ; then
+echo "Using libswscale."
+else
+echo "Not Found."
+swscale_libs=""
+swscale_cflags=""
+fi
 
 ########################################################
 # check for ALSA
@@ -730,7 +787,7 @@ if test "${with_fb}" = "yes" ; then
 fi
 
 ###############################################################################
-# generating ffmpeg specific defines
+# generating ffmpeg and libswscale specific defines
 #
 if test "${libpostproc}" = "yes" ; then
   echo "#define PP_LIBAVCODEC" >> $TMPH
@@ -738,8 +795,12 @@ else
   echo "#undef PP_LIBAVCODEC" >> $TMPH
 fi
 
-echo "FFMPEGLIBS = ${ffmpeg_libs}" >> $TMPM
-echo "FFMPEGCFLAGS = ${ffmpeg_cflags}" >> $TMPM
+if test "${swscale}" = "yes"; then
+  echo "#define USE_SWSCALE" >> $TMPH
+fi
+
+echo "FFMPEGLIBS = ${swscale_libs} ${ffmpeg_libs}" >> $TMPM
+echo "FFMPEGCFLAGS = ${swscale_cflags} ${ffmpeg_cflags}" >> $TMPM
 
 ###############################################################################
 # checking for differences to previous results
