@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.83 2007/05/10 19:54:44 wachm Exp $
+ * $Id: softdevice.c,v 1.84 2007/07/11 17:37:38 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -103,7 +103,7 @@ static const char *MAINMENUENTRY  = "Softdevice";
 #define AOUT_ALSA   1
 #define AOUT_DUMMY  2
 #define AOUT_OSS    3
-#define AOUT_MACOS  4 
+#define AOUT_MACOS  4
 
 //#define SOFTDEB(out...) {printf("softdeb[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
 
@@ -139,7 +139,7 @@ cOsd * cSoftOsdProvider::CreateOsd(int Left, int Top)
 cOsd * cSoftOsdProvider::GetOsd()
 {
     if (cOsd::IsOpen())
-	return osd;
+        return osd;
     return NULL;
 };
 
@@ -688,18 +688,18 @@ uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,
                     OSD_STRIDE, OSD_STRIDE/2,
                     SizeX, SizeY);
      CopyScalePicBufAlphaBlend(&dst,orig_pic,
-	   0,0,orig_pic->width,orig_pic->height,
-	   0,0,SizeX,SizeY,
-	   OsdPy,OsdPv,OsdPu,OsdPAlphaY,OsdPAlphaUV,
+           0,0,orig_pic->width,orig_pic->height,
+           0,0,SizeX,SizeY,
+           OsdPy,OsdPv,OsdPu,OsdPAlphaY,OsdPAlphaUV,
            OSD_STRIDE,
-	   0,0,0,0);
+           0,0,0,0);
      free(OsdPy); free(OsdPu); free(OsdPv);
      free(OsdPAlphaY); free(OsdPAlphaUV);
   } else {
      CopyScalePicBuf(&dst,orig_pic,
-	   0,0,orig_pic->width,orig_pic->height,
-	   0,0,SizeX,SizeY,
-	   0,0,0,0);
+           0,0,orig_pic->width,orig_pic->height,
+           0,0,SizeX,SizeY,
+           0,0,0,0);
   };
   SizeX=dst.width;
   SizeY=dst.height;
@@ -786,7 +786,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
   runtimePluginPath = GetLibPath();
 
   softlog = new cSetupSoftlog();
-#ifndef VOUT_SHM 
+#ifndef VOUT_SHM
   setupStore = (cSetupStore *) malloc( sizeof(cSetupStore) );
   setupStore->InitSetupStore();
 #else
@@ -797,10 +797,10 @@ cPluginSoftDevice::cPluginSoftDevice(void)
   // try to get an existing ShmCltBlock
   if  ( (ctl_shmid = shmget(ctl_key,sizeof(ShmCtlBlock), 0666)) >= 0 ) {
           fprintf(stderr,"softdevice: Got ctl_shmid %d shm ctl!\n",ctl_shmid);
-  }; 
+  };
 
   // attach to the control block
-  if ( ctl_shmid>0 && ( (ctl = (ShmCtlBlock*)shmat(ctl_shmid,NULL,0)) 
+  if ( ctl_shmid>0 && ( (ctl = (ShmCtlBlock*)shmat(ctl_shmid,NULL,0))
                           == (ShmCtlBlock*) -1 )) {
           fprintf(stderr,"softdevice: Error attatching shm ctl!\n");
           ctl=NULL;
@@ -809,7 +809,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
   if ( ctl && ctl->setup_shmid>0 ) {
           setupStoreShmId=ctl->setup_shmid;
           // try to attach to an existing setupStore
-          if ( (setupStore = (cSetupStore*)shmat(setupStoreShmId,NULL,0)) 
+          if ( (setupStore = (cSetupStore*)shmat(setupStoreShmId,NULL,0))
                           == (cSetupStore*) -1 ) {
                   fprintf(stderr,"softdevice: Error attatching existing setupStore shm!\n");
                   setupStoreShmId=-1;
@@ -818,28 +818,28 @@ cPluginSoftDevice::cPluginSoftDevice(void)
                                   setupStoreShmId,setupStore);
           } else fprintf(stderr,"softdevice: Attatched to setupStore %d at %p\n",
                           setupStoreShmId,setupStore);
-                                 
+
   };
 
   if ( !setupStore ) {
-          if ( (setupStoreShmId = shmget(IPC_PRIVATE,sizeof(cSetupStore), 
+          if ( (setupStoreShmId = shmget(IPC_PRIVATE,sizeof(cSetupStore),
                                           IPC_CREAT | 0666)) >= 0 ) {
                   fprintf(stderr,"softdevice: Created setupStoreId %d!\n",
                                   setupStoreShmId);
           };
           // try to attach to the new setupStore
-          if ( (setupStore = (cSetupStore*)shmat(setupStoreShmId,NULL,0)) 
+          if ( (setupStore = (cSetupStore*)shmat(setupStoreShmId,NULL,0))
                           == (cSetupStore*) -1 ) {
                   fprintf(stderr,"softdevice: Error attatching setupStore shm!\n");
                   exit(-1);
-          } else 
+          } else
                   fprintf(stderr,"softdevice: Attatched to setupStoreId %d at %p.\n",
                           setupStoreShmId,setupStore);
-          
+
           if (ctl>0)
                   ctl->setup_shmid=setupStoreShmId;
 #ifndef __APPLE__
-	  // request removing after detaching
+          // request removing after detaching
           if ( setupStoreShmId > 0)
                         shmctl(setupStoreShmId, IPC_RMID, 0);
 #endif
@@ -929,7 +929,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
     if ( !strcmp(argv[i], "softdevice") ) {
         i++;
         argc--;
-	continue;
+        continue;
     };
     if (!strcmp (argv[i], "-vo")) {
       ++i;
