@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.28 2007/05/10 21:57:26 wachm Exp $
+ * $Id: SoftOsd.c,v 1.29 2007/07/11 19:49:28 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -59,11 +59,11 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         videoOut->OpenOSD();
         colorkey=videoOut->GetOSDColorkey();
         pseudo_transparent=(uint64_t)colorkey | ((uint64_t) colorkey)<<32;
-        
+
         xOfs=X;yOfs=Y;
         ScreenOsdWidth=ScreenOsdHeight=0;
         int Depth=16; bool HasAlpha=false; bool AlphaInversed=false;
-        bool IsYUV=false; 
+        bool IsYUV=false;
         videoOut->AdjustOSDMode();
         videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV);
         SetMode(Depth,HasAlpha,AlphaInversed,IsYUV);
@@ -95,7 +95,7 @@ cSoftOsd::~cSoftOsd() {
                 voutMutex.Lock();
                 videoOut->CloseOSD();
 #ifdef HAVE_YAEPGPATCH
-                if (vidWin.bpp!=0) 
+                if (vidWin.bpp!=0)
                         videoOut->SetVidWin(0,0,0,0,0);
 #endif
                 videoOut=0;
@@ -128,7 +128,7 @@ void cSoftOsd::Action() {
                 }
 
                 int Depth=16; bool HasAlpha=false; bool AlphaInversed=false;
-                bool IsYUV=false; 
+                bool IsYUV=false;
                 videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV);
                 bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV);
 
@@ -174,7 +174,7 @@ void cSoftOsd::OsdCommit() {
         };
 
         int Depth=16; bool HasAlpha=false; bool AlphaInversed=false;
-        bool IsYUV=false; 
+        bool IsYUV=false;
         videoOut->GetOSDMode(Depth,HasAlpha,AlphaInversed,IsYUV);
         bool modeChanged=SetMode(Depth,HasAlpha,AlphaInversed,IsYUV);
 
@@ -260,7 +260,7 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
         // we have to redraw everything on format change...
         if (old_bitmap_Format != bitmap_Format) {
                 Clear();
-		FlushBitmaps(false);
+                FlushBitmaps(false);
                 OSDDEB("SetMode switched old_bitmap_Format %d -> bitmap_Format %d\n",
                         old_bitmap_Format,bitmap_Format);
                 return true;
@@ -277,7 +277,7 @@ void cSoftOsd::Flush(void) {
 
         voutMutex.Lock();
 #ifdef HAVE_YAEPGPATCH
-        if (vidWin.bpp!=0) 
+        if (vidWin.bpp!=0)
                 videoOut->SetVidWin(1,vidWin.x1,vidWin.y1,vidWin.x2,vidWin.y2);
 #endif
         if (OSD_changed)
@@ -418,9 +418,9 @@ void cSoftOsd::ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel) {
                 Pixel--;
         };
 };
- 
+
 /*---------------------------------------------------------------------*/
-// pseudo alpha blending macros 
+// pseudo alpha blending macros
 #define PSEUDO_ALPHA_TO_RGB(rgb) \
         if ( !c ||       \
              (IS_BACKGROUND(GET_A(c)) && (!!((intptr_t)dest % (2*SIZE_##rgb)) ^ odd )) ) {   \
@@ -483,7 +483,7 @@ void cSoftOsd::ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel) {
                  "movq %%mm2, %%mm3 \n"                         \
                                                                 \
                  "punpckldq %%mm4,%%mm2 \n"                     \
-                 "punpckhdq %%mm4,%%mm3 \n"                     
+                 "punpckhdq %%mm4,%%mm3 \n"
 
 #define REPLACE_COLORKEY_MMX           \
                  "pxor %%mm0, %%mm0 \n"                         \
@@ -497,8 +497,8 @@ void cSoftOsd::ARGB_to_AYUV(uint32_t * dest, color * pixmap, int Pixel) {
                  "movq %%mm1, %%mm4 \n"                         \
                  "pand %%mm7, %%mm1 \n"                         \
                  "pandn %%mm3, %%mm4 \n"                        \
-                 "por %%mm4, %%mm1\n"                           
- 
+                 "por %%mm4, %%mm1\n"
+
 /*---------------------------------------------------------------------*/
 void cSoftOsd::ARGB_to_BGRA32(uint8_t * dest1, color * pixmap, int Pixel,
                 int odd) {
@@ -535,7 +535,7 @@ void cSoftOsd::ARGB_to_RGB32(uint8_t * dest, color * pixmap, int Pixel,
                         "r" (&pseudo_transparent)
                );
 
-        if (odd) 
+        if (odd)
                 while (end_dest>dest) {
                         // pseudo alpha blending
                         __asm__(
@@ -825,7 +825,7 @@ void cSoftOsd::ARGB_to_RGB16(uint8_t * dest, color * pixmap, int Pixel,
                         "r" (&transparent_thr),"r" (&opacity_thr),
                         "r" (&pseudo_transparent)
                );
- 
+
         if (odd)
                 while (end_dest>dest) {
                         // pseudo alpha blending
@@ -1013,10 +1013,10 @@ void cSoftOsd::StealToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
                                 // this is a hack to convert the inverse alpha
                                 // channel back to normal...
                              ConvertPalette((tColor *)tmp_pixmap, (tColor *)tmp_pixmap,
-                                             dest_Width);    
-                             ConvertPalette((tColor *)&tmp_pixmap[OSD_STRIDE], 
+                                             dest_Width);
+                             ConvertPalette((tColor *)&tmp_pixmap[OSD_STRIDE],
                                              (tColor *)&tmp_pixmap[OSD_STRIDE],
-                                             dest_Width);    
+                                             dest_Width);
                         };
                         ARGB_to_AYUV((uint32_t*)tmp_pixmap,(color *)tmp_pixmap,
                                 dest_Width);
@@ -1293,7 +1293,7 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
                 //printf("Copy to destination y: %d\n",y);
                 buf=dest+y*linesize;
                 (*OutputConvert)(buf,tmp_pixmap+1,dest_Width-2,y&1);
-                
+
                 if (dest_dirtyLines)
                         dest_dirtyLines[y]=true;
 
@@ -1304,7 +1304,7 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
                         y++;
                         buf=dest+y*linesize;
                         (*OutputConvert)(buf,((color*)src)+1,dest_Width-2,y&1);
-                        
+
                         if (dest_dirtyLines)
                                 dest_dirtyLines[y]=true;
                         start_pos+=new_pixel_height;
@@ -1321,7 +1321,7 @@ void cSoftOsd::NoVScaleCopyToBitmap(uint8_t *dest, int linesize,
                 int dest_Width, int dest_Height, bool RefreshAll,
                 bool *dest_dirtyLines) {
         OSDDEB("CopyToBitmap RGB no scale\n");
-	
+
         if ( bitmap_Format == PF_AYUV ) {
                 fprintf(stderr,"cSoftOsd error did not call SetMode()!\n");
                 // convert bitmap to argb
