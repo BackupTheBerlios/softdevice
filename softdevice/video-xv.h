@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.28 2007/05/10 21:57:26 wachm Exp $
+ * $Id: video-xv.h,v 1.29 2007/07/11 20:08:35 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -125,6 +125,7 @@ private:
                     xvWidth, xvHeight,
                     width, height,
                     format;
+  bool              needsFullOSDRedraw;
   /* -------------------------------------------------------------------------
    * Xinerama specific members (not all depend on Xinerame available)
    */
@@ -184,6 +185,7 @@ public:
                                int &xPan, int &yPan);
   virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                   bool &IsYUV);
+  virtual bool OSDNeedsRedraw(void);
   virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
                   bool *&dirtyLines);
   virtual void CommitUnlockOsdSurface();

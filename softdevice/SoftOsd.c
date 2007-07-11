@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.29 2007/07/11 19:49:28 lucke Exp $
+ * $Id: SoftOsd.c,v 1.30 2007/07/11 20:08:34 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -258,7 +258,8 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
         } else bitmap_Format=PF_pseudoAlpha_ARGB32;
 
         // we have to redraw everything on format change...
-        if (old_bitmap_Format != bitmap_Format) {
+        if (old_bitmap_Format != bitmap_Format ||
+            videoOut->OSDNeedsRedraw()) {
                 Clear();
                 FlushBitmaps(false);
                 OSDDEB("SetMode switched old_bitmap_Format %d -> bitmap_Format %d\n",

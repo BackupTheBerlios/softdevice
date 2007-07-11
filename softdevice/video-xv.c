@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.72 2007/07/11 19:30:42 lucke Exp $
+ * $Id: video-xv.c,v 1.73 2007/07/11 20:08:35 lucke Exp $
  */
 
 #include <unistd.h>
@@ -765,6 +765,7 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
 {
   OSDpresent = false;
   OSDpseudo_alpha = true;
+  needsFullOSDRedraw = false;
   toggleInProgress = 0;
   xv_initialized=false;
   /* -------------------------------------------------------------------------
@@ -1334,7 +1335,7 @@ retry_image:
           old_handler=NULL;
   };
 
-
+  needsFullOSDRedraw = true;
   pthread_mutex_unlock(&xv_mutex);
 
   videoInitialized = true;
@@ -1674,6 +1675,16 @@ void cXvVideoOut::GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
 
 /* ---------------------------------------------------------------------------
  */
+bool cXvVideoOut::OSDNeedsRedraw(void)
+{
+    bool tmp = needsFullOSDRedraw;
+
+  needsFullOSDRedraw = false;
+  return tmp;
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cXvVideoOut::GetLockOsdSurface(uint8_t *&osd, int &stride,
                   bool *&dirtyLines)
 {
@@ -1798,6 +1809,7 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
     cutBottom = setupStore->cropBottomLines;
     cutLeft = setupStore->cropLeftCols;
     cutRight = setupStore->cropRightCols;
+    needsFullOSDRedraw = true;
     ClearXvArea (0, 128, 128);
   }
 

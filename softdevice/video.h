@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.54 2007/05/10 21:57:26 wachm Exp $
+ * $Id: video.h,v 1.55 2007/07/11 20:08:34 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -186,7 +186,7 @@ public:
             oldPictureMutex.Lock();
             pic=oldPicture;
             if (oldPicture)
-		LockBuffer(oldPicture);
+                LockBuffer(oldPicture);
             oldPictureMutex.Unlock();
     };
 
@@ -234,6 +234,9 @@ public:
                     bool &IsYUV)
     { Depth=32; HasAlpha=true; AlphaInversed=false; IsYUV=false; };
     // should be implemented by all video out method to set the OSD pixel mode
+
+    virtual bool OSDNeedsRedraw(void)
+    { return false; };
 
     // RGB modes
     virtual void GetLockOsdSurface(uint8_t *&osd, int &stride,
