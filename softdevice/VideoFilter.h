@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.h,v 1.3 2007/05/10 22:03:03 wachm Exp $
+ * $Id: VideoFilter.h,v 1.4 2007/07/11 17:52:20 lucke Exp $
  */
 #ifndef __VIDEOFILTER_H__
 #define __VIDEOFILTER_H__
@@ -46,7 +46,7 @@ class cVideoMirror : public cVideoFilter {
 public:
         cVideoMirror(cVideoOut *VideoOut);
         virtual ~cVideoMirror();
-   
+
         virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
 };
 
@@ -55,7 +55,7 @@ class cDeintLibav : public cVideoFilter {
 public:
         cDeintLibav(cVideoOut *VideoOut);
         virtual ~cDeintLibav();
-   
+
         virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
 };
 
@@ -73,7 +73,7 @@ class cImageConvert : public cVideoFilter {
 public:
         cImageConvert(cVideoOut *VideoOut);
         virtual ~cImageConvert();
-   
+
         virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
 };
 
@@ -88,7 +88,7 @@ private:
 public:
         cBorderDetect(cVideoOut *VideoOut);
         virtual ~cBorderDetect();
-   
+
         virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
 };
 
@@ -103,7 +103,7 @@ class cLibAvPostProc : public cVideoFilter {
 public:
         cLibAvPostProc(cVideoOut *VideoOut);
         virtual ~cLibAvPostProc();
-   
+
         virtual void Filter(sPicBuffer *&dest, sPicBuffer *orig);
 };
 #endif //PP_LIBAVCODEC

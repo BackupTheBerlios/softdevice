@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.42 2007/05/10 22:03:03 wachm Exp $
+# $Id: configure,v 1.43 2007/07/11 17:52:20 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -135,7 +135,7 @@ case "$cpu_arch" in
         cpu_bigendian="yes"
         ;;
   *)
-	echo "'$cpu_arch' is unknown..."
+        echo "'$cpu_arch' is unknown..."
         cpu_arch="unknown"
         with_mmx="no"
         with_mmx2="no"
@@ -337,13 +337,13 @@ cat > ${TMPC} << EOF
 #define DSP_DEVICE "/dev/dsp"
 
 int main(void) {
-	int fdDSP;
-	if (-1 == (fdDSP = open(DSP_DEVICE, O_WRONLY))) {
-		exit(-1);
-	}
-	ioctl(fdDSP, SNDCTL_DSP_RESET, 0);
-	close(fdDSP);
-	return 0;
+        int fdDSP;
+        if (-1 == (fdDSP = open(DSP_DEVICE, O_WRONLY))) {
+                exit(-1);
+        }
+        ioctl(fdDSP, SNDCTL_DSP_RESET, 0);
+        close(fdDSP);
+        return 0;
 }
 EOF
 $cc $CFLAGS -o $TMPE $TMPC >> config.log 2>&1 || oss="no"
