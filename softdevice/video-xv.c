@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.71 2007/05/10 21:57:26 wachm Exp $
+ * $Id: video-xv.c,v 1.72 2007/07/11 19:30:42 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1019,10 +1019,10 @@ init_osd:
                           ZPixmap);
           if (osd_image) {
                   dsyslog("[XvVideoOut]: Initialize XGetImage Successful (%p)", osd_image);
-		              osd_buffer = (unsigned char *) osd_image->data;
+                              osd_buffer = (unsigned char *) osd_image->data;
           } else {
                   dsyslog("[XvVideoOut]: Initialize ERROR: XGetImage FAILED !");
-		              osd_buffer = NULL;
+                              osd_buffer = NULL;
           }
   };
   InitPicBuffer(&osdBuf);
@@ -1037,7 +1037,7 @@ init_osd:
                             break;
                   case 24 : osdBuf.format=PIX_FMT_RGB24;
                             break;
-                  case 16 : 
+                  case 16 :
                   default:
                            osdBuf.format=PIX_FMT_RGB555;
           };
@@ -1249,7 +1249,7 @@ bool cXvVideoOut::Reconfigure(int format, int width, int height)
           default:
                   ARGB_TO_RGB(RGB16,&colorkey,COLOR_KEY);
                   break;
-  };               
+  };
   dsyslog("[XvVideoOut]: using color key 0x%0x",colorkey);
   FillPicBuffer(&osdBuf,colorkey);
   attributeStore.SetColorkey(colorkey);
@@ -1744,7 +1744,7 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
   if (!videoInitialized)
     return;
 
-  if (!xv_initialized) { 
+  if (!xv_initialized) {
           // no xv, use software scaler and yuv->rgb conversion
           pthread_mutex_lock(&xv_mutex);
           if (aspect_changed ||
@@ -1771,10 +1771,10 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
                                   OsdPAlphaY,OsdPAlphaUV,OSD_FULL_WIDTH,
                                   cutTop,cutBottom,cutLeft,cutRight);
           } else {
-                  CopyScalePicBuf(&osdBuf, buf,                   
+                  CopyScalePicBuf(&osdBuf, buf,
                                   sxoff, syoff,
                                   swidth, sheight,
-                                  0,  0,    
+                                  0,  0,
                                   lwidth, lheight,
                                   0,0,0,0);
           };
@@ -1783,7 +1783,7 @@ void cXvVideoOut::YUV(sPicBuffer *buf)
           pthread_mutex_unlock(&xv_mutex);
           return;
   };
-  
+
   pthread_mutex_lock(&xv_mutex);
   if (aspect_changed ||
       cutTop != setupStore->cropTopLines ||
