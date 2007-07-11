@@ -1,4 +1,14 @@
 Changelog
+2007-07-11:
+   - compile fix for: ./configure --disable-shm
+   - applied patch from Matthias Schwarzott for compile issues with
+     newer ffmpeg versions
+   - applied patch from Artur Skawina for memory alignment error
+   - video-xv: fix OSD parially not drawn or cleared in pseudo mode:
+               - a small stripe remains on the right side, when video changed
+                 from 16:9 to 4:3
+               - only modified OSD was shown when deinterlacer was toggled
+                 on/off.
 2007-05-10:
    - use libswscale if available.
    - remove left over code from the old video-fb.
@@ -7,7 +17,7 @@ Changelog
    - adapt MacVdrClient.c to the setupStore in shared memory.
    - remove softlog from setupStore. Pointers aren't valid in a shared memory
      block.
-   - remove private variable setupStore from audio out methods. They can 
+   - remove private variable setupStore from audio out methods. They can
      access the global variable.
    - move setupStore into a shared memory block. This allows ShmClient to
      have acces to the setupStore.
