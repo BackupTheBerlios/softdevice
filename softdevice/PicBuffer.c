@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.20 2007/07/11 18:08:24 lucke Exp $
+ * $Id: PicBuffer.c,v 1.21 2007/07/11 20:04:22 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -316,9 +316,8 @@ bool AllocatePicBuffer(sPicBuffer *buf,PixelFormat pix_fmt,
 
         if ( !isPlanar(pix_fmt) ) {
                 buf->stride[0]=ALIGN(pixel_size*w,16);
-                buf->pixel[0]=(uint8_t*)malloc((buf->stride[0]*h)+16);
 
-                if (buf->pixel[0]==NULL) {
+                if (posix_memalign((void **) &buf->pixel[0], 16, buf->stride[0]*h+16)) {
                     printf("could not allocate memory for picture buffer!\n") ;
                     exit(-1);
                     return false;
@@ -337,9 +336,7 @@ bool AllocatePicBuffer(sPicBuffer *buf,PixelFormat pix_fmt,
             buf->stride[i]= ALIGN(pixel_size*w>>h_shift,
                             STRIDE_ALIGN<<(h_chroma_shift-h_shift));
 
-            buf->pixel[i]= (uint8_t*)malloc((buf->stride[i]*h>>v_shift)+16); //FIXME 16
-
-            if(buf->pixel[i]==NULL) {
+            if(posix_memalign((void **) &buf->pixel[i], 16, (buf->stride[i]*h>>v_shift)+16)) { //FIXME 16
                     printf("could not allocate memory for picture buffer!\n") ;
                     exit(-1);
                     return false;
