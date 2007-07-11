@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.84 2007/07/11 17:37:38 lucke Exp $
+ * $Id: softdevice.c,v 1.85 2007/07/11 17:41:04 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -786,7 +786,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
   runtimePluginPath = GetLibPath();
 
   softlog = new cSetupSoftlog();
-#ifndef VOUT_SHM
+#ifndef SHM_SUPPORT
   setupStore = (cSetupStore *) malloc( sizeof(cSetupStore) );
   setupStore->InitSetupStore();
 #else
