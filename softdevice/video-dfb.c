@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.82 2007/05/10 21:57:26 wachm Exp $
+ * $Id: video-dfb.c,v 1.83 2007/07/12 16:17:31 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -354,6 +354,21 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *softlog)
       EnableFieldParity(osdLayer);
     if (setupStore->viaTv)
       EnableFieldParity(videoLayer);
+
+    /* -----------------------------------------------------------------------
+     * Do something common for both TV out modes
+     * (moved from video.c)
+     */
+    if (setupStore->useMGAtv || setupStore->viaTv) {
+      dropStart       =  21;  // changed from 25
+      dropEnd         =  15;
+      dropInterval    =  16;  // changed from 8
+      //offsetClampLow  = -10;
+      //offsetClampHigh =  10;
+      //offsetUse       =   4;
+      //offset = offsetAverage;
+      //useAverage4Drop = true;
+    }
 
     scrSurface = osdLayer->GetSurface();
 

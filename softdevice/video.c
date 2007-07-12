@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.75 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video.c,v 1.76 2007/07/12 16:17:31 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -543,19 +543,6 @@ void cVideoOut::EvaluateDelay(uint64_t aPTS, uint64_t pts, int frametime)
   softlog->Log(SOFT_LOG_TRACE, 0,
                   "[VideoOut] A/V (%d - %d) off = %d avoff = %d\n",
                   aPTS, pts, offset, offsetAverage);
-
-  if (0) {
-    // should be moved to contructor of video-dfb for TV-out
-
-    dropStart       =  25;
-    dropEnd         =  15;
-    dropInterval    =   8;
-    //offsetClampLow  = -10;
-    //offsetClampHigh =  10;
-    //offsetUse       =   4;
-    //offset = offsetAverage;
-    //useAverage4Drop = true;
-  }
 
   dropOffset = (useAverage4Drop) ? offsetAverage : offset;
 
