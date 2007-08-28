@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.15 2007/08/28 22:14:19 lucke Exp $
+ * $Id: SoftOsd.h,v 1.16 2007/08/28 22:28:36 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -91,7 +91,11 @@ protected:
     int ScreenOsdWidth;
     int ScreenOsdHeight;
 public:
+#if VDRVERSNUM >= 10509
+    cSoftOsd(cVideoOut *VideoOut, int XOfs, int XOfs, uint level);
+#else
     cSoftOsd(cVideoOut *VideoOut, int XOfs, int XOfs);
+#endif
     virtual ~cSoftOsd();
     virtual void Flush(void);
 

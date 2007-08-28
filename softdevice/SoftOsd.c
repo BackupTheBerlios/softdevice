@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.30 2007/07/11 20:08:34 lucke Exp $
+ * $Id: SoftOsd.c,v 1.31 2007/08/28 22:28:36 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -45,9 +45,13 @@ int cSoftOsd::colorkey;
 
 /* ---------------------------------------------------------------------------
  */
-
+#if VDRVERSNUM >= 10509
+cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y, uint level)
+        : cOsd(X, Y, level),active(false),close(false) {
+#else
 cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         : cOsd(X, Y),active(false),close(false) {
+#endif	
         OSDDEB("cSoftOsd constructor\n");
         OutputConvert=&cSoftOsd::ARGB_to_ARGB32;
         bitmap_Format=PF_None; // forces a clear after first SetMode

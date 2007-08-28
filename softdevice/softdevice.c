@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.86 2007/08/28 22:13:33 lucke Exp $
+ * $Id: softdevice.c,v 1.87 2007/08/28 22:28:36 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -119,7 +119,11 @@ private:
     static cOsd *osd;
 public:
     cSoftOsdProvider(cVideoOut *VideoOut);
+#if VDRVERSNUM >= 10509
+    virtual cOsd *CreateOsd(int Left, int Top, uint level);
+#else
     virtual cOsd *CreateOsd(int Left, int Top);
+#endif    
     static cOsd *GetOsd();
 };
 
@@ -132,6 +136,15 @@ cSoftOsdProvider::cSoftOsdProvider(cVideoOut *VideoOut) : cOsdProvider()
     videoOut = VideoOut;
 }
 
+#if VDRVERSNUM >= 10509
+/* ----------------------------------------------------------------------------
+ */
+cOsd *cSoftOsdProvider::CreateOsd(int Left, int Top, uint level)
+{
+    osd = new cSoftOsd(videoOut, Left, Top, level);
+    return osd;
+}
+#else
 /* ----------------------------------------------------------------------------
  */
 cOsd *cSoftOsdProvider::CreateOsd(int Left, int Top)
@@ -139,6 +152,7 @@ cOsd *cSoftOsdProvider::CreateOsd(int Left, int Top)
     osd = new cSoftOsd(videoOut, Left, Top);
     return osd;
 }
+#endif
 
 /* ----------------------------------------------------------------------------
  */

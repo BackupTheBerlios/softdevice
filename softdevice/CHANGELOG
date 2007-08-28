@@ -1,4 +1,9 @@
 Changelog
+2007-08-29:
+   - compile fix for vdr-1.5.9 based on Stone's patch.
+2007-07-12:
+   - video / dfb: moved some code from video.c to video-dfb.c as announced
+                  and changed some constants to those I use in productive VDR.
 2007-07-11:
    - compile fix for: ./configure --disable-shm
    - applied patch from Matthias Schwarzott for compile issues with
