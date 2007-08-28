@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.85 2007/07/11 17:41:04 lucke Exp $
+ * $Id: softdevice.c,v 1.86 2007/08/28 22:13:33 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -125,23 +125,29 @@ public:
 
 cOsd *cSoftOsdProvider::osd=NULL;
 
+/* ----------------------------------------------------------------------------
+ */
 cSoftOsdProvider::cSoftOsdProvider(cVideoOut *VideoOut) : cOsdProvider()
 {
     videoOut = VideoOut;
 }
 
-cOsd * cSoftOsdProvider::CreateOsd(int Left, int Top)
+/* ----------------------------------------------------------------------------
+ */
+cOsd *cSoftOsdProvider::CreateOsd(int Left, int Top)
 {
     osd = new cSoftOsd(videoOut, Left, Top);
     return osd;
 }
 
-cOsd * cSoftOsdProvider::GetOsd()
+/* ----------------------------------------------------------------------------
+ */
+cOsd *cSoftOsdProvider::GetOsd()
 {
     if (cOsd::IsOpen())
         return osd;
     return NULL;
-};
+}
 
 /* ----------------------------------------------------------------------------
  */
