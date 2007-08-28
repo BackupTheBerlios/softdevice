@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.14 2007/05/10 21:57:26 wachm Exp $
+ * $Id: SoftOsd.h,v 1.15 2007/08/28 22:14:19 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -84,7 +84,7 @@ protected:
     PixFormat bitmap_Format;
 
     void ConvertPalette(tColor *dest_palette, const tColor *orig_palette,
-		    int maxColors);
+                    int maxColors);
 
     bool active;
     bool close;
@@ -98,7 +98,7 @@ public:
     // Create a copy of the osd layer for the Grab() method.
     // Does *not* change anything in the osd!!
     void StealToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
-		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height);
 
@@ -127,23 +127,23 @@ protected:
                     int odd);
 
     static void AYUV_to_AYUV420P(uint8_t *PY1,uint8_t *PY2,
-		    uint8_t *PU, uint8_t *PV,
-		    uint8_t *PAlphaY1, uint8_t *PAlphaY2, uint8_t *PAlphaUV,
-		    color * pixmap1, color *pixmap2, int Pixel);
+                    uint8_t *PU, uint8_t *PV,
+                    uint8_t *PAlphaY1, uint8_t *PAlphaY2, uint8_t *PAlphaUV,
+                    color * pixmap1, color *pixmap2, int Pixel);
 
     // YUV planar modes
     void CopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
-		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll=false);
 
     void NoVScaleCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
-		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll=false);
 
     void ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
-		    uint8_t *PAlphaY,uint8_t *PAlphaUV,
+                    uint8_t *PAlphaY,uint8_t *PAlphaUV,
                     int Ystride, int UVstride,
                     int dest_Width, int dest_Height, bool RefreshAll=false);
 
