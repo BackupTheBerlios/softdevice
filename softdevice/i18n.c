@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.20 2007/04/11 08:23:55 lucke Exp $
+ * $Id: i18n.c,v 1.21 2007/09/16 09:49:55 lucke Exp $
  */
 
 #include "i18n.h"
@@ -26,7 +26,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Softdevice",   // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -49,7 +49,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Программно-эмулируемое MPEG-2 устройство",   // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -72,7 +72,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Аспект при запуске  Xv",  // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -95,7 +95,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Режим обрезки изображения", // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -118,7 +118,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Режим деинтерлейсинга", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -141,7 +141,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Формат пикселя",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -164,7 +164,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Зеркальное отображение",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -187,7 +187,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Задержка A/V",     // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -210,7 +210,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Формат экрана", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -233,7 +233,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Воспроизведение", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -256,7 +256,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Прозрачность OSD", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -279,7 +279,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "вкл.",         // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -302,7 +302,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "выкл.",        // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -325,7 +325,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Режим AC3",    // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -348,7 +348,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Буферный режим",  // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -371,7 +371,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Клавиша переключения режимов обрезки", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -394,7 +394,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Oбрезать линий сверху", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -417,7 +417,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Oбрезать линий снизу", // 17 
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -440,7 +440,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Oбрезать колонoк слева", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -463,7 +463,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Oбрезать колонoк справа",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -486,7 +486,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Режим постобработки", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -509,7 +509,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Качество постобработки", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -532,7 +532,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Использовать StretchBlit",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -555,7 +555,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "ничего",       // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -578,7 +578,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "быстро",       // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -601,7 +601,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "по умолчанию", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -624,7 +624,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "активированно", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -647,7 +647,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "деактивированно",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -670,7 +670,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "псевдо",       // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -693,7 +693,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "программно",      // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -716,7 +716,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "безопасно",    // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -739,7 +739,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "поиск оптимирован",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -762,7 +762,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "HDTV (ТВЧ)",   // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -785,7 +785,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "16:9 широкоэкранный", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -808,7 +808,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "4:3 нормальный",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -831,7 +831,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Спрятать пункт в главном меню",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -854,7 +854,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Обрезка",     // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -877,7 +877,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Постобработка", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -900,7 +900,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Режим синхронизации", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -923,7 +923,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Видео выход",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -946,7 +946,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Яркость",      // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -969,7 +969,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Контрастность",     // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -992,7 +992,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Цветовой сдвиг",    // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1015,7 +1015,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Насыщенность цвета", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1038,7 +1038,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Увеличение",   // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1061,7 +1061,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Сдвиг области увеличения (влево/вправо)",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1084,7 +1084,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Сдвиг области увеличения (вверх/вниз)",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1107,7 +1107,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Развернуть (ниж./верх.) строки", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1130,7 +1130,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Развернуть (лев./прав.) колонки",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1153,7 +1153,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Протоколирование",   // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1176,7 +1176,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Инфо. сообщения", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1199,7 +1199,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Сообщения отладки",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1222,7 +1222,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Отслеживание сообщений",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1245,7 +1245,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Файл журнала", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1268,7 +1268,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Добавить PID", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -1291,7 +1291,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "",             // 17 TODO
+    "Автоопределение формата (16:9/4:3)",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
