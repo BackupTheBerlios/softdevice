@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.7 2007/09/16 09:35:18 lucke Exp $
+ * $Id: VideoFilter.c,v 1.8 2007/09/16 10:07:59 lucke Exp $
  */
 #include "VideoFilter.h"
 
@@ -329,6 +329,8 @@ cBorderDetect::~cBorderDetect() {
 
 void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     int black_border=0;
+    int     lim;
+    float   new_aspect;
 
     dest = orig; // "copy" do not modify
 
@@ -402,7 +404,7 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 #endif
             //printf("Picture is bright enough\n");
             // calculate new aspect with the detected borders
-            float new_aspect = orig->aspect_ratio * float(orig->height)
+            new_aspect = orig->aspect_ratio * float(orig->height)
                     / (float)(orig->height - edge_pos * 2);
 
             // 4/3 = 1.33  16/9 = 1.77  mid = 1,55
@@ -412,15 +414,20 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                     tmp_asp = 14.0 / 9.0; //4.0 / 3.0;
             else tmp_asp = 4.0 / 3.0;
             //printf("Bordersize: %d  Calculated aspect %f\n",edge_pos, new_aspect);
+            lim = (orig->height / 2) -
+                     (orig->aspect_ratio * orig->height) /
+                       ((16.0 / 9.0) * 2);
     }
 
     if (tmp_asp == newDetAspect && newDetAspect != currDetAspect ) {
             frame_count++;
             if ( frame_count > FRAMES_BEFORE_SWITCH ) {
                     currDetAspect=tmp_asp;
-                    currBlackBorder=edge_pos;
-                    fprintf(stderr,"new Aspect detected %f\n", tmp_asp);
-            };
+                    currBlackBorder = (edge_pos > lim) ? lim : edge_pos;
+                    fprintf(stderr,
+                            "new Aspect detected %f (%f) / bb %d %d\n",
+                            tmp_asp, new_aspect, edge_pos, lim);
+            }
     } else  frame_count=0;
     newDetAspect=tmp_asp;
 #if 1
