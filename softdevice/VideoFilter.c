@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.6 2007/05/10 22:03:03 wachm Exp $
+ * $Id: VideoFilter.c,v 1.7 2007/09/16 09:35:18 lucke Exp $
  */
 #include "VideoFilter.h"
 
@@ -25,10 +25,10 @@ bool cVideoFilter::AllocateCheckBuffer(sPicBuffer *&dest, sPicBuffer *orig) {
                 fprintf(stderr,"Error in AllocateCheckBuffer, orig==NULL!\n");
                 return false;
         };
-        
-        if (!dest) 
+
+        if (!dest)
                 return AllocateBuffer(dest, orig);
-        
+
         if ( dest->format != orig->format ||
              dest->max_width != orig->width ||
              dest->max_height != orig->height ) {
@@ -38,7 +38,7 @@ bool cVideoFilter::AllocateCheckBuffer(sPicBuffer *&dest, sPicBuffer *orig) {
                       dest->max_height, orig->height);
                 vout->ReleaseBuffer(dest);
                 AllocateBuffer(dest, orig);
-                if (!dest) 
+                if (!dest)
                         return false;
         };
         dest->edge_width=dest->edge_height=0;
@@ -50,10 +50,10 @@ bool cVideoFilter::AllocateBuffer(sPicBuffer *&dest, sPicBuffer *orig) {
                 fprintf(stderr,"Error in AllocateBuffer, orig==NULL!\n");
                 return false;
         };
-       
+
         printf("allocating buffer format orig->format %d\n",orig->format);
         dest=vout->GetBuffer(orig->format, orig->width, orig->height);
-        
+
         dest->width = orig->width;
         dest->height = orig->height;
         dest->pts=orig->pts;
@@ -67,7 +67,7 @@ bool cVideoFilter::AllocateBuffer(sPicBuffer *&dest, sPicBuffer *orig) {
 
 /*--------------------------------------------------------------------------*/
 
-cVideoMirror::cVideoMirror(cVideoOut *vOut) 
+cVideoMirror::cVideoMirror(cVideoOut *vOut)
         : cVideoFilter(vOut), outBuf(NULL) {
 };
 
@@ -107,7 +107,7 @@ void cVideoMirror::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                     ptr_dest1++;
             }
     }
-    
+
     // mirror chrominance
     int h_shift;
     int v_shift;
@@ -136,7 +136,7 @@ void cVideoMirror::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 
 /*--------------------------------------------------------------------------*/
 
-cDeintLibav::cDeintLibav(cVideoOut *vOut) 
+cDeintLibav::cDeintLibav(cVideoOut *vOut)
         : cVideoFilter(vOut), outBuf(NULL) {
 };
 
@@ -167,20 +167,20 @@ void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     int v_shift;
     avcodec_get_chroma_sub_sample(dest->format,&h_shift,&v_shift);
 
-    avpic_src.data[0] = orig->pixel[0] 
+    avpic_src.data[0] = orig->pixel[0]
             + orig->edge_height * orig->stride[0]
             + orig->edge_width;
-    
-    avpic_src.data[1] = orig->pixel[1] 
+
+    avpic_src.data[1] = orig->pixel[1]
             + (orig->edge_height >> v_shift) * orig->stride[1]
             + (orig->edge_width >> h_shift);
-    
-    avpic_src.data[2] = orig->pixel[2] 
+
+    avpic_src.data[2] = orig->pixel[2]
             + (orig->edge_height >> v_shift) * orig->stride[2]
             + (orig->edge_width >> h_shift);
 
     memcpy(avpic_src.linesize,orig->stride,sizeof(avpic_src.linesize));
-    
+
     memcpy(avpic_dest.data,dest->pixel,sizeof(avpic_dest.data));
     memcpy(avpic_dest.linesize,dest->stride,sizeof(avpic_dest.linesize));
 
@@ -199,7 +199,7 @@ void cDeintLibav::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 
 /*---------------------------cImageConvert---------------------------------*/
 
-cImageConvert::cImageConvert(cVideoOut *vOut) 
+cImageConvert::cImageConvert(cVideoOut *vOut)
         : cVideoFilter(vOut), outBuf(NULL)
 #ifdef USE_SWSCALE
           , img_convert_ctx(NULL), ctx_width(0),
@@ -225,7 +225,7 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                 if (outBuf)
                         vout->ReleaseBuffer(outBuf);
 
-                outBuf=dest=vout->GetBuffer(PIX_FMT_YUV420P, 
+                outBuf=dest=vout->GetBuffer(PIX_FMT_YUV420P,
                                 orig->width, orig->height);
 
                 dest->width = orig->width;
@@ -266,15 +266,15 @@ void cImageConvert::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         int v_shift;
         avcodec_get_chroma_sub_sample(orig->format,&h_shift,&v_shift);
 
-        avpic_src.data[0] = orig->pixel[0] 
+        avpic_src.data[0] = orig->pixel[0]
                 + orig->edge_height * orig->stride[0]
                 + orig->edge_width;
 
-        avpic_src.data[1] = orig->pixel[1] 
+        avpic_src.data[1] = orig->pixel[1]
                 + (orig->edge_height >> v_shift) * orig->stride[1]
                 + (orig->edge_width >> h_shift);
 
-        avpic_src.data[2] = orig->pixel[2] 
+        avpic_src.data[2] = orig->pixel[2]
                 + (orig->edge_height >> v_shift) * orig->stride[2]
                 + (orig->edge_width >> h_shift);
 
@@ -308,7 +308,7 @@ How Borderdetection works:
 Scan the picture from top and bottom to the middle for bright lines, omitting
 1/6 of the width on left and right side. After BODER_MIN_SIZE lines which are
 on average brigther than BORDER_BLACK, stop scanning. During the scan, edges
-are detected by subtracting the top (bottom) pixel from the current pixel. 
+are detected by subtracting the top (bottom) pixel from the current pixel.
 If more than 1/6*width of the differences are greater than EDGE_DIFF, the
 position is marked as an edge.
 
@@ -318,10 +318,10 @@ position is marked as an edge.
 #define BORDER_BLACK 10
 #define EDGE_DIFF 30
 
-cBorderDetect::cBorderDetect(cVideoOut *vOut) 
+cBorderDetect::cBorderDetect(cVideoOut *vOut)
         : cVideoFilter(vOut), currOrigAspect(-1.0), currDetAspect(-1.0),
           newDetAspect(-1.0),currBlackBorder(0),frame_count(0) {
-        
+
 };
 
 cBorderDetect::~cBorderDetect() {
@@ -333,15 +333,15 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     dest = orig; // "copy" do not modify
 
     double tmp_asp = currDetAspect;
-    
-    if (orig->aspect_ratio > 1.43) 
+
+    if (orig->aspect_ratio > 1.43)
             // 16/9 Frame
             return;
 
     int width=orig->width/6;
     int height=orig->height/4;
     int not_black_count=0;
-        
+
     // 4/3 Frame
     // start of first line
     uint8_t *pic_start=orig->pixel[0]
@@ -378,7 +378,7 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
             if (edge_pixel > width)
                     edge_pos=black_border;
 
-            if (brightness > BORDER_BLACK) 
+            if (brightness > BORDER_BLACK)
                     not_black_count++;
             else not_black_count=0;
 
@@ -402,13 +402,13 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 #endif
             //printf("Picture is bright enough\n");
             // calculate new aspect with the detected borders
-            float new_aspect = orig->aspect_ratio * float(orig->height) 
+            float new_aspect = orig->aspect_ratio * float(orig->height)
                     / (float)(orig->height - edge_pos * 2);
 
             // 4/3 = 1.33  16/9 = 1.77  mid = 1,55
-            if (new_aspect > 1.65) 
+            if (new_aspect > 1.65)
                     tmp_asp = 16.0 / 9.0;
-            else if (new_aspect > 1.45) 
+            else if (new_aspect > 1.45)
                     tmp_asp = 14.0 / 9.0; //4.0 / 3.0;
             else tmp_asp = 4.0 / 3.0;
             //printf("Bordersize: %d  Calculated aspect %f\n",edge_pos, new_aspect);
@@ -416,7 +416,7 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 
     if (tmp_asp == newDetAspect && newDetAspect != currDetAspect ) {
             frame_count++;
-            if ( frame_count > FRAMES_BEFORE_SWITCH ) { 
+            if ( frame_count > FRAMES_BEFORE_SWITCH ) {
                     currDetAspect=tmp_asp;
                     currBlackBorder=edge_pos;
                     fprintf(stderr,"new Aspect detected %f\n", tmp_asp);
@@ -429,15 +429,15 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
             orig->edge_height+=currBlackBorder;
             orig->height-=2*currBlackBorder;
 /*            printf("%f %d edge_height %d height %d\n",
-                            currDetAspect,currBlackBorder, 
-                            orig->edge_height, orig->height);*/  
+                            currDetAspect,currBlackBorder,
+                            orig->edge_height, orig->height);*/
     }
 #endif
 }
 
 /*---------------------------cLibAvPostProc---------------------------------*/
 #ifdef PP_LIBAVCODEC
-cLibAvPostProc::cLibAvPostProc(cVideoOut *vOut) 
+cLibAvPostProc::cLibAvPostProc(cVideoOut *vOut)
         : cVideoFilter(vOut), width(-1), height(-1), pix_fmt(PIX_FMT_NB),
           ppmode(NULL), ppcontext(NULL), outBuf(NULL),
           currentDeintMethod(-1), currentppMethod(-1), currentppQuality(-1) {
@@ -478,7 +478,7 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                         orig->format != pix_fmt) {
                 width=orig->width;height=orig->height;
                 pix_fmt=orig->format;
-                
+
                 // reallocate ppcontext if format or size of picture changed
                 if (ppcontext)
                 {
@@ -505,9 +505,9 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
 
                 ppcontext = pp_get_context(width, height,flags);
         }
-        
-        if ( ppmode == NULL 
-                        || currentDeintMethod != setupStore->deintMethod 
+
+        if ( ppmode == NULL
+                        || currentDeintMethod != setupStore->deintMethod
                         || currentppMethod != setupStore->ppMethod
                         || currentppQuality != setupStore->ppQuality ) {
                 // reallocate ppmode if method or quality changed
@@ -544,15 +544,15 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         int v_shift;
         avcodec_get_chroma_sub_sample(orig->format,&h_shift,&v_shift);
 
-        avpic_src.data[0] = orig->pixel[0] 
+        avpic_src.data[0] = orig->pixel[0]
                 + orig->edge_height * orig->stride[0]
                 + orig->edge_width;
 
-        avpic_src.data[1] = orig->pixel[1] 
+        avpic_src.data[1] = orig->pixel[1]
                 + (orig->edge_height >> v_shift) * orig->stride[1]
                 + (orig->edge_width >> h_shift);
 
-        avpic_src.data[2] = orig->pixel[2] 
+        avpic_src.data[2] = orig->pixel[2]
                 + (orig->edge_height >> v_shift) * orig->stride[2]
                 + (orig->edge_width >> h_shift);
 
