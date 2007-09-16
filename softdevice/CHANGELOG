@@ -1,4 +1,8 @@
 Changelog
+2007-09-16:
+   - border detect: whole black area was cut out. that not correct when aspect
+     ratio is greater than 16/9. limit cut out area to 16/9.
+   - russian translation by neptunvasja
 2007-08-29:
    - compile fix for vdr-1.5.9 based on Stone's patch.
 2007-07-12:
