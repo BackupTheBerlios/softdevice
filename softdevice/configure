@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.44 2007/07/11 17:56:57 lucke Exp $
+# $Id: configure,v 1.45 2007/09/23 08:33:40 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -366,10 +366,10 @@ echo "Checking for linux framebuffer.------------------" >> config.log
 
 if test "${with_fb}" = "yes" ; then
 cat > ${TMPC} << EOF
-#include <linux/fb.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <linux/fb.h>
 #include <stdio.h>
 #include <stdlib.h>
 int main(void) {
