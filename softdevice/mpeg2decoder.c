@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.75 2007/05/10 19:49:51 wachm Exp $
+ * $Id: mpeg2decoder.c,v 1.76 2007/09/27 17:34:25 lucke Exp $
  */
 
 #include <math.h>
@@ -520,8 +520,8 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
 #if LIBAVCODEC_BUILD >  4713
   avcodec_align_dimensions(c, &w, &h);
 #endif
- 
-#ifdef USE_ALTIVEC 
+
+#ifdef USE_ALTIVEC
 #define EDGE_WIDTH 32
 #else
 #define EDGE_WIDTH 16
@@ -557,9 +557,9 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
     const int v_shift= i==0 ? 0 : v_chroma_shift;
 
     pic->base[i]= buf->pixel[i];
-    if(EmuEdge) 
+    if(EmuEdge)
       pic->data[i] = buf->pixel[i];
-     else 
+     else
       pic->data[i] = buf->pixel[i] + (buf->stride[i]*
           EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift);
       //pic->data[i] = buf->pixel[i] + ALIGN((buf->stride[i]*
@@ -567,9 +567,9 @@ int GetBuffer(struct AVCodecContext *c, AVFrame *pic) {
       //              STRIDE_ALIGN);
     pic->linesize[i]= buf->stride[i];
   }
-  if(EmuEdge) 
+  if(EmuEdge)
     buf->edge_width=buf->edge_height=0;
-  else 
+  else
     buf->edge_width=buf->edge_height=EDGE_WIDTH;
   pic->age=buf->age;
 
@@ -885,7 +885,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 
     if (setupStore->autodetectAspect)
             BorderDetect.Filter(pic,pic);
-    
+
 #ifdef PP_LIBAVCODEC
 #ifdef FB_SUPPORT
     if (setupStore->deintMethod > 2 || setupStore->ppMethod!=0 )
