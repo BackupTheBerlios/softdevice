@@ -139,6 +139,17 @@ option "-h" for help. Subarguments of each output method can be combined.
     Example:
     -ao alsa:mixer:pcm=default#ac3=hw:0,2#
 
+ALSA audio device names:
+------------------------
+In most cases it is enough to use the alsa default device name "default".
+In case of several installed cards, the exact name could be specified
+like "hw:0,0". If this still does not fit your needs (ac3 analog out,
+redirecting/remapping logical channels to physical ones, ..), you may
+specify for each number of channels some special action, as we try
+to open device CH1, CH2, CH3, CH4, CH5, CH6 according to current number
+of channels. As fallback mode, we still try to open specified pcm device
+name which defaults to "default" :-) .
+
 AC3 pass through:
 -----------------
 For using AC3 pass through, you have to specify the IEC958 device name of

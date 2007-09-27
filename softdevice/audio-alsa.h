@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.h,v 1.4 2007/05/10 19:54:44 wachm Exp $
+ * $Id: audio-alsa.h,v 1.5 2007/09/27 18:22:40 lucke Exp $
  */
 #ifndef __AUDIO_ALSA_H__
 #define __AUDIO_ALSA_H__
@@ -26,7 +26,8 @@ private:
   cMutex            handleMutex;
   snd_pcm_t         *handle;
   char              *device,
-                    *ac3Device;
+                    *ac3Device,
+                    chDevice [8];
   volatile bool     paused;
   bool              ac3PassThrough,
                     ac3SpdifPro;

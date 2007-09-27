@@ -1,6 +1,11 @@
 Changelog
+2007-09-27:
+   - audio: added open for number of channels device names CH1, CH2, CH3, .. .
+   - mpeg2decoder: workaround for some ac3 decoding issues.
+2007-09-23:
+   - configure: fix framebuffer check.
 2007-09-16:
-   - border detect: whole black area was cut out. that not correct when aspect
+   - border detect: whole black area was cut out. that's not correct when aspect
      ratio is greater than 16/9. limit cut out area to 16/9.
    - russian translation by neptunvasja
 2007-08-29:

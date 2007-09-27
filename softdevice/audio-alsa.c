@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.6 2007/05/10 19:54:44 wachm Exp $
+ * $Id: audio-alsa.c,v 1.7 2007/09/27 18:22:40 lucke Exp $
  */
 #include "audio-alsa.h"
 
@@ -272,7 +272,8 @@ void cAlsaAudioOut::Xrun(void)
 /* ----------------------------------------------------------------------------
  */
 int cAlsaAudioOut::SetParams(SampleContext &context) {
-      int err;
+      int   err;
+      char  *ch_dev = NULL;
 
     // not needed to set again
     if (currContext.samplerate == context.samplerate &&
@@ -286,17 +287,34 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
     handleMutex.Lock();
 
     if (handle)
-            snd_pcm_close(handle);
+      snd_pcm_close(handle);
+    handle = NULL;
 
-    if ((err = snd_pcm_open(&handle,
-                            device,
-                            SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-      esyslog("[softdevice-audio] Playback reopen error: %s, %s FATAL exiting",
-              device, snd_strerror(err));
-      // should we close handle?
-      handle = NULL;
-      handleMutex.Unlock();
-      return -1;
+    if (context.channels < 10) {
+      sprintf (chDevice, "CH%d", currContext.channels);
+      device = chDevice;
+      if ((err = snd_pcm_open(&handle,
+                              device,
+                              SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+        esyslog("[softdevice-audio] Playback reopen error: %s, %s",
+                chDevice, snd_strerror(err));
+        handle = NULL;
+      }
+    }
+
+    if (!handle) {
+      device = setupStore->alsaDevice;
+      if ((err = snd_pcm_open(&handle,
+                              device,
+                              SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+        esyslog("[softdevice-audio] Playback reopen error: "
+                "%s, %s FATAL exiting",
+                device, snd_strerror(err));
+
+        handle = NULL;
+        handleMutex.Unlock();
+        return -1;
+      }
     }
 
     dsyslog ("[softdevice-audio] samplerate: %dHz, channels: #%d",
