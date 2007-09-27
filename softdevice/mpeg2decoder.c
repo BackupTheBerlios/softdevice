@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.76 2007/09/27 17:34:25 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.77 2007/09/27 18:10:41 lucke Exp $
  */
 
 #include <math.h>
@@ -446,9 +446,20 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
     MPGDEB("audio: count: %d  Length: %d len: %d a_size: %d a_delay: %d\n",
        frame,pkt->size,len, audio_size, audioOut->GetDelay());
 
-    // no new frame decoded, continue
-    if (audio_size <= 0)
-      continue;
+    // no new frame decoded, continue but ...
+    if (audio_size <= 0) {
+      // AC3 oddities:
+      //   1st call processes header and adjusts channels.
+      //   2nd call delivers data.
+      if (context->codec_id == CODEC_ID_AC3) {
+        len=avcodec_decode_audio(context, (short *)audiosamples,
+                                 &audio_size, data, 1);
+        //fprintf(stderr,"2nd call len: %d a_size: %d\n", len, audio_size);
+      }
+      if (audio_size <= 0)
+        continue;
+    }
+
 
     if ( audio_size > AVCODEC_MAX_AUDIO_FRAME_SIZE ) {
         fprintf(stderr,"Error audio_size greater than MAX_AUDIO_FRAME_SIZE!\n");
