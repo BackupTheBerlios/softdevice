@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.h,v 1.8 2006/12/14 22:51:47 wachm Exp $
+ * $Id: SoftPlayer.h,v 1.9 2007/09/28 15:52:41 lucke Exp $
  */
 
 #ifndef __SOFTPLAYER_H
@@ -15,7 +15,9 @@
 #include <vdr/device.h>
 #include <vdr/player.h>
 
+extern "C" {
 #include <avformat.h>
+}
 
 #include "SoftHandles.h"
 #include "PlayList.h"

@@ -6,13 +6,15 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftHandles.h,v 1.1 2006/03/12 20:23:23 wachm Exp $
+ * $Id: SoftHandles.h,v 1.2 2007/09/28 15:52:41 lucke Exp $
  */
 
 #ifndef __SOFTHANDLES_H
 #define __SOFTHANDLES_H
 
+extern "C" {
 #include <avformat.h>
+}
 
 #if VDRVERSNUM >= 10330
 #define SOFTDEVICE_VIDEO_STREAM  1
