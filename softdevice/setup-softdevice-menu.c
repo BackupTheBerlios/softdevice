@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.13 2007/05/10 19:49:51 wachm Exp $
+ * $Id: setup-softdevice-menu.c,v 1.14 2007/10/13 13:38:45 lucke Exp $
  */
 
 //#include "video.h"
@@ -298,7 +298,8 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
   Add(new cOsdItem(" ", osUnknown));
 #endif
 
-  if (data->outputMethod == VOUT_XV)
+  if (data->outputMethod == VOUT_XV ||
+      data->outputMethod == VOUT_SHM)
   {
     xv_startup_aspect[0] = tr("16:9 wide");
     xv_startup_aspect[1] = tr("4:3 normal");

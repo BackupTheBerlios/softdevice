@@ -1,7 +1,8 @@
 Changelog
 2007-10-13:
    - shm-out: applied patch from Matthias Schwarzott to make ShmClient work
-              at 1st start of softdevice with "-vo shm:"
+              at 1st start of softdevice with "-vo shm:".
+              allow xv startup aspect selection for shm out too.
 2007-09-27:
    - audio: added open for number of channels device names CH1, CH2, CH3, .. .
    - mpeg2decoder: workaround for some ac3 decoding issues.
