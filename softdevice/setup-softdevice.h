@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.42 2007/05/10 19:54:44 wachm Exp $
+ * $Id: setup-softdevice.h,v 1.43 2007/10/13 11:17:48 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -175,6 +175,8 @@ struct cSetupStore {
           setSourceRectangleLocked;
     char  alsaDevice [ALSA_DEVICE_NAME_LENGTH];
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
+
+    int   setupStoreShmid;
 };
 
 #define OSDMODE_PSEUDO    0

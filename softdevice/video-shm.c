@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.c,v 1.19 2007/05/10 21:57:26 wachm Exp $
+ * $Id: video-shm.c,v 1.20 2007/10/13 11:17:48 lucke Exp $
  */
 
 #include "video-shm.h"
@@ -91,6 +91,7 @@ cShmVideoOut::cShmVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
                 ctl->pict_shmid=-1;
                 ctl->osd_shmid=-1;
                 ctl->attached = 0;
+                ctl->setup_shmid = setupStore->setupStoreShmid;
         };
 
         if ( ctl->semid == -1 ) {

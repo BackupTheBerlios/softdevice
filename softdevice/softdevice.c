@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.87 2007/08/28 22:28:36 lucke Exp $
+ * $Id: softdevice.c,v 1.88 2007/10/13 11:17:48 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -870,6 +870,7 @@ cPluginSoftDevice::cPluginSoftDevice(void)
           ctl=NULL;
   };
   setupStore->InitSetupStore();
+  setupStore->setupStoreShmid = setupStoreShmId;
 #endif
 }
 
