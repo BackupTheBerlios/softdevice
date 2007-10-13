@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftPlayer.c,v 1.16 2007/03/12 21:32:03 wachm Exp $
+ * $Id: SoftPlayer.c,v 1.17 2007/10/13 10:29:43 lucke Exp $
  */
 
 #include "SoftPlayer.h"
@@ -445,14 +445,27 @@ void cSoftPlayer::OpenFile(const char *filename) {
 	};
 		
         printf("open file '%s'\n",filename);
+/* ---------------------------------------------------------------------------
+ * As a workaround for softdevice behaviour of setting AVFMT_NOFILE flag
+ * for input format "mpeg" we temporarily clear this here now and restore
+ * flags later.
+ * For this reason, this change does not fit indentation rules.
+ */
+AVInputFormat *fmt;
+int           oldFlags;
+fmt=av_find_input_format("mpeg");
+oldFlags = fmt->flags;
+fmt->flags &= ~AVFMT_NOFILE;
         char str[60];
         if ( (ret=av_open_input_file( &ic, filename, NULL, 0, NULL)) ) {
                 snprintf(str,60,"%s %s!","Could not open file",filename);
                 Skins.Message(mtError, str);
                 printf("could not open file. Return value %d\n",ret);
                 ic=0;
+fmt->flags = oldFlags;
                 return;
         };
+fmt->flags = oldFlags;
 
         if ( av_find_stream_info( ic ) ) {
                 printf("could not find stream info\n");
