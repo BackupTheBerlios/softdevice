@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.42 2007/04/03 19:06:17 wachm Exp $
+ * $Id: mpeg2decoder.h,v 1.43 2007/12/24 11:43:31 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -278,6 +278,7 @@ private:
     bool freezeMode;
 
     AVFormatContext *ic;
+    ByteIOContext   *pb;
     int LastSize;
     cMutex  mutex;
     cSigTimer EnablePutSignal;

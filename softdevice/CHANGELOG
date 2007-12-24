@@ -1,4 +1,8 @@
 Changelog
+2007-12-24:
+   - mpegdecoder: compile fix for ffmpeg svn >= r11071.
+                  revert AVFMT_NOFILE trick for actual ffmpeg >= 11071.
+                  recommended ffmpeg versions: A) < r11071 B) >= r11307
 2007-10-13:
    - shm-out: applied patch from Matthias Schwarzott to make ShmClient work
               at 1st start of softdevice with "-vo shm:".

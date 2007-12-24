@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.77 2007/09/27 18:10:41 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.78 2007/12/24 11:43:31 lucke Exp $
  */
 
 #include <math.h>
@@ -1024,6 +1024,7 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
   decoding=false;
   IsSuspended=false;
   Speed=1;
+  pb = NULL;
 }
 
 cMpeg2Decoder::~cMpeg2Decoder()
@@ -1078,7 +1079,11 @@ start:
        if (size>buf_size)
          size=buf_size;
 
+#if LIBAVFORMAT_BUILD >= ((52<<16)+(0<<8)+0)
+       ic->pb->buffer=u;
+#else
        ic->pb.buffer=u;
+#endif
        LastSize=size;
        BUFDEB("read_packet: got %d bytes\n",size);
        return size;
@@ -1105,6 +1110,19 @@ void cMpeg2Decoder::initStream() {
    av_register_all();
 
    fmt=av_find_input_format("mpeg");
+
+#if LIBAVFORMAT_BUILD >= ((52<<16)+(0<<8)+0)
+   pb = (ByteIOContext *) av_mallocz (sizeof (ByteIOContext));
+
+   if ( int err=av_open_input_stream (&ic, pb, "null", fmt, NULL) ) {
+       fprintf (stderr, "Failed to open input stream.Error %d\n", err);
+   }
+
+   init_put_byte(ic->pb, NULL,dvb_buf_size[setupStore->bufferMode]/2, 0, this,
+       read_packet_RingBuffer,NULL,seek_RingBuffer);
+   ic->pb->buf_end=NULL;
+   ic->pb->is_streamed=true;
+#else
    fmt->flags |= AVFMT_NOFILE;
 
    if ( int err=av_open_input_file(&ic, "null",fmt,0,NULL) ) {
@@ -1115,6 +1133,7 @@ void cMpeg2Decoder::initStream() {
        read_packet_RingBuffer,NULL,seek_RingBuffer);
    ic->pb.buf_end=NULL;
    ic->pb.is_streamed=true;
+#endif
    CMDDEB("init put byte finished\n");
 };
 
@@ -1473,7 +1492,14 @@ void cMpeg2Decoder::Stop(bool GetMutex)
     aout=NULL;
     aoutMutex.Unlock();
 
+#if LIBAVFORMAT_BUILD >= ((52<<16)+(3<<8)+0)
+    av_close_input_stream(ic);
+    if (pb) {
+      av_free(pb);
+    }
+#else
     av_close_input_file(ic);
+#endif
     ic=NULL;
   }
   if (StreamBuffer) {
