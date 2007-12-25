@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: video-shm.h,v 1.11 2007/05/10 21:57:26 wachm Exp $
+ * $Id: video-shm.h,v 1.12 2007/12/25 14:27:45 lucke Exp $
  */
 
 #ifndef __VIDEO_SHM_H__
@@ -16,9 +16,9 @@
 #include "shm-common.h"
 
 #include <sys/types.h>
-#include <sys/ipc.h> 
-#include <sys/shm.h> 
-#include <sys/sem.h> 
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
 
 #include <vdr/remote.h>
 
@@ -42,7 +42,7 @@ class cShmVideoOut : public cVideoOut {
         public:
         cShmVideoOut(cSetupStore *setupStore, cSetupSoftlog *softlog);
         ~cShmVideoOut();
-        
+
         virtual void AdjustOSDMode();
 
         virtual void GetOSDDimension(int &OsdWidth,int &OsdHeight,
@@ -72,15 +72,15 @@ class cShmRemote : public cRemote, private cThread {
 
     virtual void Action(void);
   public:
-          cShmRemote(const char *Name, cShmVideoOut *video_out) 
+          cShmRemote(const char *Name, cShmVideoOut *video_out)
                   : cRemote(Name) {
                   vout=video_out;
                   active=true;
                   Start();
           };
-          
-          ~cShmRemote(); 
-          
+
+          ~cShmRemote();
+
           void Stop()
           {
                   if (!vout || !active)
@@ -88,8 +88,9 @@ class cShmRemote : public cRemote, private cThread {
 
                   active = false;
                   // signal new key to stop the thread from waiting
-                  sem_sig_unlock(vout->ctl->semid,KEY_SIG);
-        
+                  if (vout->ctl)
+                          sem_sig_unlock(vout->ctl->semid,KEY_SIG);
+
                   Cancel(2);
                   vout=NULL;
           };
