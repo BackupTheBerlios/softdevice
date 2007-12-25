@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-ac3pt.c,v 1.2 2006/01/15 20:41:15 wachm Exp $
+ * $Id: audio-ac3pt.c,v 1.3 2007/12/25 13:21:46 lucke Exp $
  */
 
 #include <unistd.h>
@@ -202,7 +202,7 @@ resync:
   if (!syncinfo->frame_size) {
     syncword = 0xffff;
     sbuffer_size = 0;
-    fprintf(stderr, "ac3play: ** Invalid frame found - try to syncing **\n\r");
+    fprintf(stderr, "ac3play: ** Invalid frame found - try to syncing **\n");
     if (ac3->out >= ac3->tail)
       goto done;
     else
@@ -217,9 +217,9 @@ resync:
   if (syncinfo->sampling_rate != rate) {
     fprintf(stderr,
             "ac3play: Warning: sample rate of"
-            " the current AC-3 stream (%d) does not\n\r",
+            " the current AC-3 stream (%d) does not\n",
             syncinfo->sampling_rate);
-    fprintf(stderr, "	 fit the configured PCM rate (%d)!\n\r", rate);
+    fprintf(stderr, "	 fit the configured PCM rate (%d)!\n", rate);
   }
 
   while(sbuffer_size < payload_size) {
@@ -236,7 +236,7 @@ resync:
   {
     syncword = 0xffff;
     sbuffer_size = 0;
-    fprintf(stderr, "ac3play: ** CRC failed - try to syncing **\n\r");
+    fprintf(stderr, "ac3play: ** CRC failed - try to syncing **\n");
     if (ac3->out >= ac3->tail)
       goto done;
     else
@@ -282,7 +282,7 @@ cAlsaAC3pt::XunderrunAC3(snd_pcm_t *handle)
     snd_pcm_sframes_t res;
 
   if ((res = snd_pcm_status(handle, ac3Status))<0) {
-    fprintf(stderr, "ac3play: ac3Status error: %s\n\r", snd_strerror(res));
+    fprintf(stderr, "ac3play: ac3Status error: %s\n", snd_strerror(res));
     return;
   }
   if (snd_pcm_status_get_state(ac3Status) == SND_PCM_STATE_XRUN) {
@@ -290,10 +290,10 @@ cAlsaAC3pt::XunderrunAC3(snd_pcm_t *handle)
     gettimeofday(&now, 0);
     snd_pcm_status_get_trigger_tstamp(ac3Status, &tstamp);
     timersub(&now, &tstamp, &diff);
-    fprintf(stderr, "ac3play: xunderrun!!! (at least %.3f ms long)\n\r",
+    fprintf(stderr, "ac3play: xunderrun!!! (at least %.3f ms long)\n",
             diff.tv_sec * 1000 + diff.tv_usec / 1000.0);
     if ((res = snd_pcm_prepare(handle))<0) {
-      fprintf(stderr, "ac3play: xunderrun: prepare error: %s\n\r",
+      fprintf(stderr, "ac3play: xunderrun: prepare error: %s\n",
               snd_strerror(res));
       return;
     }
@@ -309,15 +309,15 @@ cAlsaAC3pt::XsuspendAC3(snd_pcm_t *handle)
     snd_pcm_sframes_t res;
 
   if ((res = snd_pcm_status(handle, ac3Status))<0) {
-    fprintf(stderr, "ac3play: ac3Status error: %s\n\r", snd_strerror(res));
+    fprintf(stderr, "ac3play: ac3Status error: %s\n", snd_strerror(res));
     return;
   }
   if (snd_pcm_status_get_state(ac3Status) == SND_PCM_STATE_SUSPENDED) {
-    fprintf(stderr, "ac3play: xsuspend!!! trying to resume\n\r");
+    fprintf(stderr, "ac3play: xsuspend!!! trying to resume\n");
     while ((res = snd_pcm_resume(handle)) == -EAGAIN)
       usleep(100000);
     if ((res = snd_pcm_prepare(handle))<0) {
-      fprintf(stderr, "ac3play: xsuspend: prepare error: %s\n\r",
+      fprintf(stderr, "ac3play: xsuspend: prepare error: %s\n",
                       snd_strerror(res));
       return;
     }
@@ -394,7 +394,7 @@ cAlsaAC3pt::WriteBurstAC3(snd_pcm_t *handle, unsigned char *data, snd_pcm_sframe
           XsuspendAC3(handle);
           continue;
         default:
-          fprintf(stderr, "ac3play: snd_pcm_writei returned error: %s\n\r",
+          fprintf(stderr, "ac3play: snd_pcm_writei returned error: %s\n",
                   snd_strerror(r));
           exit(1);
       }
@@ -511,7 +511,7 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
 
   if ((err = snd_pcm_open(handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0)
   {
-    fprintf(stderr, "ac3play: sound open: %s\n\r", snd_strerror(err));
+    fprintf(stderr, "ac3play: sound open: %s\n", snd_strerror(err));
     return 1;
   }
 
@@ -521,7 +521,7 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
   snd_pcm_info_alloca(&info);
 
   if ((err = snd_pcm_info(*handle, info)) < 0) {
-    fprintf(stderr, "ac3play: sound info: %s\n\r", snd_strerror(err));
+    fprintf(stderr, "ac3play: sound info: %s\n", snd_strerror(err));
     snd_pcm_close(*handle);
     return 1;
   }
@@ -559,16 +559,16 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
     snd_ctl_elem_value_set_iec958(ctl, &spdif);
     ctl_card = snd_pcm_info_get_card(info);
     if (ctl_card < 0) {
-      fprintf(stderr, "ac3play: Unable to setup the IEC958 (S/PDIF) interface - PCM has no assigned card\n\r");
+      fprintf(stderr, "ac3play: Unable to setup the IEC958 (S/PDIF) interface - PCM has no assigned card\n");
       goto __diga_end;
     }
     sprintf(ctl_name, "hw:%d", ctl_card);
     if ((err = snd_ctl_open(&ctl_handle, ctl_name, 0)) < 0) {
-      fprintf(stderr, "ac3play: Unable to open the control interface '%s': %s\n\r", ctl_name, snd_strerror(err));
+      fprintf(stderr, "ac3play: Unable to open the control interface '%s': %s\n", ctl_name, snd_strerror(err));
       goto __diga_end;
     }
     if ((err = snd_ctl_elem_write(ctl_handle, ctl)) < 0) {
-      fprintf(stderr, "ac3play: Unable to update the IEC958 control: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Unable to update the IEC958 control: %s\n", snd_strerror(err));
       goto __diga_end;
     }
     snd_ctl_close(ctl_handle);
@@ -590,20 +590,20 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
     snd_pcm_sw_params_alloca(&swparams);
 
     if ((err = snd_pcm_hw_params_any(*handle, params)) < 0) {
-      fprintf(stderr, "ac3play: Broken configuration for this PCM: no configurations available\n\r");
+      fprintf(stderr, "ac3play: Broken configuration for this PCM: no configurations available\n");
       return 2;
     }
     if ((err = snd_pcm_hw_params_set_access(*handle, params, access)) < 0) {
-      fprintf(stderr, "ac3play: Access type not available\n\r");
+      fprintf(stderr, "ac3play: Access type not available\n");
       return 2;
     }
     if ((err = snd_pcm_hw_params_set_format(*handle, params, format)) < 0) {
-      fprintf(stderr, "ac3play: Sample format non available\n\r");
+      fprintf(stderr, "ac3play: Sample format non available\n");
       return 2;
     }
 
     if ((err = snd_pcm_hw_params_set_channels(*handle, params, channels)) < 0) {
-      fprintf(stderr, "ac3play: Channels count non avaible\n\r");
+      fprintf(stderr, "ac3play: Channels count non available\n");
       return 2;
     }
 
@@ -613,34 +613,34 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
 
     // function returns less than 0 on error or greater than 0
     if ((err = snd_pcm_hw_params_set_period_size(*handle, params, PERIODSIZE, 0)) < 0) {
-      fprintf(stderr, "ac3play: Period size not available: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Period size not available: %s\n", snd_strerror(err));
       periodSize = 0;
       return 2;
     }
     // function returns less than 0 on error or greater than 0
     if ((err = snd_pcm_hw_params_set_periods(*handle, params, frames, 0)) < 0) {
-    fprintf(stderr, "ac3play: Period count not available: %s\n\r", snd_strerror(err));
+    fprintf(stderr, "ac3play: Period count not available: %s\n", snd_strerror(err));
     return 2;
     }
 
     // function returns less than 0 on error or greater than 0
     if ((err = snd_pcm_hw_params_get_period_size(params, &periodSize, 0)) < 0) {
-      fprintf(stderr, "ac3play: Buffer size not set: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Buffer size not set: %s\n", snd_strerror(err));
       return 2;
     }
     if (PERIODSIZE != periodSize) {
-      fprintf(stderr, "ac3play: Period size not set: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Period size not set: %s\n", snd_strerror(err));
       return 2;
     }
     //period_size = err;
 
     // function returns less than 0 on error or greater than 0
     if ((err = snd_pcm_hw_params_get_buffer_size(params, &bufferSize)) < 0) {
-      fprintf(stderr, "ac3play: Buffer size not set: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Buffer size not set: %s\n", snd_strerror(err));
       return 2;
     }
     if (periodSize * frames != bufferSize) {
-      fprintf(stderr, "ac3play: Buffer size not set: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Buffer size not set: %s\n", snd_strerror(err));
       return 2;
     }
     buffer_size = err;
@@ -648,33 +648,33 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
 //    snd_output_stdio_attach(&log, stderr, 0);
 
     if ((err = snd_pcm_hw_params(*handle, params)) < 0) {
-      fprintf(stderr, "ac3play: Cannot set buffer size\n\r");
+      fprintf(stderr, "ac3play: Cannot set buffer size\n");
 //      snd_pcm_hw_params_dump(params, log);
       return 2;
     }
 
     if ((err = snd_pcm_sw_params_current(*handle, swparams)) < 0) {
-      fprintf(stderr, "ac3play: Cannot get soft parameters: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Cannot get soft parameters: %s\n", snd_strerror(err));
       return 2;
     }
 
 // Set start timings
 #if 0
     if ((err = snd_pcm_sw_params_set_sleep_min(*handle, swparams, 0)) < 0)
-      fprintf(stderr, "ac3play: Minimal sleep time not available: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Minimal sleep time not available: %s\n", snd_strerror(err));
 #endif
 
     if ((err = snd_pcm_sw_params_set_avail_min(*handle, swparams, SAMPLE_BUF)) < 0)
-      fprintf(stderr, "ac3play: Minimal period size not available: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Minimal period size not available: %s\n", snd_strerror(err));
 
     if ((err =  snd_pcm_sw_params_set_xfer_align(*handle, swparams, SAMPLE_BUF/6)) < 0)
-      fprintf(stderr, "ac3play: Aligned period size not available: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Aligned period size not available: %s\n", snd_strerror(err));
 
     if ((err = snd_pcm_sw_params_set_start_threshold(*handle, swparams, 2*SAMPLE_BUF)) < 0)
-      fprintf(stderr, "ac3play: Start threshold not available: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Start threshold not available: %s\n", snd_strerror(err));
 
     if ((err = snd_pcm_sw_params(*handle, swparams)) < 0) {
-      fprintf(stderr, "ac3play: Cannot set soft parameters: %s\n\r", snd_strerror(err));
+      fprintf(stderr, "ac3play: Cannot set soft parameters: %s\n", snd_strerror(err));
 //      snd_pcm_sw_params_dump(swparams, log);
       return 2;
     }
