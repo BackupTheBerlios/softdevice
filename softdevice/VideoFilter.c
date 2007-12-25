@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.8 2007/09/16 10:07:59 lucke Exp $
+ * $Id: VideoFilter.c,v 1.9 2007/12/25 10:32:56 lucke Exp $
  */
 #include "VideoFilter.h"
 
@@ -414,9 +414,10 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                     tmp_asp = 14.0 / 9.0; //4.0 / 3.0;
             else tmp_asp = 4.0 / 3.0;
             //printf("Bordersize: %d  Calculated aspect %f\n",edge_pos, new_aspect);
-            lim = (orig->height / 2) -
+            lim = 3 + (orig->height / 2) -
                      (orig->aspect_ratio * orig->height) /
                        ((16.0 / 9.0) * 2);
+            lim &= ~3;
     }
 
     if (tmp_asp == newDetAspect && newDetAspect != currDetAspect ) {
@@ -424,9 +425,12 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
             if ( frame_count > FRAMES_BEFORE_SWITCH ) {
                     currDetAspect=tmp_asp;
                     currBlackBorder = (edge_pos > lim) ? lim : edge_pos;
+                    currBlackBorder &= ~3;
                     fprintf(stderr,
-                            "new Aspect detected %f (%f) / bb %d %d\n",
-                            tmp_asp, new_aspect, edge_pos, lim);
+                            "new Aspect detected %f (%f) / "
+                              "ep %d, lim %d, cb %d\n",
+                            tmp_asp, new_aspect,
+                            edge_pos, lim, currBlackBorder);
             }
     } else  frame_count=0;
     newDetAspect=tmp_asp;
