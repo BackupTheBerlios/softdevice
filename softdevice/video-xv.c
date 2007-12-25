@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.73 2007/07/11 20:08:35 lucke Exp $
+ * $Id: video-xv.c,v 1.74 2007/12/25 16:57:41 lucke Exp $
  */
 
 #include <unistd.h>
@@ -29,7 +29,7 @@
 #include "utils.h"
 #include "setup-softdevice.h"
 
-#define PATCH_VERSION "2006-11-05"
+#define PATCH_VERSION "2007-12-25"
 
 #define NO_DIRECT_RENDERING
 //#define COLOR_KEY 0x00000000
@@ -1344,7 +1344,7 @@ retry_image:
 }
 
 void cXvVideoOut::DeInitXv() {
-  printf("DeinitXv\n");fflush(stdout);
+  //printf("DeinitXv\n");fflush(stdout);
   pthread_mutex_lock(&xv_mutex);
 
   XvStopVideo(dpy, port, win);

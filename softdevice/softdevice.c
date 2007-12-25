@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.88 2007/10/13 11:17:48 lucke Exp $
+ * $Id: softdevice.c,v 1.89 2007/12/25 16:57:41 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -123,7 +123,7 @@ public:
     virtual cOsd *CreateOsd(int Left, int Top, uint level);
 #else
     virtual cOsd *CreateOsd(int Left, int Top);
-#endif    
+#endif
     static cOsd *GetOsd();
 };
 
@@ -931,7 +931,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   "  -vo vidix:               enable output via vidix driver\n"
 #endif
 #ifdef SHM_SUPPORT
-  "  -vo shm:                 enable output via sharde memory.\n"
+  "  -vo shm:                 enable output via shared memory.\n"
   "                           Use ShmClient for displaying\n"
 #endif
   "  -vo dummy:               enable output to dummy device\n"
@@ -1210,7 +1210,7 @@ static int ResetDecoderFct(cDevice *Device, int Stream, int value =-1) {
 };
 
 bool cPluginSoftDevice::Service(const char *Id, void *Data ) {
-        printf("Service '%s'\n",Id);
+        //printf("Service '%s'\n",Id);
         struct PacketHandlesV100 *Handles=(struct PacketHandlesV100 *) Data;
         if ( strcmp(Id,GET_PACKET_HANDEL_IDV100) == 0 ) {
                 if ( Data ) {
