@@ -1,4 +1,10 @@
 Changelog
+2007-12-25:
+   - license: included gpl notice "v2 or any later" to README.
+   - border detect: fix rounding issue.
+   - audio: \n\r -> \n substitution for ac3pt,
+            some indentation cleanup (Xrun())
+   - shm-out: ensure nonNULL vout->ctl in Stop(); by Axel Naumann
 2007-12-24:
    - mpegdecoder: compile fix for ffmpeg svn >= r11071.
                   revert AVFMT_NOFILE trick for actual ffmpeg >= 11071.
