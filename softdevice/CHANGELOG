@@ -1,4 +1,6 @@
 Changelog
+2008-01-19:
+   - OSD: fix drawing (missing method SetAreas()).
 2007-12-25:
    - license: included gpl notice "v2 or any later" to README.
    - border detect: fix rounding issue.

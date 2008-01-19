@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.31 2007/08/28 22:28:36 lucke Exp $
+ * $Id: SoftOsd.c,v 1.32 2008/01/19 18:58:47 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -59,6 +59,7 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
 
         videoOut = VideoOut;
         xPan = yPan = 0;
+        shown = false;
         voutMutex.Lock();
         videoOut->OpenOSD();
         colorkey=videoOut->GetOSDColorkey();
@@ -106,6 +107,16 @@ cSoftOsd::~cSoftOsd() {
                 voutMutex.Unlock();
         }
         delete[] OSD_Bitmap;
+}
+
+/* -------------------------------------------------------------------------*/
+eOsdError cSoftOsd::SetAreas(const tArea *Areas, int NumAreas)
+{
+        if (shown) {
+                Clear();
+                shown = false;
+        }
+        return cOsd::SetAreas(Areas, NumAreas);
 }
 
 /* -------------------------------------------------------------------------*/
@@ -296,6 +307,8 @@ void cSoftOsd::Flush(void) {
 
         if (!active && !close)
                 Start();
+
+        shown = true;
 }
 
 /* -------------------------------------------------------------------------*/

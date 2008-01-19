@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.16 2007/08/28 22:28:36 lucke Exp $
+ * $Id: SoftOsd.h,v 1.17 2008/01/19 18:58:47 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -88,6 +88,7 @@ protected:
 
     bool active;
     bool close;
+    bool shown;
     int ScreenOsdWidth;
     int ScreenOsdHeight;
 public:
@@ -98,6 +99,7 @@ public:
 #endif
     virtual ~cSoftOsd();
     virtual void Flush(void);
+    virtual eOsdError SetAreas(const tArea *Areas, int NumAreas);
 
     // Create a copy of the osd layer for the Grab() method.
     // Does *not* change anything in the osd!!
