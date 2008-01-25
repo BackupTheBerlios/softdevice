@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.32 2008/01/19 18:58:47 lucke Exp $
+ * $Id: SoftOsd.c,v 1.33 2008/01/25 23:55:44 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -51,7 +51,7 @@ cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y, uint level)
 #else
 cSoftOsd::cSoftOsd(cVideoOut *VideoOut, int X, int Y)
         : cOsd(X, Y),active(false),close(false) {
-#endif	
+#endif
         OSDDEB("cSoftOsd constructor\n");
         OutputConvert=&cSoftOsd::ARGB_to_ARGB32;
         bitmap_Format=PF_None; // forces a clear after first SetMode
@@ -114,6 +114,7 @@ eOsdError cSoftOsd::SetAreas(const tArea *Areas, int NumAreas)
 {
         if (shown) {
                 Clear();
+                videoOut->ClearOSD();
                 shown = false;
         }
         return cOsd::SetAreas(Areas, NumAreas);

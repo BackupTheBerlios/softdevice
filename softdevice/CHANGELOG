@@ -1,4 +1,6 @@
 Changelog
+2008-01-26:
+   - OSD: missing call to ClearOSD() of output device.
 2008-01-19:
    - OSD: fix drawing (missing method SetAreas()).
 2007-12-25:
