@@ -1,4 +1,6 @@
 Changelog
+2008-02-20:
+   - VideoFilter.c: fix some warnings and compile error with ffmpeg >= r11816
 2008-01-26:
    - OSD: missing call to ClearOSD() of output device.
 2008-01-19:

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.9 2007/12/25 10:32:56 lucke Exp $
+ * $Id: VideoFilter.c,v 1.10 2008/02/20 08:05:42 lucke Exp $
  */
 #include "VideoFilter.h"
 
@@ -329,8 +329,8 @@ cBorderDetect::~cBorderDetect() {
 
 void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
     int black_border=0;
-    int     lim;
-    float   new_aspect;
+    int     lim = 0;
+    float   new_aspect = 1.0;
 
     dest = orig; // "copy" do not modify
 
@@ -414,9 +414,9 @@ void cBorderDetect::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
                     tmp_asp = 14.0 / 9.0; //4.0 / 3.0;
             else tmp_asp = 4.0 / 3.0;
             //printf("Bordersize: %d  Calculated aspect %f\n",edge_pos, new_aspect);
-            lim = 3 + (orig->height / 2) -
-                     (orig->aspect_ratio * orig->height) /
-                       ((16.0 / 9.0) * 2);
+            lim = (int) (3 + (orig->height / 2) -
+                           (orig->aspect_ratio * orig->height) /
+                         ((16.0 / 9.0) * 2));
             lim &= ~3;
     }
 
@@ -572,7 +572,7 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         memcpy(avpic_dest.data,dest->pixel,sizeof(avpic_dest.data));
         memcpy(avpic_dest.linesize,dest->stride,sizeof(avpic_dest.linesize));
 
-        pp_postprocess(avpic_src.data,
+        pp_postprocess((const uint8_t **) avpic_src.data,
                         avpic_src.linesize,
                         avpic_dest.data,
                         avpic_dest.linesize,
