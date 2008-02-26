@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.20 2008/02/26 10:48:45 lucke Exp $
+ * $Id: video-fb.c,v 1.21 2008/02/26 10:53:22 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -72,6 +72,9 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
     };
     privBuf.max_width=dwidth=fb_vinfo.xres;
     privBuf.max_height=dheight=fb_vinfo.yres;
+
+    SetParValues ((double) fb_vinfo.xres / (double) fb_vinfo.yres,
+                  (double) fb_vinfo.xres / (double) fb_vinfo.yres);
 
     switch (fb_finfo.visual) {
        case FB_VISUAL_TRUECOLOR:

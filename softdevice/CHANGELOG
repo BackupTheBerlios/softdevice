@@ -1,6 +1,7 @@
 Changelog
 2008-02-26:
    - fix for ffmpeg >= r12194.
+   - video-fb: via OSD selected screen aspect was not honored.
 2008-02-20:
    - VideoFilter.c: fix some warnings and compile error with ffmpeg >= r11816
 2008-01-26:
