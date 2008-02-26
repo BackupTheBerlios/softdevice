@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-fb.c,v 1.19 2007/05/10 19:54:44 wachm Exp $
+ * $Id: video-fb.c,v 1.20 2008/02/26 10:48:45 lucke Exp $
  *
  * This is a software output driver.
  * It scales the image more or less perfect in sw and put it into the framebuffer
@@ -56,7 +56,7 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
     privBuf.pixel[0]=fb;
     privBuf.stride[0]=line_len;
     if (fb_vinfo.red.length==5 && fb_vinfo.green.length==5
-         && fb_vinfo.blue.length==5 ) 
+         && fb_vinfo.blue.length==5 )
             Bpp=15;
     else Bpp=fb_vinfo.bits_per_pixel;
     switch (Bpp) {
@@ -64,7 +64,7 @@ cFBVideoOut::cFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
                       break;
             case 24 : privBuf.format=PIX_FMT_RGB24;
                       break;
-            case 16 : 
+            case 16 :
                       privBuf.format=PIX_FMT_RGB565;
                       break;
             default:
@@ -179,10 +179,10 @@ void cFBVideoOut::YUV(sPicBuffer *buf)
         OsdPAlphaY,OsdPAlphaUV,OSD_FULL_WIDTH,
         cutTop,cutBottom,cutLeft,cutRight);
   } else {
-    CopyScalePicBuf(&privBuf, buf,                   
+    CopyScalePicBuf(&privBuf, buf,
         sxoff, syoff,
         swidth, sheight,
-        lxoff,  lyoff,    
+        lxoff,  lyoff,
         lwidth, lheight,
         cutTop,cutBottom,cutLeft,cutRight);
   };
