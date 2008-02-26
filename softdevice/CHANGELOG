@@ -1,4 +1,6 @@
 Changelog
+2008-02-26:
+   - fix for ffmpeg >= r12194.
 2008-02-20:
    - VideoFilter.c: fix some warnings and compile error with ffmpeg >= r11816
 2008-01-26:

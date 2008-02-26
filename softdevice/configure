@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.46 2008/02/26 06:57:57 lucke Exp $
+# $Id: configure,v 1.47 2008/02/26 08:06:18 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -24,6 +24,7 @@ system="Linux"
 cpu_arch="i386"
 use_pkgconfig="yes"
 ffmpeg="yes"
+ffmpeg_local="no"
 libswscale="no"
 ffmpeg_use_path="no"
 dfb="yes"
@@ -168,6 +169,7 @@ fi
 echo -n "Checking for ffmpeg... "
 echo  "Checking for ffmpeg.------------------------------------" >> config.log
 
+#########################################################
 test_ffmpeg()
 {
   ffmpeg="yes";
@@ -177,6 +179,27 @@ extern "C" {
 #include <stdlib.h>
 #include <avcodec.h>
 #include <avformat.h>
+}
+int main(void) {
+  avcodec_init();
+  avcodec_register_all();
+
+ return 0;
+}
+EOF
+  $cc $CFLAGS $ffmpeg_cflags -o $TMPE $TMPC $ffmpeg_libs  >> config.log 2>&1 || ffmpeg="no"
+};
+
+#########################################################
+test_ffmpeg_local()
+{
+  ffmpeg="yes";
+cat > ${TMPC} << EOF
+#define __STDC_CONSTANT_MACROS
+extern "C" {
+#include <stdlib.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 }
 int main(void) {
   avcodec_init();
@@ -203,6 +226,14 @@ ffmpeg_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags $ffmpeg_l1 2
 # test if it works..
 test_ffmpeg
 
+  fi
+fi
+
+if test "${ffmpeg}" = "no" ; then
+  # try the latest ffmpeg change
+  test_ffmpeg_local
+  if test "${ffmpeg}" = "yes" ; then
+    ffmpeg_local="yes"
   fi
 fi
 
@@ -265,11 +296,41 @@ EOF
   $cc $CFLAGS $ffmpeg_cflags $swscale_cflags -o $TMPE $TMPC $swscale_libs $ffmpeg_libs >> config.log 2>&1 || swscale="no"
 };
 
+test_swscale_local()
+{
+  swscale="yes";
+cat > ${TMPC} << EOF
+#define __STDC_CONSTANT_MACROS
+#include <stdlib.h>
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+}
+int main(void) {
+  avcodec_init();
+  avcodec_register_all();
+  struct SwsContext *img_convert_ctx = sws_getContext(120, 120,
+                                PIX_FMT_YUV420P,
+                                100, 100,
+                                PIX_FMT_YUV420P,
+                                SWS_BICUBIC, NULL, NULL, NULL);
+
+ return 0;
+}
+EOF
+  $cc $CFLAGS $ffmpeg_cflags $swscale_cflags -o $TMPE $TMPC $swscale_libs $ffmpeg_libs >> config.log 2>&1 || swscale="no"
+};
+
 swscale_libs=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --libs libswscale 2>> config.log` || libswscale="no"
 swscale_cflags=`PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags libswscale 2>> config.log`
 
 #test if it works
-test_swscale
+if test "${ffmpeg_local}" = "no" ; then
+  test_swscale
+else
+  test_swscale_local
+fi
 
 if test "${swscale}" = "no" ; then
   echo "pkg-config failed, try the default/parameter path." >> config.log
@@ -659,6 +720,12 @@ fi
 
 if test "${system}" = "Linux"; then
   echo "#define LINUX_RTC                       1" >> $TMPH
+fi
+
+if test "${ffmpeg_local}" = "yes"; then
+  echo "#define HAVE_FFMPEG_LOCAL               1" >> $TMPH
+else
+  echo "#define HAVE_FFMPEG_LOCAL               0" >> $TMPH
 fi
 
 ###############################################################################

@@ -6,13 +6,21 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.8 2008/02/26 07:37:42 lucke Exp $
+ * $Id: PicBuffer.h,v 1.9 2008/02/26 08:06:18 lucke Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
 
+#ifdef HAVE_CONFIG
+# include "config.h"
+#endif
+
 extern "C" {
-#include <avcodec.h>
+#if HAVE_FFMPEG_LOCAL
+# include <libavcodec/avcodec.h>
+#else
+# include <avcodec.h>
+#endif
 }
 
 #ifndef STAND_ALONE

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.h,v 1.5 2007/07/11 17:56:57 lucke Exp $
+ * $Id: VideoFilter.h,v 1.6 2008/02/26 08:06:18 lucke Exp $
  */
 #ifndef __VIDEOFILTER_H__
 #define __VIDEOFILTER_H__
@@ -14,8 +14,13 @@
 
 #ifdef PP_LIBAVCODEC
 #include <stdint.h> //needed by postproc.h
+
 extern "C" {
-  #include <postprocess.h>
+#if HAVE_FFMPEG_LOCAL
+# include <libpostproc/postprocess.h>
+#else
+# include <postprocess.h>
+#endif
   //#include <postproc/postprocess.h>
 }
 #endif //PP_LIBAVCODEC
@@ -63,7 +68,11 @@ public:
 
 #ifdef USE_SWSCALE
 extern "C" {
-#include <swscale.h>
+#if HAVE_FFMPEG_LOCAL
+# include <libswscale/swscale.h>
+#else
+# include <swscale.h>
+#endif
 }
 #endif
 class cImageConvert : public cVideoFilter {

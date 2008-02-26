@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.43 2007/12/24 11:43:31 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.44 2008/02/26 08:06:18 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -14,8 +14,13 @@
 
 #include <sys/time.h>
 extern "C" {
-#include <avcodec.h>
-#include <avformat.h>
+#if HAVE_FFMPEG_LOCAL
+# include <libavcodec/avcodec.h>
+# include <libavformat/avformat.h>
+#else
+# include <avcodec.h>
+# include <avformat.h>
+#endif
 }
 
 #include <vdr/plugin.h>
