@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.7 2007/03/12 20:05:44 wachm Exp $
+ * $Id: PicBuffer.h,v 1.8 2008/02/26 07:37:42 lucke Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
@@ -33,7 +33,7 @@ typedef struct sPicBuffer {
     int max_width; // maximal size of the picture edge + picture
     int max_height;
     cPicBufferManager *owner;
-    
+
     // picture context
     int edge_width; // size of edges (needed by some ffmpeg codecs)
     int edge_height;
@@ -44,7 +44,7 @@ typedef struct sPicBuffer {
     uint64_t pts;
     bool interlaced_frame;
     int pict_type;
- 
+
     int pic_num; // to calculate the age
     int age; // needed by ffmpeg
     void *priv_data;
@@ -75,29 +75,29 @@ public:
         inline sPicBuffer *PicBuf(unsigned int buf_num)
         { return ( buf_num<LAST_PICBUF ? &PicBuffer[buf_num] : NULL); };
         // returns the address of the buffer buf_num
-        
+
         int GetBufNum(sPicBuffer *PicBuf);
         // returns the buffer number of the picture buffer PicBuf
         // returns -1 if the buffer has not been found
- 
+
         sPicBuffer *GetBuffer(PixelFormat pix_fmt,int width, int height);
         // get a picture buffer ( to be called from decoders of filters )
         void ReleaseBuffer(sPicBuffer *pic);
         // release it again ( after use )
 
         void LockBuffer(sPicBuffer *picture);
-        // I want to keep this buffer ( not requested by me via GetBuffer() ) 
+        // I want to keep this buffer ( not requested by me via GetBuffer() )
         // longer
         void UnlockBuffer(sPicBuffer *picture);
         // don't need it anymore
-        
+
 
         virtual bool AllocPicBuffer(int buf_num,PixelFormat pix_fmt,
                         int w, int h);
-        // actually allocates memory for the buffer. Can be overloaded for 
-        // direct rendering. 
+        // actually allocates memory for the buffer. Can be overloaded for
+        // direct rendering.
         // Has to set up max_width/max_height and format!
-        
+
         virtual void ReleasePicBuffer(int buf_num);
         // releases the memory of the buffer again
 };
@@ -122,10 +122,10 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dest, sPicBuffer *src,
                 uint8_t *OsdPAlphaY, uint8_t *OsdPAlphaUV,int OsdStride,
                 int cutTop, int cutBottom, int cutLeft, int cutRight);
 
-void CopyPicBufAlphaBlend(sPicBuffer *dst, 
+void CopyPicBufAlphaBlend(sPicBuffer *dst,
                 sPicBuffer *src,
                 uint8_t *OsdPy,uint8_t *OsdPu, uint8_t *OsdPv,
                 uint8_t *OsdPAlphaY, uint8_t *OsdPAlphaUV,int OsdStride,
-                int cutTop, int cutBottom,int cutLeft, int cutRight); 
- 
+                int cutTop, int cutBottom,int cutLeft, int cutRight);
+
 #endif
