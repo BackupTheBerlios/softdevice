@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.45 2007/09/23 08:33:40 lucke Exp $
+# $Id: configure,v 1.46 2008/02/26 06:57:57 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -179,12 +179,6 @@ extern "C" {
 #include <avformat.h>
 }
 int main(void) {
-/*  if ( avcodec_build() != LIBAVCODEC_BUILD ) {
-     fprintf(stderr,"Fatal Error! Libavcodec library build(%d) doesn't match avcodec.h build(%d)!!!\n",avcodec_build(),LIBAVCODEC_BUILD);
-     fprintf(stderr,"Check your ffmpeg installation / the pathes in the Makefile!!!\n");
-     exit(-1);
-  };
-*/
   avcodec_init();
   avcodec_register_all();
 
@@ -257,12 +251,6 @@ extern "C" {
 #include <swscale.h>
 }
 int main(void) {
-/*  if ( avcodec_build() != LIBAVCODEC_BUILD ) {
-     fprintf(stderr,"Fatal Error! Libavcodec library build(%d) doesn't match avcodec.h build(%d)!!!\n",avcodec_build(),LIBAVCODEC_BUILD);
-     fprintf(stderr,"Check your ffmpeg installation / the pathes in the Makefile!!!\n");
-     exit(-1);
-  };
-*/
   avcodec_init();
   avcodec_register_all();
   struct SwsContext *img_convert_ctx = sws_getContext(120, 120,
@@ -641,36 +629,36 @@ echo "WITH_CONFIGURE = 1" >> $TMPM
 #
 if test "${with_subplugins}" = "yes" ; then
   echo "USE_SUBPLUGINS = 1" >> $TMPM
-  echo "#define USE_SUBPLUGINS 1" >> $TMPH
+  echo "#define USE_SUBPLUGINS                  1" >> $TMPH
 fi
 
 if test "${with_mmx}" = "yes" ; then
-  echo "#define USE_MMX 1" >> $TMPH
+  echo "#define USE_MMX                         1" >> $TMPH
 
   if test "${with_mmx2}" = "yes" ; then
-    echo "#define USE_MMX2 1" >> $TMPH
+    echo "#define USE_MMX2                        1" >> $TMPH
   fi
 fi
 
 if test "${with_altivec}" = "yes" ; then
-  echo "#define USE_ALTIVEC 1" >> $TMPH
+  echo "#define USE_ALTIVEC                     1" >> $TMPH
   echo "ADD_CXXFLAGS += -faltivec" >> $TMPM
 fi
 
 if test "${suspendkey}" = "yes" ; then
-  echo "#define SUSPEND_BY_KEY 1" >> $TMPH
+  echo "#define SUSPEND_BY_KEY                  1" >> $TMPH
 fi
 
 if test "${cpu_bigendian}" = "yes" ; then
-  echo "#define CPU_BIGENDIAN 1" >> $TMPH
+  echo "#define CPU_BIGENDIAN                   1" >> $TMPH
 fi
 
 if test "${yaepg}" = "yes" ; then
-  echo "#define HAVE_YAEPGPATCH 1" >> $TMPH
+  echo "#define HAVE_YAEPGPATCH                 1" >> $TMPH
 fi
 
 if test "${system}" = "Linux"; then
-  echo "#define LINUX_RTC 1" >> $TMPH
+  echo "#define LINUX_RTC                       1" >> $TMPH
 fi
 
 ###############################################################################
@@ -679,9 +667,9 @@ fi
 if test "${system}" = "Darwin"; then
   echo "SHARED_FLAG = -dynamiclib -Wl,-single_module,-undefined,dynamic_lookup " >> $TMPM
   echo "QUARTZ_SUPPORT = 1" >> $TMPM
-  echo "#define QUARTZ_SUPPORT 1 ">> $TMPH
+  echo "#define QUARTZ_SUPPORT                  1" >> $TMPH
   echo "MACOSAO_SUPPORT = 1" >> $TMPM
-  echo "#define MACOSAO_SUPPORT 1 ">> $TMPH
+  echo "#define MACOSAO_SUPPORT                 1" >> $TMPH
   echo "MACVDRCLIENT_SUPPORT = 1" >> $TMPM
 fi
 
@@ -690,7 +678,7 @@ fi
 #
 if test "${alsa}" = "yes" ; then
   echo "ALSA_SUPPORT = 1" >> $TMPM
-  echo "#define ALSA_SUPPORT 1" >> $TMPH
+  echo "#define ALSA_SUPPORT                    1" >> $TMPH
 fi
 
 ###############################################################################
@@ -698,7 +686,7 @@ fi
 #
 if test "${oss}" = "yes" ; then
   echo "OSS_SUPPORT = 1" >> $TMPM
-  echo "#define OSS_SUPPORT 1" >> $TMPH
+  echo "#define OSS_SUPPORT                     1" >> $TMPH
 fi
 
 ###############################################################################
@@ -706,7 +694,7 @@ fi
 #
 if test "${dfb}" = "yes" ; then
   echo "DFB_SUPPORT=1" >> $TMPM
-  echo "#define DFB_SUPPORT                       1" >> $TMPH
+  echo "#define DFB_SUPPORT                     1" >> $TMPH
   echo "DFB_LIBS = ${dfb_libs}" >> $TMPM
   echo "DFB_CFLAGS = ${dfb_cflags}" >> $TMPM
 
