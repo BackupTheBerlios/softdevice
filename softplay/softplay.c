@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softplay.c,v 1.11 2006/04/02 20:19:12 wachm Exp $
+ * $Id: softplay.c,v 1.12 2008/03/01 10:09:42 lucke Exp $
  */
 
 
@@ -463,14 +463,16 @@ void cSoftPlay::SetTmpCurrList(cPlayList *List) {
 };
 
 void cSoftPlay::SaveList(cPlayList *List, const char* Name) {
-	char filename[60];
-	if (Name)
-                sprintf(filename,"%s/%s.playlist",configDir,Name);
-	else
-                sprintf(filename,"%s/%s.playlist",configDir,List->GetName());
+	char *filename;
+	if (asprintf(&filename,
+		     "%s/%s.playlist",
+		     configDir,
+		     (Name) ? Name: List->GetName()) < 0)
+		return;
 
 	printf("Save list as %s\n",filename);
 	FILE *out=fopen(filename,"w");
+	free (filename);
 	if (!out)
 		return;
 	List->Save(out);
