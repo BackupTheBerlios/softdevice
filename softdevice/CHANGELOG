@@ -1,4 +1,6 @@
 Changelog
+2008-04-10:
+   - SoftOsd: Adjust constructor definition to implementation.
 2008-02-26:
    - fix for ffmpeg >= r12194.
    - video-fb: via OSD selected screen aspect was not honored.
