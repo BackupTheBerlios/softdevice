@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.78 2007/12/24 11:43:31 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.79 2008/04/12 12:27:58 lucke Exp $
  */
 
 #include <math.h>
@@ -380,6 +380,9 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       case 0:
         // get the AC3 -> 2CH stereo data
         context->channels = 2;
+#if LIBAVCODEC_VERSION_INT >= ((51<<16)+(41<<8)+0)
+        context->request_channels = 2;
+#endif
         break;
       case 1:
       {
@@ -417,10 +420,16 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       case 2:
         // get the AC3 -> 4CH stereo data
         context->channels = 4;
+#if LIBAVCODEC_VERSION_INT >= ((51<<16)+(41<<8)+0)
+        context->request_channels = 4;
+#endif
         break;
       case 3:
         // set channels to auto mode to get decoded stream for analog out
         context->channels = 0;
+#if LIBAVCODEC_VERSION_INT >= ((51<<16)+(41<<8)+0)
+        context->request_channels = 0;
+#endif
         break;
     }
   }

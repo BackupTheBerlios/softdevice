@@ -1,4 +1,6 @@
 Changelog
+2008-04-13:
+   - audio: fix ac3 downmix request for ffmpeg >= r10199.
 2008-04-10:
    - SoftOsd: Adjust constructor definition to implementation.
 2008-02-26:
