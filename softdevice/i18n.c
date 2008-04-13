@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.21 2007/09/16 09:49:55 lucke Exp $
+ * $Id: i18n.c,v 1.22 2008/04/13 02:24:28 lucke Exp $
  */
 
 #include "i18n.h"
@@ -26,7 +26,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "Softdevice",   // 17 
+    "Softdevice",   // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -49,7 +49,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "Программно-эмулируемое MPEG-2 устройство",   // 17 
+    "Программно-эмулируемое MPEG-2 устройство",   // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -72,7 +72,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "Аспект при запуске  Xv",  // 17 
+    "Аспект при запуске  Xv",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -95,7 +95,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "Режим обрезки изображения", // 17 
+    "Режим обрезки изображения", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -279,7 +279,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "вкл.",         // 17 
+    "вкл.",         // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -302,7 +302,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "выкл.",        // 17 
+    "выкл.",        // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -348,7 +348,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "Буферный режим",  // 17 
+    "Буферный режим",  // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
@@ -417,7 +417,7 @@ const tI18nPhrase Phrases[] = {
     "",             // 15 TODO
     "",             // 16 TODO
 #if VDRVERSNUM >= 10316
-    "Oбрезать линий снизу", // 17 
+    "Oбрезать линий снизу", // 17
     "",             // 18 TODO
     "",             // 19 TODO
     "",             // 20 TODO
