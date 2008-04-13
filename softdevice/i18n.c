@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.22 2008/04/13 02:24:28 lucke Exp $
+ * $Id: i18n.c,v 1.23 2008/04/13 02:31:57 lucke Exp $
  */
 
 #include "i18n.h"
@@ -12,7 +12,7 @@ const tI18nPhrase Phrases[] = {
   { "Softdevice",   //  1
     "Softdevice",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Softdevice",   //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Softdevice",   //  7
@@ -35,7 +35,7 @@ const tI18nPhrase Phrases[] = {
   { "A software emulated MPEG2 device",   //  1
     "Software-Ausgabegerät",              //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Software emulazione scheda MPEG2", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Affichage vidéo sur carte graphique", //  7
@@ -58,7 +58,7 @@ const tI18nPhrase Phrases[] = {
   { "Xv startup aspect",   //  1
     "Xv Startgröße",       //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Aspetto avvio Xv",    //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Aspect Xv au démarrage", //  7
@@ -81,7 +81,7 @@ const tI18nPhrase Phrases[] = {
   { "CropMode",         //  1
     "Bildausschnitt",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Modalitï¿½ compatta",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Découpage de l'image au ratio", //  7
@@ -104,7 +104,7 @@ const tI18nPhrase Phrases[] = {
   { "Deinterlace Method",   //  1
     "Deinterlace-Methode",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Metodo deinterlacciamento",  //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Désentrelacement", //  7
@@ -127,7 +127,7 @@ const tI18nPhrase Phrases[] = {
   { "Pixel Format",   //  1
     "Pixelformat",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Formato pixel",  //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Format de pixel", //  7
@@ -150,7 +150,7 @@ const tI18nPhrase Phrases[] = {
   { "Picture mirroring",    //  1
     "Spiegelbild",          //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Immagine specchiata",  //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Mirroir horizontal", //  7
@@ -173,7 +173,7 @@ const tI18nPhrase Phrases[] = {
   { "A/V Delay",        //  1
     "A/V Verzögerung",  //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Ritardo A/V",      //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Délai A/V",    //  7
@@ -196,7 +196,7 @@ const tI18nPhrase Phrases[] = {
   { "Screen Aspect",      //  1
     "Bildschirmformat",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Aspetto schermo",    //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Proportion de l'écran", //  7
@@ -219,7 +219,7 @@ const tI18nPhrase Phrases[] = {
   { "Playback",     //  1
     "Wiedergabe",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Riproduzione", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Affichage",    //  7
@@ -242,7 +242,7 @@ const tI18nPhrase Phrases[] = {
   { "OSD alpha blending",   //  1
     "OSD Einblendung",      //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Trasparenza alpha OSD", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Fusion du menu avec la vidéo", //  7
@@ -265,7 +265,7 @@ const tI18nPhrase Phrases[] = {
   { "on",           //  1
     "ein",          //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "attivo",       //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "oui",          //  7
@@ -288,7 +288,7 @@ const tI18nPhrase Phrases[] = {
   { "off",          //  1
     "aus",          //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "disattivo",    //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "non",          //  7
@@ -311,7 +311,7 @@ const tI18nPhrase Phrases[] = {
   { "AC3 Mode",     //  1
     "AC3 Modus",    //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Modalitï¿½ AC3", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Sortie AC3",   //  7
@@ -334,7 +334,7 @@ const tI18nPhrase Phrases[] = {
   { "Buffer Mode",  //  1
     "Puffermodus",  //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Modalitï¿½ buffer", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Mémoire tampon", //  7
@@ -357,7 +357,7 @@ const tI18nPhrase Phrases[] = {
   { "CropModeToggleKey",                  //  1
     "Bildausschnitts-Taste",               //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Tasto cambiamento aspetto",          //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Bouton de changement d'aspect", //  7
@@ -380,7 +380,7 @@ const tI18nPhrase Phrases[] = {
   { "Crop lines from top",                //  1
     "Zeilen von oben abschneiden",        //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Righe da togliere dall'alto",        //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Lignes à enlever en haut", //  7
@@ -403,7 +403,7 @@ const tI18nPhrase Phrases[] = {
   { "Crop lines from bottom",             //  1
     "Zeilen von unten abschneiden",       //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Righe da togliere dal basso",        //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Lignes à enlever en bas", //  7
@@ -426,7 +426,7 @@ const tI18nPhrase Phrases[] = {
   { "Crop columns from left",             //  1
     "Spalten von links abschneiden",      //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Colonne da togliere da sinistra",    //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Colonnes à enlever à gauche", //  7
@@ -449,7 +449,7 @@ const tI18nPhrase Phrases[] = {
   { "Crop columns from right",            //  1
     "Spalten von rechts abschneiden",     //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Colonne da togliere da destra",      //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Colonnes à enlever à droite", //  7
@@ -472,7 +472,7 @@ const tI18nPhrase Phrases[] = {
   { "Postprocessing Method",              //  1
     "Nachbearbeitungs-Methode",        //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Metodo post elaborazione",             //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Post-traitement", //  7
@@ -495,7 +495,7 @@ const tI18nPhrase Phrases[] = {
   { "Postprocessing Quality",             //  1
     "Nachbearbeitungs-Qualität",          //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Qualitï¿½ post elaborazione",        //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Qualité du post-traitement", //  7
@@ -518,7 +518,7 @@ const tI18nPhrase Phrases[] = {
   { "Use StretchBlit",                    //  1
     "StretchBlit verwenden",              //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Utilizza StretchBlit",               //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Utiliser StretchBlit", //  7
@@ -541,7 +541,7 @@ const tI18nPhrase Phrases[] = {
   { "none",         //  1
     "keine",        //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "nessuno",      //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "aucun",        //  7
@@ -564,7 +564,7 @@ const tI18nPhrase Phrases[] = {
   { "fast",         //  1
     "schnell",      //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "veloce",       //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "rapide",       //  7
@@ -587,7 +587,7 @@ const tI18nPhrase Phrases[] = {
   { "default",      //  1
     "standard",     //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "predefinito",  //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "défaut",       //  7
@@ -610,7 +610,7 @@ const tI18nPhrase Phrases[] = {
   { "playing",      //  1
     "aktiviert",    //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "esecuzione",   //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "activé",       //  7
@@ -633,7 +633,7 @@ const tI18nPhrase Phrases[] = {
   { "suspended",    //  1
     "deaktiviert",                        //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "sospeso",      //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "suspendu",     //  7
@@ -656,7 +656,7 @@ const tI18nPhrase Phrases[] = {
   { "pseudo",       //  1
     "pseudo",       //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "pseudo",       //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "pseudo",       //  7
@@ -679,7 +679,7 @@ const tI18nPhrase Phrases[] = {
   { "software",     //  1
     "software",     //  2 TODO
     "",             //  3 TODO
-    "",             //  4 TODO
+    "software",     //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "logiciel",     //  7
@@ -702,7 +702,7 @@ const tI18nPhrase Phrases[] = {
   { "safe",         //  1
     "sicher",       //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "sicuro",       //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "limitée",      //  7
@@ -725,7 +725,7 @@ const tI18nPhrase Phrases[] = {
   { "good seeking",         //  1
     "suchlauf optimiert",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "precisione",           //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "précision",    //  7
@@ -748,7 +748,7 @@ const tI18nPhrase Phrases[] = {
   { "HDTV",         //  1
     "HDTV",         //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "HDTV",         //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "HDTV",         //  7
@@ -771,7 +771,7 @@ const tI18nPhrase Phrases[] = {
   { "16:9 wide",                          //  1
     "16:9 Breitbild",                     //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "16:9 wide",    //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "16:9 large",   //  7
@@ -794,7 +794,7 @@ const tI18nPhrase Phrases[] = {
   { "4:3 normal",                         //  1
     "4:3 Normalbild",                     //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "4:3 normale",  //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "4:3 normal",   //  7
@@ -817,7 +817,7 @@ const tI18nPhrase Phrases[] = {
   { "Hide main menu entry", //  1
     "Hauptmenüeintrag verstecken", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Nascondi voce nel menu principale", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -840,7 +840,7 @@ const tI18nPhrase Phrases[] = {
   { "Cropping",      //  1
     "Bildausschnitt",//  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Compattazione",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -863,7 +863,7 @@ const tI18nPhrase Phrases[] = {
   { "Post processing",//  1
     "Bildnachbearbeitung",  //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Post elaborazione",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -886,7 +886,7 @@ const tI18nPhrase Phrases[] = {
   { "Sync Mode",    //  1
     "Sync Modus",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Modalitï¿½ Sync",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -909,7 +909,7 @@ const tI18nPhrase Phrases[] = {
   { "Video out",    //  1
     "Videoausgabe", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Uscita video", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -932,7 +932,7 @@ const tI18nPhrase Phrases[] = {
   { "Brightness",   //  1
     "Helligkeit",   //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Luminositï¿½", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -955,7 +955,7 @@ const tI18nPhrase Phrases[] = {
   { "Contrast",     //  1
     "Kontrast",     //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Contrasto",    //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -978,7 +978,7 @@ const tI18nPhrase Phrases[] = {
   { "Hue",          //  1
     "Farbart",      //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Tonalitï¿½",     //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1001,7 +1001,7 @@ const tI18nPhrase Phrases[] = {
   { "Saturation",   //  1
     "Farbkontrast", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Saturazione",  //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1024,7 +1024,7 @@ const tI18nPhrase Phrases[] = {
   { "Zoom factor",   //  1
     "Zoomfaktor",    //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Fattore ingrandimento",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1047,7 +1047,7 @@ const tI18nPhrase Phrases[] = {
   { "Zoom area shift (left/right)",   //  1
     "Zoomausschnitt (links/rechts)",  //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Cambia area zoom (sinistra/destra)",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1070,7 +1070,7 @@ const tI18nPhrase Phrases[] = {
   { "Zoom area shift (up/down)",   //  1
     "Zoomausschnitt (oben/unten)", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Cambia area zoom (su/giï¿½)",   //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1093,7 +1093,7 @@ const tI18nPhrase Phrases[] = {
   { "Expand top/bottom lines",   //  1
     "Zeilen vergrößern (ob./un.)", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Righe espansione alto/basso",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1116,7 +1116,7 @@ const tI18nPhrase Phrases[] = {
   { "Expand left/right columns",   //  1
     "Spalten vergrößen (li./re.)", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Colonne espansione sinistra/destra",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1139,7 +1139,7 @@ const tI18nPhrase Phrases[] = {
   { "Logging",         //  1
     "Protokollierung", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Log",             //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1162,7 +1162,7 @@ const tI18nPhrase Phrases[] = {
   { "Info Messages",         //  1
     "Info Nachrichten",      //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Messaggi informazione", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1185,7 +1185,7 @@ const tI18nPhrase Phrases[] = {
   { "Debug Messages",         //  1
     "Debug Nachrichten",      //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Messaggi debug",         //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1208,7 +1208,7 @@ const tI18nPhrase Phrases[] = {
   { "Trace Messages",        //  1
     "Test Nachrichten",      //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Messaggi prova",        //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1231,7 +1231,7 @@ const tI18nPhrase Phrases[] = {
   { "Logfile",         //  1
     "Protokolldatei",  //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "File di log",     //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1254,7 +1254,7 @@ const tI18nPhrase Phrases[] = {
   { "Append PID",   //  1
     "PID ergänzen", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Accoda PID",   //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -1277,7 +1277,7 @@ const tI18nPhrase Phrases[] = {
   { "Autodetect Movie Aspect",   //  1
     "Formaterkennung (16:9/4:3)", //  2
     "",             //  3 TODO
-    "",             //  4 TODO
+    "Rileva aspetto film (16:9/4:3)",             //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
