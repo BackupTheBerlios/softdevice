@@ -1,0 +1,266 @@
+# VDR plugin language source file.
+# Copyright (C) 2007 Klaus Schmidinger <kls@cadsoft.de>
+# This file is distributed under the same license as the VDR package.
+# Klaus Schmidinger <kls@cadsoft.de>, 2000
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: VDR 1.5.7\n"
+"Report-Msgid-Bugs-To: softdevice-devel at lists.berlios.de\n"
+"POT-Creation-Date: 2008-04-15 10:02+0200\n"
+"PO-Revision-Date: 2008-04-15 10:02+0200\n"
+"Last-Translator: Klaus Schmidinger <kls@cadsoft.de>\n"
+"Language-Team: <vdr@linuxtv.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-15\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: setup-softdevice-menu.c:22
+msgid "Brightness"
+msgstr "Helligkeit"
+
+#: setup-softdevice-menu.c:29
+msgid "Contrast"
+msgstr "Kontrast"
+
+#: setup-softdevice-menu.c:36
+msgid "Hue"
+msgstr "Farbart"
+
+#: setup-softdevice-menu.c:43
+msgid "Saturation"
+msgstr "Farbkontrast"
+
+#: setup-softdevice-menu.c:50
+msgid "HW-Deinterlace"
+msgstr ""
+
+#: setup-softdevice-menu.c:92 setup-softdevice-menu.c:98
+#: setup-softdevice-menu.c:207 setup-softdevice-menu.c:232
+#: setup-softdevice.c:140 setup-softdevice.c:142 setup-softdevice.c:157
+#: setup-softdevice.c:163 setup-softdevice.c:407
+msgid "none"
+msgstr "keine"
+
+#: setup-softdevice-menu.c:93
+msgid "CropMode"
+msgstr "Bildausschnitt"
+
+#: setup-softdevice-menu.c:99
+msgid "CropModeToggleKey"
+msgstr "Bildausschnitts-Taste"
+
+#: setup-softdevice-menu.c:104
+msgid "Autodetect Movie Aspect"
+msgstr "Formaterkennung (16:9/4:3)"
+
+#: setup-softdevice-menu.c:105 setup-softdevice-menu.c:397
+msgid "no"
+msgstr "nein"
+
+#: setup-softdevice-menu.c:105 setup-softdevice-menu.c:397
+msgid "yes"
+msgstr "ja"
+
+#: setup-softdevice-menu.c:112
+msgid "Zoom factor"
+msgstr "Zoomfaktor"
+
+#: setup-softdevice-menu.c:116
+msgid "Zoom area shift (left/right)"
+msgstr "Zoomausschnitt (links/rechts)"
+
+#: setup-softdevice-menu.c:120
+msgid "Zoom area shift (up/down)"
+msgstr "Zoomausschnitt (oben/unten)"
+
+#: setup-softdevice-menu.c:133
+msgid "Crop lines from top"
+msgstr "Zeilen von oben abschneiden"
+
+#: setup-softdevice-menu.c:138
+msgid "Crop lines from bottom"
+msgstr "Zeilen von unten abschneiden"
+
+#: setup-softdevice-menu.c:146
+msgid "Crop columns from left"
+msgstr "Spalten von links abschneiden"
+
+#: setup-softdevice-menu.c:150
+msgid "Crop columns from right"
+msgstr "Spalten von rechts abschneiden"
+
+#: setup-softdevice-menu.c:162
+msgid "Expand top/bottom lines"
+msgstr "Zeilen vergrößern (ob./un.)"
+
+#: setup-softdevice-menu.c:166
+msgid "Expand left/right columns"
+msgstr "Spalten vergrößen (li./re.)"
+
+#: setup-softdevice-menu.c:210 setup-softdevice-menu.c:221
+msgid "Deinterlace Method"
+msgstr "Deinterlace-Methode"
+
+#: setup-softdevice-menu.c:233 setup-softdevice.c:143 setup-softdevice.c:408
+msgid "fast"
+msgstr "schnell"
+
+#: setup-softdevice-menu.c:234 setup-softdevice-menu.c:312
+#: setup-softdevice.c:144 setup-softdevice.c:175 setup-softdevice.c:409
+msgid "default"
+msgstr "standard"
+
+#: setup-softdevice-menu.c:235
+msgid "Postprocessing Method"
+msgstr "Nachbearbeitungs-Methode"
+
+#: setup-softdevice-menu.c:237
+msgid "Postprocessing Quality"
+msgstr "Nachbearbeitungs-Qualität"
+
+#: setup-softdevice-menu.c:241
+msgid "Picture mirroring"
+msgstr "Spiegelbild"
+
+#: setup-softdevice-menu.c:242 setup-softdevice-menu.c:388
+#: setup-softdevice-menu.c:393
+msgid "off"
+msgstr "aus"
+
+#: setup-softdevice-menu.c:242 setup-softdevice-menu.c:388
+#: setup-softdevice-menu.c:393
+msgid "on"
+msgstr "ein"
+
+#: setup-softdevice-menu.c:285 setup-softdevice-menu.c:412
+#: setup-softdevice-menu.c:414
+msgid "Cropping"
+msgstr "Bildausschnitt"
+
+#: setup-softdevice-menu.c:286 setup-softdevice-menu.c:416
+#: setup-softdevice-menu.c:418
+msgid "Post processing"
+msgstr "Bildnachbearbeitung"
+
+#: setup-softdevice-menu.c:290 setup-softdevice-menu.c:420
+#: setup-softdevice-menu.c:422
+msgid "Video out"
+msgstr "Videoausgabe"
+
+#: setup-softdevice-menu.c:293 setup-softdevice-menu.c:424
+#: setup-softdevice-menu.c:426
+msgid "Logging"
+msgstr "Protokollierung"
+
+#: setup-softdevice-menu.c:304 setup-softdevice.c:136
+msgid "16:9 wide"
+msgstr "16:9 Breitbild"
+
+#: setup-softdevice-menu.c:305 setup-softdevice.c:137
+msgid "4:3 normal"
+msgstr "4:3 Normalbild"
+
+#: setup-softdevice-menu.c:306
+msgid "Xv startup aspect"
+msgstr "Xv Startgröße"
+
+#: setup-softdevice-menu.c:313
+msgid "Screen Aspect"
+msgstr "Bildschirmformat"
+
+#: setup-softdevice-menu.c:321 setup-softdevice.c:187
+msgid "pseudo"
+msgstr "pseudo"
+
+#: setup-softdevice-menu.c:322 setup-softdevice.c:188
+msgid "software"
+msgstr "software"
+
+#: setup-softdevice-menu.c:323
+msgid "OSD alpha blending"
+msgstr "OSD Einblendung"
+
+#: setup-softdevice-menu.c:335 setup-softdevice.c:147
+msgid "safe"
+msgstr "sicher"
+
+#: setup-softdevice-menu.c:336 setup-softdevice.c:148
+msgid "good seeking"
+msgstr "suchlauf optimiert"
+
+#: setup-softdevice-menu.c:337 setup-softdevice.c:149
+msgid "HDTV"
+msgstr "HDTV"
+
+#: setup-softdevice-menu.c:338
+msgid "Buffer Mode"
+msgstr "Puffermodus"
+
+#: setup-softdevice-menu.c:341 setup-softdevice.c:183
+msgid "playing"
+msgstr "aktiviert"
+
+#: setup-softdevice-menu.c:342 setup-softdevice.c:184
+msgid "suspended"
+msgstr "deaktiviert"
+
+#: setup-softdevice-menu.c:343
+msgid "Playback"
+msgstr "Wiedergabe"
+
+#: setup-softdevice-menu.c:354
+msgid "A/V Delay"
+msgstr "A/V Verzögerung"
+
+#: setup-softdevice-menu.c:358
+msgid "AC3 Mode"
+msgstr "AC3 Modus"
+
+#: setup-softdevice-menu.c:363
+msgid "Sync Mode"
+msgstr "Sync Modus"
+
+#: setup-softdevice-menu.c:378
+msgid "Pixel Format"
+msgstr "Pixelformat"
+
+#: setup-softdevice-menu.c:386
+msgid "Use StretchBlit"
+msgstr "StretchBlit verwenden"
+
+#: setup-softdevice-menu.c:391
+msgid "Use SourceRectangle"
+msgstr ""
+
+#: setup-softdevice-menu.c:396
+msgid "Hide main menu entry"
+msgstr "Hauptmenüeintrag verstecken"
+
+#: setup-softlog-menu.c:22
+msgid "Info Messages"
+msgstr "Info Nachrichten"
+
+#: setup-softlog-menu.c:25
+msgid "Debug Messages"
+msgstr "Debug Nachrichten"
+
+#: setup-softlog-menu.c:28
+msgid "Trace Messages"
+msgstr "Test Nachrichten"
+
+#: setup-softlog-menu.c:38
+msgid "Logfile"
+msgstr "Protokolldatei"
+
+#: setup-softlog-menu.c:39
+msgid "Append PID"
+msgstr "PID ergänzen"
+
+#: softdevice.c:99
+msgid "A software emulated MPEG2 device"
+msgstr "Software-Ausgabegerät"
+
+#: softdevice.c:100
+msgid "Softdevice"
+msgstr "Softdevice"

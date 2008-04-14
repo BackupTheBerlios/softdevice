@@ -1,4 +1,8 @@
 Changelog
+2008-04-15:
+   - Fixed (changed) som italian chars.
+   - Added local translations of yes/no.
+   - Switched to vdr-1.5.x OSD translation.
 2008-04-14:
    - Italian translation by Diego.
 2008-04-13:

@@ -1,7 +1,7 @@
 #
 # Makefile for a Video Disk Recorder plugin
 #
-# $Id: Makefile,v 1.41 2007/04/03 20:21:04 wachm Exp $
+# $Id: Makefile,v 1.42 2008/04/14 02:52:10 lucke Exp $
 
 # The official name of this plugin.
 # This name will be used in the '-P...' option of VDR to load the plugin.
@@ -341,9 +341,34 @@ $(DEPFILE): Makefile
 
 -include $(DEPFILE)
 
+### Internationalization (I18N):
+
+PODIR     = po
+LOCALEDIR = $(VDRDIR)/locale
+I18Npo    = $(wildcard $(PODIR)/*.po)
+I18Nmsgs  = $(addprefix $(LOCALEDIR)/, $(addsuffix /LC_MESSAGES/vdr-$(PLUGIN).mo, $(notdir $(foreach file, $(I18Npo), $(basename $(file))))))
+I18Npot   = $(PODIR)/$(PLUGIN).pot
+
+%.mo: %.po
+	msgfmt -c -o $@ $<
+
+$(I18Npot): $(wildcard *.c)
+	xgettext -C -cTRANSLATORS --no-wrap --no-location -k -ktr -ktrNOOP --msgid-bugs-address='<softdevice-devel at lists.berlios.de>' -o $@ $^
+
+%.po: $(I18Npot)
+	msgmerge -U --no-wrap --no-location --backup=none -q $@ $<
+	@touch $@
+
+$(I18Nmsgs): $(LOCALEDIR)/%/LC_MESSAGES/vdr-$(PLUGIN).mo: $(PODIR)/%.mo
+	@mkdir -p $(dir $@)
+	cp $< $@
+
+.PHONY: i18n
+i18n: $(I18Nmsgs)
+
 ### Targets:
 
-all: $(TARGETS)
+all: $(TARGETS) i18n
 
 libvdr-$(PLUGIN).so: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(SHARED_FLAG) $(OBJS) $(LIBS) -o $@
@@ -385,6 +410,7 @@ dist-clean: clean
 	@-rm -f config.h config.mak
 
 clean:
+	@-rm -f $(PODIR)/*.mo $(PODIR)/*.pot
 	@-rm -f $(OBJS) $(DEPFILE) ShmClient MacVdrClient *.so *.o *.tgz core* *~
 
 VDR_SHM_CLIENT_OBJS = ../../../tools.o ../../../thread.o \
