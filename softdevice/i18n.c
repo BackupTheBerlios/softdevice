@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.24 2008/04/14 02:15:31 lucke Exp $
+ * $Id: i18n.c,v 1.25 2008/04/14 02:28:09 lucke Exp $
  */
 
 #include "i18n.h"
@@ -1296,6 +1296,50 @@ const tI18nPhrase Phrases[] = {
     "",             // 19 TODO
     "",             // 20 TODO
 #endif
+  },
+  { "yes",
+    "ja",
+    "da",
+    "si",
+    "ja",
+    "sim",
+    "oui",
+    "ja",
+    "kyllä",
+    "tak",
+    "sí",
+    "íáß",
+    "ja",
+    "da",
+    "igen",
+    "sí",
+    "ÔÐ",
+    "da",
+    "jah",
+    "ja",
+    "ano",
+  },
+  { "no",
+    "nein",
+    "ne",
+    "no",
+    "nee",
+    "não",
+    "non",
+    "nei",
+    "ei",
+    "nie",
+    "no",
+    "ü÷é",
+    "nej",
+    "nu",
+    "nem",
+    "no",
+    "ÝÕâ",
+    "ne",
+    "ei",
+    "nej",
+    "ne",
   },
   { NULL }
   };
