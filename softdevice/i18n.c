@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: i18n.c,v 1.23 2008/04/13 02:31:57 lucke Exp $
+ * $Id: i18n.c,v 1.24 2008/04/14 02:15:31 lucke Exp $
  */
 
 #include "i18n.h"
@@ -81,7 +81,7 @@ const tI18nPhrase Phrases[] = {
   { "CropMode",         //  1
     "Bildausschnitt",   //  2
     "",             //  3 TODO
-    "Modalitï¿½ compatta",//  4
+    "Modalità compatta",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Découpage de l'image au ratio", //  7
@@ -311,7 +311,7 @@ const tI18nPhrase Phrases[] = {
   { "AC3 Mode",     //  1
     "AC3 Modus",    //  2
     "",             //  3 TODO
-    "Modalitï¿½ AC3", //  4
+    "Modalità AC3", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Sortie AC3",   //  7
@@ -334,7 +334,7 @@ const tI18nPhrase Phrases[] = {
   { "Buffer Mode",  //  1
     "Puffermodus",  //  2
     "",             //  3 TODO
-    "Modalitï¿½ buffer", //  4
+    "Modalità buffer", //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Mémoire tampon", //  7
@@ -495,7 +495,7 @@ const tI18nPhrase Phrases[] = {
   { "Postprocessing Quality",             //  1
     "Nachbearbeitungs-Qualität",          //  2
     "",             //  3 TODO
-    "Qualitï¿½ post elaborazione",        //  4
+    "Qualità post elaborazione",             //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "Qualité du post-traitement", //  7
@@ -886,7 +886,7 @@ const tI18nPhrase Phrases[] = {
   { "Sync Mode",    //  1
     "Sync Modus",   //  2
     "",             //  3 TODO
-    "Modalitï¿½ Sync",//  4
+    "Modalità Sync",//  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -932,7 +932,7 @@ const tI18nPhrase Phrases[] = {
   { "Brightness",   //  1
     "Helligkeit",   //  2
     "",             //  3 TODO
-    "Luminositï¿½", //  4
+    "Luminosità",   //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
@@ -978,7 +978,7 @@ const tI18nPhrase Phrases[] = {
   { "Hue",          //  1
     "Farbart",      //  2
     "",             //  3 TODO
-    "Tonalitï¿½",     //  4
+    "Tonalità",     //  4
     "",             //  5 TODO
     "",             //  6 TODO
     "",             //  7 TODO
