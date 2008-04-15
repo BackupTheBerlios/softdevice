@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.79 2008/04/12 12:27:58 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.80 2008/04/15 17:34:30 lucke Exp $
  */
 
 #include <math.h>
@@ -174,7 +174,11 @@ void cStreamDecoder::Action()
   freezeMode=false;
   AVPacket *pkt;
 
-  while ( PacketQueue.Available() < 7 && active) {
+  // -------------------------------------------------------------------------
+  // reduced comparison from 7 to 3, as this is required for
+  // stillpicture to work.
+  //
+  while ( PacketQueue.Available() < 3 && active) {
     BUFDEB("wait while loop packets %d StreamDecoder  pid:%d type %d\n",
       PacketQueue.Available(),getpid(),context->codec_type );
     usleep(10000);
@@ -1163,15 +1167,15 @@ void cMpeg2Decoder::Action()
           usleep(50000);
 
         BUFDEB("av_read_frame start\n");
-        //ret = av_read_frame(ic, &pkt);
-        ret = av_read_packet(ic, &pkt);
+        ret = av_read_frame(ic, &pkt);
+        //ret = av_read_packet(ic, &pkt);
         if (ret < 0) {
             BUFDEB("cMpeg2Decoder Stream Error!\n");
             if (ThreadActive)
 		    usleep(10000);
             continue;
         }
-        //av_dup_packet(&pkt);
+        av_dup_packet(&pkt);
         PacketCount++;
         BUFDEB("got packet from av_read_frame!\n");
 
