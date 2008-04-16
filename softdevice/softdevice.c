@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.91 2008/04/16 10:27:28 lucke Exp $
+ * $Id: softdevice.c,v 1.92 2008/04/16 10:41:40 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -14,6 +14,9 @@
 
 #include <vdr/osd.h>
 #include <vdr/dvbspu.h>
+#if VDRVERSNUM >= 10501
+# include <vdr/shutdown.h>
+#endif
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
@@ -558,6 +561,12 @@ bool cSoftDevice::Flush(int TimeoutMs)
   return  decoder->BufferFill() == 0;
 };
 
+#if VDRVERSNUM >= 10501
+# define SHOULD_SUSPEND setupStore->doSuspend
+#else
+# define SHOULD_SUSPEND setupStore->shouldSuspend
+#endif
+
 #if VDRVERSNUM < 10318
 /* ----------------------------------------------------------------------------
  */
@@ -578,7 +587,7 @@ int cSoftDevice::PlayAudio(const uchar *Data, int Length)
 {
   SOFTDEB("PlayAudio... %p length %d\n",Data,Length);
 #if VDRVERSNUM >= 10342
-  if (setupStore->shouldSuspend && !Transferring()) {
+  if (SHOULD_SUSPEND && !Transferring()) {
     usleep(10000); // avoid burning CPU
     return 0;
   }
@@ -639,7 +648,7 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
 {
   SOFTDEB("PlayVideo %x length %d\n",Data,Length);
 #if VDRVERSNUM >= 10342
-  if (setupStore->shouldSuspend && !Transferring()) {
+  if (SHOULD_SUSPEND && !Transferring()) {
     usleep(10000); // avoid burning CPU
     return 0;
   }
@@ -1177,6 +1186,14 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
   }
   return ret;
 }
+
+#if VDRVERSNUM >= 10501
+void cPluginSoftDevice::MainThreadHook(void)
+{
+  setupStore->doSuspend =
+    setupStore->shouldSuspend || ShutdownHandler.IsUserInactive();
+}
+#endif
 
 #if VDRVERSNUM >= 10330
 static void QueuePacketFct(cDevice *Device, AVFormatContext *ic, AVPacket &pkt) {

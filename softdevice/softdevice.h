@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.13 2006/11/11 08:45:17 lucke Exp $
+ * $Id: softdevice.h,v 1.14 2008/04/16 10:41:40 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -58,6 +58,9 @@ public:
   virtual cOsdObject *MainMenuAction(void);
   virtual cMenuSetupPage *SetupMenu(void);
   virtual bool SetupParse(const char *Name, const char *Value);
+#if VDRVERSNUM >= 10501
+  virtual void MainThreadHook(void);
+#endif
 #if VDRVERSNUM >= 10330
   virtual bool Service(const char *Id, void *Data = NULL);
 #endif

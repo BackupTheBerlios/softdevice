@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.54 2007/05/10 19:54:44 wachm Exp $
+ * $Id: setup-softdevice.c,v 1.55 2008/04/16 10:41:40 lucke Exp $
  */
 
 #include <string.h>
@@ -99,6 +99,9 @@ void cSetupStore::InitSetupStore()
   ppQuality   = 0;
   syncOnFrames  = 0;
   avOffset      = 0;
+#if VDRVERSNUM >= 10501
+  doSuspend = false;
+#endif
   shouldSuspend = 0;
   ac3Mode       = 0;
   useMixer      = 0;

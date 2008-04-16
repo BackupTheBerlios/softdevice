@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.43 2007/10/13 11:17:48 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.44 2008/04/16 10:41:40 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -158,6 +158,9 @@ struct cSetupStore {
     int   tripleBuffering;
     int   useStretchBlit;
     bool  stretchBlitLocked;
+#if VDRVERSNUM >= 10501
+    bool  doSuspend;
+#endif
     int   shouldSuspend;
     int   osdMode;
     int   ac3Mode;

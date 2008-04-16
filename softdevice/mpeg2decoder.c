@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.81 2008/04/16 09:06:31 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.82 2008/04/16 10:41:40 lucke Exp $
  */
 
 #include <math.h>
@@ -1671,12 +1671,17 @@ int cMpeg2Decoder::BufferFill(int Stream)
 int cMpeg2Decoder::Decode(const uchar *Data, int Length)
 {
   BUFDEB("Decode %p, Length %d\n",Data,Length);
+#if VDRVERSNUM >= 10501
+  bool shouldSuspend = setupStore->doSuspend;
+#else
+  int shouldSuspend = setupStore->shouldSuspend;
+#endif
 
-  if (running && !IsSuspended && setupStore->shouldSuspend)
+  if (running && !IsSuspended && shouldSuspend)
      // still running and should suspend
      Suspend();
 
-  if (!running && IsSuspended && !setupStore->shouldSuspend)
+  if (!running && IsSuspended && !shouldSuspend)
      // not running and should resume
      Resume();
 

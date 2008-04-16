@@ -208,6 +208,14 @@ There is currently one limitation to the ShmClient: it has no access to the
 SetupStore, this means that some settings, for example hue, contrast and others
 are not available.
 
+Suspend output on user inactivity:
+----------------------------------
+To demonstrate this feature, initiate a recording and press the Power button.
+You should see a message "VDR will shut down later", just like without this
+patch.  After a few seconds, the output should suspend.  When you press
+any button (such as pop up the Recordings or EPG menu), the output should
+resume.
+
 OSD setup options:
 ------------------
   Cropping:

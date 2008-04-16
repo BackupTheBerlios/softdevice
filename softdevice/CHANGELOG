@@ -1,6 +1,8 @@
 Changelog
 2008-04-16:
    - Silence some warnings.
+   - softdevice.c: Fix spelling & version check for trNOOP().
+   - Suspend output on user inactivity (see README): patch by Marko Mäkelä
 2008-04-15:
    - Fixed (changed) som italian chars.
    - Added local translations of yes/no.
