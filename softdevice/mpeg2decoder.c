@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.80 2008/04/15 17:34:30 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.81 2008/04/16 09:06:31 lucke Exp $
  */
 
 #include <math.h>
@@ -465,8 +465,14 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       //   1st call processes header and adjusts channels.
       //   2nd call delivers data.
       if (context->codec_id == CODEC_ID_AC3) {
+#if LIBAVCODEC_VERSION_INT >= ((51<<16)+(29<<8)+0)
+        audio_size=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+        len=avcodec_decode_audio2(context, (short *)audiosamples,
+                                  &audio_size, data, size);
+#else
         len=avcodec_decode_audio(context, (short *)audiosamples,
                                  &audio_size, data, 1);
+#endif
         //fprintf(stderr,"2nd call len: %d a_size: %d\n", len, audio_size);
       }
       if (audio_size <= 0)
@@ -1184,7 +1190,7 @@ void cMpeg2Decoder::Action()
 
         QueuePacket(ic,pkt,packetMode);
 
-        if (nStreams!=ic->nb_streams ){
+        if (nStreams != (int) ic->nb_streams ){
           PacketCount=0;
           nStreams=ic->nb_streams;
 /*        fprintf(stderr,"Streams: %d\n",nStreams);
@@ -1244,7 +1250,7 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt,
         av_free_packet(&pkt);
         return;
   };
-  if ( pkt.stream_index >= ic->nb_streams ) {
+  if ( pkt.stream_index >= (int) ic->nb_streams ) {
          fprintf(stderr,"Error: stream index larger than nb_streams\n");
         av_free_packet(&pkt);
         return;

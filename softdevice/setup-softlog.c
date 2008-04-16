@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.6 2007/04/03 19:24:31 wachm Exp $
+ * $Id: setup-softlog.c,v 1.7 2008/04/16 09:06:31 lucke Exp $
  */
 
 #include "setup-softlog.h"
@@ -234,7 +234,7 @@ void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
 
   va_start(argList, format);
   priority = LogPriority(currPriority);
-  snprintf(fmt, sizeof(fmt), "[%ld] %s",SoftdeviceGetTid(), format);
+  snprintf(fmt, sizeof(fmt), "[%d] %s",SoftdeviceGetTid(), format);
 
   if (priority != NO_LOG)
     vsyslog(priority, fmt, argList);
@@ -245,7 +245,7 @@ void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
 
     gettimeofday(&now, NULL);
     tmp = localtime(&now.tv_sec);
-    snprintf(fmt, sizeof(fmt), "%02d:%02d:%02d.%04d %c [%ld] %s",
+    snprintf(fmt, sizeof(fmt), "%02d:%02d:%02d.%04d %c [%d] %s",
              tmp->tm_hour, tmp->tm_min, tmp->tm_sec, (int) now.tv_usec/1000,
              Priority2Char(currPriority),
              SoftdeviceGetTid(), format);

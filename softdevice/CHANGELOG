@@ -1,4 +1,6 @@
 Changelog
+2008-04-16:
+   - Silence some warnings.
 2008-04-15:
    - Fixed (changed) som italian chars.
    - Added local translations of yes/no.

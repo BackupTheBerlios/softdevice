@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.8 2007/12/25 13:41:13 lucke Exp $
+ * $Id: audio-alsa.c,v 1.9 2008/04/16 09:06:31 lucke Exp $
  */
 #include "audio-alsa.h"
 
@@ -274,7 +274,6 @@ void cAlsaAudioOut::Xrun(void)
  */
 int cAlsaAudioOut::SetParams(SampleContext &context) {
       int   err;
-      char  *ch_dev = NULL;
 
     // not needed to set again
     if (currContext.samplerate == context.samplerate &&
