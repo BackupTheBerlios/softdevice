@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.90 2008/04/14 02:52:10 lucke Exp $
+ * $Id: softdevice.c,v 1.91 2008/04/16 10:27:28 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -95,7 +95,7 @@
 #include "setup-softdevice-menu.h"
 
 static const char *VERSION        = "0.4.0";
-#if VDRVERSNUM >= 10501
+#if VDRVERSNUM >= 10507
 static const char *DESCRIPTION    = trNOOP("A software emulated MPEG2 device");
 static const char *MAINMENUENTRY  = trNOOP("Softdevice");
 #else
@@ -918,7 +918,7 @@ const char *cPluginSoftDevice::CommandLineHelp(void)
   "  -vo xv:aspect=normal     use a  4:3 display area (768x576)\n"
   "  -vo xv:max-area          use maximum available area\n"
   "  -vo xv:full              startup fullscreen\n"
-  "  -vo xv:use-defaults      don't change brigtness etc on startup\n"
+  "  -vo xv:use-defaults      don't change brightness etc on startup\n"
 #endif
 #ifdef FB_SUPPORT
   "  -vo fb:                  enable output via framebuffer\n"
@@ -1002,7 +1002,7 @@ bool cPluginSoftDevice::ProcessArgs(int argc, char *argv[])
               vo_argv += 4;
             } else if (!strncmp (vo_argv, "use-defaults", 12)) {
               fprintf (stderr,
-                       "[ProcessArgs] xv: don't change brigtness etc on startup\n");
+                       "[ProcessArgs] xv: don't change brightness etc on startup\n");
               setupStore->xvUseDefaults=true;
               vo_argv += 12;
             } else {
