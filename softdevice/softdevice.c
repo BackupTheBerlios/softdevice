@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.92 2008/04/16 10:41:40 lucke Exp $
+ * $Id: softdevice.c,v 1.93 2008/04/18 15:15:41 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -97,7 +97,7 @@
 #include "setup-softdevice.h"
 #include "setup-softdevice-menu.h"
 
-static const char *VERSION        = "0.4.0";
+static const char *VERSION        = "0.5.0";
 #if VDRVERSNUM >= 10507
 static const char *DESCRIPTION    = trNOOP("A software emulated MPEG2 device");
 static const char *MAINMENUENTRY  = trNOOP("Softdevice");
