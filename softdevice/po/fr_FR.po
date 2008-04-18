@@ -1,269 +1,195 @@
 # VDR plugin language source file.
 # Copyright (C) 2007 Klaus Schmidinger <kls@cadsoft.de>
 # This file is distributed under the same license as the VDR package.
-# Jean-Claude Repetto <jc@repetto.org>, 2001
-# Olivier Jacques <jacquesolivier@hotmail.com>, 2003
-# Gregoire Favre <greg@magma.unil.ch>, 2003
-# Nicolas Huillard <nhuillard@e-dition.fr>, 2005
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: VDR 1.5.7\n"
-"Report-Msgid-Bugs-To: softdevice-devel at lists.berlios.de\n"
-"POT-Creation-Date: 2008-04-15 10:02+0200\n"
-"PO-Revision-Date: 2008-04-15 10:02+0200\n"
-"Last-Translator: Nicolas Huillard <nhuillard@e-dition.fr>\n"
-"Language-Team: <vdr@linuxtv.org>\n"
+"Report-Msgid-Bugs-To: <softdevice-devel at lists.berlios.de>\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: setup-softdevice-menu.c:22
-msgid "Brightness"
-msgstr ""
-
-#: setup-softdevice-menu.c:29
-msgid "Contrast"
-msgstr ""
-
-#: setup-softdevice-menu.c:36
-msgid "Hue"
-msgstr ""
-
-#: setup-softdevice-menu.c:43
-msgid "Saturation"
-msgstr ""
-
-#: setup-softdevice-menu.c:50
-msgid "HW-Deinterlace"
-msgstr ""
-
-#: setup-softdevice-menu.c:92 setup-softdevice-menu.c:98
-#: setup-softdevice-menu.c:207 setup-softdevice-menu.c:232
-#: setup-softdevice.c:140 setup-softdevice.c:142 setup-softdevice.c:157
-#: setup-softdevice.c:163 setup-softdevice.c:407
-msgid "none"
-msgstr "aucun"
-
-#: setup-softdevice-menu.c:93
-msgid "CropMode"
-msgstr "Découpage de l'image au ratio"
-
-#: setup-softdevice-menu.c:99
-msgid "CropModeToggleKey"
-msgstr "Bouton de changement d'aspect"
-
-#: setup-softdevice-menu.c:104
-msgid "Autodetect Movie Aspect"
-msgstr ""
-
-#: setup-softdevice-menu.c:105 setup-softdevice-menu.c:397
-msgid "no"
-msgstr "non"
-
-#: setup-softdevice-menu.c:105 setup-softdevice-menu.c:397
-msgid "yes"
-msgstr "oui"
-
-#: setup-softdevice-menu.c:112
-msgid "Zoom factor"
-msgstr ""
-
-#: setup-softdevice-menu.c:116
-msgid "Zoom area shift (left/right)"
-msgstr ""
-
-#: setup-softdevice-menu.c:120
-msgid "Zoom area shift (up/down)"
-msgstr ""
-
-#: setup-softdevice-menu.c:133
-msgid "Crop lines from top"
-msgstr "Lignes à enlever en haut"
-
-#: setup-softdevice-menu.c:138
-msgid "Crop lines from bottom"
-msgstr "Lignes à enlever en bas"
-
-#: setup-softdevice-menu.c:146
-msgid "Crop columns from left"
-msgstr "Colonnes à enlever à gauche"
-
-#: setup-softdevice-menu.c:150
-msgid "Crop columns from right"
-msgstr "Colonnes à enlever à droite"
-
-#: setup-softdevice-menu.c:162
-msgid "Expand top/bottom lines"
-msgstr ""
-
-#: setup-softdevice-menu.c:166
-msgid "Expand left/right columns"
-msgstr ""
-
-#: setup-softdevice-menu.c:210 setup-softdevice-menu.c:221
-msgid "Deinterlace Method"
-msgstr "Désentrelacement"
-
-#: setup-softdevice-menu.c:233 setup-softdevice.c:143 setup-softdevice.c:408
-msgid "fast"
-msgstr "rapide"
-
-#: setup-softdevice-menu.c:234 setup-softdevice-menu.c:312
-#: setup-softdevice.c:144 setup-softdevice.c:175 setup-softdevice.c:409
-msgid "default"
-msgstr "défaut"
-
-#: setup-softdevice-menu.c:235
-msgid "Postprocessing Method"
-msgstr "Post-traitement"
-
-#: setup-softdevice-menu.c:237
-msgid "Postprocessing Quality"
-msgstr "Qualité du post-traitement"
-
-#: setup-softdevice-menu.c:241
-msgid "Picture mirroring"
-msgstr "Mirroir horizontal"
-
-#: setup-softdevice-menu.c:242 setup-softdevice-menu.c:388
-#: setup-softdevice-menu.c:393
-msgid "off"
-msgstr "non"
-
-#: setup-softdevice-menu.c:242 setup-softdevice-menu.c:388
-#: setup-softdevice-menu.c:393
-msgid "on"
-msgstr "oui"
-
-#: setup-softdevice-menu.c:285 setup-softdevice-menu.c:412
-#: setup-softdevice-menu.c:414
-msgid "Cropping"
-msgstr ""
-
-#: setup-softdevice-menu.c:286 setup-softdevice-menu.c:416
-#: setup-softdevice-menu.c:418
-msgid "Post processing"
-msgstr ""
-
-#: setup-softdevice-menu.c:290 setup-softdevice-menu.c:420
-#: setup-softdevice-menu.c:422
-msgid "Video out"
-msgstr ""
-
-#: setup-softdevice-menu.c:293 setup-softdevice-menu.c:424
-#: setup-softdevice-menu.c:426
-msgid "Logging"
-msgstr ""
-
-#: setup-softdevice-menu.c:304 setup-softdevice.c:136
 msgid "16:9 wide"
 msgstr "16:9 large"
 
-#: setup-softdevice-menu.c:305 setup-softdevice.c:137
 msgid "4:3 normal"
 msgstr "4:3 normal"
 
-#: setup-softdevice-menu.c:306
-msgid "Xv startup aspect"
-msgstr "Aspect Xv au démarrage"
+msgid "none"
+msgstr "aucun"
 
-#: setup-softdevice-menu.c:313
-msgid "Screen Aspect"
-msgstr "Proportion de l'écran"
+msgid "fast"
+msgstr "rapide"
 
-#: setup-softdevice-menu.c:321 setup-softdevice.c:187
-msgid "pseudo"
-msgstr "pseudo"
+msgid "default"
+msgstr "défaut"
 
-#: setup-softdevice-menu.c:322 setup-softdevice.c:188
-msgid "software"
-msgstr "logiciel"
-
-#: setup-softdevice-menu.c:323
-msgid "OSD alpha blending"
-msgstr "Fusion du menu avec la vidéo"
-
-#: setup-softdevice-menu.c:335 setup-softdevice.c:147
 msgid "safe"
 msgstr "limitée"
 
-#: setup-softdevice-menu.c:336 setup-softdevice.c:148
 msgid "good seeking"
 msgstr "précision"
 
-#: setup-softdevice-menu.c:337 setup-softdevice.c:149
 msgid "HDTV"
 msgstr "HDTV"
 
-#: setup-softdevice-menu.c:338
-msgid "Buffer Mode"
-msgstr "Mémoire tampon"
-
-#: setup-softdevice-menu.c:341 setup-softdevice.c:183
 msgid "playing"
 msgstr "activé"
 
-#: setup-softdevice-menu.c:342 setup-softdevice.c:184
 msgid "suspended"
 msgstr "suspendu"
 
-#: setup-softdevice-menu.c:343
+msgid "pseudo"
+msgstr "pseudo"
+
+msgid "software"
+msgstr "logiciel"
+
+msgid "Brightness"
+msgstr ""
+
+msgid "Contrast"
+msgstr ""
+
+msgid "Hue"
+msgstr ""
+
+msgid "Saturation"
+msgstr ""
+
+msgid "HW-Deinterlace"
+msgstr ""
+
+msgid "CropMode"
+msgstr "Découpage de l'image au ratio"
+
+msgid "CropModeToggleKey"
+msgstr "Bouton de changement d'aspect"
+
+msgid "Autodetect Movie Aspect"
+msgstr ""
+
+msgid "no"
+msgstr "non"
+
+msgid "yes"
+msgstr "oui"
+
+msgid "Zoom factor"
+msgstr ""
+
+msgid "Zoom area shift (left/right)"
+msgstr ""
+
+msgid "Zoom area shift (up/down)"
+msgstr ""
+
+msgid "Crop lines from top"
+msgstr "Lignes à enlever en haut"
+
+msgid "Crop lines from bottom"
+msgstr "Lignes à enlever en bas"
+
+msgid "Crop columns from left"
+msgstr "Colonnes à enlever à gauche"
+
+msgid "Crop columns from right"
+msgstr "Colonnes à enlever à droite"
+
+msgid "Expand top/bottom lines"
+msgstr ""
+
+msgid "Expand left/right columns"
+msgstr ""
+
+msgid "Deinterlace Method"
+msgstr "Désentrelacement"
+
+msgid "Postprocessing Method"
+msgstr "Post-traitement"
+
+msgid "Postprocessing Quality"
+msgstr "Qualité du post-traitement"
+
+msgid "Picture mirroring"
+msgstr "Mirroir horizontal"
+
+msgid "off"
+msgstr "non"
+
+msgid "on"
+msgstr "oui"
+
+msgid "Cropping"
+msgstr ""
+
+msgid "Post processing"
+msgstr ""
+
+msgid "Video out"
+msgstr ""
+
+msgid "Logging"
+msgstr ""
+
+msgid "Xv startup aspect"
+msgstr "Aspect Xv au démarrage"
+
+msgid "Screen Aspect"
+msgstr "Proportion de l'écran"
+
+msgid "OSD alpha blending"
+msgstr "Fusion du menu avec la vidéo"
+
+msgid "Buffer Mode"
+msgstr "Mémoire tampon"
+
 msgid "Playback"
 msgstr "Affichage"
 
-#: setup-softdevice-menu.c:354
 msgid "A/V Delay"
 msgstr "Délai A/V"
 
-#: setup-softdevice-menu.c:358
 msgid "AC3 Mode"
 msgstr "Sortie AC3"
 
-#: setup-softdevice-menu.c:363
 msgid "Sync Mode"
 msgstr ""
 
-#: setup-softdevice-menu.c:378
 msgid "Pixel Format"
 msgstr "Format de pixel"
 
-#: setup-softdevice-menu.c:386
 msgid "Use StretchBlit"
 msgstr "Utiliser StretchBlit"
 
-#: setup-softdevice-menu.c:391
 msgid "Use SourceRectangle"
 msgstr ""
 
-#: setup-softdevice-menu.c:396
 msgid "Hide main menu entry"
 msgstr ""
 
-#: setup-softlog-menu.c:22
 msgid "Info Messages"
 msgstr ""
 
-#: setup-softlog-menu.c:25
 msgid "Debug Messages"
 msgstr ""
 
-#: setup-softlog-menu.c:28
 msgid "Trace Messages"
 msgstr ""
 
-#: setup-softlog-menu.c:38
 msgid "Logfile"
 msgstr ""
 
-#: setup-softlog-menu.c:39
 msgid "Append PID"
 msgstr ""
 
-#: softdevice.c:99
 msgid "A software emulated MPEG2 device"
 msgstr "Affichage vidéo sur carte graphique"
 
-#: softdevice.c:100
 msgid "Softdevice"
 msgstr "Softdevice"
