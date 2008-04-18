@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.47 2008/02/26 08:06:18 lucke Exp $
+# $Id: configure,v 1.48 2008/04/18 15:10:35 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -29,6 +29,7 @@ libswscale="no"
 ffmpeg_use_path="no"
 dfb="yes"
 libpostproc="no"
+libpostproc_const_uint8="yes"
 cc="g++"
 xv="yes"
 with_shm="yes"
@@ -346,6 +347,56 @@ else
 echo "Not Found."
 swscale_libs=""
 swscale_cflags=""
+fi
+
+test_pp_const_uint8()
+{
+  libpostproc_const_uint8="yes";
+  if test $1 = "loc" ; then
+cat > ${TMPC} << EOF
+#define __STDC_CONSTANT_MACROS
+#include <stdlib.h>
+extern "C" {
+#include <libpostproc/postprocess.h>
+}
+EOF
+  else
+cat > ${TMPC} << EOF
+#define __STDC_CONSTANT_MACROS
+#include <stdlib.h>
+extern "C" {
+#include <postprocess.h>
+}
+EOF
+  fi
+cat >> ${TMPC} << EOF
+int main(void) {
+    uint8_t *data[3];
+    int     num = 100;
+    pp_postprocess((const uint8_t **) data, &num, data, &num,
+                   100, 100, NULL, 0, 0, NULL, 0);
+ return 0;
+}
+EOF
+  $cc $CFLAGS $ffmpeg_cflags -o $TMPE $TMPC $ffmpeg_libs >> config.log 2>&1 || libpostproc_const_uint8="no"
+};
+
+########################################################
+# check for cast to (const char **)
+if test "${libpostproc}" = "yes" ; then
+  echo -n "Checking for pp_postprocess 1st arg ..."
+  echo "Checking for pp_postprocess 1st arg. -----" >> config.log
+
+  if test "${ffmpeg_local}" = "yes" ; then
+    test_pp_const_uint8 loc
+  else
+    test_pp_const_uint8 non_loc
+  fi
+  if test "${libpostproc_const_uint8}" = "yes" ; then
+    echo " is: const uint8_t **"
+  else
+    echo " is: uint8_t **"
+  fi
 fi
 
 ########################################################
@@ -850,6 +901,11 @@ fi
 #
 if test "${libpostproc}" = "yes" ; then
   echo "#define PP_LIBAVCODEC" >> $TMPH
+  if test "${libpostproc_const_uint8}" = "yes" ; then
+    echo "#define PP_WITH_CONST_UINT8             1" >> $TMPH
+  else
+    echo "#define PP_WITH_CONST_UINT8             0" >> $TMPH
+  fi
 else
   echo "#undef PP_LIBAVCODEC" >> $TMPH
 fi

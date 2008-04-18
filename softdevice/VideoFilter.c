@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: VideoFilter.c,v 1.10 2008/02/20 08:05:42 lucke Exp $
+ * $Id: VideoFilter.c,v 1.11 2008/04/18 15:10:35 lucke Exp $
  */
 #include "VideoFilter.h"
 
@@ -572,7 +572,11 @@ void cLibAvPostProc::Filter(sPicBuffer *&dest, sPicBuffer *orig) {
         memcpy(avpic_dest.data,dest->pixel,sizeof(avpic_dest.data));
         memcpy(avpic_dest.linesize,dest->stride,sizeof(avpic_dest.linesize));
 
+#if PP_WITH_CONST_UINT8
         pp_postprocess((const uint8_t **) avpic_src.data,
+#else
+        pp_postprocess(avpic_src.data,
+#endif
                         avpic_src.linesize,
                         avpic_dest.data,
                         avpic_dest.linesize,
