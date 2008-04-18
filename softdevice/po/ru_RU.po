@@ -1,266 +1,195 @@
 # VDR plugin language source file.
 # Copyright (C) 2007 Klaus Schmidinger <kls@cadsoft.de>
 # This file is distributed under the same license as the VDR package.
-# Vyacheslav Dikonov <sdiconov@mail.ru>, 2004
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: VDR 1.5.7\n"
-"Report-Msgid-Bugs-To: softdevice-devel at lists.berlios.de\n"
-"POT-Creation-Date: 2008-04-15 10:02+0200\n"
-"PO-Revision-Date: 2008-04-15 10:02+0200\n"
-"Last-Translator: Vyacheslav Dikonov <sdiconov@mail.ru>\n"
-"Language-Team: <vdr@linuxtv.org>\n"
+"Report-Msgid-Bugs-To: <softdevice-devel at lists.berlios.de>\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-5\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: setup-softdevice-menu.c:22
-msgid "Brightness"
-msgstr "Яркость"
-
-#: setup-softdevice-menu.c:29
-msgid "Contrast"
-msgstr "Контрастность"
-
-#: setup-softdevice-menu.c:36
-msgid "Hue"
-msgstr "Цветовой сдвиг"
-
-#: setup-softdevice-menu.c:43
-msgid "Saturation"
-msgstr "Насыщенность цвета"
-
-#: setup-softdevice-menu.c:50
-msgid "HW-Deinterlace"
-msgstr ""
-
-#: setup-softdevice-menu.c:92 setup-softdevice-menu.c:98
-#: setup-softdevice-menu.c:207 setup-softdevice-menu.c:232
-#: setup-softdevice.c:140 setup-softdevice.c:142 setup-softdevice.c:157
-#: setup-softdevice.c:163 setup-softdevice.c:407
-msgid "none"
-msgstr "ничего"
-
-#: setup-softdevice-menu.c:93
-msgid "CropMode"
-msgstr "Режим обрезки изображения"
-
-#: setup-softdevice-menu.c:99
-msgid "CropModeToggleKey"
-msgstr "Клавиша переключения режимов обрезки"
-
-#: setup-softdevice-menu.c:104
-msgid "Autodetect Movie Aspect"
-msgstr "Автоопределение формата (16:9/4:3)"
-
-#: setup-softdevice-menu.c:105 setup-softdevice-menu.c:397
-msgid "no"
-msgstr "нет"
-
-#: setup-softdevice-menu.c:105 setup-softdevice-menu.c:397
-msgid "yes"
-msgstr "да"
-
-#: setup-softdevice-menu.c:112
-msgid "Zoom factor"
-msgstr "Увеличение"
-
-#: setup-softdevice-menu.c:116
-msgid "Zoom area shift (left/right)"
-msgstr "Сдвиг области увеличения (влево/вправо)"
-
-#: setup-softdevice-menu.c:120
-msgid "Zoom area shift (up/down)"
-msgstr "Сдвиг области увеличения (вверх/вниз)"
-
-#: setup-softdevice-menu.c:133
-msgid "Crop lines from top"
-msgstr "Oбрезать линий сверху"
-
-#: setup-softdevice-menu.c:138
-msgid "Crop lines from bottom"
-msgstr "Oбрезать линий снизу"
-
-#: setup-softdevice-menu.c:146
-msgid "Crop columns from left"
-msgstr "Oбрезать колонoк слева"
-
-#: setup-softdevice-menu.c:150
-msgid "Crop columns from right"
-msgstr "Oбрезать колонoк справа"
-
-#: setup-softdevice-menu.c:162
-msgid "Expand top/bottom lines"
-msgstr "Развернуть (ниж./верх.) строки"
-
-#: setup-softdevice-menu.c:166
-msgid "Expand left/right columns"
-msgstr "Развернуть (лев./прав.) колонки"
-
-#: setup-softdevice-menu.c:210 setup-softdevice-menu.c:221
-msgid "Deinterlace Method"
-msgstr "Режим деинтерлейсинга"
-
-#: setup-softdevice-menu.c:233 setup-softdevice.c:143 setup-softdevice.c:408
-msgid "fast"
-msgstr "быстро"
-
-#: setup-softdevice-menu.c:234 setup-softdevice-menu.c:312
-#: setup-softdevice.c:144 setup-softdevice.c:175 setup-softdevice.c:409
-msgid "default"
-msgstr "по умолчанию"
-
-#: setup-softdevice-menu.c:235
-msgid "Postprocessing Method"
-msgstr "Режим постобработки"
-
-#: setup-softdevice-menu.c:237
-msgid "Postprocessing Quality"
-msgstr "Качество постобработки"
-
-#: setup-softdevice-menu.c:241
-msgid "Picture mirroring"
-msgstr "Зеркальное отображение"
-
-#: setup-softdevice-menu.c:242 setup-softdevice-menu.c:388
-#: setup-softdevice-menu.c:393
-msgid "off"
-msgstr "выкл."
-
-#: setup-softdevice-menu.c:242 setup-softdevice-menu.c:388
-#: setup-softdevice-menu.c:393
-msgid "on"
-msgstr "вкл."
-
-#: setup-softdevice-menu.c:285 setup-softdevice-menu.c:412
-#: setup-softdevice-menu.c:414
-msgid "Cropping"
-msgstr "Обрезка"
-
-#: setup-softdevice-menu.c:286 setup-softdevice-menu.c:416
-#: setup-softdevice-menu.c:418
-msgid "Post processing"
-msgstr "Постобработка"
-
-#: setup-softdevice-menu.c:290 setup-softdevice-menu.c:420
-#: setup-softdevice-menu.c:422
-msgid "Video out"
-msgstr "Видео выход"
-
-#: setup-softdevice-menu.c:293 setup-softdevice-menu.c:424
-#: setup-softdevice-menu.c:426
-msgid "Logging"
-msgstr "Протоколирование"
-
-#: setup-softdevice-menu.c:304 setup-softdevice.c:136
 msgid "16:9 wide"
 msgstr "16:9 широкоэкранный"
 
-#: setup-softdevice-menu.c:305 setup-softdevice.c:137
 msgid "4:3 normal"
 msgstr "4:3 нормальный"
 
-#: setup-softdevice-menu.c:306
-msgid "Xv startup aspect"
-msgstr "Аспект при запуске  Xv"
+msgid "none"
+msgstr "ничего"
 
-#: setup-softdevice-menu.c:313
-msgid "Screen Aspect"
-msgstr "Формат экрана"
+msgid "fast"
+msgstr "быстро"
 
-#: setup-softdevice-menu.c:321 setup-softdevice.c:187
-msgid "pseudo"
-msgstr "псевдо"
+msgid "default"
+msgstr "по умолчанию"
 
-#: setup-softdevice-menu.c:322 setup-softdevice.c:188
-msgid "software"
-msgstr "программно"
-
-#: setup-softdevice-menu.c:323
-msgid "OSD alpha blending"
-msgstr "Прозрачность OSD"
-
-#: setup-softdevice-menu.c:335 setup-softdevice.c:147
 msgid "safe"
 msgstr "безопасно"
 
-#: setup-softdevice-menu.c:336 setup-softdevice.c:148
 msgid "good seeking"
 msgstr "поиск оптимирован"
 
-#: setup-softdevice-menu.c:337 setup-softdevice.c:149
 msgid "HDTV"
 msgstr "HDTV (ТВЧ)"
 
-#: setup-softdevice-menu.c:338
-msgid "Buffer Mode"
-msgstr "Буферный режим"
-
-#: setup-softdevice-menu.c:341 setup-softdevice.c:183
 msgid "playing"
 msgstr "активированно"
 
-#: setup-softdevice-menu.c:342 setup-softdevice.c:184
 msgid "suspended"
 msgstr "деактивированно"
 
-#: setup-softdevice-menu.c:343
+msgid "pseudo"
+msgstr "псевдо"
+
+msgid "software"
+msgstr "программно"
+
+msgid "Brightness"
+msgstr "Яркость"
+
+msgid "Contrast"
+msgstr "Контрастность"
+
+msgid "Hue"
+msgstr "Цветовой сдвиг"
+
+msgid "Saturation"
+msgstr "Насыщенность цвета"
+
+msgid "HW-Deinterlace"
+msgstr ""
+
+msgid "CropMode"
+msgstr "Режим обрезки изображения"
+
+msgid "CropModeToggleKey"
+msgstr "Клавиша переключения режимов обрезки"
+
+msgid "Autodetect Movie Aspect"
+msgstr "Автоопределение формата (16:9/4:3)"
+
+msgid "no"
+msgstr "нет"
+
+msgid "yes"
+msgstr "да"
+
+msgid "Zoom factor"
+msgstr "Увеличение"
+
+msgid "Zoom area shift (left/right)"
+msgstr "Сдвиг области увеличения (влево/вправо)"
+
+msgid "Zoom area shift (up/down)"
+msgstr "Сдвиг области увеличения (вверх/вниз)"
+
+msgid "Crop lines from top"
+msgstr "Oбрезать линий сверху"
+
+msgid "Crop lines from bottom"
+msgstr "Oбрезать линий снизу"
+
+msgid "Crop columns from left"
+msgstr "Oбрезать колонoк слева"
+
+msgid "Crop columns from right"
+msgstr "Oбрезать колонoк справа"
+
+msgid "Expand top/bottom lines"
+msgstr "Развернуть (ниж./верх.) строки"
+
+msgid "Expand left/right columns"
+msgstr "Развернуть (лев./прав.) колонки"
+
+msgid "Deinterlace Method"
+msgstr "Режим деинтерлейсинга"
+
+msgid "Postprocessing Method"
+msgstr "Режим постобработки"
+
+msgid "Postprocessing Quality"
+msgstr "Качество постобработки"
+
+msgid "Picture mirroring"
+msgstr "Зеркальное отображение"
+
+msgid "off"
+msgstr "выкл."
+
+msgid "on"
+msgstr "вкл."
+
+msgid "Cropping"
+msgstr "Обрезка"
+
+msgid "Post processing"
+msgstr "Постобработка"
+
+msgid "Video out"
+msgstr "Видео выход"
+
+msgid "Logging"
+msgstr "Протоколирование"
+
+msgid "Xv startup aspect"
+msgstr "Аспект при запуске  Xv"
+
+msgid "Screen Aspect"
+msgstr "Формат экрана"
+
+msgid "OSD alpha blending"
+msgstr "Прозрачность OSD"
+
+msgid "Buffer Mode"
+msgstr "Буферный режим"
+
 msgid "Playback"
 msgstr "Воспроизведение"
 
-#: setup-softdevice-menu.c:354
 msgid "A/V Delay"
 msgstr "Задержка A/V"
 
-#: setup-softdevice-menu.c:358
 msgid "AC3 Mode"
 msgstr "Режим AC3"
 
-#: setup-softdevice-menu.c:363
 msgid "Sync Mode"
 msgstr "Режим синхронизации"
 
-#: setup-softdevice-menu.c:378
 msgid "Pixel Format"
 msgstr "Формат пикселя"
 
-#: setup-softdevice-menu.c:386
 msgid "Use StretchBlit"
 msgstr "Использовать StretchBlit"
 
-#: setup-softdevice-menu.c:391
 msgid "Use SourceRectangle"
 msgstr ""
 
-#: setup-softdevice-menu.c:396
 msgid "Hide main menu entry"
 msgstr "Спрятать пункт в главном меню"
 
-#: setup-softlog-menu.c:22
 msgid "Info Messages"
 msgstr "Инфо. сообщения"
 
-#: setup-softlog-menu.c:25
 msgid "Debug Messages"
 msgstr "Сообщения отладки"
 
-#: setup-softlog-menu.c:28
 msgid "Trace Messages"
 msgstr "Отслеживание сообщений"
 
-#: setup-softlog-menu.c:38
 msgid "Logfile"
 msgstr "Файл журнала"
 
-#: setup-softlog-menu.c:39
 msgid "Append PID"
 msgstr "Добавить PID"
 
-#: softdevice.c:99
 msgid "A software emulated MPEG2 device"
 msgstr "Программно-эмулируемое MPEG-2 устройство"
 
-#: softdevice.c:100
 msgid "Softdevice"
 msgstr "Softdevice"
