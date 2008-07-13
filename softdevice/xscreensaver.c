@@ -4,7 +4,7 @@
  * See the README file for copyright information and how to reach the author.
  *
  * Code adapted by Torgeir Veimo from jwz' xscreensaver remote control code
- * (simplified similar to Gerd Knorr's xawtv) which carries the following 
+ * (simplified similar to Gerd Knorr's xawtv) which carries the following
  * copyright notice:
  *
  * xscreensaver-command, Copyright (c) 1991-1998
@@ -15,10 +15,10 @@
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
  * documentation.  No representations are made about the suitability of this
- * software for any purpose.  It is provided "as is" without express or 
+ * software for any purpose.  It is provided "as is" without express or
  * implied warranty.
- * 
- * $Id: xscreensaver.c,v 1.7 2007/01/15 20:25:39 wachm Exp $
+ *
+ * $Id: xscreensaver.c,v 1.8 2008/07/13 14:25:40 lucke Exp $
  */
 
 #ifndef STAND_ALONE
@@ -135,7 +135,7 @@ void cScreensaver::MaybeSendKeyEvent(void) {
       keyEvent.x_root = 1;
       keyEvent.y_root = 1;
       keyEvent.same_screen = True;
-      keyEvent.type = KeyPress; 
+      keyEvent.type = KeyPress;
       keyEvent.keycode = XKeysymToKeycode(this->dpy, XK_Shift_L);
 
       if (!XSendEvent (dpy, RootWindowOfScreen( DefaultScreenOfDisplay( dpy )),
@@ -186,7 +186,7 @@ void cScreensaver::MaybeSendDeactivate(void) {
         return;
       }
       XSync (dpy, 0);
-      
+
       // restore error handler
       XSetErrorHandler(old_handler);
     }
@@ -198,7 +198,7 @@ int cScreensaver::FindWindow() {
   Window root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
   Window root2, parent, *kids;
   unsigned int nkids;
-   
+
   if (! XQueryTree (dpy, root, &root2, &parent, &kids, &nkids))
     esyslog("[softdevice-xscreensaver]: unexpected error looking up xscreensaver window\n");
   if (root != root2)
