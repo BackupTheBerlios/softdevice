@@ -1,4 +1,8 @@
 Changelog
+2008-07-14:
+   - video-xv: - Workaround for DPMS not getting reenabled.
+               - Fix for reenable DPMS when quit from fullscreen mode.
+   - configure: Improve detection of yaepg patched vdr.
 2008-04-18: softdevice-0.5.0
    - Check configuration for ffmpeg < r11816.
    - Removed timestamps, email addrs and src line # comments from *.po.

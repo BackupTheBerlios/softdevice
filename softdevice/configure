@@ -2,12 +2,13 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.48 2008/04/18 15:10:35 lucke Exp $
+# $Id: configure,v 1.49 2008/07/14 17:03:03 lucke Exp $
 #
 
 TMPDIR1="/tmp"
 TMPC="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}.c"
 TMPE="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}"
+TMPF="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}.makefile"
 TMPH="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}.h"
 TMPM="${TMPDIR1}/softdevice-conf-${RANDOM}-$$-${RANDOM}.mak"
 
@@ -510,9 +511,25 @@ echo -n "Checking for yaepg patch... "
 echo "Checking for yaepg patch.------------------" >> config.log
 
 yaepg="no";
-VDR_DIR=../../../
+VDR_DIR=../../..
 
-grep vidWin $VDR_DIR/osd.h >> config.log 2>&1 && yaepg="yes"
+cat > ${TMPF} << EOF
+DEFINES += -D_GNU_SOURCE
+CFLAGS = -O2 -g -Wall
+-include ../../../Make.config
+${TMPE}: ${TMPC}
+	$cc \$(CFLAGS)  \$(DEFINES) -I${VDR_DIR} -c -o $TMPE $TMPC >> config.log 2>&1
+EOF
+
+cat > ${TMPC} << EOF
+#include <osd.h>
+int test_func(cOsd *osd) {
+	return (osd -> vidWin. bpp) ? 1 : 0;
+}
+EOF
+
+rm ${TMPE}
+make -f ${TMPF} >> config.log 2>&1 && yaepg="yes"
 
 if test "${yaepg}" = "yes" ; then
 echo "Found yaepg patch."
