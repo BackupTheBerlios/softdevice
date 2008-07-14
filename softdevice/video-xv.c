@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.74 2007/12/25 16:57:41 lucke Exp $
+ * $Id: video-xv.c,v 1.75 2008/07/14 17:00:59 lucke Exp $
  */
 
 #include <unistd.h>
@@ -1903,6 +1903,11 @@ cXvVideoOut::~cXvVideoOut()
     osd_image = NULL;
   }
   videoInitialized = false;
+  if (xScreensaver)
+  {
+    delete xScreensaver;
+    xScreensaver = NULL;
+  }
   pthread_mutex_unlock(&xv_mutex);
 
 }
