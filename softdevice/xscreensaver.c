@@ -18,7 +18,7 @@
  * software for any purpose.  It is provided "as is" without express or
  * implied warranty.
  *
- * $Id: xscreensaver.c,v 1.8 2008/07/13 14:25:40 lucke Exp $
+ * $Id: xscreensaver.c,v 1.9 2008/07/14 16:59:20 lucke Exp $
  */
 
 #ifndef STAND_ALONE
@@ -54,6 +54,16 @@ cScreensaver::~cScreensaver() {
       DPMSCapable(dpy) &&
       dpms_on) {
     DPMSEnable(dpy);
+
+    // Add workaround for xorg bug #13962.
+    //  DPMSEnable() did not rearm timeouts.
+    {
+        CARD16    t0, t1, t2;
+
+      DPMSGetTimeouts(dpy, &t0, &t1, &t2);
+      DPMSSetTimeouts(dpy, t0, t1, t2);
+    }
+
   }
 #endif
 }
@@ -102,6 +112,16 @@ void cScreensaver::DisableScreensaver(bool disable) {
         // According to mplayer sources: DPMS does not seem to be enabled unless we call DPMSInfo
         DPMSForceLevel(dpy, DPMSModeOn);
         DPMSInfo(dpy, &dpms_state, &dpms_on);
+
+        // Add workaround for xorg bug #13962.
+        //  DPMSEnable() did not rearm timeouts.
+        {
+            CARD16    t0, t1, t2;
+
+          DPMSGetTimeouts(dpy, &t0, &t1, &t2);
+          DPMSSetTimeouts(dpy, t0, t1, t2);
+        }
+
         if (dpms_on) {
           dsyslog("[softdevice-xscreensaver]: Successfully enabled DPMS\n");
         } else {
