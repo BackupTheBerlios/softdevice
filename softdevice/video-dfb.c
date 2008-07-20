@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.84 2008/07/20 16:41:01 lucke Exp $
+ * $Id: video-dfb.c,v 1.85 2008/07/20 17:17:42 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -652,7 +652,7 @@ void cDFBVideoOut::SetFieldParity(IDirectFBDisplayLayer *layer, int fieldOrder)
     return;
 
   softlog->Log(SOFT_LOG_INFO, 0,
-               "[dfb] Set DLBM_TRIPLE for layer [%s] to (%s)\n",
+               "[dfb] Set layer [%s] to (%s)\n",
                desc.name,
                (fieldOrder) ? "TOP field first" : "BOTTOM field first");
 
