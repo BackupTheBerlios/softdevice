@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.h,v 1.5 2007/09/27 18:22:40 lucke Exp $
+ * $Id: audio-alsa.h,v 1.6 2008/07/20 16:32:44 lucke Exp $
  */
 #ifndef __AUDIO_ALSA_H__
 #define __AUDIO_ALSA_H__
@@ -30,7 +30,8 @@ private:
                     chDevice [8];
   volatile bool     paused;
   bool              ac3PassThrough,
-                    ac3SpdifPro;
+                    ac3SpdifPro,
+                    useMmapWrite;
   SampleContext     oldContext;
   cAlsaAC3pt        ac3pt;
 

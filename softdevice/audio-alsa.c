@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.9 2008/04/16 09:06:31 lucke Exp $
+ * $Id: audio-alsa.c,v 1.10 2008/07/20 16:32:44 lucke Exp $
  */
 #include "audio-alsa.h"
 
@@ -116,10 +116,20 @@ void cAlsaAudioOut::Write(uchar *Data, int Length)
 
   while (size) {
     while (paused) usleep(1000); // block
-    AUDIODEB("pcm_mmap_writei  handle %p Data %p size %d\n",handle,Data,size);
-    err = snd_pcm_mmap_writei(handle,Data, size);
-    AUDIODEB("pcm_mmap_writeei return value %d Data %p size %d \n",
-                   err,Data,size);
+
+    AUDIODEB("pcm%s_writei  handle %p Data %p size %d\n",
+             (useMmapWrite) ? "_mmap" : "",
+             handle, Data, size);
+
+    if (useMmapWrite)
+      err = snd_pcm_mmap_writei(handle, Data, size);
+    else
+      err = snd_pcm_writei(handle, Data, size);
+
+    AUDIODEB("pcm%s_writei return value %d Data %p size %d \n",
+             (useMmapWrite) ? "_mmap" : "",
+             err, Data, size);
+
     if (err == -EAGAIN || (err >= 0 && (size_t)err < size)) {
       AUDIODEB("wait \n");
       snd_pcm_wait(handle, 1000);
@@ -332,6 +342,7 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
       exit(EXIT_FAILURE);
     }
 
+    useMmapWrite = 1;
     snd_pcm_access_mask_t *mask = (snd_pcm_access_mask_t *)alloca(snd_pcm_access_mask_sizeof());
     snd_pcm_access_mask_none(mask);
     snd_pcm_access_mask_set(mask, SND_PCM_ACCESS_MMAP_INTERLEAVED);
@@ -339,10 +350,16 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
     snd_pcm_access_mask_set(mask, SND_PCM_ACCESS_MMAP_COMPLEX);
     err = snd_pcm_hw_params_set_access_mask(handle, params, mask);
     if (err < 0) {
-      esyslog("[softdevice-audio] Access type not available NO AUDIO!");
-      handleMutex.Unlock();
-      Suspend();
-      return -1;
+      snd_pcm_access_mask_none(mask);
+      snd_pcm_access_mask_set(mask, SND_PCM_ACCESS_RW_INTERLEAVED);
+      err = snd_pcm_hw_params_set_access_mask(handle, params, mask);
+      if (err < 0) {
+        esyslog("[softdevice-audio] Access type not available NO AUDIO!");
+        handleMutex.Unlock();
+        Suspend();
+        return -1;
+      }
+      useMmapWrite = 0;
     }
 
     err = snd_pcm_hw_params_set_format(handle, params, PCM_FMT);
