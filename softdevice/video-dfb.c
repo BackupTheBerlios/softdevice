@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.83 2007/07/12 16:17:31 lucke Exp $
+ * $Id: video-dfb.c,v 1.84 2008/07/20 16:41:01 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -206,7 +206,6 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *softlog)
   clearBackCount = 2; // by default for double buffering;
   videoLayerLevel = 1;
   OSDpresent = false;
-  fieldParity = 0;    // 0 - top field first, 1 - bottom field first
 
   if(setupStore->viaTv)
     setupStore->tripleBuffering = 1;
@@ -630,13 +629,46 @@ void cDFBVideoOut::EnableFieldParity(IDirectFBDisplayLayer *layer)
     layer->SetOpacity(0xff);
     layer->SetConfiguration(dlc);
     if (desc.caps & DLCAPS_FIELD_PARITY)
-      layer->SetFieldParity(fieldParity);
+      SetFieldParity(layer, currentFieldOrder);
   }
   catch(DFBException *ex)
   {
     softlog->Log(SOFT_LOG_ERROR, 0,
               "[dfb] EnableFieldParity: action=%s, result=%s\n",
               ex->GetAction(), ex->GetResult());
+    delete ex;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cDFBVideoOut::SetFieldParity(IDirectFBDisplayLayer *layer, int fieldOrder)
+{
+    DFBDisplayLayerDescription    desc;
+
+  desc = layer->GetDescription();
+
+  if (!(desc.caps & DLCAPS_FIELD_PARITY))
+    return;
+
+  softlog->Log(SOFT_LOG_INFO, 0,
+               "[dfb] Set DLBM_TRIPLE for layer [%s] to (%s)\n",
+               desc.name,
+               (fieldOrder) ? "TOP field first" : "BOTTOM field first");
+
+  try
+  {
+    /* -----------------------------------------------------------------------
+     * ffmpeg has member top_field_first: 1 - top; 0 - bottom
+     * dfb values are: 0 - top field first, 1 - bottom field first
+     */
+    layer->SetFieldParity(!fieldOrder);
+  }
+  catch(DFBException *ex)
+  {
+    softlog->Log(SOFT_LOG_ERROR, 0,
+                 "[dfb] SetFieldParity: action=%s, result=%s\n",
+                 ex->GetAction(), ex->GetResult());
     delete ex;
   }
 }
@@ -1060,6 +1092,15 @@ void cDFBVideoOut::SetParams()
 
       softlog->Log(SOFT_LOG_DEBUG, 0,
                 "[dfb] (re)configured 0x%08x\n",pixelformat);
+    }
+    if (targetFieldOrder != currentFieldOrder)
+    {
+      if (setupStore->useMGAtv)
+        SetFieldParity(osdLayer, targetFieldOrder);
+      if (setupStore->viaTv)
+        SetFieldParity(videoLayer, targetFieldOrder);
+
+      currentFieldOrder = targetFieldOrder;
     }
   }
   else

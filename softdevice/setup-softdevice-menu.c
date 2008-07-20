@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.14 2007/10/13 13:38:45 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.15 2008/07/20 16:41:01 lucke Exp $
  */
 
 //#include "video.h"
@@ -365,6 +365,11 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_SYNC_TIMER_NAMES-1),
                             syncTimerNames));
 
+  Add(new cMenuEditStraItem(tr("Field Order"),
+                            &data->fieldOrderMode,
+                            (SETUP_FIELD_ORDER_NAMES-1),
+                            fieldOrderNames));
+
 #if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
 #else
@@ -483,6 +488,7 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("bufferMode",           setupStore->bufferMode);
   SetupStore ("mainMenu",             setupStore->mainMenu);
   SetupStore ("syncTimerMode",        setupStore->syncTimerMode);
+  SetupStore ("fieldOrderMode",       setupStore->fieldOrderMode);
   SetupStore ("vidBrightness",        setupStore->vidBrightness);
   SetupStore ("vidContrast",          setupStore->vidContrast);
   SetupStore ("vidHue",               setupStore->vidHue);

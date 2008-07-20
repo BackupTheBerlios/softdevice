@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.9 2008/02/26 08:06:18 lucke Exp $
+ * $Id: PicBuffer.h,v 1.10 2008/07/20 16:41:01 lucke Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
@@ -51,6 +51,7 @@ typedef struct sPicBuffer {
     float aspect_ratio;
     uint64_t pts;
     bool interlaced_frame;
+    int  top_field_first;
     int pict_type;
 
     int pic_num; // to calculate the age

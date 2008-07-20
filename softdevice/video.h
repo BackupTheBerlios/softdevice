@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.55 2007/07/11 20:08:34 lucke Exp $
+ * $Id: video.h,v 1.56 2008/07/20 16:41:01 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -101,6 +101,8 @@ protected:
             aspect_changed,
             current_afd,
             interlaceMode,
+            currentFieldOrder,
+            targetFieldOrder,
             displayTimeUS;
     double  parValues[SETUP_VIDEOASPECTNAMES_COUNT];
 

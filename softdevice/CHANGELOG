@@ -1,4 +1,9 @@
 Changelog
+2008-07-20:
+   - audio: Fix for bug #14039 based upon suggestion by 'earcar'.
+   - video-dfb (TV-out): Make display field order depended on stream information.
+       Default is Auto. If detected field order is wrong, it can be overwritten
+       via OSD to "Top field first" or "Bottom field first".
 2008-07-14:
    - video-xv: - Workaround for DPMS not getting reenabled.
                - Fix for reenable DPMS when quit from fullscreen mode.

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.55 2008/04/16 10:41:40 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.56 2008/07/20 16:41:01 lucke Exp $
  */
 
 #include <string.h>
@@ -72,6 +72,8 @@ const char *userKeyUsage[SETUP_USERKEYS];
 
 const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
 
+const char *fieldOrderNames[SETUP_FIELD_ORDER_NAMES];
+
 /* ----------------------------------------------------------------------------
  */
 cSetupStore *setupStore=NULL;
@@ -113,6 +115,7 @@ void cSetupStore::InitSetupStore()
   pixelFormatLocked = false;
   useStretchBlit    = 0;
   stretchBlitLocked = false;
+  fieldOrderMode    = 2;
   bufferMode      = 0;
   mainMenu  = 1;
   syncTimerMode = 2;
@@ -201,6 +204,11 @@ void cSetupStore::InitSetupStore()
   syncTimerNames[1] = "rtc";
   syncTimerNames[2] = "sig";
   syncTimerNames[3] = NULL;
+
+  fieldOrderNames[0] = "Bottom field first";
+  fieldOrderNames[1] = "Top field first";
+  fieldOrderNames[2] = "Auto";
+  fieldOrderNames[3] = NULL;
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
@@ -368,6 +376,11 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     syncTimerMode = clamp (0, syncTimerMode, 2);
     fprintf(stderr, "[setup-softdevice] syncTimerMode: %s\n",
             syncTimerNames[syncTimerMode]);
+  } else if (!strcasecmp(Name, "fieldOrderMode")) {
+    fieldOrderMode = atoi (Value);
+    fieldOrderMode = clamp (0, fieldOrderMode, 2);
+    fprintf(stderr, "[setup-softdevice] fieldOrderMode: %s\n",
+            fieldOrderNames[fieldOrderMode]);
   } else if (!strcasecmp(Name, "vidBrightness")) {
     vidBrightness = atoi (Value);
     vidBrightness = clamp (-1, vidBrightness, 100);

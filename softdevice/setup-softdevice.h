@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.44 2008/04/16 10:41:40 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.45 2008/07/20 16:41:01 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -102,6 +102,9 @@ extern const char *userKeyUsage[SETUP_USERKEYS];
 #define SETUP_SYNC_TIMER_NAMES  4
 extern const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
 
+#define SETUP_FIELD_ORDER_NAMES  4
+extern const char *fieldOrderNames[SETUP_FIELD_ORDER_NAMES];
+
 /* ----------------------------------------------------------------------------
  * allow changing of output pixfmt
  */
@@ -158,6 +161,7 @@ struct cSetupStore {
     int   tripleBuffering;
     int   useStretchBlit;
     bool  stretchBlitLocked;
+    int   fieldOrderMode;
 #if VDRVERSNUM >= 10501
     bool  doSuspend;
 #endif

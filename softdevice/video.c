@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.76 2007/07/12 16:17:31 lucke Exp $
+ * $Id: video.c,v 1.77 2008/07/20 16:41:01 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -42,6 +42,7 @@ cVideoOut::cVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
   aspect_I = 0;
   current_aspect = -1;
   interlaceMode = -1;
+  currentFieldOrder = targetFieldOrder = 1;
   prevZoomFactor = 0;
   realZoomFactor = 1.0;
   PixelMask=NULL;
@@ -388,6 +389,18 @@ void cVideoOut::CheckAspectDimensions(sPicBuffer *pic)
     //dsyslog("[VideoOut]: interlaced mode now: %sinterlaced",
       //      (picture->interlaced_frame) ? "" : "non-");
     interlaceMode = pic->interlaced_frame;
+  }
+
+  if (interlaceMode &&
+      pic->top_field_first != currentFieldOrder)
+  {
+    targetFieldOrder = pic->top_field_first;
+  }
+
+  if (setupStore->fieldOrderMode < 2 &&
+      setupStore->fieldOrderMode != currentFieldOrder)
+  {
+    targetFieldOrder = setupStore->fieldOrderMode;
   }
 
   if (aspect_I != pic->dtg_active_format ||

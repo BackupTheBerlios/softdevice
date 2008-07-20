@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.82 2008/04/16 10:41:40 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.83 2008/07/20 16:41:01 lucke Exp $
  */
 
 #include <math.h>
@@ -766,6 +766,7 @@ int cVideoStreamDecoder::DecodePicture_avcodec(sPicBuffer *&pic, int &got_pictur
 #else
   pic->interlaced_frame=true;
 #endif
+  pic->top_field_first = context->coded_frame->top_field_first;
   pic->width=context->width;
   pic->height=context->height;
 #if LIBAVCODEC_BUILD > 4686
@@ -837,9 +838,11 @@ int cVideoStreamDecoder::DecodePicture_cle266(sPicBuffer *&pic,
 #if LIBCLE266MPEGDEC_VERSION_INT >= 4
   pic->dtg_active_format = decoder.dtg_active_format;
   pic->interlaced_frame = decoder.progressive_frame ? false : true;
+  pic->top_field_first = decoder.top_field_first;
 #else
   pic->dtg_active_format = 0; // currently not parsed
   pic->interlaced_frame = true; // FIXME Do we have that information?
+  pic->top_field_first = 1;
 #endif
   pic->aspect_ratio = ( decoder.aspect_ratio_info >= 0
     && decoder.aspect_ratio_info < 5 ) ?

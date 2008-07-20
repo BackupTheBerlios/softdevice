@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.21 2007/07/11 20:04:22 lucke Exp $
+ * $Id: PicBuffer.c,v 1.22 2008/07/20 16:41:01 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +35,7 @@ void CopyPicBufferContext(sPicBuffer *dest,sPicBuffer *orig){
     dest->aspect_ratio=orig->aspect_ratio;
     dest->pts=orig->pts;
     dest->interlaced_frame=orig->interlaced_frame;
+    dest->top_field_first=orig->top_field_first;
     dest->pict_type=orig->pict_type;
 };
 
