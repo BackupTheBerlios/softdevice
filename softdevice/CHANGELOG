@@ -1,4 +1,6 @@
 Changelog
+2008-07-27:
+   - video: Fix for bug #13729 when displaying yuv 422 planar video source.
 2008-07-20:
    - audio: Fix for bug #14039 based upon suggestion by 'earcar'.
    - video-dfb (TV-out): Make display field order depended on stream information.

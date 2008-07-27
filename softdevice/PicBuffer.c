@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.22 2008/07/20 16:41:01 lucke Exp $
+ * $Id: PicBuffer.c,v 1.23 2008/07/27 17:34:42 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -552,6 +552,108 @@ static void CopyPicBuf_YUV420P(sPicBuffer *dst, sPicBuffer *src,
         };
 };
 
+/* ---------------------------------------------------------------------------
+ */
+static void
+CopyPicBuf_YUV422P_YUV420P(sPicBuffer *dst, sPicBuffer *src,
+                           int cutTop, int cutBottom,
+                           int cutLeft, int cutRight)
+{
+
+        int copy_width  = dst->width  - 2 * (cutLeft   + cutRight);
+        int copy_height = dst->height - 2 * (cutBottom + cutTop) ;
+
+        uint8_t *dst_ptr = dst->pixel[0] +
+                           (2 * cutTop + dst->edge_height) * dst->stride[0] +
+                           2 * cutLeft + dst->edge_width;
+        uint8_t *src_ptr = src->pixel[0] +
+                           (2 * cutTop + src->edge_height) * src->stride[0] +
+                           2 * cutLeft + src->edge_width;
+
+        for (int i = copy_height; i >= 0; i--) {
+                fast_memcpy (dst_ptr, src_ptr, copy_width);
+                dst_ptr += dst->stride[0];
+                src_ptr += src->stride[0];
+        }
+
+        dst_ptr = dst->pixel[1] +
+                  (cutTop + dst->edge_height / 2) * dst->stride[1] +
+                  cutLeft + dst->edge_width / 2;
+        src_ptr = src->pixel[1] +
+                  2 * (cutTop + src->edge_height / 2) * src->stride[1] +
+                  cutLeft + src->edge_width / 2;
+
+        copy_width  = dst->width  / 2 - (cutLeft   + cutRight);
+        copy_height = dst->height / 2 - (cutBottom + cutTop);
+
+        for (int i = copy_height; i--; ) {
+                fast_memcpy (dst_ptr, src_ptr, copy_width);
+                dst_ptr += dst->stride[1];
+                src_ptr += 2 * src->stride[1];
+        }
+
+        dst_ptr = dst->pixel[2] +
+                  (cutTop + dst->edge_height / 2) * dst->stride[1] +
+                  cutLeft + dst->edge_width / 2;
+        src_ptr = src->pixel[2] +
+                  2 * (cutTop + src->edge_height / 2) * src->stride[2] +
+                  cutLeft + src->edge_width / 2;
+
+        for (int i = copy_height; i--; ) {
+                fast_memcpy (dst_ptr, src_ptr, copy_width);
+                dst_ptr += dst->stride[2];
+                src_ptr += 2 * src->stride[2];
+        }
+}
+
+/* ---------------------------------------------------------------------------
+ */
+static void
+CopyPicBuf_YUV422P_YUV2 (sPicBuffer *dst, sPicBuffer *src,
+                         int cutTop, int cutBottom,
+                         int cutLeft, int cutRight)
+{
+        yuv420_convert_fct yuv_convert = GetYuv420ConvertFct (dst->format);
+
+        uint8_t *dst_ptr = dst->pixel[0] +
+                           (2 * cutTop + dst->edge_height) * dst->stride[0] +
+                           4 * cutLeft + 2 * dst->edge_width;
+
+        uint8_t *py = src->pixel[0] +
+                      (2 * cutTop + src->edge_height) * src->stride[0] +
+                      2 * cutLeft + src->edge_width;
+
+        uint8_t *pu = src->pixel[1] +
+                      (cutTop + src->edge_height) * src->stride[1] +
+                      cutLeft + src->edge_width / 2;
+
+        uint8_t *pv = src->pixel[2] +
+                      (cutTop + src->edge_height) * src->stride[2] +
+                      cutLeft + src->edge_width / 2;
+
+        int dstStride   = dst->stride[0];
+        int lumStride   = src->stride[0];
+        int chromStride = src->stride[1];
+
+        int height = dst->height - 2 * (cutTop + cutBottom);
+        int width  = dst->width - 2 * (cutLeft + cutRight);
+
+        for(int y = height / 2; y--; ) {
+                (*yuv_convert)(dst_ptr, dst_ptr + dstStride,
+                               py, py + lumStride,
+                               pu, pv,
+                               width);
+                py      += 2 * lumStride;
+                pu      += 2 * chromStride;
+                pv      += 2 * chromStride;
+                dst_ptr += 2 * dstStride;
+        }
+        SFENCE;
+        EMMS;
+
+        dst->interlaced_frame = src->interlaced_frame;
+}
+
 /*------------------------------------------------------------------------*/
 void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
                 int cutTop, int cutBottom,
@@ -575,13 +677,47 @@ void CopyPicBuf(sPicBuffer *dst, sPicBuffer *src,
                 dst->edge_height=0;
         };
 
-        if ( dst->format == PIX_FMT_YUV420P )
-                CopyPicBuf_YUV420P(dst,src,
-                                cutTop,cutBottom,
-                                cutLeft,cutRight);
-        else CopyPicBuf_YUV420P_Convert(dst,src,
-                                cutTop,cutBottom,
-                                cutLeft,cutRight);
+        if ( dst->format == PIX_FMT_YUV420P ) {
+                if ( src->format == PIX_FMT_YUV420P ) {
+                        CopyPicBuf_YUV420P (dst, src,
+                                            cutTop, cutBottom,
+                                            cutLeft, cutRight);
+                } else if ( src->format == PIX_FMT_YUV422P ){
+                        CopyPicBuf_YUV422P_YUV420P (dst, src,
+                                                    cutTop, cutBottom,
+                                                    cutLeft, cutRight);
+                } else {
+                                static int once = 0;
+
+                        if (!once) {
+                                esyslog ("[CopyPicBuf]: "
+                                         "No converter available for "
+                                         "(%d -> %d) conversion",
+                                         src->format, dst->format);
+                                once = 1;
+                        }
+                }
+        } else {
+                if ( src->format == PIX_FMT_YUV420P ) {
+                        CopyPicBuf_YUV420P_Convert(dst,src,
+                                        cutTop,cutBottom,
+                                        cutLeft,cutRight);
+                } else if ( src->format == PIX_FMT_YUV422P ){
+                        CopyPicBuf_YUV422P_YUV2 (dst, src,
+                                                    cutTop, cutBottom,
+                                                    cutLeft, cutRight);
+                } else {
+                                static int once = 0;
+
+                        if (!once) {
+                                esyslog ("[CopyPicBuf]: "
+                                         "No converter available for "
+                                         "(%d -> %d) conversion",
+                                         src->format, dst->format);
+                                once = 1;
+                        }
+                }
+        }
 }
 
 /*------------------------------------------------------------------------*/
