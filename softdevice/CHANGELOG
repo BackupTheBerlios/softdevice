@@ -1,4 +1,6 @@
 Changelog
+2008-09-10:
+   - ShmClient: Fix for bug #14302: vdr version dependent member in setupstore.
 2008-07-27:
    - video: Fix for bug #13729 when displaying yuv 422 planar video source.
 2008-07-20:
