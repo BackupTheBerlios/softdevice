@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.33 2008/01/25 23:55:44 lucke Exp $
+ * $Id: SoftOsd.c,v 1.34 2008/09/10 20:17:43 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -96,7 +96,11 @@ cSoftOsd::~cSoftOsd() {
         close=true;
         active=false;
         Cancel(3);
-        if (videoOut) {
+        if (videoOut
+#if VDRVERSNUM >= 10509
+            && cOsd::Active()
+#endif
+            ) {
                 voutMutex.Lock();
                 videoOut->CloseOSD();
 #ifdef HAVE_YAEPGPATCH
@@ -120,6 +124,14 @@ eOsdError cSoftOsd::SetAreas(const tArea *Areas, int NumAreas)
         return cOsd::SetAreas(Areas, NumAreas);
 }
 
+#if VDRVERSNUM >= 10509
+/* -------------------------------------------------------------------------*/
+void cSoftOsd::SetActive(bool On)
+{
+        cOsd::SetActive(On);
+}
+#endif
+
 /* -------------------------------------------------------------------------*/
 void cSoftOsd::Action() {
         OSDDEB("OSD thread started\n");
@@ -130,8 +142,13 @@ void cSoftOsd::Action() {
                 int newXPan, newYPan;
 
                 voutMutex.Lock();
-                if (!videoOut) {
+                if (!videoOut
+#if VDRVERSNUM >= 10509
+                    || !cOsd::Active()
+#endif
+                    ) {
                         voutMutex.Unlock();
+                        usleep(17000);
                         continue;
                 };
 
@@ -290,6 +307,12 @@ bool cSoftOsd::SetMode(int Depth, bool HasAlpha, bool AlphaInversed,
 /* --------------------------------------------------------------------------*/
 void cSoftOsd::Flush(void) {
         OSDDEB("SoftOsd::Flush \n");
+
+#if VDRVERSNUM >= 10509
+        if (!cOsd::Active())
+                return;
+#endif
+
         bool OSD_changed=FlushBitmaps(true);
 
         voutMutex.Lock();

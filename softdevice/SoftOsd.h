@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.18 2008/04/10 06:48:57 lucke Exp $
+ * $Id: SoftOsd.h,v 1.19 2008/09/10 20:17:43 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -100,6 +100,9 @@ public:
     virtual ~cSoftOsd();
     virtual void Flush(void);
     virtual eOsdError SetAreas(const tArea *Areas, int NumAreas);
+#if VDRVERSNUM >= 10509
+    virtual void      SetActive(bool On);
+#endif
 
     // Create a copy of the osd layer for the Grab() method.
     // Does *not* change anything in the osd!!
