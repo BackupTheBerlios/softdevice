@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.34 2008/09/10 20:17:43 lucke Exp $
+ * $Id: SoftOsd.c,v 1.35 2008/09/12 16:48:58 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -118,7 +118,10 @@ eOsdError cSoftOsd::SetAreas(const tArea *Areas, int NumAreas)
 {
         if (shown) {
                 Clear();
-                videoOut->ClearOSD();
+#if VDRVERSNUM >= 10509
+                if (cOsd::Active())
+#endif
+                        videoOut->ClearOSD();
                 shown = false;
         }
         return cOsd::SetAreas(Areas, NumAreas);
@@ -128,7 +131,15 @@ eOsdError cSoftOsd::SetAreas(const tArea *Areas, int NumAreas)
 /* -------------------------------------------------------------------------*/
 void cSoftOsd::SetActive(bool On)
 {
-        cOsd::SetActive(On);
+        voutMutex.Lock();
+        if (On != cOsd::Active()) {
+                cOsd::SetActive(On);
+                if (On && GetBitmap(0)) {
+                        Flush();
+                        OsdCommit(true);
+                }
+        }
+        voutMutex.Unlock();
 }
 #endif
 
@@ -187,7 +198,7 @@ void cSoftOsd::Action() {
 }
 
 /*--------------------------------------------------------------------------*/
-void cSoftOsd::OsdCommit() {
+void cSoftOsd::OsdCommit(bool forced) {
         OSDDEB("OsdCommit()\n");
         int newX;
         int newY;
@@ -217,6 +228,9 @@ void cSoftOsd::OsdCommit() {
                 RefreshAll = true;
                 modeChanged = true;
         }
+
+        if (forced)
+                RefreshAll = true;
 
         if (modeChanged) {
                 OSDDEB("mode changed\n");

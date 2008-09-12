@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.19 2008/09/10 20:17:43 lucke Exp $
+ * $Id: SoftOsd.h,v 1.20 2008/09/12 16:48:58 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
@@ -117,7 +117,7 @@ protected:
     bool FlushBitmaps(bool OnlyDirty);
     bool DrawConvertBitmap(cBitmap *Bitmap, bool OnlyDirty);
 
-    void OsdCommit();
+    void OsdCommit(bool forced = false);
     // may only be called if the caller holds voutMutex
 
     void Clear();

@@ -1,4 +1,6 @@
 Changelog
+2008-09-12:
+   - OSD: next fix in subtitle vs. OSD behaviour issues.
 2008-09-10:
    - OSD: continued fix from 2008-01-26: now subtitle vs. menu OSD flickering.
    - ShmClient: Fix for bug #14302: vdr version dependent member in setupstore.
