@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.83 2008/07/20 16:41:01 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.84 2008/09/21 12:55:57 lucke Exp $
  */
 
 #include <math.h>
@@ -140,7 +140,11 @@ cStreamDecoder::cStreamDecoder(AVCodecContext *Context, bool packetMode)
 {
   context=Context;
   if (context)
+#if HAS_ERROR_RECOGNITION
+        context->error_recognition=1;
+#else
         context->error_resilience=1;
+#endif
   CMDDEB("Neuer StreamDecoder Pid: %d context %p type %d\n",
         getpid(),context,context->codec_type );
   pts=0;
@@ -1026,8 +1030,19 @@ static int seek_RingBuffer(void *opaque, offset_t offset, int whence)
 //----------------------------   MPEG Decoder
 cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
 {
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
   if ( avcodec_build() != LIBAVCODEC_BUILD ) {
-     fprintf(stderr,"Fatal Error! Libavcodec library build(%d) doesn't match avcodec.h build(%d)!!!\n",avcodec_build(),LIBAVCODEC_BUILD);
+     fprintf(stderr,
+             "Fatal Error! Libavcodec library build(%d) doesn't "
+               "match avcodec.h build(%d)!!!\n",
+             avcodec_build(), LIBAVCODEC_BUILD);
+#else
+  if ( avcodec_version() != LIBAVCODEC_VERSION_INT ) {
+     fprintf(stderr,
+             "Fatal Error! Libavcodec library build(%d) doesn't "
+               "match avcodec.h build(%d)!!!\n",
+             avcodec_version(), LIBAVCODEC_VERSION_INT);
+#endif
      fprintf(stderr,"Check your ffmpeg installation / the pathes in the Makefile!!!\n");
      exit(-1);
   };

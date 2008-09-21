@@ -1,4 +1,6 @@
 Changelog
+2008-09-21:
+   - build: Fix build failure with newer ffmpeg releases (bug #14494).
 2008-09-12:
    - OSD: next fix in subtitle vs. OSD behaviour issues.
 2008-09-10:

@@ -2,7 +2,7 @@
 #
 # simple configure script for softdevice
 #
-# $Id: configure,v 1.49 2008/07/14 17:03:03 lucke Exp $
+# $Id: configure,v 1.50 2008/09/21 12:55:57 lucke Exp $
 #
 
 TMPDIR1="/tmp"
@@ -399,6 +399,43 @@ if test "${libpostproc}" = "yes" ; then
     echo " is: uint8_t **"
   fi
 fi
+
+########################################################
+echo -n "Checking ffmpeg for member of AVCodecContext: error_recognition ... "
+echo  "Checking ffmpeg for member of AVCodecContext: error_recognition ----" >> config.log
+
+test_error_recognition()
+{
+  has_error_recognition="yes";
+cat > ${TMPC} << EOF
+#define __STDC_CONSTANT_MACROS
+#include <stdlib.h>
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+}
+int main(void) {
+    AVCodecContext *context;
+
+  if (context -> error_recognition)
+    return 1;
+  return 0;
+}
+EOF
+  $cc $CFLAGS $ffmpeg_cflags $swscale_cflags -o $TMPE $TMPC $swscale_libs $ffmpeg_libs >> config.log 2>&1 || has_error_recognition="no"
+  $TMPE
+};
+
+########################################################
+# check for error_recognition
+test_error_recognition
+if test "${has_error_recognition}" = "yes" ; then
+  echo " 'error_recognition' found"
+else
+  echo " 'error_recognition' NOT found"
+fi
+
 
 ########################################################
 # check for ALSA
@@ -929,6 +966,12 @@ fi
 
 if test "${swscale}" = "yes"; then
   echo "#define USE_SWSCALE" >> $TMPH
+fi
+
+if test "${has_error_recognition}" = "yes" ; then
+  echo "#define HAS_ERROR_RECOGNITION           1" >> $TMPH
+else
+  echo "#define HAS_ERROR_RECOGNITION           0" >> $TMPH
 fi
 
 echo "FFMPEGLIBS = ${swscale_libs} ${ffmpeg_libs}" >> $TMPM
