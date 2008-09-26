@@ -8,7 +8,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: <softdevice-devel at lists.berlios.de>\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: \n"
-"Last-Translator: \n"
+"Last-Translator: Diego Pierotto <vdr-italian@tiscali.it>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-15\n"
@@ -30,10 +30,10 @@ msgid "default"
 msgstr "predefinito"
 
 msgid "safe"
-msgstr "sicuro"
+msgstr "sicura"
 
 msgid "good seeking"
-msgstr "precisione"
+msgstr "precisa"
 
 msgid "HDTV"
 msgstr "HDTV"
@@ -63,31 +63,31 @@ msgid "Saturation"
 msgstr "Saturazione"
 
 msgid "HW-Deinterlace"
-msgstr ""
+msgstr "Deinterlacciamento HW"
 
 msgid "CropMode"
 msgstr "Modalità compatta"
 
 msgid "CropModeToggleKey"
-msgstr "Tasto cambiamento aspetto"
+msgstr "Tasto cambio aspetto"
 
 msgid "Autodetect Movie Aspect"
-msgstr "Rileva aspetto film (16:9/4:3)"
+msgstr "Rileva aspetto video (16:9/4:3)"
 
 msgid "no"
 msgstr "no"
 
 msgid "yes"
-msgstr "si"
+msgstr "sì"
 
 msgid "Zoom factor"
-msgstr "Fattore ingrandimento"
+msgstr "Fattore di ingrandimento"
 
 msgid "Zoom area shift (left/right)"
 msgstr "Cambia area zoom (sinistra/destra)"
 
 msgid "Zoom area shift (up/down)"
-msgstr "Cambia area zoom (su/giï¿½)"
+msgstr "Cambia area zoom (su/giù)"
 
 msgid "Crop lines from top"
 msgstr "Righe da togliere dall'alto"
@@ -168,19 +168,19 @@ msgid "Use StretchBlit"
 msgstr "Utilizza StretchBlit"
 
 msgid "Use SourceRectangle"
-msgstr ""
+msgstr "Utilizza fonte rettangolo"
 
 msgid "Hide main menu entry"
-msgstr "Nascondi voce nel menu principale"
+msgstr "Nascondi voce menu principale"
 
 msgid "Info Messages"
-msgstr "Messaggi informazione"
+msgstr "Messaggi di informazione"
 
 msgid "Debug Messages"
-msgstr "Messaggi debug"
+msgstr "Messaggi di debug"
 
 msgid "Trace Messages"
-msgstr "Messaggi prova"
+msgstr "Messaggi di prova"
 
 msgid "Logfile"
 msgstr "File di log"
@@ -193,3 +193,4 @@ msgstr "Software emulazione scheda MPEG2"
 
 msgid "Softdevice"
 msgstr "Softdevice"
+

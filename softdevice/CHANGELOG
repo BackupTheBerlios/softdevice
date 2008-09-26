@@ -1,4 +1,6 @@
 Changelog
+2008-09-26:
+   - Updated italian translations by Diego Pierotto.
 2008-09-21:
    - build: Fix build failure with newer ffmpeg releases (bug #14494).
 2008-09-12:
@@ -30,7 +32,7 @@ Changelog
    - Switched to vdr-1.5.x OSD translation.
    - Switched from av_read_packet() to av_read_frame().
 2008-04-14:
-   - Italian translation by Diego.
+   - Italian translation by Diego Pierotto.
 2008-04-13:
    - audio: fix ac3 downmix request for ffmpeg >= r10199.
 2008-04-10:
