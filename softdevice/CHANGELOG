@@ -1,4 +1,6 @@
 Changelog
+2008-10-25:
+   - build: Fix compiling with newer ffmpeg versions (by Jason Harvey).
 2008-09-26:
    - Updated italian translations by Diego Pierotto.
 2008-09-21:

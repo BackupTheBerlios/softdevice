@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.44 2008/02/26 08:06:18 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.45 2008/10/25 10:23:49 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -312,7 +312,7 @@ private:
     bool          packetMode;
 public:
     int read_packet(uint8_t *buf, int buf_size);
-    int seek(offset_t offset, int whence);
+    int seek(int64_t offset, int whence);
 
 public:
     cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut);

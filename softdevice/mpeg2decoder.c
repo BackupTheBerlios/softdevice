@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.84 2008/09/21 12:55:57 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.85 2008/10/25 10:23:49 lucke Exp $
  */
 
 #include <math.h>
@@ -1016,9 +1016,9 @@ static int read_packet_RingBuffer(void *opaque, uint8_t *buf, int buf_size) {
 };
 
 #if LIBAVFORMAT_BUILD >4625
-static offset_t seek_RingBuffer(void *opaque, offset_t offset, int whence)
+static int64_t seek_RingBuffer(void *opaque, int64_t offset, int whence)
 #else
-static int seek_RingBuffer(void *opaque, offset_t offset, int whence)
+static int seek_RingBuffer(void *opaque, int64_t offset, int whence)
 #endif
 {
      cMpeg2Decoder *Dec=(cMpeg2Decoder *)(opaque);
@@ -1135,7 +1135,7 @@ start:
     return 0;
 };
 
-int cMpeg2Decoder::seek(offset_t offset, int whence) {
+int cMpeg2Decoder::seek(int64_t offset, int whence) {
    printf("unimplemented: seek offset %lld whence %d\n", (long long int)offset, whence);
    return -EINVAL;
 };
