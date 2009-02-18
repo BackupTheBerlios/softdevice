@@ -1,4 +1,6 @@
 Changelog
+2009-02-18:
+   - build: Fix compiling with newer ffmpeg versions (r15634,r15799) (bug #14990).
 2008-10-25:
    - build: Fix compiling with newer ffmpeg versions (by Jason Harvey).
 2008-09-26:

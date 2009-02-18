@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.85 2008/10/25 10:23:49 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.86 2009/02/18 19:40:46 lucke Exp $
  */
 
 #include <math.h>
@@ -1117,7 +1117,7 @@ start:
          size=buf_size;
 
 #if LIBAVFORMAT_BUILD >= ((52<<16)+(0<<8)+0)
-       ic->pb->buffer=u;
+       memcpy (buf, u, size);
 #else
        ic->pb.buffer=u;
 #endif
@@ -1155,9 +1155,11 @@ void cMpeg2Decoder::initStream() {
        fprintf (stderr, "Failed to open input stream.Error %d\n", err);
    }
 
-   init_put_byte(ic->pb, NULL,dvb_buf_size[setupStore->bufferMode]/2, 0, this,
-       read_packet_RingBuffer,NULL,seek_RingBuffer);
-   ic->pb->buf_end=NULL;
+   unsigned char *buffer = (unsigned char *)
+                           av_malloc (dvb_buf_size[setupStore->bufferMode]/2);
+   init_put_byte(ic->pb,
+                 buffer, dvb_buf_size[setupStore->bufferMode]/2, 0, this,
+                 read_packet_RingBuffer,NULL,seek_RingBuffer);
    ic->pb->is_streamed=true;
 #else
    fmt->flags |= AVFMT_NOFILE;
@@ -1532,6 +1534,7 @@ void cMpeg2Decoder::Stop(bool GetMutex)
 #if LIBAVFORMAT_BUILD >= ((52<<16)+(3<<8)+0)
     av_close_input_stream(ic);
     if (pb) {
+      av_free(pb->buffer);
       av_free(pb);
     }
 #else
