@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.46 2008/09/10 17:15:38 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.47 2009/02/19 20:27:58 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -105,6 +105,9 @@ extern const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
 #define SETUP_FIELD_ORDER_NAMES  4
 extern const char *fieldOrderNames[SETUP_FIELD_ORDER_NAMES];
 
+#define SETUP_PREF_FIELD_NAMES  4
+extern const char *prefFieldNames[SETUP_PREF_FIELD_NAMES];
+
 /* ----------------------------------------------------------------------------
  * allow changing of output pixfmt
  */
@@ -115,6 +118,14 @@ extern const char *pix_fmt[SETUP_PIXFMT];
  */
 #define SETUP_SUSPENDVIDEO 3
 extern const char *suspendVideo[SETUP_SUSPENDVIDEO];
+
+/*-----------------------------------------------------------------------------
+ */
+typedef enum prefField {
+        bothFields,
+        earlierField,
+        laterField
+} tPrefField;
 
 /* ---------------------------------------------------------------------------
  */
@@ -149,6 +160,7 @@ struct cSetupStore {
     int   ppQuality;
     int   mirror;
     int   syncOnFrames;
+    bool  useAVReadFrame;
     int   avOffset;
     int   screenPixelAspect;
     int   zoom;
@@ -182,6 +194,9 @@ struct cSetupStore {
     char  alsaAC3Device [ALSA_DEVICE_NAME_LENGTH];
 
     int   setupStoreShmid;
+
+    tPrefField   prefField;
+    int          prefFieldMarker;
 };
 
 #define OSDMODE_PSEUDO    0

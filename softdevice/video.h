@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.56 2008/07/20 16:41:01 lucke Exp $
+ * $Id: video.h,v 1.57 2009/02/19 20:27:58 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -66,6 +66,7 @@ private:
     //
     sPicBuffer  *oldPicture;
     cMutex      oldPictureMutex;
+    bool        stillPictureMode;
     void        SetOldPicture(sPicBuffer *pic);
 
 protected:
@@ -192,6 +193,8 @@ public:
             oldPictureMutex.Unlock();
     };
 
+    virtual void SetStillPictureMode (bool on);
+    virtual void SelectField (sPicBuffer *pic);
 
     virtual void Action(void);
     // osd control thread. Refreshes the osd on dimension changes and

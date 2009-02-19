@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice-menu.c,v 1.15 2008/07/20 16:41:01 lucke Exp $
+ * $Id: setup-softdevice-menu.c,v 1.16 2009/02/19 20:27:58 lucke Exp $
  */
 
 //#include "video.h"
@@ -370,6 +370,18 @@ cMenuSetupSoftdevice::cMenuSetupSoftdevice(cPlugin *plugin)
                             (SETUP_FIELD_ORDER_NAMES-1),
                             fieldOrderNames));
 
+  Add(new cMenuEditStraItem(tr("Still Picture Field"),
+                            (int *) &data->prefField,
+                            (SETUP_PREF_FIELD_NAMES-1),
+                            prefFieldNames));
+
+  Add(new cMenuEditBoolItem(tr("Still Picture Field Marker"),
+                            (int *) &data->prefFieldMarker, tr("no"), tr("yes")));
+
+  Add(new cMenuEditBoolItem(tr("Use av_read_frame()"),
+                            (int *) &data->useAVReadFrame, tr("no"), tr("yes")));
+
+
 #if VDRVERSNUM >= 10334
   Add(new cOsdItem(" ", osUnknown, false));
 #else
@@ -489,6 +501,9 @@ void cMenuSetupSoftdevice::Store(void)
   SetupStore ("mainMenu",             setupStore->mainMenu);
   SetupStore ("syncTimerMode",        setupStore->syncTimerMode);
   SetupStore ("fieldOrderMode",       setupStore->fieldOrderMode);
+  SetupStore ("preferredField",       setupStore->prefField);
+  SetupStore ("preferredFieldMarker", setupStore->prefFieldMarker);
+  SetupStore ("useAVReadFrame",       setupStore->useAVReadFrame);
   SetupStore ("vidBrightness",        setupStore->vidBrightness);
   SetupStore ("vidContrast",          setupStore->vidContrast);
   SetupStore ("vidHue",               setupStore->vidHue);

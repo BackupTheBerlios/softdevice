@@ -1,4 +1,10 @@
 Changelog
+2009-02-19:
+   - decoding: Enable selection between av_read_packet() and av_read_frame() via
+               OSD. To take effect, vdr has to be restarted.
+   - still picture: Dependant on frame type (interlaced vs. progressive) show only
+                    one half frame. This avoids still picture judder.
+                    For demo an optional marker could be drawn when active.
 2009-02-18:
    - build: Fix compiling with newer ffmpeg versions (r15634,r15799) (bug #14990).
 2008-10-25:

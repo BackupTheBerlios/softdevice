@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.56 2008/07/20 16:41:01 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.57 2009/02/19 20:27:58 lucke Exp $
  */
 
 #include <string.h>
@@ -74,6 +74,8 @@ const char *syncTimerNames[SETUP_SYNC_TIMER_NAMES];
 
 const char *fieldOrderNames[SETUP_FIELD_ORDER_NAMES];
 
+const char *prefFieldNames[SETUP_PREF_FIELD_NAMES];
+
 /* ----------------------------------------------------------------------------
  */
 cSetupStore *setupStore=NULL;
@@ -116,6 +118,9 @@ void cSetupStore::InitSetupStore()
   useStretchBlit    = 0;
   stretchBlitLocked = false;
   fieldOrderMode    = 2;
+  prefField         = bothFields;
+  prefFieldMarker   = 0;
+  useAVReadFrame    = true;
   bufferMode      = 0;
   mainMenu  = 1;
   syncTimerMode = 2;
@@ -209,6 +214,11 @@ void cSetupStore::InitSetupStore()
   fieldOrderNames[1] = "Top field first";
   fieldOrderNames[2] = "Auto";
   fieldOrderNames[3] = NULL;
+
+  prefFieldNames[0] = tr("Both Fields");
+  prefFieldNames[1] = tr("First Field");
+  prefFieldNames[2] = tr("Later Field");
+  prefFieldNames[3] = NULL;
 }
 
 bool cSetupStore::SetupParse(const char *Name, const char *Value)
@@ -381,6 +391,19 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
     fieldOrderMode = clamp (0, fieldOrderMode, 2);
     fprintf(stderr, "[setup-softdevice] fieldOrderMode: %s\n",
             fieldOrderNames[fieldOrderMode]);
+  } else if (!strcasecmp(Name, "preferredField")) {
+    prefField = (tPrefField) atoi (Value);
+    prefField = (tPrefField) clamp (bothFields, prefField, laterField);
+    fprintf(stderr, "[setup-softdevice] preferredField: %s\n",
+            prefFieldNames[prefField]);
+  } else if (!strcasecmp(Name, "preferredFieldMarker")) {
+    prefFieldMarker = atoi (Value);
+    prefFieldMarker = clamp (0, prefFieldMarker, 1);
+    fprintf(stderr, "[setup-softdevice] preferredFieldMarker: %s\n",
+            (prefFieldMarker) ? "On" : "Off");
+  } else if (!strcasecmp(Name, "useAVReadFrame")) {
+    useAVReadFrame = (bool) atoi (Value);
+    fprintf(stderr, "[setup-softdevice] useAVReadFrame: %s\n", (useAVReadFrame) ? "yes": "no");
   } else if (!strcasecmp(Name, "vidBrightness")) {
     vidBrightness = atoi (Value);
     vidBrightness = clamp (-1, vidBrightness, 100);

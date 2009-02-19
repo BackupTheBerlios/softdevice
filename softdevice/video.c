@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.77 2008/07/20 16:41:01 lucke Exp $
+ * $Id: video.c,v 1.78 2009/02/19 20:27:58 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -461,6 +461,74 @@ void cVideoOut::Sync(cSyncTimer *syncTimer, int *delay)
 
 /* ---------------------------------------------------------------------------
  */
+void cVideoOut::SetStillPictureMode(bool on)
+{
+    stillPictureMode = on;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::SelectField (sPicBuffer *pic)
+{
+        unsigned char   *dest,
+                        *src;
+        int             i;
+
+    if (!pic->interlaced_frame)
+        return;
+    if (setupStore->prefField == bothFields)
+        return;
+
+    dest = src  = pic->pixel[0]
+                  + (pic->edge_height) * pic->stride[0]
+                  + pic->edge_width;
+
+    if (setupStore->prefField == earlierField) {
+
+        if (pic->top_field_first)
+            dest += pic->stride[0];
+        else
+            src  += pic->stride[0];
+
+    } else {
+
+        if (pic->top_field_first)
+            src  += pic->stride[0];
+        else
+            dest += pic->stride[0];
+    }
+
+    if (setupStore->prefFieldMarker) {
+            int     offset;
+
+        offset = pic->stride[0] / 4
+                 + pic->stride[0] / 4 * pic->stride[0];
+        for (i = 0; i < pic->height / 32; i += 2) {
+#if 0
+            // invert Y
+            for (int j = 0; j < pic->stride[0] / 32; j++) {
+              dest [offset + j] = 255 - dest [offset + j];
+              src  [offset + j] = 255 - src  [offset + j];
+            }
+#else
+            // set frame to very dark
+            memset (dest + offset, 0, pic->stride[0] / 32);
+            memset (src + offset, 0, pic->stride[0] / 32);
+#endif
+            offset += 2 * pic->stride[0];
+        }
+    }
+
+    for (i = 0; i < pic->height; i += 2) {
+        // copy part
+        memcpy (dest, src, pic->stride[0]);
+        dest += 2 * pic->stride[0];
+        src  += 2 * pic->stride[0];
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ */
 void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer,
                                 sPicBuffer *pic)
 {
@@ -470,6 +538,10 @@ void cVideoOut::DrawVideo_420pl(cSyncTimer *syncTimer,
     fprintf(stderr,"X");
     delay -= dispTime = syncTimer->GetRelTime();
     return;
+  }
+
+  if (stillPictureMode) {
+    SelectField (pic);
   }
 
   sPicBuffer *scale_pic=NULL;
@@ -554,7 +626,7 @@ void cVideoOut::EvaluateDelay(uint64_t aPTS, uint64_t pts, int frametime)
   offsetIndex %= AVRG_OFF_CNT;
 
   softlog->Log(SOFT_LOG_TRACE, 0,
-                  "[VideoOut] A/V (%d - %d) off = %d avoff = %d\n",
+                  "[VideoOut] A/V (%lld - %lld) off = %d avoff = %d\n",
                   aPTS, pts, offset, offsetAverage);
 
   dropOffset = (useAverage4Drop) ? offsetAverage : offset;

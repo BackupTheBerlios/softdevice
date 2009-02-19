@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.86 2009/02/18 19:40:46 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.87 2009/02/19 20:27:58 lucke Exp $
  */
 
 #include <math.h>
@@ -1062,6 +1062,8 @@ cMpeg2Decoder::cMpeg2Decoder(cAudioOut *AudioOut, cVideoOut *VideoOut)
   IsSuspended=false;
   Speed=1;
   pb = NULL;
+
+  useAVReadFrame = setupStore->useAVReadFrame;
 }
 
 cMpeg2Decoder::~cMpeg2Decoder()
@@ -1193,15 +1195,21 @@ void cMpeg2Decoder::Action()
           usleep(50000);
 
         BUFDEB("av_read_frame start\n");
-        ret = av_read_frame(ic, &pkt);
-        //ret = av_read_packet(ic, &pkt);
+
+        if (useAVReadFrame)
+            ret = av_read_frame(ic, &pkt);
+        else
+            ret = av_read_packet(ic, &pkt);
+
         if (ret < 0) {
             BUFDEB("cMpeg2Decoder Stream Error!\n");
             if (ThreadActive)
-		    usleep(10000);
+                   usleep(10000);
             continue;
         }
-        av_dup_packet(&pkt);
+        if (useAVReadFrame)
+            av_dup_packet(&pkt);
+
         PacketCount++;
         BUFDEB("got packet from av_read_frame!\n");
 
@@ -1430,6 +1438,7 @@ void cMpeg2Decoder::Play(void)
 {
   CMDDEB("Play\n");
   freezeMode=false;
+  videoOut->SetStillPictureMode (Speed != 1);
   if (running)
   {
     aoutMutex.Lock();
@@ -1450,6 +1459,7 @@ void cMpeg2Decoder::SetPlayMode(softPlayMode playMode, bool packetMode)
 {
   curPlayMode=playMode;
   this->packetMode=packetMode;
+  videoOut->SetStillPictureMode (false);
   switch (curPlayMode) {
     case PmAudioVideo:
       CMDDEB("SetPlayMode PmAudioVideo\n");
@@ -1473,6 +1483,9 @@ void cMpeg2Decoder::Freeze(int Stream, bool freeze)
   CMDDEB("Freeze Streams %d freeze %d\n",Stream,freeze);
   if (Stream & SOFTDEVICE_BOTH_STREAMS == SOFTDEVICE_BOTH_STREAMS )
     freezeMode=freeze;
+  if (freeze)
+    videoOut->SetStillPictureMode (true);
+
   // sleep a short while before putting the
   // audio and video stream decoders to sleep
   usleep(20000);
@@ -1555,10 +1568,12 @@ void cMpeg2Decoder::Stop(bool GetMutex)
 
 /* ----------------------------------------------------------------------------
  */
-
 static uint8_t pes_packet_header[] = {
      0x00,0x00,0x01, 0xe0,           0x00,0x00,   0x84, 0x00, 0x00,0x00};
      // startcode,  video-stream 0, packet length,      no pts
+
+/* ----------------------------------------------------------------------------
+ */
 int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
 {
   bool has_pesheader=false;
@@ -1581,6 +1596,7 @@ int cMpeg2Decoder::StillPicture(uchar *Data, int Length)
     } while (start<Data+SEARCH_LENGTH && start);
   };
 
+  videoOut->SetStillPictureMode (true);
   for (int i=0; 4>i;i++) {
     if (!has_pesheader) {
       // send a fake pes header

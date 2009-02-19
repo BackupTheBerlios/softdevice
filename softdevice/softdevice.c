@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.93 2008/04/18 15:15:41 lucke Exp $
+ * $Id: softdevice.c,v 1.94 2009/02/19 20:27:58 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -497,9 +497,9 @@ void cSoftDevice::Play(void)
 void cSoftDevice::Freeze(void)
 {
     SOFTDEB("Freeze...\n");
-    cDevice::Freeze();
     if (decoder)
       decoder->Freeze();
+    cDevice::Freeze();
     SOFTDEB("Freeze finished.\n");
 }
 
