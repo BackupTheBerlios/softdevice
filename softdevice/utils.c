@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.27 2007/05/10 21:57:26 wachm Exp $
+ * $Id: utils.c,v 1.28 2009/02/27 16:50:55 lucke Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -824,12 +824,12 @@ void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
 };
 
 void yuv420_to_rgb15(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel)
 {
   pixel/=2;
   while (pixel) {
-    YUV420P_TO_RGB(RGB15);  
+    YUV420P_TO_RGB(RGB15);
     pixel--;
   };
 };

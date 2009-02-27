@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.18 2007/05/10 21:57:26 wachm Exp $
+ * $Id: utils.h,v 1.19 2009/02/27 16:50:55 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -52,9 +52,9 @@
 #else
 //#warning Not using MMX extensions
 #define PREFETCH(x)
-#define MOVNTQ   
+#define MOVNTQ
 #define SFENCE
-#define EMMS     
+#define EMMS
 #endif
 
 
@@ -101,28 +101,28 @@ void yv12_to_yuy2( const uint8_t *ysrc,
                    int dstStride
                  );
 
-typedef void (*yuv420_convert_fct)(uint8_t *dst1, uint8_t *dst2, 
+typedef void (*yuv420_convert_fct)(uint8_t *dst1, uint8_t *dst2,
                 uint8_t *py1, uint8_t *py2,uint8_t *pu, uint8_t *pv,
                 int pixel);
 
-void yuv420_to_yuy2(uint8_t *dst1, uint8_t *dst2, 
+void yuv420_to_yuy2(uint8_t *dst1, uint8_t *dst2,
                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                 int pixel);
 void yuv420_to_rgb32(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel);
 void yuv420_to_rgb24(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel);
 void yuv420_to_bgr24(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel);
 void yuv420_to_rgb16(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel);
 
 void yuv420_to_rgb15(uint8_t *dst1, uint8_t *dst2,
-                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv, 
+                 uint8_t *py1, uint8_t *py2, uint8_t *pu, uint8_t *pv,
                  int pixel);
 
 void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
@@ -131,7 +131,7 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
 
 uint64_t  getTimeMilis(void);
 char      *getFBName(void);
-bool  CatchRemoteKey(const char *remoteName, uint64_t key, 
+bool  CatchRemoteKey(const char *remoteName, uint64_t key,
                 const int ToggleKey);
 
 
@@ -145,7 +145,7 @@ void fast_memcpy(void * to, const void * from, size_t len);
             ((uint8_t *)dst)[2]=r; \
             ((uint8_t *)dst)[3]=0; \
         } while (0)
-#define SIZE_RGB32 4 
+#define SIZE_RGB32 4
 
 #define WRITE_RGB24(dst,r,g,b) \
         do { \
