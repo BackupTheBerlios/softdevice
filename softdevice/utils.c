@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.c,v 1.28 2009/02/27 16:50:55 lucke Exp $
+ * $Id: utils.c,v 1.29 2009/02/27 17:02:35 lucke Exp $
  */
 
 // --- plain C MMX functions (i'm too lazy to put this in a class)
@@ -957,7 +957,7 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        }
 }
 
-uint64_t getTimeMilis(void) {
+int64_t getTimeMilis(void) {
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return (int64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;

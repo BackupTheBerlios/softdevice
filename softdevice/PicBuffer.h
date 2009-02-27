@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.10 2008/07/20 16:41:01 lucke Exp $
+ * $Id: PicBuffer.h,v 1.11 2009/02/27 17:02:35 lucke Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
@@ -49,7 +49,7 @@ typedef struct sPicBuffer {
     int height;
     int dtg_active_format;
     float aspect_ratio;
-    uint64_t pts;
+    int64_t pts;
     bool interlaced_frame;
     int  top_field_first;
     int pict_type;

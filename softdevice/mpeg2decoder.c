@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.87 2009/02/19 20:27:58 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.88 2009/02/27 17:02:35 lucke Exp $
  */
 
 #include <math.h>
@@ -339,10 +339,10 @@ cAudioStreamDecoder::cAudioStreamDecoder(AVCodecContext *Context,
 
 /* ---------------------------------------------------------------------------
  */
-uint64_t cAudioStreamDecoder::GetPTS()
+int64_t cAudioStreamDecoder::GetPTS()
 {
   MPGDEB("pts %lld aDelay: %d ",pts,audioOut->GetDelay());
-  uint64_t PTS= pts - audioOut->GetDelay() + setupStore->avOffset*10;
+  int64_t PTS= pts - audioOut->GetDelay() + setupStore->avOffset*10;
  return PTS;
 };
 
@@ -395,7 +395,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       case 1:
       {
           int       delta_pts;
-          uint64_t  PTS;
+          int64_t   PTS;
 
         // feed data for AC3 pass through to device
         audioOut->WriteAC3(data,size);
@@ -520,7 +520,7 @@ int cAudioStreamDecoder::DecodePacket(AVPacket *pkt) {
       pts = pkt->pts;
       pkt->pts=AV_NOPTS_VALUE;
     }
-    uint64_t PTS= pts - audioOut->GetDelay() + setupStore->avOffset*10;
+    int64_t PTS= pts - audioOut->GetDelay() + setupStore->avOffset*10;
 
     MPGDEB("audio pts offset %lld\n",cClock::GetTime()-PTS);
     cClock::AdjustAudioPTS(PTS);
@@ -671,7 +671,7 @@ void cVideoStreamDecoder::Freeze(bool freeze)
   videoOut->FreezeMode(freezeMode);
 };
 
-uint64_t cVideoStreamDecoder::GetPTS() {
+int64_t cVideoStreamDecoder::GetPTS() {
   return pts;
 // Was pts of next frame reduced by time to display next frame.
 //  return pts - (delay + syncTimer->GetRelTime(false))/100;
@@ -940,7 +940,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
   // we just displayed a frame, now it's the right time to
   // measure the A-V offset
   // the A-V syncing code is partly based on MPlayer...
-  uint64_t aPTS = clock->GetPTS();
+  int64_t aPTS = clock->GetPTS();
   // update video pts
   cClock::AdjustVideoPTS(pts);
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: utils.h,v 1.19 2009/02/27 16:50:55 lucke Exp $
+ * $Id: utils.h,v 1.20 2009/02/27 17:02:35 lucke Exp $
  */
 #ifndef UTILS_H
 #define UTILS_H
@@ -129,7 +129,7 @@ void AlphaBlend(uint8_t *dest,uint8_t *P1,uint8_t *P2,
        uint8_t *alpha,uint16_t count);
    // performes alpha blending in software
 
-uint64_t  getTimeMilis(void);
+int64_t   getTimeMilis(void);
 char      *getFBName(void);
 bool  CatchRemoteKey(const char *remoteName, uint64_t key,
                 const int ToggleKey);

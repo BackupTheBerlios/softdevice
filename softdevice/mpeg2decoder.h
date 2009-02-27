@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.46 2009/02/19 20:27:58 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.47 2009/02/27 17:02:35 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -182,7 +182,7 @@ public:
     virtual int       BufferFill(void);
     bool              initCodec(void);
     void              resetCodec(void);
-    virtual uint64_t  GetPTS()  {return pts;};
+    virtual int64_t  GetPTS()  {return pts;};
 
     cStreamDecoder(AVCodecContext * Context, bool packetMode);
     virtual ~cStreamDecoder();
@@ -214,7 +214,7 @@ public:
     ~cAudioStreamDecoder();
     inline void SetAudioMode(int AudioMode)
       { audioMode=AudioMode; };
-    virtual uint64_t GetPTS();
+    virtual int64_t GetPTS();
 };
 
 //---------------------------cVideoStreamDecoder -----------------------------
@@ -265,7 +265,7 @@ class cVideoStreamDecoder : public cStreamDecoder {
     virtual void      Play(void);
     virtual int DecodePacket(AVPacket *pkt);
     virtual void TrickSpeed(int Speed);
-    virtual uint64_t GetPTS();
+    virtual int64_t GetPTS();
 };
 
 //--------------------------------cMpeg2Decoder -------------------------

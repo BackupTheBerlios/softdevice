@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.57 2009/02/19 20:27:58 lucke Exp $
+ * $Id: video.h,v 1.58 2009/02/27 17:02:35 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -168,7 +168,7 @@ public:
     virtual void DrawVideo_420pl(cSyncTimer *syncTimer,
                                  sPicBuffer *pic);
     virtual void DrawStill_420pl(sPicBuffer *buf);
-    virtual void EvaluateDelay(uint64_t aPTS, uint64_t pts, int frametime);
+    virtual void EvaluateDelay(int64_t aPTS, int64_t pts, int frametime);
     virtual void ResetDelay(void);
     virtual bool Initialize(void) {videoInitialized = true; return 1;};
     virtual bool Reconfigure (int format = 0,

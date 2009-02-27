@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-vidix.c,v 1.27 2007/05/10 21:57:26 wachm Exp $
+ * $Id: video-vidix.c,v 1.28 2009/02/27 17:02:35 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -17,7 +17,7 @@
 //#define TIMINGS
 
 #ifdef TIMINGS
-uint64_t startTime;
+int64_t startTime;
 #define START startTime=getTimeMilis()
 #define TIMINGS(out...)  {printf("time %d: ",getTimeMilis()-startTime);printf(out);}
 #else

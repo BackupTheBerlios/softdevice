@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.78 2009/02/19 20:27:58 lucke Exp $
+ * $Id: video.c,v 1.79 2009/02/27 17:02:35 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -601,7 +601,7 @@ void cVideoOut::DrawStill_420pl(sPicBuffer *buf)
 
 /* ---------------------------------------------------------------------------
  */
-void cVideoOut::EvaluateDelay(uint64_t aPTS, uint64_t pts, int frametime)
+void cVideoOut::EvaluateDelay(int64_t aPTS, int64_t pts, int frametime)
 {
     int   offset,
           dropOffset,
