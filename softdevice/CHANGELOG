@@ -1,4 +1,6 @@
 Changelog
+2009-03-22:
+   - Patch by Pridvorov Andrey to make softdevice work with mplayer-plugin.
 2009-02-19:
    - decoding: Enable selection between av_read_packet() and av_read_frame() via
                OSD. To take effect, vdr has to be restarted.

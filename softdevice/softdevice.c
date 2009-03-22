@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.94 2009/02/19 20:27:58 lucke Exp $
+ * $Id: softdevice.c,v 1.95 2009/03/22 12:55:33 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -459,6 +459,9 @@ bool cSoftDevice::SetPlayMode(ePlayMode PlayMode)
       case pmNone:
           decoder->Stop();
           break;
+      case pmExtern_THIS_SHOULD_BE_AVOIDED:
+	  decoder->Suspend();
+	  break;
       default:
           printf("playmode not implemented... %d\n",PlayMode);
           break;
