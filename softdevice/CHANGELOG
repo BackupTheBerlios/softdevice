@@ -1,4 +1,9 @@
 Changelog
+2009-06-14:
+   - build: Fix compiling with newer ffmpeg versions.
+   - audio-ac3: Use different AC3 device name:
+                  iec958:AES0=0x02,AES1=0x82,AES2=0x00,AES3=0x02,CARD=0
+                as default and old one as fallback.
 2009-03-22:
    - Patch by Pridvorov Andrey to make softdevice work with mplayer-plugin.
 2009-02-19:

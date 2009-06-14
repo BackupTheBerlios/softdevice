@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-ac3pt.c,v 1.3 2007/12/25 13:21:46 lucke Exp $
+ * $Id: audio-ac3pt.c,v 1.4 2009/06/14 11:20:28 lucke Exp $
  */
 
 #include <unistd.h>
@@ -500,6 +500,7 @@ cAlsaAC3pt::SpdifBurstAC3 (snd_pcm_t **handle, unsigned char *Data, int length)
 unsigned int
 cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
 {
+    char                      pcm_name[256];
     static snd_aes_iec958_t   spdif;
     unsigned int              rate = 48000;
     snd_pcm_info_t            *info;
@@ -509,22 +510,12 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
     unsigned int              channels = 2;
     int                       err;//, c;
 
-  if ((err = snd_pcm_open(handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0)
-  {
-    fprintf(stderr, "ac3play: sound open: %s\n", snd_strerror(err));
-    return 1;
-  }
-
   if (ac3Status)
     snd_pcm_status_free(ac3Status);
+  ac3Status = NULL;
 
   snd_pcm_info_alloca(&info);
 
-  if ((err = snd_pcm_info(*handle, info)) < 0) {
-    fprintf(stderr, "ac3play: sound info: %s\n", snd_strerror(err));
-    snd_pcm_close(*handle);
-    return 1;
-  }
   {
       snd_ctl_elem_value_t  *ctl;
       snd_ctl_t             *ctl_handle;
@@ -551,6 +542,31 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
       spdif.status[3]  = (iec958_aes3_con_fs_rate);
     }
 
+
+    snprintf(pcm_name, sizeof (pcm_name),
+             "iec958:AES0=0x%.2x,AES1=0x%.2x,AES2=0x%.2x,AES3=0x%.2x,CARD=%1d",
+             spdif. status [0], spdif. status [1],
+             spdif. status [2], spdif. status [3],
+             0);
+
+    err = snd_pcm_open (handle, pcm_name, SND_PCM_STREAM_PLAYBACK, 0);
+    if (err >= 0) {
+      fprintf(stderr, "ac3play: Sucessfull opend (%s)\n", pcm_name);
+      goto __diga_end;
+    }
+
+    fprintf(stderr, "ac3play: Failed to open (%s) trying old way\n", pcm_name);
+    if ((err = snd_pcm_open(handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+      fprintf(stderr, "ac3play: sound open: %s\n", snd_strerror(err));
+      return 1;
+    }
+
+    if ((err = snd_pcm_info(*handle, info)) < 0) {
+      fprintf(stderr, "ac3play: sound info: %s\n", snd_strerror(err));
+      snd_pcm_close(*handle);
+      return 1;
+    }
+
     snd_ctl_elem_value_alloca(&ctl);
     snd_ctl_elem_value_set_interface(ctl, SND_CTL_ELEM_IFACE_PCM);
     snd_ctl_elem_value_set_device(ctl, snd_pcm_info_get_device(info));
@@ -572,9 +588,9 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
       goto __diga_end;
     }
     snd_ctl_close(ctl_handle);
-    __diga_end:
-      ;
   }
+  __diga_end:
+    ;
   {
       snd_pcm_hw_params_t *params;
       snd_pcm_sw_params_t *swparams;
