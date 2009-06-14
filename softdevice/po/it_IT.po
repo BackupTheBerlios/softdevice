@@ -14,42 +14,6 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-15\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "16:9 wide"
-msgstr "16:9 wide"
-
-msgid "4:3 normal"
-msgstr "4:3 normale"
-
-msgid "none"
-msgstr "nessuno"
-
-msgid "fast"
-msgstr "veloce"
-
-msgid "default"
-msgstr "predefinito"
-
-msgid "safe"
-msgstr "sicura"
-
-msgid "good seeking"
-msgstr "precisa"
-
-msgid "HDTV"
-msgstr "HDTV"
-
-msgid "playing"
-msgstr "esecuzione"
-
-msgid "suspended"
-msgstr "sospeso"
-
-msgid "pseudo"
-msgstr "pseudo"
-
-msgid "software"
-msgstr "software"
-
 msgid "Brightness"
 msgstr "Luminosità"
 
@@ -64,6 +28,9 @@ msgstr "Saturazione"
 
 msgid "HW-Deinterlace"
 msgstr "Deinterlacciamento HW"
+
+msgid "none"
+msgstr "nessuno"
 
 msgid "CropMode"
 msgstr "Modalità compatta"
@@ -110,6 +77,12 @@ msgstr "Colonne espansione sinistra/destra"
 msgid "Deinterlace Method"
 msgstr "Metodo deinterlacciamento"
 
+msgid "fast"
+msgstr "veloce"
+
+msgid "default"
+msgstr "predefinito"
+
 msgid "Postprocessing Method"
 msgstr "Metodo post elaborazione"
 
@@ -137,17 +110,44 @@ msgstr "Uscita video"
 msgid "Logging"
 msgstr "Log"
 
+msgid "16:9 wide"
+msgstr "16:9 wide"
+
+msgid "4:3 normal"
+msgstr "4:3 normale"
+
 msgid "Xv startup aspect"
 msgstr "Aspetto avvio Xv"
 
 msgid "Screen Aspect"
 msgstr "Aspetto schermo"
 
+msgid "pseudo"
+msgstr "pseudo"
+
+msgid "software"
+msgstr "software"
+
 msgid "OSD alpha blending"
 msgstr "Trasparenza alpha OSD"
 
+msgid "safe"
+msgstr "sicura"
+
+msgid "good seeking"
+msgstr "precisa"
+
+msgid "HDTV"
+msgstr "HDTV"
+
 msgid "Buffer Mode"
 msgstr "Modalità buffer"
+
+msgid "playing"
+msgstr "esecuzione"
+
+msgid "suspended"
+msgstr "sospeso"
 
 msgid "Playback"
 msgstr "Riproduzione"
@@ -161,6 +161,18 @@ msgstr "Modalità AC3"
 msgid "Sync Mode"
 msgstr "Modalità Sync"
 
+msgid "Field Order"
+msgstr ""
+
+msgid "Still Picture Field"
+msgstr ""
+
+msgid "Still Picture Field Marker"
+msgstr ""
+
+msgid "Use av_read_frame()"
+msgstr ""
+
 msgid "Pixel Format"
 msgstr "Formato pixel"
 
@@ -172,6 +184,15 @@ msgstr "Utilizza fonte rettangolo"
 
 msgid "Hide main menu entry"
 msgstr "Nascondi voce menu principale"
+
+msgid "Both Fields"
+msgstr ""
+
+msgid "First Field"
+msgstr ""
+
+msgid "Later Field"
+msgstr ""
 
 msgid "Info Messages"
 msgstr "Messaggi di informazione"
@@ -193,4 +214,3 @@ msgstr "Software emulazione scheda MPEG2"
 
 msgid "Softdevice"
 msgstr "Softdevice"
-

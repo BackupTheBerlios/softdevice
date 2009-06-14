@@ -14,42 +14,6 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-5\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "16:9 wide"
-msgstr "16:9 широкоэкранный"
-
-msgid "4:3 normal"
-msgstr "4:3 нормальный"
-
-msgid "none"
-msgstr "ничего"
-
-msgid "fast"
-msgstr "быстро"
-
-msgid "default"
-msgstr "по умолчанию"
-
-msgid "safe"
-msgstr "безопасно"
-
-msgid "good seeking"
-msgstr "поиск оптимирован"
-
-msgid "HDTV"
-msgstr "HDTV (ТВЧ)"
-
-msgid "playing"
-msgstr "активированно"
-
-msgid "suspended"
-msgstr "деактивированно"
-
-msgid "pseudo"
-msgstr "псевдо"
-
-msgid "software"
-msgstr "программно"
-
 msgid "Brightness"
 msgstr "Яркость"
 
@@ -64,6 +28,9 @@ msgstr "Насыщенность цвета"
 
 msgid "HW-Deinterlace"
 msgstr ""
+
+msgid "none"
+msgstr "ничего"
 
 msgid "CropMode"
 msgstr "Режим обрезки изображения"
@@ -110,6 +77,12 @@ msgstr "Развернуть (лев./прав.) колонки"
 msgid "Deinterlace Method"
 msgstr "Режим деинтерлейсинга"
 
+msgid "fast"
+msgstr "быстро"
+
+msgid "default"
+msgstr "по умолчанию"
+
 msgid "Postprocessing Method"
 msgstr "Режим постобработки"
 
@@ -137,17 +110,44 @@ msgstr "Видео выход"
 msgid "Logging"
 msgstr "Протоколирование"
 
+msgid "16:9 wide"
+msgstr "16:9 широкоэкранный"
+
+msgid "4:3 normal"
+msgstr "4:3 нормальный"
+
 msgid "Xv startup aspect"
 msgstr "Аспект при запуске  Xv"
 
 msgid "Screen Aspect"
 msgstr "Формат экрана"
 
+msgid "pseudo"
+msgstr "псевдо"
+
+msgid "software"
+msgstr "программно"
+
 msgid "OSD alpha blending"
 msgstr "Прозрачность OSD"
 
+msgid "safe"
+msgstr "безопасно"
+
+msgid "good seeking"
+msgstr "поиск оптимирован"
+
+msgid "HDTV"
+msgstr "HDTV (ТВЧ)"
+
 msgid "Buffer Mode"
 msgstr "Буферный режим"
+
+msgid "playing"
+msgstr "активированно"
+
+msgid "suspended"
+msgstr "деактивированно"
 
 msgid "Playback"
 msgstr "Воспроизведение"
@@ -161,6 +161,18 @@ msgstr "Режим AC3"
 msgid "Sync Mode"
 msgstr "Режим синхронизации"
 
+msgid "Field Order"
+msgstr ""
+
+msgid "Still Picture Field"
+msgstr ""
+
+msgid "Still Picture Field Marker"
+msgstr ""
+
+msgid "Use av_read_frame()"
+msgstr ""
+
 msgid "Pixel Format"
 msgstr "Формат пикселя"
 
@@ -172,6 +184,15 @@ msgstr ""
 
 msgid "Hide main menu entry"
 msgstr "Спрятать пункт в главном меню"
+
+msgid "Both Fields"
+msgstr ""
+
+msgid "First Field"
+msgstr ""
+
+msgid "Later Field"
+msgstr ""
 
 msgid "Info Messages"
 msgstr "Инфо. сообщения"
