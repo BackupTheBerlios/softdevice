@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.h,v 1.11 2009/02/27 17:02:35 lucke Exp $
+ * $Id: PicBuffer.h,v 1.12 2009/06/14 16:37:22 lucke Exp $
  */
 #ifndef __PIC_BUFFER_H__
 #define __PIC_BUFFER_H__
@@ -32,7 +32,7 @@ extern "C" {
 
 class cPicBufferManager;
 
-typedef struct sPicBuffer {
+typedef struct {
     PixelFormat format;
     uint8_t *pixel[4];
     int stride[4];
@@ -57,7 +57,7 @@ typedef struct sPicBuffer {
     int pic_num; // to calculate the age
     int age; // needed by ffmpeg
     void *priv_data;
-};
+} sPicBuffer;
 
 void InitPicBuffer(sPicBuffer *Pic);
 void FillPicBuffer(sPicBuffer *Pic, int color);
@@ -74,7 +74,7 @@ class cPicBufferManager {
 public:
         int lastPicNum;
 #define LAST_PICBUF 10
-        struct sPicBuffer PicBuffer[LAST_PICBUF];
+        sPicBuffer PicBuffer[LAST_PICBUF];
         cMutex PicBufMutex;
 
         cPicBufferManager();
