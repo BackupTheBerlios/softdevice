@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.58 2009/02/27 17:02:35 lucke Exp $
+ * $Id: video.h,v 1.59 2009/06/14 10:50:47 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -35,6 +35,12 @@
 #define SRC_WIDTH          736
 
 #define AVRG_OFF_CNT        16
+
+#if LIBAVUTIL_VERSION_INT >= (50<<16)
+#  define PIX_FMT_UYVY411 PIX_FMT_UYYVYY411
+#  define PIX_FMT_RGBA32  PIX_FMT_RGB32
+#  define PIX_FMT_YUV422  PIX_FMT_YUYV422
+#endif
 
 #ifndef STAND_ALONE
 class cSoftRemote : public cRemote {
