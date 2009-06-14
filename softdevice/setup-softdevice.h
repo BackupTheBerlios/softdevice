@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.h,v 1.47 2009/02/19 20:27:58 lucke Exp $
+ * $Id: setup-softdevice.h,v 1.48 2009/06/14 17:25:10 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTDEVICE_H
@@ -133,8 +133,8 @@ struct cSetupStore {
   public:
     void InitSetupStore();
     bool          SetupParse(const char *Name, const char *Value);
-    char          *getPPdeintValue(void);
-    char          *getPPValue(void);
+    const char    *getPPdeintValue(void),
+                  *getPPValue(void);
     inline void CropModeNext(void) {
        cropMode = (cropMode == (SETUP_CROPMODES-1)) ? 0 : cropMode + 1;
     };

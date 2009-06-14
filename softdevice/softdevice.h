@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.14 2008/04/16 10:41:40 lucke Exp $
+ * $Id: softdevice.h,v 1.15 2009/06/14 17:25:35 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -39,10 +39,10 @@ static const char *const GET_PACKET_HANDEL_IDV100="softdevice-GetPacketHandles-v
 // --- cSoftDevice ------------------------------------------------------------
 class cPluginSoftDevice : public cPlugin {
 private:
-  int   voutMethod;
-  int   aoutMethod;
-  char  *pluginPath,
-        *runtimePluginPath;
+  int         voutMethod;
+  int         aoutMethod;
+  const char  *pluginPath,
+              *runtimePluginPath;
 
 public:
   cPluginSoftDevice(void);
@@ -78,7 +78,7 @@ private:
   AVFormatContext *ic;
 
 public:
-  cSoftDevice(int method, int audioMethod, char *pluginPath);
+  cSoftDevice(int method, int audioMethod, const char *pluginPath);
   ~cSoftDevice();
 
   inline void QueuePacket(AVFormatContext *ic, AVPacket &pkt)
@@ -90,7 +90,7 @@ public:
   inline int Freeze(int Stream, int Value)
   { if (decoder) decoder->Freeze(Stream,Value); return 0;};
 
-  void LoadSubPlugin(char *outMethodName, char *pluginPath);
+  void LoadSubPlugin(const char *outMethodName, const char *pluginPath);
 
   virtual bool HasDecoder(void) const;
   virtual bool CanReplay(void) const;

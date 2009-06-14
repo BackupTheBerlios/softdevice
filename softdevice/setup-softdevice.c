@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the authors.
  *
- * $Id: setup-softdevice.c,v 1.57 2009/02/19 20:27:58 lucke Exp $
+ * $Id: setup-softdevice.c,v 1.58 2009/06/14 17:25:10 lucke Exp $
  */
 
 #include <string.h>
@@ -428,7 +428,7 @@ bool cSetupStore::SetupParse(const char *Name, const char *Value)
 
 /* ---------------------------------------------------------------------------
  */
-char *cSetupStore::getPPdeintValue(void)
+const char *cSetupStore::getPPdeintValue(void)
 {
   if (strcmp(deint_str[deintMethod], "linblend") == 0) return "lb";
   else if (strcmp(deint_str[deintMethod], "linipol") == 0) return "li";
@@ -440,7 +440,7 @@ char *cSetupStore::getPPdeintValue(void)
 
 /* ---------------------------------------------------------------------------
  */
-char *cSetupStore::getPPValue(void)
+const char *cSetupStore::getPPValue(void)
 {
 #ifdef PP_LIBAVCODEC
   if (strcmp(pp_str[ppMethod], tr("none")) == 0) return "";

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.95 2009/03/22 12:55:33 lucke Exp $
+ * $Id: softdevice.c,v 1.96 2009/06/14 17:25:35 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -173,7 +173,7 @@ cOsd *cSoftOsdProvider::GetOsd()
 
 /* ----------------------------------------------------------------------------
  */
-cSoftDevice::cSoftDevice(int method,int audioMethod, char *pluginPath)
+cSoftDevice::cSoftDevice(int method,int audioMethod, const char *pluginPath)
 {
     spuDecoder = NULL;
     fprintf(stderr,"[softdevice] Initializing Video Out\n");
@@ -329,8 +329,8 @@ cSoftDevice::~cSoftDevice()
 
 /* ----------------------------------------------------------------------------
  */
-void cSoftDevice::LoadSubPlugin(char *outMethodName,
-                                char *pluginPath)
+void cSoftDevice::LoadSubPlugin(const char *outMethodName,
+                                const char *pluginPath)
 {
     char  *subPluginFileName = NULL;
 
