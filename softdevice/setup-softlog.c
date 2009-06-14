@@ -3,14 +3,14 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.7 2008/04/16 09:06:31 lucke Exp $
+ * $Id: setup-softlog.c,v 1.8 2009/06/14 16:12:26 lucke Exp $
  */
 
 #include "setup-softlog.h"
 
 #ifdef HAVE_CONFIG
 # include "config.h"
-#endif 
+#endif
 #include <stdarg.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -212,9 +212,9 @@ void cSetupSoftlog::DisableLog2File()
 
 /* ---------------------------------------------------------------------------
  */
-int SoftdeviceGetTid() 
+int SoftdeviceGetTid()
 {
-#ifdef __APPLE__ 
+#ifdef __APPLE__
   return getpid();
 #else
   return syscall(__NR_gettid);
