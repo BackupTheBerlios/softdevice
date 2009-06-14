@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.h,v 1.3 2007/02/24 14:04:14 lucke Exp $
+ * $Id: setup-softlog.h,v 1.4 2009/06/14 16:18:53 lucke Exp $
  */
 
 #ifndef __SETUP_SOFTLOG_H
@@ -43,7 +43,9 @@ class cSetupSoftlog {
     cSetupSoftlog();
     virtual ~cSetupSoftlog();
 
-    virtual void  Log(int currPriorities, int traceFlags, char *format, ...),
+    virtual void  Log(int currPriorities,
+                      int traceFlags,
+                      const char *format, ...),
                   DisableLog2File();
     virtual int   SetLogPriorities(int newPriorities),
                   GetLogPriorities(),

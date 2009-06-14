@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.8 2009/06/14 16:12:26 lucke Exp $
+ * $Id: setup-softlog.c,v 1.9 2009/06/14 16:18:53 lucke Exp $
  */
 
 #include "setup-softlog.h"
@@ -223,7 +223,9 @@ int SoftdeviceGetTid()
 
 /* ---------------------------------------------------------------------------
  */
-void cSetupSoftlog::Log(int currPriority, int traceFlags, char *format, ...)
+void cSetupSoftlog::Log(int currPriority,
+                        int traceFlags,
+                        const char *format, ...)
 {
     va_list argList;
     int     priority;
