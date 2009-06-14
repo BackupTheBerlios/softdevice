@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.c,v 1.75 2008/07/14 17:00:59 lucke Exp $
+ * $Id: video-xv.c,v 1.76 2009/06/14 18:24:11 lucke Exp $
  */
 
 #include <unistd.h>
@@ -117,7 +117,7 @@ void cXvPortAttributeStore::SetXInfo(Display      *dpy,
 
 /* ---------------------------------------------------------------------------
  */
-void cXvPortAttributeStore::SetValue(char *name, int value)
+void cXvPortAttributeStore::SetValue(const char *name, int value)
 {
   for (int i = 0; i < portAttributeCount; ++i)
   {
@@ -151,7 +151,7 @@ int cXvPortAttributeStore::GetValuePercent(int index)
 
 /* ---------------------------------------------------------------------------
  */
-void cXvPortAttributeStore::SetValuePercent(char *name, int value)
+void cXvPortAttributeStore::SetValuePercent(const char *name, int value)
 {
   for (int i = 0; i < portAttributeCount; ++i)
   {
@@ -189,7 +189,7 @@ void cXvPortAttributeStore::SetColorkey(int value)
 
 /* ---------------------------------------------------------------------------
  */
-void cXvPortAttributeStore::Increment(char *name)
+void cXvPortAttributeStore::Increment(const char *name)
 {
   for (int i = 0; i < portAttributeCount; ++i)
   {
@@ -207,7 +207,7 @@ void cXvPortAttributeStore::Increment(char *name)
 
 /* ---------------------------------------------------------------------------
  */
-void cXvPortAttributeStore::Decrement(char *name)
+void cXvPortAttributeStore::Decrement(const char *name)
 {
   for (int i = 0; i < portAttributeCount; ++i)
   {
@@ -778,8 +778,8 @@ cXvVideoOut::cXvVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
 
   format = FOURCC_YV12;
   use_xv_port = 0;
-  w_name = "vdr";
-  i_name = "vdr";
+  w_name = strdup ("vdr");
+  i_name = strdup ("vdr");
 
   Xres=width;
   Yres=height;

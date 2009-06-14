@@ -12,7 +12,7 @@
  *     Copyright (C) Charles 'Buck' Krasic - April 2000
  *     Copyright (C) Erik Walthinsen - April 2000
  *
- * $Id: video-xv.h,v 1.29 2007/07/11 20:08:35 lucke Exp $
+ * $Id: video-xv.h,v 1.30 2009/06/14 18:24:11 lucke Exp $
  */
 
 #ifndef VIDEO_XV_H
@@ -89,12 +89,12 @@ public:
   cXvPortAttributeStore();
   ~cXvPortAttributeStore();
   void SetXInfo(Display *dpy, XvPortID port, cSetupStore *setupStore);
-  void SetValue(char *name, int value);
-  void SetValuePercent(char *name, int value);
+  void SetValue(const char *name, int value);
+  void SetValuePercent(const char *name, int value);
   int GetValuePercent(int index);
   void SetColorkey(int value);
-  void Increment(char *name);
-  void Decrement(char *name);
+  void Increment(const char *name);
+  void Decrement(const char *name);
   void Save();
   bool HasAttribute(char *name);
   void CheckVideoParmChange();
