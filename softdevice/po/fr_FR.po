@@ -14,42 +14,6 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "16:9 wide"
-msgstr "16:9 large"
-
-msgid "4:3 normal"
-msgstr "4:3 normal"
-
-msgid "none"
-msgstr "aucun"
-
-msgid "fast"
-msgstr "rapide"
-
-msgid "default"
-msgstr "défaut"
-
-msgid "safe"
-msgstr "limitée"
-
-msgid "good seeking"
-msgstr "précision"
-
-msgid "HDTV"
-msgstr "HDTV"
-
-msgid "playing"
-msgstr "activé"
-
-msgid "suspended"
-msgstr "suspendu"
-
-msgid "pseudo"
-msgstr "pseudo"
-
-msgid "software"
-msgstr "logiciel"
-
 msgid "Brightness"
 msgstr ""
 
@@ -64,6 +28,9 @@ msgstr ""
 
 msgid "HW-Deinterlace"
 msgstr ""
+
+msgid "none"
+msgstr "aucun"
 
 msgid "CropMode"
 msgstr "Découpage de l'image au ratio"
@@ -110,6 +77,12 @@ msgstr ""
 msgid "Deinterlace Method"
 msgstr "Désentrelacement"
 
+msgid "fast"
+msgstr "rapide"
+
+msgid "default"
+msgstr "défaut"
+
 msgid "Postprocessing Method"
 msgstr "Post-traitement"
 
@@ -137,17 +110,44 @@ msgstr ""
 msgid "Logging"
 msgstr ""
 
+msgid "16:9 wide"
+msgstr "16:9 large"
+
+msgid "4:3 normal"
+msgstr "4:3 normal"
+
 msgid "Xv startup aspect"
 msgstr "Aspect Xv au démarrage"
 
 msgid "Screen Aspect"
 msgstr "Proportion de l'écran"
 
+msgid "pseudo"
+msgstr "pseudo"
+
+msgid "software"
+msgstr "logiciel"
+
 msgid "OSD alpha blending"
 msgstr "Fusion du menu avec la vidéo"
 
+msgid "safe"
+msgstr "limitée"
+
+msgid "good seeking"
+msgstr "précision"
+
+msgid "HDTV"
+msgstr "HDTV"
+
 msgid "Buffer Mode"
 msgstr "Mémoire tampon"
+
+msgid "playing"
+msgstr "activé"
+
+msgid "suspended"
+msgstr "suspendu"
 
 msgid "Playback"
 msgstr "Affichage"
@@ -161,6 +161,18 @@ msgstr "Sortie AC3"
 msgid "Sync Mode"
 msgstr ""
 
+msgid "Field Order"
+msgstr ""
+
+msgid "Still Picture Field"
+msgstr ""
+
+msgid "Still Picture Field Marker"
+msgstr ""
+
+msgid "Use av_read_frame()"
+msgstr ""
+
 msgid "Pixel Format"
 msgstr "Format de pixel"
 
@@ -171,6 +183,15 @@ msgid "Use SourceRectangle"
 msgstr ""
 
 msgid "Hide main menu entry"
+msgstr ""
+
+msgid "Both Fields"
+msgstr ""
+
+msgid "First Field"
+msgstr ""
+
+msgid "Later Field"
 msgstr ""
 
 msgid "Info Messages"

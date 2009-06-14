@@ -14,42 +14,6 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-7\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "16:9 wide"
-msgstr ""
-
-msgid "4:3 normal"
-msgstr ""
-
-msgid "none"
-msgstr ""
-
-msgid "fast"
-msgstr ""
-
-msgid "default"
-msgstr ""
-
-msgid "safe"
-msgstr ""
-
-msgid "good seeking"
-msgstr ""
-
-msgid "HDTV"
-msgstr ""
-
-msgid "playing"
-msgstr ""
-
-msgid "suspended"
-msgstr ""
-
-msgid "pseudo"
-msgstr ""
-
-msgid "software"
-msgstr ""
-
 msgid "Brightness"
 msgstr ""
 
@@ -63,6 +27,9 @@ msgid "Saturation"
 msgstr ""
 
 msgid "HW-Deinterlace"
+msgstr ""
+
+msgid "none"
 msgstr ""
 
 msgid "CropMode"
@@ -110,6 +77,12 @@ msgstr ""
 msgid "Deinterlace Method"
 msgstr ""
 
+msgid "fast"
+msgstr ""
+
+msgid "default"
+msgstr ""
+
 msgid "Postprocessing Method"
 msgstr ""
 
@@ -137,16 +110,43 @@ msgstr ""
 msgid "Logging"
 msgstr ""
 
+msgid "16:9 wide"
+msgstr ""
+
+msgid "4:3 normal"
+msgstr ""
+
 msgid "Xv startup aspect"
 msgstr ""
 
 msgid "Screen Aspect"
 msgstr ""
 
+msgid "pseudo"
+msgstr ""
+
+msgid "software"
+msgstr ""
+
 msgid "OSD alpha blending"
 msgstr ""
 
+msgid "safe"
+msgstr ""
+
+msgid "good seeking"
+msgstr ""
+
+msgid "HDTV"
+msgstr ""
+
 msgid "Buffer Mode"
+msgstr ""
+
+msgid "playing"
+msgstr ""
+
+msgid "suspended"
 msgstr ""
 
 msgid "Playback"
@@ -161,6 +161,18 @@ msgstr ""
 msgid "Sync Mode"
 msgstr ""
 
+msgid "Field Order"
+msgstr ""
+
+msgid "Still Picture Field"
+msgstr ""
+
+msgid "Still Picture Field Marker"
+msgstr ""
+
+msgid "Use av_read_frame()"
+msgstr ""
+
 msgid "Pixel Format"
 msgstr ""
 
@@ -171,6 +183,15 @@ msgid "Use SourceRectangle"
 msgstr ""
 
 msgid "Hide main menu entry"
+msgstr ""
+
+msgid "Both Fields"
+msgstr ""
+
+msgid "First Field"
+msgstr ""
+
+msgid "Later Field"
 msgstr ""
 
 msgid "Info Messages"

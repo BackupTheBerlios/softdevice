@@ -14,42 +14,6 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-15\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "16:9 wide"
-msgstr "16:9 laaja"
-
-msgid "4:3 normal"
-msgstr "4:3 normaali"
-
-msgid "none"
-msgstr "ei"
-
-msgid "fast"
-msgstr "nopea"
-
-msgid "default"
-msgstr "oletus"
-
-msgid "safe"
-msgstr "varma"
-
-msgid "good seeking"
-msgstr "nopea haku"
-
-msgid "HDTV"
-msgstr "HDTV"
-
-msgid "playing"
-msgstr "toiminnassa"
-
-msgid "suspended"
-msgstr "pysäytetty"
-
-msgid "pseudo"
-msgstr "näennäinen"
-
-msgid "software"
-msgstr "ohjelmallinen"
-
 msgid "Brightness"
 msgstr "Kirkkaus"
 
@@ -64,6 +28,9 @@ msgstr "Värikylläisyys"
 
 msgid "HW-Deinterlace"
 msgstr ""
+
+msgid "none"
+msgstr "ei"
 
 msgid "CropMode"
 msgstr "Kuvan rajaustapa"
@@ -110,6 +77,12 @@ msgstr "Levitä reunimmaiset sarakkeet"
 msgid "Deinterlace Method"
 msgstr "Käytä lomituksen poistoa"
 
+msgid "fast"
+msgstr "nopea"
+
+msgid "default"
+msgstr "oletus"
+
 msgid "Postprocessing Method"
 msgstr "Käytä kuvan jälkikäsittelyä"
 
@@ -137,17 +110,44 @@ msgstr "Kuvasignaalin ulostulo"
 msgid "Logging"
 msgstr ""
 
+msgid "16:9 wide"
+msgstr "16:9 laaja"
+
+msgid "4:3 normal"
+msgstr "4:3 normaali"
+
 msgid "Xv startup aspect"
 msgstr "Xv-kuvasuhde käynnistettäessä"
 
 msgid "Screen Aspect"
 msgstr "Näytön kuvasuhde"
 
+msgid "pseudo"
+msgstr "näennäinen"
+
+msgid "software"
+msgstr "ohjelmallinen"
+
 msgid "OSD alpha blending"
 msgstr "Kuvaruutunäytön läpinäkyvyys"
 
+msgid "safe"
+msgstr "varma"
+
+msgid "good seeking"
+msgstr "nopea haku"
+
+msgid "HDTV"
+msgstr "HDTV"
+
 msgid "Buffer Mode"
 msgstr "Puskurointitapa"
+
+msgid "playing"
+msgstr "toiminnassa"
+
+msgid "suspended"
+msgstr "pysäytetty"
 
 msgid "Playback"
 msgstr "Näytön ulostulo"
@@ -161,6 +161,18 @@ msgstr "AC3-äänet"
 msgid "Sync Mode"
 msgstr "A/V-synkronointitapa"
 
+msgid "Field Order"
+msgstr ""
+
+msgid "Still Picture Field"
+msgstr ""
+
+msgid "Still Picture Field Marker"
+msgstr ""
+
+msgid "Use av_read_frame()"
+msgstr ""
+
 msgid "Pixel Format"
 msgstr "Pikseliformaatti"
 
@@ -172,6 +184,15 @@ msgstr ""
 
 msgid "Hide main menu entry"
 msgstr "Piilota valinta päävalikosta"
+
+msgid "Both Fields"
+msgstr ""
+
+msgid "First Field"
+msgstr ""
+
+msgid "Later Field"
+msgstr ""
 
 msgid "Info Messages"
 msgstr ""

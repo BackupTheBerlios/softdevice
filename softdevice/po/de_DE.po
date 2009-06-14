@@ -14,42 +14,6 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-15\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "16:9 wide"
-msgstr "16:9 Breitbild"
-
-msgid "4:3 normal"
-msgstr "4:3 Normalbild"
-
-msgid "none"
-msgstr "keine"
-
-msgid "fast"
-msgstr "schnell"
-
-msgid "default"
-msgstr "standard"
-
-msgid "safe"
-msgstr "sicher"
-
-msgid "good seeking"
-msgstr "suchlauf optimiert"
-
-msgid "HDTV"
-msgstr "HDTV"
-
-msgid "playing"
-msgstr "aktiviert"
-
-msgid "suspended"
-msgstr "deaktiviert"
-
-msgid "pseudo"
-msgstr "pseudo"
-
-msgid "software"
-msgstr "software"
-
 msgid "Brightness"
 msgstr "Helligkeit"
 
@@ -64,6 +28,9 @@ msgstr "Farbkontrast"
 
 msgid "HW-Deinterlace"
 msgstr ""
+
+msgid "none"
+msgstr "keine"
 
 msgid "CropMode"
 msgstr "Bildausschnitt"
@@ -110,6 +77,12 @@ msgstr "Spalten vergrößen (li./re.)"
 msgid "Deinterlace Method"
 msgstr "Deinterlace-Methode"
 
+msgid "fast"
+msgstr "schnell"
+
+msgid "default"
+msgstr "standard"
+
 msgid "Postprocessing Method"
 msgstr "Nachbearbeitungs-Methode"
 
@@ -137,17 +110,44 @@ msgstr "Videoausgabe"
 msgid "Logging"
 msgstr "Protokollierung"
 
+msgid "16:9 wide"
+msgstr "16:9 Breitbild"
+
+msgid "4:3 normal"
+msgstr "4:3 Normalbild"
+
 msgid "Xv startup aspect"
 msgstr "Xv Startgröße"
 
 msgid "Screen Aspect"
 msgstr "Bildschirmformat"
 
+msgid "pseudo"
+msgstr "pseudo"
+
+msgid "software"
+msgstr "software"
+
 msgid "OSD alpha blending"
 msgstr "OSD Einblendung"
 
+msgid "safe"
+msgstr "sicher"
+
+msgid "good seeking"
+msgstr "suchlauf optimiert"
+
+msgid "HDTV"
+msgstr "HDTV"
+
 msgid "Buffer Mode"
 msgstr "Puffermodus"
+
+msgid "playing"
+msgstr "aktiviert"
+
+msgid "suspended"
+msgstr "deaktiviert"
 
 msgid "Playback"
 msgstr "Wiedergabe"
@@ -161,6 +161,18 @@ msgstr "AC3 Modus"
 msgid "Sync Mode"
 msgstr "Sync Modus"
 
+msgid "Field Order"
+msgstr ""
+
+msgid "Still Picture Field"
+msgstr ""
+
+msgid "Still Picture Field Marker"
+msgstr ""
+
+msgid "Use av_read_frame()"
+msgstr ""
+
 msgid "Pixel Format"
 msgstr "Pixelformat"
 
@@ -172,6 +184,15 @@ msgstr ""
 
 msgid "Hide main menu entry"
 msgstr "Hauptmenüeintrag verstecken"
+
+msgid "Both Fields"
+msgstr ""
+
+msgid "First Field"
+msgstr ""
+
+msgid "Later Field"
+msgstr ""
 
 msgid "Info Messages"
 msgstr "Info Nachrichten"
