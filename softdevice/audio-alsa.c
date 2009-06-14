@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-alsa.c,v 1.10 2008/07/20 16:32:44 lucke Exp $
+ * $Id: audio-alsa.c,v 1.11 2009/06/14 18:02:48 lucke Exp $
  */
 #include "audio-alsa.h"
 
@@ -331,7 +331,6 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
              currContext.samplerate, currContext.channels);
     snd_pcm_hw_params_t *params;
     snd_pcm_sw_params_t *swparams;
-    snd_pcm_uframes_t xfer_align;
     snd_pcm_hw_params_alloca(&params);
     snd_pcm_sw_params_alloca(&swparams);
 
@@ -436,12 +435,6 @@ int cAlsaAudioOut::SetParams(SampleContext &context) {
     currContext.period_size=periodSize;
 
     snd_pcm_sw_params_current(handle, swparams);
-    err = snd_pcm_sw_params_get_xfer_align(swparams, &xfer_align);
-    if (err < 0) {
-      esyslog("[softdevice-audio] Unable to obtain xfer align FATAL exiting");
-      handleMutex.Unlock();
-      exit(EXIT_FAILURE);
-    }
     dsyslog("[softdevice-audio] Hardware initialized");
     handleMutex.Unlock();
 
@@ -463,7 +456,7 @@ void cAlsaAudioOut::SetVolume (int vol)
                             setVol;
       double                mixerRange,
                             volPercent;
-      char                  *mName = "PCM",
+      const char            *mName = "PCM",
                             *cardName = "default";
       snd_mixer_t           *mHandle;
       snd_mixer_elem_t      *mElem;

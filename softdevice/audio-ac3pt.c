@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-ac3pt.c,v 1.4 2009/06/14 11:20:28 lucke Exp $
+ * $Id: audio-ac3pt.c,v 1.5 2009/06/14 18:02:45 lucke Exp $
  */
 
 #include <unistd.h>
@@ -682,9 +682,6 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
 
     if ((err = snd_pcm_sw_params_set_avail_min(*handle, swparams, SAMPLE_BUF)) < 0)
       fprintf(stderr, "ac3play: Minimal period size not available: %s\n", snd_strerror(err));
-
-    if ((err =  snd_pcm_sw_params_set_xfer_align(*handle, swparams, SAMPLE_BUF/6)) < 0)
-      fprintf(stderr, "ac3play: Aligned period size not available: %s\n", snd_strerror(err));
 
     if ((err = snd_pcm_sw_params_set_start_threshold(*handle, swparams, 2*SAMPLE_BUF)) < 0)
       fprintf(stderr, "ac3play: Start threshold not available: %s\n", snd_strerror(err));

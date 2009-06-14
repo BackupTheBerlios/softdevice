@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video-dfb.c,v 1.85 2008/07/20 17:17:42 lucke Exp $
+ * $Id: video-dfb.c,v 1.86 2009/06/14 18:00:58 lucke Exp $
  */
 
 #include <sys/mman.h>
@@ -513,7 +513,7 @@ cDFBVideoOut::cDFBVideoOut(cSetupStore *setupStore, cSetupSoftlog *softlog)
 /* ---------------------------------------------------------------------------
  */
 void cDFBVideoOut::ReportSurfaceCapabilities (IDirectFBSurface *surf,
-                                              char *name)
+                                              const char *name)
 {
     DFBSurfaceCapabilities        scaps;
 
@@ -563,7 +563,8 @@ void cDFBVideoOut::BESColorkeyState(IDirectFBDisplayLayer *layer, bool state)
 
 /* ---------------------------------------------------------------------------
  */
-void cDFBVideoOut::ReportLayerInfo(IDirectFBDisplayLayer *layer, char *name)
+void cDFBVideoOut::ReportLayerInfo(IDirectFBDisplayLayer *layer,
+                                   const char *name)
 {
       DFBDisplayLayerConfig layerConfiguration;
 
