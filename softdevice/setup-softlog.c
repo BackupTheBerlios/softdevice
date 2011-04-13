@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: setup-softlog.c,v 1.9 2009/06/14 16:18:53 lucke Exp $
+ * $Id: setup-softlog.c,v 1.10 2011/04/13 19:56:58 lucke Exp $
  */
 
 #include "setup-softlog.h"
@@ -234,12 +234,14 @@ void cSetupSoftlog::Log(int currPriority,
   if (!IsEnabled(currPriority))
     return;
 
-  va_start(argList, format);
   priority = LogPriority(currPriority);
-  snprintf(fmt, sizeof(fmt), "[%d] %s",SoftdeviceGetTid(), format);
 
-  if (priority != NO_LOG)
+  if (priority != NO_LOG) {
+    snprintf(fmt, sizeof(fmt), "[%d] %s",SoftdeviceGetTid(), format);
+    va_start(argList, format);
     vsyslog(priority, fmt, argList);
+    va_end(argList);
+  }
 
   if (logFile) {
       struct timeval now;
@@ -251,11 +253,11 @@ void cSetupSoftlog::Log(int currPriority,
              tmp->tm_hour, tmp->tm_min, tmp->tm_sec, (int) now.tv_usec/1000,
              Priority2Char(currPriority),
              SoftdeviceGetTid(), format);
+    va_start(argList, format);
     vfprintf(logFile, fmt, argList);
+    va_end(argList);
     fflush(logFile);
   }
-
-  va_end(argList);
 }
 
 /* ---------------------------------------------------------------------------
