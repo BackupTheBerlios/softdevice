@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: audio-ac3pt.c,v 1.5 2009/06/14 18:02:45 lucke Exp $
+ * $Id: audio-ac3pt.c,v 1.6 2011/04/13 21:25:09 lucke Exp $
  */
 
 #include <unistd.h>
@@ -500,7 +500,12 @@ cAlsaAC3pt::SpdifBurstAC3 (snd_pcm_t **handle, unsigned char *Data, int length)
 unsigned int
 cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
 {
-    char                      pcm_name[256];
+    char                      pcm_name [256],
+                              control_name [16],
+                              card_name [16],
+                              device_name [16],
+                              *control_end,
+                              *card_end;
     static snd_aes_iec958_t   spdif;
     unsigned int              rate = 48000;
     snd_pcm_info_t            *info;
@@ -542,12 +547,66 @@ cAlsaAC3pt::SpdifInitAC3(snd_pcm_t **handle, char *device, bool spdifPro)
       spdif.status[3]  = (iec958_aes3_con_fs_rate);
     }
 
-
     snprintf(pcm_name, sizeof (pcm_name),
              "iec958:AES0=0x%.2x,AES1=0x%.2x,AES2=0x%.2x,AES3=0x%.2x,CARD=%1d",
              spdif. status [0], spdif. status [1],
              spdif. status [2], spdif. status [3],
              0);
+
+    /* -----------------------------------------------------------------------
+     * check for syntax:
+     * "control_name:card_name[,device_name]"
+     */
+    memset (control_name, 0, sizeof (control_name));
+    memset (card_name, 0, sizeof (card_name));
+    memset (device_name, 0, sizeof (device_name));
+    if ((control_end = strchr (device, ':')))
+    {
+        int control_len = 0,
+            card_len = 0;
+
+      control_len = control_end - device;
+      if (control_len < (int) sizeof (control_name))
+      {
+        strncpy (control_name, device, control_len);
+        card_len = strlen (device + control_len + 1);
+        if ((card_end = strchr (device + control_len + 1, ',')))
+        {
+          card_len = card_end - (device + control_len + 1);
+          if (card_len >= (int) sizeof (card_name))
+          {
+            fprintf (stderr,
+                     "ac3play: card name too long (%s,%d >= %d)\n",
+                     device + control_len + 1, card_len, sizeof (card_name));
+          }
+        }
+        if (card_len)
+        {
+          strncpy (card_name, device + control_len + 1, card_len);
+          snprintf(pcm_name, sizeof (pcm_name),
+                   "%s:AES0=0x%.2x,AES1=0x%.2x,AES2=0x%.2x,AES3=0x%.2x,CARD=%s",
+                   control_name,
+                   spdif. status [0], spdif. status [1],
+                   spdif. status [2], spdif. status [3],
+                   card_name);
+        }
+        else
+        {
+          fprintf (stderr,
+                   "ac3play: card name not specified (%s)\n", device);
+        }
+      }
+      else
+      {
+        fprintf (stderr,
+                 "ac3play: control name too long (%s,%d >= %d)\n",
+                 device, control_end - device, sizeof (control_name));
+      }
+    }
+    else
+    {
+      fprintf (stderr, "ac3play: separator ':' not found in %s\n", device);
+    }
 
     err = snd_pcm_open (handle, pcm_name, SND_PCM_STREAM_PLAYBACK, 0);
     if (err >= 0) {
