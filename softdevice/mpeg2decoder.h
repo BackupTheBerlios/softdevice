@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.h,v 1.47 2009/02/27 17:02:35 lucke Exp $
+ * $Id: mpeg2decoder.h,v 1.48 2011/04/16 14:23:59 lucke Exp $
  */
 #ifndef MPEG2DECODER_H
 #define MPEG2DECODER_H
@@ -169,6 +169,9 @@ protected:
 
     virtual void      Action(void);
     virtual int       DecodePacket(AVPacket *pkt) = 0;
+
+public:
+    int               repeatFrame;
 
 public:
     inline int        PutPacket(const AVPacket &pkt)

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.88 2009/02/27 17:02:35 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.89 2011/04/16 14:23:59 lucke Exp $
  */
 
 #include <math.h>
@@ -138,6 +138,7 @@ int64_t  cClock::GetPTS() {
 cStreamDecoder::cStreamDecoder(AVCodecContext *Context, bool packetMode)
         : PacketQueue(packet_buf_size[setupStore->bufferMode])
 {
+  repeatFrame=0;
   context=Context;
   if (context)
 #if HAS_ERROR_RECOGNITION
@@ -894,7 +895,7 @@ int cVideoStreamDecoder::DecodePacket(AVPacket *pkt)
 
          if (lastDuration) {
 #if LIBAVCODEC_BUILD > 4753
-                 default_frametime=context->time_base.num*
+           default_frametime=context->time_base.num*(1+repeatFrame)*
                          10000/context->time_base.den;
 #else
                  default_frametime=lastDuration/100;
@@ -1287,8 +1288,12 @@ void cMpeg2Decoder::QueuePacket(const AVFormatContext *ic, AVPacket &pkt,
 
 #if LIBAVFORMAT_BUILD > 4628
   if ( ic->streams[pkt.stream_index]
-                  && ic->streams[pkt.stream_index]->codec )
-          packet_type = ic->streams[pkt.stream_index]->codec->codec_type;
+       && ic->streams[pkt.stream_index]->codec ) {
+       packet_type = ic->streams[pkt.stream_index]->codec->codec_type;
+
+       if (packet_type == CODEC_TYPE_VIDEO && vout)
+         vout->repeatFrame = ic->streams[pkt.stream_index]->parser->repeat_pict;
+  }
 #else
   if ( ic->streams[pkt.stream_index] )
           packet_type = ic->streams[pkt.stream_index]->codec.codec_type;
