@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.96 2009/06/14 17:25:35 lucke Exp $
+ * $Id: softdevice.c,v 1.97 2011/04/16 13:13:58 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -671,6 +671,27 @@ int cSoftDevice::PlayVideo(const uchar *Data, int Length)
   }
   return 0;
 }
+
+#if VDRVERSNUM >= 10701
+/* ----------------------------------------------------------------------------
+ */
+int cSoftDevice::PlayTsAudio(const uchar *data, int len)
+{
+  return cDevice::PlayTsAudio(data, len);
+}
+
+/* ----------------------------------------------------------------------------
+ */
+int cSoftDevice::PlayTsVideo(const uchar *data, int len)
+{
+  return cDevice::PlayTsVideo(data, len);
+}
+
+int cSoftDevice::PlayTs(const uchar *data, int len, bool VideoOnly)
+{
+  return cDevice::PlayTs(data, len, VideoOnly);
+}
+#endif
 
 #if VDRVERSNUM >= 10338
 uchar *cSoftDevice::GrabImage(int &Size, bool Jpeg, int Quality,

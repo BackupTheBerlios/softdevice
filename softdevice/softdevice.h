@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.15 2009/06/14 17:25:35 lucke Exp $
+ * $Id: softdevice.h,v 1.16 2011/04/16 13:13:58 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -93,8 +93,13 @@ public:
   void LoadSubPlugin(const char *outMethodName, const char *pluginPath);
 
   virtual bool HasDecoder(void) const;
+
+protected:
   virtual bool CanReplay(void) const;
   virtual bool SetPlayMode(ePlayMode PlayMode);
+  virtual int PlayVideo(const uchar *Data, int Length);
+
+public:
   virtual void TrickSpeed(int Speed);
   virtual void Clear(void);
   virtual void Play(void);
@@ -105,7 +110,16 @@ public:
   virtual bool Poll(cPoller &Poller, int TimeoutMs = 0);
   virtual bool Flush(int TimeoutMs = 0);
   virtual int64_t GetSTC(void);
-  virtual int PlayVideo(const uchar *Data, int Length);
+
+#if VDRVERSNUM >= 10701
+protected:
+  virtual int PlayTsVideo(const uchar *Data, int Length);
+  virtual int PlayTsAudio(const uchar *Data, int Length);
+public:
+  virtual int PlayTs(const uchar *Data, int Length, bool VideoOnly = false);
+#endif
+
+protected:
 #if VDRVERSNUM < 10318
   virtual void PlayAudio(const uchar *Data, int Length);
 #else
@@ -115,10 +129,12 @@ public:
   virtual void SetAudioTrackDevice(eTrackType Type);
 
 #if VDRVERSNUM >= 10338
+public:
   virtual uchar *GrabImage(int &Size, bool Jpeg, int Quality,
                   int SizeX, int SizeY);
 #endif
 
+protected:
 # if VDRVERSNUM >= 10342
   virtual int  PlayAudio(const uchar *Data, int Length, uchar Id);
 # else
@@ -134,6 +150,7 @@ private:
 public:
   virtual cSpuDecoder *GetSpuDecoder(void);
 
+protected:
   virtual void MakePrimaryDevice(bool On);
 };
 
