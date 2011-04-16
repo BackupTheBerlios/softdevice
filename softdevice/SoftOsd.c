@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.35 2008/09/12 16:48:58 lucke Exp $
+ * $Id: SoftOsd.c,v 1.36 2011/04/16 13:21:27 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -16,12 +16,42 @@
 # include "config.h"
 #endif
 
+/* ---------------------------------------------------------------------------
+ */
 //#define OSDDEB(out...) {printf("soft_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+//#define OSDDEB1(out...) {printf("soft_osd[%04d]:",(int)(getTimeMilis() % 10000));printf(out);}
+//#define SCALEUPDEBV(out...) printf(out)
+//#define SCALEUPDEBH(out...) printf(out)
+//#define SCALEDEBV(out...) printf(out)
+//#define SCALEDEBH(out...) printf(out)
+
 
 #ifndef OSDDEB
 #define OSDDEB(out...)
 #endif
 
+#ifndef OSDDEB1
+#define OSDDEB1(out...)
+#endif
+
+#ifndef SCALEUPDEBV
+#define SCALEUPDEBV(out...)
+#endif
+
+#ifndef SCALEUPDEBH
+#define SCALEUPDEBH(out...)
+#endif
+
+#ifndef SCALEDEBV
+#define SCALEDEBV(out...)
+#endif
+
+#ifndef SCALEDEBH
+#define SCALEDEBH(out...)
+#endif
+
+/* ---------------------------------------------------------------------------
+ */
 #define COLOR_64BIT(x) ( ((x)<<32) | (x) )
 #define ALPHA_VALUE(x) ( (x) << 24 )
 
@@ -1012,6 +1042,8 @@ void cSoftOsd::StealToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
         const int ScaleFactor=1<<6;
         uint32_t new_pixel_height=(OSD_HEIGHT*ScaleFactor)/dest_Height;
         int lines_count=(new_pixel_height/ScaleFactor*2+4);
+        OSDDEB1("1 Scale to %d,%d\n",dest_Width,dest_Height);
+
         color scaleH_pixmap[lines_count*OSD_STRIDE];
         color *scaleH_Reference[lines_count];
         int scaleH_lines[lines_count];
@@ -1180,6 +1212,8 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
         const int ScaleFactor=1<<6;
         uint32_t new_pixel_height=(OSD_HEIGHT*ScaleFactor)/dest_Height;
         int lines_count=(new_pixel_height/ScaleFactor*2+4);
+        OSDDEB1("2 Scale to %d,%d\n",dest_Width,dest_Height);
+
         color scaleH_pixmap[lines_count*OSD_STRIDE];
         color *scaleH_Reference[lines_count];
         int scaleH_lines[lines_count];
@@ -1300,6 +1334,8 @@ void cSoftOsd::ScaleVUpCopyToBitmap(uint8_t *dest, int linesize,
         //printf("Scale to %d,%d\n",dest_Width,dest_Height);
         const int ScaleFactor=1<<6;
         uint32_t new_pixel_height=(OSD_HEIGHT*ScaleFactor)/dest_Height;
+        OSDDEB1("3 Scale to %d,%d\n",dest_Width,dest_Height);
+
         color scaleH_pixmap[2*dest_stride];//dest_Width];
         color *scaleH_Reference[2];
         int scaleH_lines[2];
@@ -1449,6 +1485,8 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
         const int ScaleFactor=1<<6;
         uint32_t new_pixel_height=(OSD_HEIGHT*ScaleFactor)/dest_Height;
         int lines_count=new_pixel_height/ScaleFactor+2;
+        OSDDEB1("4 Scale to %d,%d\n",dest_Width,dest_Height);
+
         color scaleH_pixmap[lines_count*dest_stride];
         color *scaleH_Reference[lines_count];
         int scaleH_lines[lines_count];
@@ -1494,9 +1532,6 @@ void cSoftOsd::ScaleVDownCopyToBitmap(uint8_t *dest, int linesize,
 };
 
 //------------------------ lowlevel scaling functions ------------------------
-//#define SCALEDEBV(out...) printf(out)
-#define SCALEDEBV(out...)
-
 void cSoftOsd::ScaleDownVert_MMX(uint32_t * dest, int linesize,
                 int32_t new_pixel_height, int start_pos,
                 color ** pixmap, int Pixel) {
@@ -1637,8 +1672,6 @@ void cSoftOsd::NoScaleHoriz_MMX(uint32_t * dest, int dest_Width,
 };
 
 //-----------------------------------------------------------------
-#define SCALEDEBH(out...)
-
 void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
                 color * pixmap, int Pixel) {
 #define SHIFT_BITS "6"
@@ -1772,10 +1805,6 @@ void cSoftOsd::ScaleDownHoriz_MMX(uint32_t * dest, int dest_Width,
 };
 
 //-----------------------------------------------------------------------
-#define SCALEUPDEBH(out...)
-//#define SCALEUPDEBH(out...) printf(out)
-
-
 void cSoftOsd::ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width,
                 color * pixmap, int Pixel) {
 #define SHIFT_BITS "6"
@@ -1872,8 +1901,6 @@ void cSoftOsd::ScaleUpHoriz_MMX(uint32_t * dest, int dest_Width,
 
 
 //-------------------------------------------------------------------------
-#define SCALEUPDEBV(out...)
-
 void cSoftOsd::ScaleUpVert_MMX(uint32_t *dest, int linesize,
                 int32_t new_pixel_height, int start_pos,
                 color **pixmap, int Pixel) {
