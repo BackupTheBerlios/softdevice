@@ -1,4 +1,7 @@
 Changelog
+2011-04-17:
+   - Fix OSD drawing with vdr-1.7.x (tested with x == 15).
+   - Silence some compiler warnings.
 2011-04-13:
    - setup-softlog: Fix crash during logging by 'scop'.
    - audio-ac3: Don't stick to fixed control (iec958) and card names (0)
