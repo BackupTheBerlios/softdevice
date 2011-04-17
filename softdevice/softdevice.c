@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.98 2011/04/17 16:06:31 lucke Exp $
+ * $Id: softdevice.c,v 1.99 2011/04/17 17:22:19 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -693,10 +693,35 @@ int cSoftDevice::PlayTsVideo(const uchar *data, int len)
   return cDevice::PlayTsVideo(data, len);
 }
 
+/* ----------------------------------------------------------------------------
+ */
 int cSoftDevice::PlayTs(const uchar *data, int len, bool VideoOnly)
 {
   return cDevice::PlayTs(data, len, VideoOnly);
 }
+
+#if VDRVERSNUM > 10707
+/* ----------------------------------------------------------------------------
+ */
+void cSoftDevice::GetVideoSize(int &Width, int &Height, double &VideoAspect)
+{
+  if (videoOut)
+    videoOut->GetVideoSize (Width, Height, VideoAspect);
+  else
+    cDevice::GetVideoSize (Width, Height, VideoAspect);
+}
+
+/* ----------------------------------------------------------------------------
+ */
+void cSoftDevice::GetOsdSize(int &Width, int &Height, double &VideoAspect)
+{
+  if (videoOut)
+    videoOut->GetOsdSize (Width, Height, VideoAspect);
+  else
+    cDevice::GetOsdSize (Width, Height, VideoAspect);
+}
+#endif
+
 #endif
 
 #if VDRVERSNUM >= 10338

@@ -6,34 +6,44 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.h,v 1.20 2008/09/12 16:48:58 lucke Exp $
+ * $Id: SoftOsd.h,v 1.21 2011/04/17 17:22:18 lucke Exp $
  */
 
 #ifndef __SOFTOSD_H__
 #define __SOFTOSD_H__
+
+#include <vdr/config.h>
+#include <vdr/osd.h>
+#include <vdr/thread.h>
 
 // osd some constants and macros
 #define OPACITY_THRESHOLD 0x9FLL
 #define TRANSPARENT_THRESHOLD 0x1FLL
 #define COLOR_KEY 0x00000000LL
 
+#if VDRVERSNUM <= 10707
+
 #define OSD_WIDTH   720
 #define OSD_HEIGHT  576
+#define OSD_STRIDE (736)
+
+#else
+
+#define OSD_WIDTH   1920
+#define OSD_HEIGHT  1080
+#define OSD_STRIDE (1920)
+
+#endif
 
 #define IS_BACKGROUND(a) (((a) < OPACITY_THRESHOLD) && ((a) > TRANSPARENT_THRESHOLD))
 #define IS_TRANSPARENT(a) ((a) < TRANSPARENT_THRESHOLD)
 #define IS_OPAQUE(a) ((a) > OPACITY_THRESHOLD)
 
-#include <vdr/config.h>
-
-#include <vdr/osd.h>
-#include <vdr/thread.h>
 #include "video.h"
 
 #define X_OFFSET 0
 #define Y_OFFSET 0
 
-#define OSD_STRIDE (736)
 
 #define COLOR_RGB16(r,g,b) (((b >> 3)& 0x1F) | ((g & 0xF8) << 2)| ((r & 0xF8)<<10) )
 

@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.h,v 1.16 2011/04/16 13:13:58 lucke Exp $
+ * $Id: softdevice.h,v 1.17 2011/04/17 17:22:19 lucke Exp $
  */
 
 #ifndef __SOFTDEVICE_H__
@@ -117,6 +117,12 @@ protected:
   virtual int PlayTsAudio(const uchar *Data, int Length);
 public:
   virtual int PlayTs(const uchar *Data, int Length, bool VideoOnly = false);
+
+#if VDRVERSNUM > 10707
+  virtual void GetVideoSize(int &Width, int &Height, double &VideoAspect);
+  virtual void GetOsdSize(int &Width, int &Height, double &PixelAspect);
+#endif
+
 #endif
 
 protected:

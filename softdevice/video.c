@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.c,v 1.79 2009/02/27 17:02:35 lucke Exp $
+ * $Id: video.c,v 1.80 2011/04/17 17:22:19 lucke Exp $
  */
 
 #include <fcntl.h>
@@ -31,8 +31,8 @@ cVideoOut::cVideoOut(cSetupStore *setupStore, cSetupSoftlog *Softlog)
   OsdWidth=OSD_FULL_WIDTH;
   OsdHeight=OSD_FULL_HEIGHT;
   // set some reasonable defaults
-  fwidth = lwidth = old_dwidth = dwidth = swidth = 720;
-  fheight = lheight = old_dheight = dheight = sheight = 536;
+  fwidth = lwidth = old_dwidth = dwidth = swidth = VIDEO_DEF_WIDTH;
+  fheight = lheight = old_dheight = dheight = sheight = VIDEO_DEF_HEIGHT;
   sxoff = syoff = lxoff = lyoff = 0;
   cutTop = cutBottom = cutLeft = cutRight = 0;
   OsdPy = OsdPu = OsdPv = OsdPAlphaY = OsdPAlphaUV = NULL;
@@ -750,4 +750,24 @@ void cVideoOut::CloseOSD()
 void cVideoOut::AdjustOSDMode()
 {
   current_osdMode = OSDMODE_PSEUDO;
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::GetVideoSize(int &w, int &h, double &a)
+{
+  w = swidth;
+  h = sheight;
+  a = 1.0;
+  fprintf (stderr, "GetVideoSize (w = %d, h = %d, a = %.3f)\n", w, h, a);
+}
+
+/* ---------------------------------------------------------------------------
+ */
+void cVideoOut::GetOsdSize(int &w, int &h, double &a)
+{
+  w = OSD_FULL_WIDTH;
+  h = OSD_FULL_HEIGHT;
+  a = 1.0;
+  //fprintf (stderr, "GetOsdSize (w = %d, h = %d, a = %.3f)\n", w, h, a);
 }

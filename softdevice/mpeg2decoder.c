@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: mpeg2decoder.c,v 1.89 2011/04/16 14:23:59 lucke Exp $
+ * $Id: mpeg2decoder.c,v 1.90 2011/04/17 17:22:18 lucke Exp $
  */
 
 #include <math.h>
@@ -124,14 +124,32 @@ int64_t cClock::videoOffset=0;
 int64_t cClock::videoPTS=0;
 bool cClock::freezeMode=true;
 
-int64_t  cClock::GetPTS() {
-  //MPGDEB("audioOffset %lld time %lld\n",audioOffset,GetTime());
+/* ---------------------------------------------------------------------------
+ */
+int64_t  cClock::GetPTS()
+{
+    int64_t    rc = 0;
+    static int lastrc = 0;
+
+ //MPGDEB("audioOffset %lld time %lld\n",audioOffset,GetTime());
   if ( audioOffset )
-     return freezeMode ? audioPTS : GetTime()+audioOffset;
+     rc = freezeMode ? audioPTS : GetTime()+audioOffset;
   else if ( videoOffset )
-     return freezeMode ? videoPTS : GetTime()+videoOffset;
-  else return 0;
-};
+     rc = freezeMode ? videoPTS : GetTime()+videoOffset;
+
+#if 0
+  fprintf (stderr,
+           "-- f(%d) ap(%lld - %lld) vp(%lld - %lld) gt(%lld) "
+             "rc(%lld %lld %lld)\n",
+           freezeMode,
+           audioPTS, audioOffset,
+           videoPTS, videoOffset,
+           GetTime(),
+           rc, (int64_t) (rc / 10000), (rc - lastrc) / 10000);
+#endif
+  lastrc = rc;
+  return rc;
+}
 
 // --- cStreamDecoder ---------------------------------------------------------
 
@@ -295,6 +313,15 @@ bool cStreamDecoder::initCodec(void)
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
       context->flags|= CODEC_FLAG_TRUNCATED;
   }
+
+#if 0
+  int thread_count = 3;
+  if (thread_count > 1) {
+    avcodec_thread_init (context, thread_count);
+    context->thread_count = thread_count;
+    fprintf(stderr, "using %d threads\n", thread_count);
+  }
+#endif
 
   if ( (ret=avcodec_open(context, codec)) < 0)
   {
@@ -1486,7 +1513,7 @@ void cMpeg2Decoder::SetPlayMode(softPlayMode playMode, bool packetMode)
 void cMpeg2Decoder::Freeze(int Stream, bool freeze)
 {
   CMDDEB("Freeze Streams %d freeze %d\n",Stream,freeze);
-  if (Stream & SOFTDEVICE_BOTH_STREAMS == SOFTDEVICE_BOTH_STREAMS )
+  if ((Stream & SOFTDEVICE_BOTH_STREAMS) == SOFTDEVICE_BOTH_STREAMS )
     freezeMode=freeze;
   if (freeze)
     videoOut->SetStillPictureMode (true);

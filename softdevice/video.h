@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: video.h,v 1.59 2009/06/14 10:50:47 lucke Exp $
+ * $Id: video.h,v 1.60 2011/04/17 17:22:19 lucke Exp $
  */
 
 #ifndef VIDEO_H
@@ -28,11 +28,24 @@
 #define DV_FORMAT_NORMAL  1
 #define DV_FORMAT_WIDE    2
 
+#if  VDRVERSNUM <= 10707
+
 #define OSD_FULL_WIDTH    736
 #define OSD_FULL_HEIGHT   576
-
 #define SRC_HEIGHT         576
 #define SRC_WIDTH          736
+
+#else
+
+#define OSD_FULL_WIDTH      (8+1920+8)
+#define OSD_FULL_HEIGHT     (1080)
+#define SRC_HEIGHT          1080
+#define SRC_WIDTH           (8+1920+8)
+
+#endif
+
+#define VIDEO_DEF_WIDTH        720
+#define VIDEO_DEF_HEIGHT       576
 
 #define AVRG_OFF_CNT        16
 
@@ -170,6 +183,7 @@ public:
     virtual void SetParValues(double displayAspect, double displayRatio);
     virtual void CheckAspect(int new_afd, double new_asp);
     virtual void CheckAspectDimensions (sPicBuffer *pic);
+    virtual void GetVideoSize(int &w, int &h, double &a);
     virtual void CheckArea(int w, int h);
     virtual void DrawVideo_420pl(cSyncTimer *syncTimer,
                                  sPicBuffer *pic);
@@ -241,6 +255,7 @@ public:
     // for scaling, if -1,-1 is returned no scaling is done.
     { OsdWidth=-1;OsdHeight=-1; xPan = yPan = 0;};
 
+    virtual void GetOsdSize(int &w, int &h, double &a);
     virtual void GetOSDMode(int &Depth, bool &HasAlpha, bool &AlphaInversed,
                     bool &IsYUV)
     { Depth=32; HasAlpha=true; AlphaInversed=false; IsYUV=false; };
