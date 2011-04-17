@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: SoftOsd.c,v 1.36 2011/04/16 13:21:27 lucke Exp $
+ * $Id: SoftOsd.c,v 1.37 2011/04/17 16:06:31 lucke Exp $
  */
 #include <assert.h>
 #include "SoftOsd.h"
@@ -1007,7 +1007,7 @@ void cSoftOsd::CopyToBitmap(uint8_t *PY,uint8_t *PU, uint8_t *PV,
         if (dest_Height < 40 || dest_Width < 40)
                 return;
 
-        if (dest_Height & 0x1 !=0) {
+        if ((dest_Height & 0x1) !=0) {
                 //printf("warning dest_Height not even!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
                 dest_Height &= ~0x1;
         };

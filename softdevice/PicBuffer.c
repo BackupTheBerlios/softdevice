@@ -6,7 +6,7 @@
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
  *
- * $Id: PicBuffer.c,v 1.23 2008/07/27 17:34:42 lucke Exp $
+ * $Id: PicBuffer.c,v 1.24 2011/04/17 16:06:31 lucke Exp $
  */
 #include <stdlib.h>
 #include <string.h>
@@ -822,7 +822,7 @@ void CopyScalePicBuf(sPicBuffer *dst, sPicBuffer *src,
         } else {
                 // we have to do format conversions
                 do_convert=true;
-                dst_stride0 = 4*(dst_width+15 & ~15);
+                dst_stride0 = 4*((dst_width+15) & ~15);
                 convert_buf=(uint8_t*)malloc(4*dst_stride0);
                 dst_ptr0=convert_buf;
                 dst_ptr1=convert_buf+2*dst_stride0;
@@ -971,7 +971,7 @@ void CopyScalePicBufAlphaBlend(sPicBuffer *dst, sPicBuffer *src,
         } else {
                 // we have to do format conversions
                 do_convert=true;
-                dst_stride0 = 4*(dst_width+15 & ~15);
+                dst_stride0 = 4*((dst_width+15) & ~15);
                 convert_buf=(uint8_t*)malloc(4*dst_stride0);
                 dst_ptr0=convert_buf;
                 dst_ptr1=convert_buf+2*dst_stride0;

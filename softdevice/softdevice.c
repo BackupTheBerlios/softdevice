@@ -3,7 +3,7 @@
  *
  * See the README file for copyright information and how to reach the author.
  *
- * $Id: softdevice.c,v 1.97 2011/04/16 13:13:58 lucke Exp $
+ * $Id: softdevice.c,v 1.98 2011/04/17 16:06:31 lucke Exp $
  */
 #include "softdevice.h"
 
@@ -335,20 +335,26 @@ void cSoftDevice::LoadSubPlugin(const char *outMethodName,
     char  *subPluginFileName = NULL;
 
 #ifdef APIVERSION
-  asprintf (&subPluginFileName,
-            "%s/%s%s.so.%s",
-            pluginPath,
-            "libsoftdevice-",
-            outMethodName,
-            APIVERSION);
+  if (asprintf (&subPluginFileName,
+                "%s/%s%s.so.%s",
+                pluginPath,
+                "libsoftdevice-",
+                outMethodName,
+                APIVERSION) < 0)
 #else
-  asprintf (&subPluginFileName,
-            "%s/%s%s.so.%s",
-            pluginPath,
-            "libsoftdevice-",
-            outMethodName,
-            VDRVERSION);
+  if (asprintf (&subPluginFileName,
+                "%s/%s%s.so.%s",
+                pluginPath,
+                "libsoftdevice-",
+                outMethodName,
+                VDRVERSION) < 0)
 #endif
+  {
+    esyslog("[softdevice] could not generate filename "
+              "for path(%s) method(%s)\n",
+            pluginPath, outMethodName);
+    exit (1);
+  }
 
   void *handle = dlopen (subPluginFileName, RTLD_NOW);
   const char *err = dlerror();
